@@ -90,6 +90,20 @@ const SKILL_TREE_NODES = [
       `불의 정령 상시 소환 (1.3초마다 공격력의 ${lv === 0 ? 45 : lv * 45}% 화염탄 발사 및 화상 연장)`
   },
   {
+    id: 'flame_patch',
+    tier: 1,
+    row: 1,
+    col: 2,
+    reqTotalSp: 0,
+    cost: 1,
+    maxLv: 3,
+    name: '불장판',
+    shortName: '불장판',
+    icon: '🔥',
+    desc: (lv) =>
+      `[6] 불장판 스킬 사용 가능: 몬스터 아래쪽 바닥에 7초간 불장판을 깔아 0.5초마다 공격력의 ${lv === 0 ? 40 : lv * 40}% 도트 피해 (쿨타임 10초)`
+  },
+  {
     id: 'phoenix',
     tier: 1,
     row: 1,
@@ -183,6 +197,7 @@ const SKILL_TREE_NODES = [
 const SKILL_TREE_LINKS = [
   { from: 'fire_elem', to: 'magma_golem' },
   { from: 'fire_elem', to: 'multishot' },
+  { from: 'flame_patch', to: 'multishot' },
   { from: 'phoenix', to: 'rune_aura' },
   { from: 'phoenix', to: 'multishot' },
   { from: 'magma_golem', to: 'legion_sync' },
@@ -411,6 +426,7 @@ const state = {
   bonusSkillPoints: 0,
   skillTree: {
     fire_elem: 0,
+    flame_patch: 0,
     phoenix: 0,
     magma_golem: 0,
     multishot: 0,
@@ -472,12 +488,16 @@ const state = {
     combustionCdTotal: 30,
     meteorCdRem: 0,
     meteorCdTotal: 18,
+    flamePatchCdRem: 0,
+    flamePatchCdTotal: 10,
 
     ignitePool: 0,
     igniteRem: 0,
     igniteTickTimer: 0,
     meteorBurnRem: 0,
     meteorBurnTickTimer: 0,
+    flamePatchRem: 0,
+    flamePatchTickTimer: 0,
 
     elemTimer: 0,
     elemRecoil: 0,
@@ -487,7 +507,7 @@ const state = {
     golemLunge: 0,
     animTime: 0,
 
-    wasOnCd: { 2: false, 4: false, 5: false }
+    wasOnCd: { 2: false, 4: false, 5: false, 6: false }
   },
 
   dpsHistory: [],
@@ -497,6 +517,7 @@ const state = {
     pyroblast: { name: '🌋 거대 화염구', dmg: 0, color: '#ef4444' },
     ignite: { name: '🩸 화상 (도트)', dmg: 0, color: '#ff8000' },
     meteor: { name: '☄️ 메테오', dmg: 0, color: '#a855f7' },
+    flame_patch: { name: '🔥 불장판', dmg: 0, color: '#fb923c' },
     summon_elem: { name: '🔥 불의 정령', dmg: 0, color: '#fb7185' },
     summon_phoenix: { name: '🦅 비전 불사조', dmg: 0, color: '#facc15' },
     summon_golem: { name: '🗿 용암 골렘', dmg: 0, color: '#c084fc' }
@@ -687,7 +708,9 @@ initSfxAudio();
 
 function updateBurningLoopSound() {
   const c = state.combat;
-  const isDotBurning = state.soundOn && ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0);
+  const isDotBurning =
+    state.soundOn &&
+    ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0 || c.flamePatchRem > 0);
   try {
     if (isDotBurning) {
       if (burningLoopAudio.paused) {
@@ -792,6 +815,8 @@ function playSound(type) {
 // ==========================================
 const canvas = document.getElementById('vfx-canvas');
 const ctx = canvas.getContext('2d');
+const groundCanvas = document.getElementById('ground-vfx-canvas');
+const groundCtx = groundCanvas ? groundCanvas.getContext('2d') : ctx;
 const projectiles = [];
 const particles = [];
 const meteors = [];
@@ -803,6 +828,10 @@ function resizeCanvas() {
   if (!arena) return;
   canvas.width = arena.clientWidth;
   canvas.height = arena.clientHeight;
+  if (groundCanvas) {
+    groundCanvas.width = arena.clientWidth;
+    groundCanvas.height = arena.clientHeight;
+  }
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -1059,8 +1088,8 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
     playFireballSfx('fly', isPyro ? 0.82 : 0.52);
   }
 
-  // 일반 화염구는 작고 절제된 비주얼로 약화하고, 거대 화염구(pyroblast)는 압도적인 크기와 위성/이펙트를 갖도록 명확히 차별화!
-  const baseRadius = isPyro ? 20 : 6.2;
+  // 일반 화염구 반지름을 기존(6.2)의 2배인 12.4로 확대하고, 거대 화염구(pyroblast)는 더 큰 반지름(24)과 코로나 광선/위성으로 차별화!
+  const baseRadius = isPyro ? 24 : 12.4;
   const effectiveEvoScale = isPyro ? evo.scale : 1 + (evo.scale - 1) * 0.38;
 
   launchCustomProjectile({
@@ -1106,9 +1135,17 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
     rockVerts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
   }
 
-  // 아레나 상단 하늘 영역(화면 안쪽)에 먼저 모습을 드러낸 뒤 서서히 내려오다 가속하도록 시작 위치 설정
-  const startX = target.x - 195 * scale + offsetX;
-  const startY = Math.max(95, target.y - 215 * scale);
+  // 첨부 이미지 기준: 상단 중앙 스테이지 배너(#arena-stage-banner)의 'STAGE 1-1' 바로 아래 위치에서 출현!
+  const arenaEl = document.getElementById('combat-arena');
+  const bannerEl = document.getElementById('arena-stage-banner');
+  let startX = target.x - 185 * scale + offsetX;
+  let startY = Math.max(155, target.y - 195 * scale);
+  if (arenaEl && bannerEl) {
+    const arenaRect = arenaEl.getBoundingClientRect();
+    const bannerRect = bannerEl.getBoundingClientRect();
+    startX = bannerRect.left - arenaRect.left + bannerRect.width * 0.28 + offsetX * 0.5;
+    startY = bannerRect.bottom - arenaRect.top + 36;
+  }
 
   meteors.push({
     startX,
@@ -1130,28 +1167,29 @@ function drawSummonsAndAuras(dt) {
   c.animTime += dt;
   const casterCenter = getCasterCenter();
   const targetCenter = getTargetPos();
+  const gCtx = groundCtx || ctx;
 
-  // 1. 고대 가속 마법진
+  // 1. 고대 가속 마법진 (캐릭터 발밑 바닥 레이어에 렌더링)
   const runeLv = state.skillTree.rune_aura || 0;
   if (runeLv > 0) {
-    ctx.save();
-    ctx.translate(casterCenter.x, casterCenter.y + 42);
-    ctx.scale(1, 0.42);
-    ctx.rotate(c.animTime * 1.4);
+    gCtx.save();
+    gCtx.translate(casterCenter.x, casterCenter.y + 46);
+    gCtx.scale(1, 0.42);
+    gCtx.rotate(c.animTime * 1.4);
 
-    ctx.beginPath();
-    ctx.arc(0, 0, 68, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+    gCtx.beginPath();
+    gCtx.arc(0, 0, 68, 0, Math.PI * 2);
+    gCtx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+    gCtx.lineWidth = 3;
+    gCtx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(0, 0, 52, 0, Math.PI * 2);
-    ctx.setLineDash([10, 8]);
-    ctx.strokeStyle = 'rgba(249, 115, 22, 0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+    gCtx.beginPath();
+    gCtx.arc(0, 0, 52, 0, Math.PI * 2);
+    gCtx.setLineDash([10, 8]);
+    gCtx.strokeStyle = 'rgba(249, 115, 22, 0.7)';
+    gCtx.lineWidth = 2;
+    gCtx.stroke();
+    gCtx.restore();
   }
 
   // 2. 불의 정령
@@ -1247,7 +1285,108 @@ function drawSummonsAndAuras(dt) {
     ctx.fillText(`용암 골렘 Lv.${golemLv}`, gx, gy + 26);
   }
 
-  // 5. 충격파 (진화 단계별 컬러 지원)
+  // 4-B. 불장판 (몬스터 이미지 뒤쪽/발밑 바닥 레이어 #ground-vfx-canvas 에 1.5배 넓어진 화염 지대 렌더링!)
+  if (c.flamePatchRem > 0) {
+    const fx = targetCenter.x;
+    const fy = targetCenter.y + 56; // 몬스터 아바타 하단 발밑 바닥 위치
+    const fadeAlpha = Math.min(1, c.flamePatchRem / 0.6);
+    const pulse = 1 + Math.sin(c.animTime * 9) * 0.06;
+    const patchRadius = 111 * pulse; // 기존 74 대비 1.5배 넓어진 반경!
+
+    // 바닥 타원형 용암/화염 장판 베이스 (몬스터 이미지 아래쪽 바닥에 깔림)
+    gCtx.save();
+    gCtx.globalAlpha = fadeAlpha;
+    gCtx.translate(fx, fy);
+    gCtx.scale(1, 0.42);
+
+    const floorGrad = gCtx.createRadialGradient(0, 0, 8, 0, 0, patchRadius);
+    floorGrad.addColorStop(0, 'rgba(254, 240, 138, 0.94)');
+    floorGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.82)');
+    floorGrad.addColorStop(0.75, 'rgba(220, 38, 38, 0.52)');
+    floorGrad.addColorStop(1, 'rgba(153, 27, 27, 0)');
+    gCtx.fillStyle = floorGrad;
+    gCtx.beginPath();
+    gCtx.arc(0, 0, patchRadius, 0, Math.PI * 2);
+    gCtx.fill();
+
+    // 회전하는 화염 테두리 균열 링 (1.5배 확장: 87 / 60)
+    gCtx.rotate(c.animTime * 1.8);
+    gCtx.beginPath();
+    gCtx.arc(0, 0, 87, 0, Math.PI * 2);
+    gCtx.setLineDash([18, 11]);
+    gCtx.strokeStyle = 'rgba(253, 224, 71, 0.88)';
+    gCtx.lineWidth = 3.2;
+    gCtx.stroke();
+
+    gCtx.rotate(-c.animTime * 3.2);
+    gCtx.beginPath();
+    gCtx.arc(0, 0, 60, 0, Math.PI * 2);
+    gCtx.setLineDash([11, 9]);
+    gCtx.strokeStyle = 'rgba(251, 146, 60, 0.82)';
+    gCtx.lineWidth = 2.5;
+    gCtx.stroke();
+    gCtx.restore();
+
+    // 바닥 영역에서 일렁이며 솟아오르는 불길 기둥(Flame Tongues) 연출 (바닥 캔버스에 그려 몬스터 이미지를 가리지 않음)
+    gCtx.save();
+    gCtx.globalAlpha = fadeAlpha;
+    const flameOffsets = [
+      { dx: -72, dy: 2, h: 28, phase: 0.0 },
+      { dx: -54, dy: 9, h: 34, phase: 1.1 },
+      { dx: -36, dy: -5, h: 32, phase: 2.3 },
+      { dx: -18, dy: 11, h: 38, phase: 3.5 },
+      { dx: 0, dy: 14, h: 42, phase: 0.7 },
+      { dx: 19, dy: 10, h: 37, phase: 2.9 },
+      { dx: 37, dy: -4, h: 33, phase: 4.1 },
+      { dx: 55, dy: 8, h: 35, phase: 1.8 },
+      { dx: 72, dy: 1, h: 27, phase: 4.9 }
+    ];
+    for (const fl of flameOffsets) {
+      const bx = fx + fl.dx;
+      const by = fy + fl.dy;
+      const waveX = Math.sin(c.animTime * 11 + fl.phase) * 6.5;
+      const stretchH = fl.h * (0.78 + 0.32 * Math.sin(c.animTime * 14 + fl.phase * 1.7));
+      const w = 11.5;
+
+      // 외곽 붉은 오렌지 불길
+      gCtx.beginPath();
+      gCtx.moveTo(bx - w, by);
+      gCtx.quadraticCurveTo(bx - w * 0.5 + waveX * 0.4, by - stretchH * 0.55, bx + waveX, by - stretchH);
+      gCtx.quadraticCurveTo(bx + w * 0.5 + waveX * 0.4, by - stretchH * 0.55, bx + w, by);
+      gCtx.closePath();
+      gCtx.fillStyle = 'rgba(249, 115, 22, 0.8)';
+      gCtx.fill();
+
+      // 내부 밝은 노란 불꽃 코어
+      gCtx.beginPath();
+      gCtx.moveTo(bx - w * 0.52, by);
+      gCtx.quadraticCurveTo(bx + waveX * 0.3, by - stretchH * 0.4, bx + waveX * 0.7, by - stretchH * 0.68);
+      gCtx.quadraticCurveTo(bx + waveX * 0.3, by - stretchH * 0.4, bx + w * 0.52, by);
+      gCtx.closePath();
+      gCtx.fillStyle = 'rgba(254, 240, 138, 0.92)';
+      gCtx.fill();
+    }
+    gCtx.restore();
+
+    // 1.5배 넓어진 바닥 장판에서 위로 피어오르는 불티 파티클
+    if (Math.random() < 0.75) {
+      const ang = Math.random() * Math.PI * 2;
+      const dist = Math.random() * 84;
+      particles.push({
+        x: fx + Math.cos(ang) * dist,
+        y: fy + Math.sin(ang) * dist * 0.38,
+        vx: (Math.random() - 0.5) * 32,
+        vy: -(52 + Math.random() * 60),
+        radius: 2.8 + Math.random() * 3.8,
+        life: 0,
+        maxLife: 0.3 + Math.random() * 0.24,
+        colorCore: '#fef08a',
+        colorEdge: '#ea580c'
+      });
+    }
+  }
+
+  // 5. 충격파 (지면 flat 충격파는 바닥 캔버스에, 공중 충격파는 전면 캔버스에 렌더링)
   for (let i = shockwaves.length - 1; i >= 0; i--) {
     const sw = shockwaves[i];
     sw.life += dt;
@@ -1258,22 +1397,27 @@ function drawSummonsAndAuras(dt) {
     const prog = sw.life / sw.maxLife;
     const alpha = 1 - prog;
     const rgb = sw.rgb || '251, 146, 60';
-    ctx.save();
-    ctx.translate(sw.x, sw.y);
-    ctx.scale(1, sw.flat ? 0.45 : 0.85);
-    ctx.beginPath();
-    ctx.arc(0, 0, sw.maxRadius * prog, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(${rgb}, ${alpha})`;
-    ctx.lineWidth = sw.lineWidth || 4;
-    ctx.stroke();
-    ctx.restore();
+    const targetCtx = sw.flat ? gCtx : ctx;
+    targetCtx.save();
+    targetCtx.translate(sw.x, sw.y);
+    targetCtx.scale(1, sw.flat ? 0.45 : 0.85);
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, sw.maxRadius * prog, 0, Math.PI * 2);
+    targetCtx.strokeStyle = `rgba(${rgb}, ${alpha})`;
+    targetCtx.lineWidth = sw.lineWidth || 4;
+    targetCtx.stroke();
+    targetCtx.restore();
   }
 }
 
 function updateAndDrawVfx(dt) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (groundCtx && groundCanvas) {
+    groundCtx.clearRect(0, 0, groundCanvas.width, groundCanvas.height);
+  }
   drawSummonsAndAuras(dt);
 
+  const gCtx = groundCtx || ctx;
   for (let i = groundEffects.length - 1; i >= 0; i--) {
     const g = groundEffects[i];
     g.life += dt;
@@ -1283,23 +1427,23 @@ function updateAndDrawVfx(dt) {
     }
     const prog = g.life / g.maxLife;
     const alpha = 1 - prog;
-    ctx.save();
-    ctx.translate(g.x, g.y);
-    ctx.scale(1, 0.42);
-    ctx.beginPath();
-    ctx.arc(0, 0, g.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(251, 191, 36, ${alpha * 0.9})`;
-    ctx.lineWidth = 3.5;
-    ctx.stroke();
-    ctx.fillStyle = `rgba(239, 68, 68, ${alpha * 0.28})`;
-    ctx.fill();
+    gCtx.save();
+    gCtx.translate(g.x, g.y);
+    gCtx.scale(1, 0.42);
+    gCtx.beginPath();
+    gCtx.arc(0, 0, g.radius, 0, Math.PI * 2);
+    gCtx.strokeStyle = `rgba(251, 191, 36, ${alpha * 0.9})`;
+    gCtx.lineWidth = 3.5;
+    gCtx.stroke();
+    gCtx.fillStyle = `rgba(239, 68, 68, ${alpha * 0.28})`;
+    gCtx.fill();
     // 내부 수축 타겟 링 연출
-    ctx.beginPath();
-    ctx.arc(0, 0, g.radius * (1 - prog * 0.65), 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.65})`;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+    gCtx.beginPath();
+    gCtx.arc(0, 0, g.radius * (1 - prog * 0.65), 0, Math.PI * 2);
+    gCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.65})`;
+    gCtx.lineWidth = 2;
+    gCtx.stroke();
+    gCtx.restore();
   }
 
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -1462,8 +1606,10 @@ function updateAndDrawVfx(dt) {
     const x = m.startX + (m.targetX - m.startX) * t;
     const y = m.startY + (m.targetY - m.startY) * t;
 
-    // 등장 직후(0~12%) 소환 팝인 스케일 연출
-    const appearScale = m.progress < 0.12 ? 0.35 + (m.progress / 0.12) * 0.65 : 1.0;
+    // 먼 곳에서 점점 다가오는 원근감 스케일 연출:
+    // 처음 배너 아래에 나타날 때는 작은 크기(0.42배)로 시작해, 지면으로 다가올수록 점점 거대하게(1.12배) 확대!
+    const popIn = m.progress < 0.08 ? m.progress / 0.08 : 1.0;
+    const appearScale = (0.42 + 0.70 * Math.pow(m.progress, 2.2)) * (0.35 + 0.65 * popIn);
     const curRadius = m.radius * appearScale;
 
     // 가속이 붙을수록 더 크고 맹렬해지는 화염 꼬리 파티클
@@ -2436,6 +2582,40 @@ function triggerSkill(skillKey) {
     return true;
   }
 
+  if (skillKey === 'flame_patch') {
+    const patchLv = state.skillTree.flame_patch || 0;
+    if (patchLv <= 0) return false;
+    if (c.flamePatchCdRem > 0) return false;
+
+    c.flamePatchCdTotal = Math.max(4.5, 10 * (1 - stats.cdr));
+    c.flamePatchCdRem = c.flamePatchCdTotal;
+    c.flamePatchRem = 7.0;
+    c.flamePatchTickTimer = 0;
+
+    const target = getTargetPos();
+    const fx = target.x;
+    const fy = target.y + 56;
+    spawnParticles(fx, fy, 32, '#fef08a', '#ea580c', 1.45);
+    shockwaves.push({
+      x: fx,
+      y: fy,
+      life: 0,
+      maxLife: 0.42,
+      maxRadius: 123,
+      rgb: '251, 146, 60',
+      flat: true,
+      lineWidth: 5
+    });
+    playFireballSfx('explosion', 0.65);
+
+    // 시전 즉시 첫 불장판 도트 틱 피해 적용
+    const golemBonus = (state.skillTree.magma_golem || 0) * 0.15;
+    const tickDmg = stats.sp * (0.4 * patchLv) * (1 + golemBonus) * (stats.igniteMult || 1);
+    dealDamage('flame_patch', tickDmg, false, false, true);
+    updateBurningLoopSound();
+    return true;
+  }
+
   return false;
 }
 
@@ -2454,6 +2634,9 @@ function runSmartAutoCast() {
 
   if (state.grimoires.combustion && c.combustionCdRem <= 0) {
     triggerSkill('combustion');
+  }
+  if ((state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0) {
+    triggerSkill('flame_patch');
   }
   if (state.grimoires.meteor && c.meteorCdRem <= 0) {
     triggerSkill('meteor');
@@ -2536,7 +2719,7 @@ function updateNotificationBadges() {
   // 2. 자동 시전 버튼 (!) 배지: 해금되었는데 꺼져 있을 때 표시
   setBadge('badge-auto-cast', state.grimoires.autocast && !state.autoCast);
 
-  // 3. 스킬 액션바 1~5번 (!) 배지: 수동 조작 중이거나 즉시 발사 프록이 떴을 때
+  // 3. 스킬 액션바 1~6번 (!) 배지: 수동 조작 중이거나 즉시 발사 프록이 떴을 때
   const manualMode = !state.grimoires.autocast || !state.autoCast;
   setBadge('badge-skill-1', manualMode && !c.castingSkill && c.gcdRemaining <= 0 && state.dpsHistory.length === 0);
   setBadge(
@@ -2546,6 +2729,7 @@ function updateNotificationBadges() {
   setBadge('badge-skill-3', state.grimoires.pyroblast && c.critStreak === 2);
   setBadge('badge-skill-4', manualMode && state.grimoires.combustion && c.combustionCdRem <= 0);
   setBadge('badge-skill-5', manualMode && state.grimoires.meteor && c.meteorCdRem <= 0);
+  setBadge('badge-skill-6', manualMode && (state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0);
 
   // 4. 상점 탭 (!) 배지: 구매 가능한 마법서나 장비가 있을 때 표시
   let anyShopAffordable = false;
@@ -2690,6 +2874,7 @@ function renderSkillTreeUI() {
   const badgesEl = document.getElementById('summon-active-badges');
   const activeChips = [];
   if (state.skillTree.fire_elem > 0) activeChips.push(`<span class="summon-chip">🔥 정령 Lv.${state.skillTree.fire_elem}</span>`);
+  if (state.skillTree.flame_patch > 0) activeChips.push(`<span class="summon-chip">🔥 불장판 Lv.${state.skillTree.flame_patch}</span>`);
   if (state.skillTree.phoenix > 0) activeChips.push(`<span class="summon-chip">🦅 불사조 Lv.${state.skillTree.phoenix}</span>`);
   if (state.skillTree.magma_golem > 0) activeChips.push(`<span class="summon-chip">🗿 골렘 Lv.${state.skillTree.magma_golem}</span>`);
   if (state.skillTree.multishot > 0) activeChips.push(`<span class="summon-chip">✨ ${state.skillTree.multishot + 1}연발</span>`);
@@ -2743,13 +2928,7 @@ function renderSkillTreeUI() {
     `;
   }).join('');
 
-  // 2. 3x3 와우 특성 그리드 셀 생성
-  const tierLabels = {
-    1: '1단계 · 기본 소환',
-    2: '2단계 · 1 SP 요구',
-    3: '3단계 · 3 SP 궁극'
-  };
-
+  // 2. 3x3 와우 특성 그리드 셀 생성 (단계 텍스트 없이 깔끔한 그리드만 표시)
   let gridRowsHtml = '';
   for (let r = 1; r <= 3; r++) {
     const tierReq = r === 1 ? 0 : r === 2 ? 1 : 3;
@@ -2796,9 +2975,6 @@ function renderSkillTreeUI() {
 
     gridRowsHtml += `
       <div class="wow-tree-row ${tierUnlocked ? 'tier-open' : 'tier-locked'}">
-        <div class="wow-tier-side-tag">
-          <span>${tierLabels[r]}</span>
-        </div>
         ${cellsHtml}
       </div>
     `;
@@ -3200,6 +3376,24 @@ function updateSkillActionBarVisibility() {
     icon5.textContent = '🔒';
   }
 
+  const btn6 = document.getElementById('skill-6');
+  const icon6 = document.getElementById('icon-6');
+  if (btn6 && icon6) {
+    const hasFlamePatch = (state.skillTree.flame_patch || 0) > 0;
+    if (hasFlamePatch || state.unfolded.skillTree) {
+      btn6.classList.remove('hidden-slot');
+    } else {
+      btn6.classList.add('hidden-slot');
+    }
+    if (hasFlamePatch) {
+      btn6.classList.remove('locked-skill');
+      icon6.textContent = '🔥';
+    } else {
+      btn6.classList.add('locked-skill');
+      icon6.textContent = '🔒';
+    }
+  }
+
   const autoBtn = document.getElementById('btn-auto-cast');
   const autoBtnText = document.getElementById('btn-auto-cast-text');
   autoBtn.classList.toggle('unfold-hidden', !state.unfolded.equipShop && !state.grimoires.autocast);
@@ -3462,6 +3656,15 @@ function gameLoop(nowMs) {
       c.wasOnCd[5] = true;
     }
   }
+  if (c.flamePatchCdRem > 0) {
+    c.flamePatchCdRem = Math.max(0, c.flamePatchCdRem - dt);
+    if (c.flamePatchCdRem === 0 && c.wasOnCd[6]) {
+      triggerReadyFlash('skill-6');
+      c.wasOnCd[6] = false;
+    } else {
+      c.wasOnCd[6] = true;
+    }
+  }
 
   if (c.critStreak > 0) {
     c.streakTimer -= dt;
@@ -3489,6 +3692,18 @@ function gameLoop(nowMs) {
     if (c.meteorBurnTickTimer >= 0.85) {
       c.meteorBurnTickTimer -= 0.85;
       dealDamage('meteor', stats.sp * 0.35, false, false, true);
+    }
+  }
+
+  if (c.flamePatchRem > 0) {
+    c.flamePatchRem = Math.max(0, c.flamePatchRem - dt);
+    c.flamePatchTickTimer += dt;
+    const patchLv = Math.max(1, state.skillTree.flame_patch || 1);
+    if (c.flamePatchTickTimer >= 0.5) {
+      c.flamePatchTickTimer -= 0.5;
+      const golemBonus = (state.skillTree.magma_golem || 0) * 0.15;
+      const tickDmg = stats.sp * (0.4 * patchLv) * (1 + golemBonus) * (stats.igniteMult || 1);
+      dealDamage('flame_patch', tickDmg, false, false, true);
     }
   }
 
@@ -3581,6 +3796,9 @@ function updateLiveHUD() {
   if (c.igniteRem > 0 && c.ignitePool >= 5) {
     debuffHtml += `<div class="debuff-chip">🩸 화상 ${fmt(c.ignitePool / 5)} (${c.igniteRem.toFixed(1)}s)</div>`;
   }
+  if (c.flamePatchRem > 0) {
+    debuffHtml += `<div class="debuff-chip">🔥 불장판 (${c.flamePatchRem.toFixed(1)}s)</div>`;
+  }
   if (c.meteorBurnRem > 0) {
     debuffHtml += `<div class="debuff-chip">☄️ 연소 (${c.meteorBurnRem.toFixed(1)}s)</div>`;
   }
@@ -3610,6 +3828,10 @@ function updateLiveHUD() {
 
   if (state.grimoires.meteor) {
     setRadialSweep(document.getElementById('cd-5'), c.meteorCdRem, c.meteorCdTotal, true);
+  }
+
+  if ((state.skillTree.flame_patch || 0) > 0) {
+    setRadialSweep(document.getElementById('cd-6'), c.flamePatchCdRem, c.flamePatchCdTotal, true);
   }
 }
 
@@ -3758,7 +3980,8 @@ function initEvents() {
       Digit2: 'fireblast',
       Digit3: 'pyroblast',
       Digit4: 'combustion',
-      Digit5: 'meteor'
+      Digit5: 'meteor',
+      Digit6: 'flame_patch'
     };
     const skill = map[e.code] || map[`Digit${e.key}`];
     if (skill) {
@@ -3858,6 +4081,11 @@ function initEvents() {
     state.skillTree[id] = lv + 1;
     playSound('item_select');
     spawnFloatingText(`🌟 ${node.name} Lv.${lv + 1}!`, 'fct-proc', -42, { anchor: 'caster' });
+    updateSkillActionBarVisibility();
+    if (id === 'flame_patch' && lv === 0) {
+      triggerUnfoldPop('skill-6');
+      triggerReadyFlash('skill-6');
+    }
     saveGame();
     renderSkillTreeUI();
   });
@@ -3866,7 +4094,10 @@ function initEvents() {
     for (const k of Object.keys(state.skillTree)) {
       state.skillTree[k] = 0;
     }
+    state.combat.flamePatchRem = 0;
+    state.combat.flamePatchCdRem = 0;
     playSound('item_select');
+    updateSkillActionBarVisibility();
     saveGame();
     renderSkillTreeUI();
   });
@@ -4002,6 +4233,7 @@ function initEvents() {
       playSound('item_select');
       spawnFloatingText('🌟 +10,000 SP!', 'fct-proc', -40, { anchor: 'caster' });
       checkAndTriggerUnfolds(false);
+      updateSkillActionBarVisibility();
       renderSkillTreeUI();
       updateNotificationBadges();
       saveGame();

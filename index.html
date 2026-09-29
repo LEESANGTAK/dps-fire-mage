@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>마법사 토벌전</title>
+  <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
   <header class="top-bar">
     <div class="game-title">
-      <span>🔥 마법사 토벌전</span>
+      <span>🔥 DPS: Fire Mage</span>
     </div>
 
     <div class="stats-summary">
@@ -55,6 +55,9 @@
 
         <!-- 언폴딩(시스템 해금) 축하 토스트 배너 -->
         <div class="unfold-toast hidden" id="unfold-toast"></div>
+
+        <!-- 바닥 장판 & 마법진 전용 레이어 (몬스터/캐릭터 이미지 아래쪽 바닥에 렌더링) -->
+        <canvas class="ground-vfx-canvas" id="ground-vfx-canvas"></canvas>
 
         <!-- 2D 투사체 & 소환수 캔버스 -->
         <canvas class="vfx-canvas" id="vfx-canvas"></canvas>
@@ -244,6 +247,15 @@
               <span class="noti-badge hidden" id="badge-skill-5">!</span>
               <div class="gcd-Overlay" id="gcd-5"></div>
               <div class="cd-overlay" id="cd-5"></div>
+            </button>
+
+            <button class="skill-btn locked-skill hidden-slot has-badge-anchor" id="skill-6" data-skill="flame_patch" title="[6] 불장판 (몬스터 바닥 화염 지대 생성 및 지속 도트 피해)">
+              <span class="skill-hotkey">6</span>
+              <span class="skill-icon" id="icon-6">🔒</span>
+              <span class="skill-name" id="name-6">불장판</span>
+              <span class="noti-badge hidden" id="badge-skill-6">!</span>
+              <div class="gcd-Overlay" id="gcd-6"></div>
+              <div class="cd-overlay" id="cd-6"></div>
             </button>
           </div>
         </div>

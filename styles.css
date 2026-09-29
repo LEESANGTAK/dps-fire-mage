@@ -360,6 +360,15 @@ body {
   min-height: 420px;
 }
 
+.ground-vfx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
 .vfx-canvas {
   position: absolute;
   inset: 0;
@@ -1969,21 +1978,6 @@ body {
 
 .wow-tree-row.tier-locked {
   background: rgba(5, 8, 14, 0.38);
-}
-
-.wow-tier-side-tag {
-  position: absolute;
-  top: 3px;
-  left: 6px;
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: rgba(203, 213, 225, 0.55);
-  pointer-events: none;
-  letter-spacing: 0.2px;
-}
-
-.wow-tree-row.tier-open .wow-tier-side-tag {
-  color: rgba(253, 224, 71, 0.75);
 }
 
 .wow-tree-cell {
