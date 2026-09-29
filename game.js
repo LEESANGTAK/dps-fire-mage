@@ -395,6 +395,7 @@ const state = {
   gold: 0,
   pendingCoinGold: 0,
   essence: 0,
+  pendingEssence: 0,
   currentStage: 1,
   highestClearedStage: 0,
   dpsClearedStage: 0,
@@ -404,6 +405,8 @@ const state = {
   campaignCleared: false,
   autoCast: false,
   soundOn: true,
+  bgmVolume: 0.4,
+  sfxVolume: 0.8,
   devMode: false,
   cheats: {
     alwaysCrit: false
@@ -638,7 +641,7 @@ function getStageReqDps(stageNum) {
 }
 
 /**
- * 요구 DPS 충족이 한번 이상 되면 다음 도전 버튼이 활성화된 상태를 영구 유지!
+ * 요구 DPS 충족 여부 기록 및 다음 스테이지 도전 가능 판정
  */
 function checkAndRecordDpsClear() {
   if (state.currentDps > state.maxDps) {
@@ -653,13 +656,18 @@ function checkAndRecordDpsClear() {
   }
 }
 
-function canAdvanceToNextStage() {
-  const reqDps = getStageReqDps(state.currentStage);
+function isStageDpsMet(stageNum = state.currentStage) {
+  const reqDps = getStageReqDps(stageNum);
   return (
-    state.dpsClearedStage >= state.currentStage ||
+    state.dpsClearedStage >= stageNum ||
     state.maxDps >= reqDps ||
     state.currentDps >= reqDps
   );
+}
+
+function canAdvanceToNextStage() {
+  const isMonsterKilledOnce = state.highestClearedStage >= state.currentStage;
+  return isMonsterKilledOnce && isStageDpsMet(state.currentStage);
 }
 
 function fmt(num) {
@@ -676,14 +684,18 @@ function fmt(num) {
 }
 
 // ==========================================
-// 6. 사운드 매니저 (화염구 발사/폭발/크리티컬 폭발/아이템 선택/골드 도착/도트 화상 효과음)
+// 6. 사운드 매니저 (BGM / SFX 볼륨 개별 조절 & 교차 루프 재생)
 // ==========================================
 const FIREBALL_SFX_FILES = {
   fly: 'assets/sounds/sfx/fireball_fly.wav',
   explosion: 'assets/sounds/sfx/fireball_explosion.wav',
   explosion_crit: 'assets/sounds/sfx/fireball_explosion_critical.wav',
   item_select: 'assets/sounds/sfx/item_select.wav',
-  drop_coin: 'assets/sounds/sfx/drop_coin.mp3'
+  drop_coin: 'assets/sounds/sfx/drop_coin.mp3',
+  meteor_fly: 'assets/sounds/sfx/meteor_fly.mp3',
+  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.mp3',
+  swish: 'assets/sounds/sfx/swish.mp3',
+  monster_destroy: 'assets/sounds/sfx/monster_destroy.mp3'
 };
 
 const preloadedSfx = {};
@@ -697,6 +709,73 @@ fireballCastAudio.preload = 'auto';
 fireballCastAudio.loop = true;
 fireballCastAudio.volume = 0.58;
 
+const BGM_TRACK_FILES = [
+  'assets/sounds/bgm/Infinite Dungeon Loop_00.mp3',
+  'assets/sounds/bgm/Infinite Dungeon Loop_01.mp3'
+];
+const bgmAudios = [];
+let currentBgmIndex = 0;
+
+function getEffectiveBgmVol() {
+  if (!state.soundOn) return 0;
+  return Math.max(0, Math.min(1, typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.4));
+}
+
+function getEffectiveSfxVol(baseVol = 0.75) {
+  if (!state.soundOn) return 0;
+  const userSfx = Math.max(0, Math.min(1, typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.8));
+  return Math.max(0, Math.min(1, baseVol * userSfx));
+}
+
+function initBgmAudio() {
+  BGM_TRACK_FILES.forEach((src, idx) => {
+    const audio = new Audio(src);
+    audio.preload = 'auto';
+    audio.loop = false;
+    audio.volume = 0.4;
+    audio.addEventListener('ended', () => {
+      currentBgmIndex = (idx + 1) % bgmAudios.length;
+      const effVol = getEffectiveBgmVol();
+      if (effVol > 0) {
+        const nextAudio = bgmAudios[currentBgmIndex];
+        if (nextAudio) {
+          nextAudio.volume = effVol;
+          nextAudio.currentTime = 0;
+          nextAudio.play().catch(() => {});
+        }
+      }
+    });
+    bgmAudios.push(audio);
+  });
+}
+initBgmAudio();
+
+function updateBgmPlayback() {
+  if (!bgmAudios.length) return;
+  try {
+    const effVol = getEffectiveBgmVol();
+    if (effVol > 0) {
+      bgmAudios.forEach((aud, idx) => {
+        aud.volume = effVol;
+        if (idx !== currentBgmIndex && !aud.paused) {
+          aud.pause();
+          aud.currentTime = 0;
+        }
+      });
+      const activeBgm = bgmAudios[currentBgmIndex];
+      if (activeBgm && activeBgm.paused) {
+        activeBgm.play().catch(() => {});
+      }
+    } else {
+      bgmAudios.forEach((aud) => {
+        if (!aud.paused) {
+          aud.pause();
+        }
+      });
+    }
+  } catch (e) {}
+}
+
 function initSfxAudio() {
   for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
     const audio = new Audio(src);
@@ -708,10 +787,12 @@ initSfxAudio();
 
 function updateBurningLoopSound() {
   const c = state.combat;
+  const effVol = getEffectiveSfxVol(0.68);
   const isDotBurning =
-    state.soundOn &&
+    effVol > 0 &&
     ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0 || c.flamePatchRem > 0);
   try {
+    burningLoopAudio.volume = effVol;
     if (isDotBurning) {
       if (burningLoopAudio.paused) {
         burningLoopAudio.play().catch(() => {});
@@ -726,8 +807,10 @@ function updateBurningLoopSound() {
 
 function updateCastingLoopSound() {
   const c = state.combat;
-  const isCasting = state.soundOn && Boolean(c.castingSkill) && c.castRemaining > 0;
+  const effVol = getEffectiveSfxVol(0.72);
+  const isCasting = effVol > 0 && Boolean(c.castingSkill) && c.castRemaining > 0;
   try {
+    fireballCastAudio.volume = effVol;
     if (isCasting) {
       if (fireballCastAudio.paused) {
         fireballCastAudio.play().catch(() => {});
@@ -741,73 +824,77 @@ function updateCastingLoopSound() {
 }
 
 function playFireballSfx(kind, volume = 0.65) {
-  if (!state.soundOn) return;
+  const effVol = getEffectiveSfxVol(volume);
+  if (effVol <= 0) return null;
   try {
     const base = preloadedSfx[kind];
-    if (!base) return;
+    if (!base) return null;
     const snd = base.cloneNode();
-    snd.volume = volume;
+    snd.volume = effVol;
     snd.play().catch(() => {});
-  } catch (e) {}
+    return snd;
+  } catch (e) {
+    return null;
+  }
 }
 
-let audioCtx = null;
 function playSound(type) {
-  if (!state.soundOn) return;
+  if (!state.soundOn) return null;
   if (type === 'launch') {
-    playFireballSfx('fly', 0.65);
-    return;
+    return playFireballSfx('fly', 0.8);
   }
   if (type === 'hit') {
-    playFireballSfx('explosion', 0.58);
-    return;
+    return playFireballSfx('explosion', 0.72);
   }
   if (type === 'crit') {
-    playFireballSfx('explosion_crit', 0.85);
-    return;
+    return playFireballSfx('explosion_crit', 1.0);
   }
   if (type === 'item_select') {
-    playFireballSfx('item_select', 0.78);
-    return;
+    return playFireballSfx('item_select', 0.92);
   }
   if (type === 'drop_coin' || type === 'coin_tick') {
-    playFireballSfx('drop_coin', 0.78);
-    return;
+    return playFireballSfx('drop_coin', 0.92);
   }
-  try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const now = audioCtx.currentTime;
+  if (type === 'meteor_fly') {
+    return playFireballSfx('meteor_fly', 0.95);
+  }
+  if (type === 'meteor_impact') {
+    return playFireballSfx('meteor_explosion', 1.0);
+  }
+  if (type === 'proc' || type === 'swish') {
+    return playFireballSfx('swish', 0.92);
+  }
+  if (type === 'monster_destroy') {
+    return playFireballSfx('monster_destroy', 0.96);
+  }
+  return null;
+}
 
-    if (type === 'proc') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(520, now);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
-      gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.18);
-    } else if (type === 'meteor_impact') {
-      playFireballSfx('explosion_crit', 0.92);
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(110, now);
-      osc.frequency.exponentialRampToValueAtTime(28, now + 0.38);
-      gain.gain.setValueAtTime(0.14, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.38);
-    }
-  } catch (e) {}
+function updateSoundUI() {
+  const bgmPct = Math.round((typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.4) * 100);
+  const sfxPct = Math.round((typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.8) * 100);
+  const isAllMuted = !state.soundOn || (bgmPct === 0 && sfxPct === 0);
+
+  const soundBtn = document.getElementById('btn-sound');
+  if (soundBtn) {
+    soundBtn.textContent = isAllMuted ? '🔇 음소거' : '🔊 사운드';
+  }
+
+  const muteAllBtn = document.getElementById('btn-sound-mute-all');
+  if (muteAllBtn) {
+    muteAllBtn.textContent = state.soundOn ? '🔊 켜짐' : '🔇 음소거됨';
+    muteAllBtn.classList.toggle('muted', !state.soundOn);
+  }
+
+  const bgmSlider = document.getElementById('slider-bgm-vol');
+  const bgmValEl = document.getElementById('ui-bgm-vol-val');
+  if (bgmSlider) bgmSlider.value = String(bgmPct);
+  if (bgmValEl) bgmValEl.textContent = state.soundOn ? `${bgmPct}%` : '음소거';
+
+  const sfxSlider = document.getElementById('slider-sfx-vol');
+  const sfxValEl = document.getElementById('ui-sfx-vol-val');
+  if (sfxSlider) sfxSlider.value = String(sfxPct);
+  if (sfxValEl) sfxValEl.textContent = state.soundOn ? `${sfxPct}%` : '음소거';
 }
 
 // ==========================================
@@ -1054,6 +1141,109 @@ function spawnMeteorRockDebris(x, y, scale = 1.0) {
   }
 }
 
+const monsterShards = [];
+
+/**
+ * 하스스톤 영웅 초상화 박살 연출처럼 몬스터 원형 초상화를 9개의 다각형 조각으로 쪼개어 사방으로 폭발시키는 이펙트
+ */
+function spawnMonsterShatterVfx(x, y, emoji, isBoss = false) {
+  const numShards = 9;
+  const radius = 65;
+  const fx = (Math.random() - 0.5) * 14;
+  const fy = (Math.random() - 0.5) * 14;
+
+  // 방사형 균열 각도 및 지그재그 중간 정점 생성 (인접 조각끼리 경계선을 공유해 완벽한 퍼즐 조각 형성)
+  const spokes = [];
+  for (let i = 0; i < numShards; i++) {
+    const baseAng = (i / numShards) * Math.PI * 2;
+    const ang = baseAng + (Math.random() * 0.24 - 0.12);
+    const midR = 28 + Math.random() * 14;
+    const midAng = ang + (Math.random() * 0.28 - 0.14);
+    spokes.push({
+      ang,
+      midPt: {
+        x: fx + Math.cos(midAng) * midR,
+        y: fy + Math.sin(midAng) * midR
+      },
+      outerPt: {
+        x: Math.cos(ang) * radius,
+        y: Math.sin(ang) * radius
+      }
+    });
+  }
+
+  for (let i = 0; i < numShards; i++) {
+    const s1 = spokes[i];
+    const s2 = spokes[(i + 1) % numShards];
+    let midArcAng = (s1.ang + s2.ang) * 0.5;
+    if (i === numShards - 1) {
+      midArcAng = (s1.ang + s2.ang + Math.PI * 2) * 0.5;
+    }
+    const arcMidPt = {
+      x: Math.cos(midArcAng) * radius,
+      y: Math.sin(midArcAng) * radius
+    };
+
+    const poly = [
+      { x: fx, y: fy },
+      s1.midPt,
+      s1.outerPt,
+      arcMidPt,
+      s2.outerPt,
+      s2.midPt
+    ];
+
+    // 조각의 무게중심(centroid) 계산
+    let cx = 0;
+    let cy = 0;
+    for (const p of poly) {
+      cx += p.x;
+      cy += p.y;
+    }
+    cx /= poly.length;
+    cy /= poly.length;
+
+    const localVerts = poly.map((p) => ({ x: p.x - cx, y: p.y - cy }));
+    const outAng = Math.atan2(cy - fy, cx - fx) + (Math.random() * 0.28 - 0.14);
+    const speed = (185 + Math.random() * 210) * (isBoss ? 1.25 : 1.0);
+
+    monsterShards.push({
+      baseX: x + cx,
+      baseY: y + cy,
+      x: x + cx,
+      y: y + cy,
+      cx,
+      cy,
+      outDirX: Math.cos(outAng),
+      outDirY: Math.sin(outAng),
+      vx: Math.cos(outAng) * speed + 35,
+      vy: Math.sin(outAng) * speed - (95 + Math.random() * 90),
+      gravity: 780,
+      rot: 0,
+      vRot: (Math.random() < 0.5 ? -1 : 1) * (5.5 + Math.random() * 9.5),
+      scale: 1.0,
+      localVerts,
+      emoji,
+      isBoss,
+      crackHoldTime: 0.065,
+      life: 0,
+      maxLife: 0.62 + Math.random() * 0.16
+    });
+  }
+
+  // 박살 순간 중심 충격파 & 파편 파티클 추가
+  shockwaves.push({
+    x,
+    y,
+    life: 0,
+    maxLife: 0.34,
+    maxRadius: isBoss ? 130 : 96,
+    rgb: isBoss ? '253, 224, 71' : '251, 146, 60',
+    flat: false,
+    lineWidth: isBoss ? 6 : 4.5
+  });
+}
+
 function launchCustomProjectile(opts) {
   projectiles.push({
     type: opts.type || 'fireball',
@@ -1147,6 +1337,8 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
     startY = bannerRect.bottom - arenaRect.top + 36;
   }
 
+  const flyAudio = playFireballSfx('meteor_fly', scale >= 0.9 ? 0.82 : 0.6);
+
   meteors.push({
     startX,
     startY,
@@ -1158,6 +1350,7 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
     rockVerts,
     rot: Math.random() * Math.PI * 2,
     scale,
+    flyAudio,
     onImpact: onImpactCallback
   });
 }
@@ -1190,6 +1383,66 @@ function drawSummonsAndAuras(dt) {
     gCtx.lineWidth = 2;
     gCtx.stroke();
     gCtx.restore();
+  }
+
+  // 1-B. 거대 화염구 준비 상태 (시전 중이거나 연쇄 폭발 즉시 발사 대기 중일 때 지팡이 끝에 거대 태양 구체 & 십자 코로나 & 마력 위성 연출!)
+  const isPyroReady =
+    c.castingSkill === 'pyroblast' || (state.grimoires.pyroblast && c.critStreak === 2);
+  if (isPyroReady) {
+    const casterPos = getCasterPos();
+    const ox = casterPos.x + 12;
+    const oy = casterPos.y - 4;
+    const pulse = 1 + Math.sin(c.animTime * 14) * 0.14;
+    const chargeR = 22 * pulse;
+
+    // 거대 화염구 차징 코로나 광채
+    const pyroGrad = ctx.createRadialGradient(ox, oy, 2, ox, oy, chargeR * 1.65);
+    pyroGrad.addColorStop(0, '#ffffff');
+    pyroGrad.addColorStop(0.32, '#fef08a');
+    pyroGrad.addColorStop(0.68, '#ea580c');
+    pyroGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+    ctx.fillStyle = pyroGrad;
+    ctx.beginPath();
+    ctx.arc(ox, oy, chargeR * 1.65, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 회전하는 태양 코로나 십자 광선 (일반 화염구 준비 상태에는 없는 거대 화염구만의 시그니처 연출!)
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.rotate(c.animTime * 7.5);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.lineWidth = 2.6;
+    const rayLen = chargeR * 1.55;
+    ctx.beginPath();
+    ctx.moveTo(-rayLen, 0);
+    ctx.lineTo(rayLen, 0);
+    ctx.moveTo(0, -rayLen);
+    ctx.lineTo(0, rayLen);
+    ctx.stroke();
+
+    // 대각선 보조 코로나 광선
+    ctx.rotate(Math.PI / 4);
+    ctx.strokeStyle = 'rgba(253, 224, 71, 0.8)';
+    ctx.lineWidth = 1.8;
+    const subRayLen = chargeR * 1.15;
+    ctx.beginPath();
+    ctx.moveTo(-subRayLen, 0);
+    ctx.lineTo(subRayLen, 0);
+    ctx.moveTo(0, -subRayLen);
+    ctx.lineTo(0, subRayLen);
+    ctx.stroke();
+    ctx.restore();
+
+    // 주변을 빠르게 공전하는 3개의 화염 마력 위성
+    for (let ob = 0; ob < 3; ob++) {
+      const ang = c.animTime * 11 + (ob * Math.PI * 2) / 3;
+      const sx = ox + Math.cos(ang) * (chargeR * 1.15);
+      const sy = oy + Math.sin(ang) * (chargeR * 0.72);
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // 2. 불의 정령
@@ -1569,7 +1822,19 @@ function updateAndDrawVfx(dt) {
     const speedFactor = 0.4 + 3.2 * Math.pow(Math.min(1, m.progress), 2.2);
     m.rot = (m.rot || 0) + dt * 5.5 * speedFactor;
 
+    if (!state.soundOn && m.flyAudio && !m.flyAudio.paused) {
+      try {
+        m.flyAudio.pause();
+      } catch (e) {}
+    }
+
     if (m.progress >= 1) {
+      if (m.flyAudio) {
+        try {
+          m.flyAudio.pause();
+          m.flyAudio.currentTime = 0;
+        } catch (e) {}
+      }
       // 메테오 충돌 시 대규모 화염 폭발 + 이중 충격파 + 사방으로 튀어 나가는 바위 파편들!
       spawnParticles(m.targetX, m.targetY, Math.round(65 * m.scale), '#fef08a', '#dc2626', 2.2 * m.scale);
       spawnMeteorRockDebris(m.targetX, m.targetY, m.scale);
@@ -1702,6 +1967,87 @@ function updateAndDrawVfx(dt) {
     ctx.fill();
     ctx.strokeStyle = d.isMolten ? '#f97316' : '#78716c';
     ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 몬스터 사망 시 하스스톤 영웅 초상화처럼 여러 조각으로 갈라지며 흩어지는 파편(Monster Shards) 렌더링
+  for (let i = monsterShards.length - 1; i >= 0; i--) {
+    const s = monsterShards[i];
+    s.life += dt;
+    if (s.life >= s.maxLife) {
+      monsterShards.splice(i, 1);
+      continue;
+    }
+
+    if (s.life < s.crackHoldTime) {
+      // 1단계 (0~65ms): 균열이 번쩍이며 조각들이 중심에서 살짝 벌어지는 하스스톤 특유의 프리-브레이크 연출
+      const p = s.life / s.crackHoldTime;
+      const spread = 6.5 * (1 - Math.pow(1 - p, 2));
+      s.x = s.baseX + s.outDirX * spread;
+      s.y = s.baseY + s.outDirY * spread;
+      s.scale = 1.0 + 0.05 * p;
+    } else {
+      // 2단계 (65ms~): 사방으로 폭발하듯 회전하며 튕겨 나가는 물리 모션
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vy += s.gravity * dt;
+      s.rot += s.vRot * dt;
+      const flyProg = (s.life - s.crackHoldTime) / (s.maxLife - s.crackHoldTime);
+      s.scale = Math.max(0.45, 1.05 - flyProg * 0.48);
+    }
+
+    const fadeStart = s.maxLife * 0.58;
+    const alpha =
+      s.life > fadeStart
+        ? Math.max(0, 1 - (s.life - fadeStart) / (s.maxLife - fadeStart))
+        : 1.0;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.rot);
+    ctx.scale(s.scale, s.scale);
+
+    // 다각형 조각 모양으로 클리핑 후 원본 초상화(배경 + 테두리 + 몬스터 이모지)를 그대로 투영
+    ctx.beginPath();
+    ctx.moveTo(s.localVerts[0].x, s.localVerts[0].y);
+    for (let v = 1; v < s.localVerts.length; v++) {
+      ctx.lineTo(s.localVerts[v].x, s.localVerts[v].y);
+    }
+    ctx.closePath();
+    ctx.save();
+    ctx.clip();
+
+    const ox = -s.cx;
+    const oy = -s.cy;
+    const bgGrad = ctx.createRadialGradient(ox, oy, 6, ox, oy, 63);
+    bgGrad.addColorStop(0, s.life < s.crackHoldTime ? '#7f1d1d' : '#2b3346');
+    bgGrad.addColorStop(1, '#151924');
+    ctx.fillStyle = bgGrad;
+    ctx.beginPath();
+    ctx.arc(ox, oy, 63, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = s.isBoss ? '#f59e0b' : '#64748b';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    ctx.font = '59px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.emoji, ox, oy);
+    ctx.restore();
+
+    // 깨진 조각 단면을 따라 빛나는 균열 테두리
+    ctx.beginPath();
+    ctx.moveTo(s.localVerts[0].x, s.localVerts[0].y);
+    for (let v = 1; v < s.localVerts.length; v++) {
+      ctx.lineTo(s.localVerts[v].x, s.localVerts[v].y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = s.life < s.crackHoldTime * 1.6 ? '#ffffff' : '#fbbf24';
+    ctx.lineWidth = s.life < s.crackHoldTime ? 2.8 : 1.9;
     ctx.stroke();
     ctx.restore();
   }
@@ -1958,10 +2304,11 @@ function applyFloatingTextTransform(f) {
 }
 
 // ==========================================
-// 8-B. 캔디크러시 스타일 골드 동전 곡선 비행 흡수 연출 (#target-reward ➔ #pill-gold)
+// 8-B. 캔디크러시 스타일 골드 동전 & 불꽃의 정수 곡선 비행 흡수 연출
 // ==========================================
 const flyingCoins = [];
 let goldPulseTimeout = null;
+let essencePulseTimeout = null;
 
 function triggerGoldPillPulse() {
   const pill = document.getElementById('pill-gold');
@@ -1973,6 +2320,18 @@ function triggerGoldPillPulse() {
   goldPulseTimeout = setTimeout(() => {
     pill.classList.remove('gold-absorb-pulse');
   }, 250);
+}
+
+function triggerEssencePillPulse() {
+  const pill = document.getElementById('pill-essence');
+  if (!pill) return;
+  pill.classList.remove('essence-absorb-pulse');
+  void pill.offsetWidth;
+  pill.classList.add('essence-absorb-pulse');
+  if (essencePulseTimeout) clearTimeout(essencePulseTimeout);
+  essencePulseTimeout = setTimeout(() => {
+    pill.classList.remove('essence-absorb-pulse');
+  }, 260);
 }
 
 function spawnGoldCoinFlight(totalGold, isBigReward = false) {
@@ -2027,6 +2386,7 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
     const cp2Y = Math.min(startY, endY) - 28 - (i % 2) * 18;
 
     flyingCoins.push({
+      kind: 'gold',
       el,
       startX,
       startY,
@@ -2039,7 +2399,80 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
       delay: i * 0.058, // 하나씩 다다다닥 튀어나오는 시간차(58ms)
       life: 0,
       duration: 0.58 + (i % 3) * 0.04,
-      goldShare: share,
+      share,
+      started: false
+    });
+  }
+}
+
+function spawnEssenceFlight(totalEssence) {
+  if (!totalEssence || totalEssence <= 0) return;
+
+  const layer = document.getElementById('coin-fx-layer');
+  const monsterEl = document.getElementById('dummy-avatar') || document.getElementById('target-stage-box');
+  const essencePillEl = document.getElementById('pill-essence') || document.getElementById('ui-essence');
+
+  if (!layer || !monsterEl || !essencePillEl) {
+    state.pendingEssence = 0;
+    return;
+  }
+
+  const startRect = monsterEl.getBoundingClientRect();
+  const endRect = essencePillEl.getBoundingClientRect();
+
+  if (endRect.width === 0 && endRect.height === 0) {
+    state.pendingEssence = 0;
+    return;
+  }
+
+  const baseStartX = startRect.left + startRect.width * 0.5;
+  const baseStartY = startRect.top + startRect.height * 0.45;
+  const endX = endRect.left + endRect.width * 0.5;
+  const endY = endRect.top + endRect.height * 0.5;
+
+  const orbCount = Math.min(7, Math.max(1, Math.round(totalEssence)));
+  const baseShare = Math.floor(totalEssence / orbCount);
+  let remainingShare = totalEssence;
+
+  state.pendingEssence = (state.pendingEssence || 0) + totalEssence;
+
+  for (let i = 0; i < orbCount; i++) {
+    const share = i === orbCount - 1 ? remainingShare : baseShare;
+    remainingShare -= share;
+
+    const el = document.createElement('div');
+    el.className = 'flying-essence-orb';
+    el.textContent = '🔥';
+    el.style.opacity = '0';
+    layer.appendChild(el);
+
+    const startX = baseStartX + (Math.random() * 28 - 14);
+    const startY = baseStartY + (Math.random() * 22 - 11);
+
+    // 몬스터에서 사방으로 톡 튀어나왔다가 우아한 호를 그리며 상단 정수 자원 UI(#pill-essence)로 흡수
+    const curveSide = i % 2 === 0 ? 1 : -1;
+    const spreadFactor = 1 + (i % 3) * 0.34;
+    const cp1X = startX + curveSide * (85 * spreadFactor) + (Math.random() * 30 - 15);
+    const cp1Y = startY + 42 + (i % 3) * 24 + (Math.random() * 20 - 10);
+
+    const cp2X = (startX + endX) * 0.5 + curveSide * (60 * spreadFactor) + (Math.random() * 20 - 10);
+    const cp2Y = Math.min(startY, endY) - 36 - (i % 2) * 22;
+
+    flyingCoins.push({
+      kind: 'essence',
+      el,
+      startX,
+      startY,
+      cp1X,
+      cp1Y,
+      cp2X,
+      cp2Y,
+      endX: endX + (Math.random() * 8 - 4),
+      endY: endY + (Math.random() * 6 - 3),
+      delay: i * 0.065,
+      life: 0,
+      duration: 0.64 + (i % 3) * 0.045,
+      share,
       started: false
     });
   }
@@ -2064,16 +2497,26 @@ function updateFlyingCoins(dt) {
     if (rawT >= 1) {
       c.el.remove();
       flyingCoins.splice(i, 1);
-      state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - c.goldShare);
-      if (flyingCoins.length === 0) {
-        state.pendingCoinGold = 0;
+
+      if (c.kind === 'essence') {
+        state.pendingEssence = Math.max(0, (state.pendingEssence || 0) - c.share);
+        if (!flyingCoins.some((item) => item.kind === 'essence')) {
+          state.pendingEssence = 0;
+        }
+        triggerEssencePillPulse();
+        playSound('drop_coin');
+      } else {
+        state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - c.share);
+        if (!flyingCoins.some((item) => item.kind === 'gold')) {
+          state.pendingCoinGold = 0;
+        }
+        triggerGoldPillPulse();
+        playSound('drop_coin');
       }
-      triggerGoldPillPulse();
-      playSound('drop_coin');
       continue;
     }
 
-    // 초반(0~22%)엔 톡 튀어나오며 완만하게 곡선을 시작하고, 후반부로 갈수록 가속하며 흡수되는 이징 곡선
+    // 초반(0~25%)엔 톡 튀어나오며 완만하게 곡선을 시작하고, 후반부로 갈수록 가속하며 흡수되는 이징 곡선
     const u = rawT < 0.25
       ? rawT * 0.85
       : 0.2125 + Math.pow((rawT - 0.25) / 0.75, 1.75) * 0.7875;
@@ -2091,21 +2534,21 @@ function updateFlyingCoins(dt) {
       3 * inv * u * u * c.cp2Y +
       u * u * u * c.endY;
 
-    // 팝아웃 스케일 펀치 후 골드 알약으로 빨려 들어갈 때 자연스럽게 축소
+    // 팝아웃 스케일 펀치 후 알약 UI로 빨려 들어갈 때 자연스럽게 축소
     let scale = 1.0;
     if (rawT < 0.16) {
       const p = rawT / 0.16;
-      scale = 0.28 + (1.24 - 0.28) * (1 - Math.pow(1 - p, 2));
+      scale = 0.28 + (1.3 - 0.28) * (1 - Math.pow(1 - p, 2));
     } else if (rawT < 0.3) {
       const p = (rawT - 0.16) / 0.14;
-      scale = 1.24 - 0.24 * p;
+      scale = 1.3 - 0.3 * p;
     } else if (rawT > 0.78) {
       const p = (rawT - 0.78) / 0.22;
-      scale = 1.0 - 0.32 * p;
+      scale = 1.0 - 0.34 * p;
     }
 
-    const rotDeg = rawT * 360;
-    c.el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)}) rotate(${rotDeg.toFixed(0)}deg)`;
+    const rotDeg = c.kind === 'essence' ? Math.sin(rawT * Math.PI * 3) * 18 : rawT * 360;
+    c.el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)}) rotate(${rotDeg.toFixed(1)}deg)`;
   }
 }
 
@@ -2224,29 +2667,44 @@ function onMonsterKilled() {
   }
 
   state.gold += totalGold;
-  // 몬스터에서 골드 텍스트를 띄우는 대신, 상단 배너(#target-reward)에서 최상단 골드(#pill-gold)로 동전이 하나씩 곡선 비행 흡수!
-  spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
-
   if (gainedEssence > 0) {
     state.essence = (state.essence || 0) + gainedEssence;
-    spawnFloatingText(`🔥 +${fmt(gainedEssence)} 정수`, 'fct-essence', -54);
   }
-
-  const pos = getTargetPos();
-  spawnParticles(pos.x, pos.y, 24, '#fde047', '#22c55e', 1.2);
 
   if (isFirstRagnarosKill || state.highestClearedStage >= 20) {
     state.campaignCleared = true;
     state.unfolded.hallOfFame = true;
   }
 
+  // 정수 UI(#pill-essence)가 처음 해금되는 순간에도 도착 좌표를 정확히 계산할 수 있도록 Unfold를 먼저 실행
   checkAndTriggerUnfolds(false);
+
+  // 골드는 상단 배너(#target-reward)에서 #pill-gold로, 정수는 몬스터(#dummy-avatar)에서 #pill-essence로 곡선 비행 흡수!
+  spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
+  if (gainedEssence > 0) {
+    spawnEssenceFlight(gainedEssence);
+  }
+
+  const pos = getTargetPos();
+  // 하스스톤 영웅 초상화 박살 연출: 이전 몬스터가 9개 다각형 조각으로 갈라져 사방으로 폭발!
+  playSound('monster_destroy');
+  spawnMonsterShatterVfx(pos.x, pos.y, data.emoji, data.isPhaseBoss);
+  spawnParticles(pos.x, pos.y, 28, '#fef08a', '#f97316', 1.45);
+  triggerArenaShake(data.isPhaseBoss ? 'lg' : 'sm');
+
   updateDpsMeterUI();
 
   if (isFirstRagnarosKill) {
     openVictoryModal(true);
   }
+  // 공격 흐름이 끊기지 않도록 즉시 새 몬스터를 스폰하되, 팝업 등장 모션(.respawn-pop) 적용!
   loadStage(state.currentStage);
+  const dummyEl = document.getElementById('dummy-avatar');
+  if (dummyEl) {
+    dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+    void dummyEl.offsetWidth;
+    dummyEl.classList.add('respawn-pop');
+  }
 
   saveGame();
   renderShopUI();
@@ -2258,6 +2716,8 @@ function onMonsterKilled() {
 // ==========================================
 // 10. 데미지 적용 & 연쇄 치명타 / 유성우 판정
 // ==========================================
+let lastHeavyKnockbackTime = 0;
+
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false) {
   if (state.cheats && state.cheats.alwaysCrit) {
     if (!isCrit) {
@@ -2267,6 +2727,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   }
   const dmg = Math.max(1, Math.round(rawDamage));
   const now = performance.now() / 1000;
+  const willKill = state.monster.hp - dmg <= 0;
 
   state.lastCombatTime = now;
   state.dpsHistory.push({ time: now, amount: dmg });
@@ -2282,22 +2743,36 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   state.currentDps = Math.round(sumDmg / windowSec);
   checkAndRecordDpsClear();
 
-  if (!isDotTick) {
+  const isBigSkill = skillKey === 'pyroblast' || skillKey === 'meteor';
+  if (!isDotTick && !willKill) {
     const dummyEl = document.getElementById('dummy-avatar');
-    dummyEl.classList.remove('hit', 'crit-hit');
-    void dummyEl.offsetWidth;
-    dummyEl.classList.add(isCrit ? 'crit-hit' : 'hit');
+    if (dummyEl) {
+      if (skillKey === 'meteor') {
+        lastHeavyKnockbackTime = now;
+        dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+        void dummyEl.offsetWidth;
+        dummyEl.classList.add('knockback-meteor');
+      } else if (skillKey === 'pyroblast') {
+        lastHeavyKnockbackTime = now;
+        dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+        void dummyEl.offsetWidth;
+        dummyEl.classList.add('knockback-pyro');
+      } else if (now - lastHeavyKnockbackTime > 0.34) {
+        dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+        void dummyEl.offsetWidth;
+        dummyEl.classList.add(isCrit ? 'crit-hit' : 'hit');
+      }
+    }
   }
 
-  const isBigSkill = skillKey === 'pyroblast' || skillKey === 'meteor';
   if ((isDotTick || skillKey === 'ignite') && !(state.cheats && state.cheats.alwaysCrit)) {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-dot', 5);
   } else if (isCrit) {
     spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
-    if (!isDotTick) playSound('crit');
+    if (!isDotTick && skillKey !== 'meteor') playSound('crit');
   } else {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-normal', 0);
-    playSound('hit');
+    if (skillKey !== 'meteor') playSound('hit');
   }
 
   if (isCrit && !isDotTick && skillKey !== 'ignite') {
@@ -2309,10 +2784,11 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     state.combat.ignitePool = remainingCarry + igniteAdd;
     state.combat.igniteRem = 5.0;
 
-    // 태고의 발화 핵 마법 부여: 치명타 시 일정 확률로 즉시 불꽃의 정수 +1 추출
+    // 태고의 발화 핵 마법 부여: 치명타 시 일정 확률로 즉시 불꽃의 정수 +1 추출 (몬스터에서 정수 UI로 비행 흡수!)
     if (st.siphonChance > 0 && Math.random() < st.siphonChance) {
       state.essence = (state.essence || 0) + 1;
-      spawnFloatingText('🔥 +1 정수 추출!', 'fct-essence', -36);
+      checkAndTriggerUnfolds(false);
+      spawnEssenceFlight(1);
       renderInfusionUI();
     }
 
@@ -2333,7 +2809,6 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       } else if (state.combat.critStreak === 1) {
         state.combat.critStreak = 2;
         state.combat.streakTimer = 12.0;
-        spawnFloatingText('🔥 연쇄 폭발!', 'fct-proc', -48);
         playSound('proc');
         triggerReadyFlash('skill-3');
       }
@@ -2702,8 +3177,10 @@ function updateNotificationBadges() {
   const availSp = getAvailableSkillPoints();
   const spentSp = getSpentSkillPoints();
 
-  // 1. 다음 스테이지 도전 버튼 (!) 배지 & 활성화 제어 (요구 DPS 1회 이상 충족 시 활성화 유지!)
+  // 1. 다음 스테이지 도전 버튼 (!) 배지 & 활성화 제어 (현재 스테이지 몬스터 1회 처치 + 요구 DPS 충족 시 활성화!)
   const canGoNext = canAdvanceToNextStage();
+  const isKilledOnce = state.highestClearedStage >= state.currentStage;
+  const isDpsMet = isStageDpsMet(state.currentStage);
   const nextBtn = document.getElementById('btn-next-stage');
   const nextBtnText = document.getElementById('btn-next-stage-text');
   const nextStageData = getStageData(state.currentStage + 1);
@@ -2713,6 +3190,16 @@ function updateNotificationBadges() {
   nextBtnText.textContent = nextStageData.isPhaseBoss
     ? '👑 보스 도전 ▶'
     : '다음 도전 ▶';
+
+  if (canGoNext) {
+    nextBtn.title = '조건 달성 완료! 클릭하여 다음 스테이지에 도전하세요.';
+  } else if (!isKilledOnce && !isDpsMet) {
+    nextBtn.title = '현재 스테이지 몬스터 1회 처치 및 목표 DPS 달성 시 활성화됩니다.';
+  } else if (!isKilledOnce) {
+    nextBtn.title = '목표 DPS 달성! 현재 스테이지의 몬스터를 1회 처치하면 다음 도전이 활성화됩니다.';
+  } else {
+    nextBtn.title = '몬스터 처치 완료! 목표 DPS를 달성하면 다음 도전이 활성화됩니다.';
+  }
 
   setBadge('badge-next-stage', canGoNext);
 
@@ -3205,7 +3692,7 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
-  if (!u.stageNav && (state.highestClearedStage >= 1 || state.dpsClearedStage >= 1 || state.currentStage > 1)) {
+  if (!u.stageNav && (state.highestClearedStage >= 1 || state.currentStage > 1)) {
     u.stageNav = true;
     changed = true;
     if (!silent) {
@@ -3425,7 +3912,7 @@ function updateStageUI() {
   for (let i = 0; i < 5; i++) {
     const stg = phaseStartStage + i;
     const isBossDot = i === 4;
-    const isClearedDot = stg <= Math.max(state.highestClearedStage, state.dpsClearedStage);
+    const isClearedDot = stg <= state.highestClearedStage;
     const isCurrentDot = stg === state.currentStage;
     if (isBossDot) {
       dotsHtml += `<div class="p-dot boss-dot ${isClearedDot ? 'cleared' : ''} ${isCurrentDot ? 'current' : ''}">👑</div>`;
@@ -3475,8 +3962,8 @@ function updateStageUI() {
   document.getElementById('btn-prev-stage').disabled = state.currentStage <= 1;
 
   const reqDps = getStageReqDps(state.currentStage);
-  const achieved = canAdvanceToNextStage();
-  document.getElementById('ui-req-dps').textContent = achieved
+  const dpsMet = isStageDpsMet(state.currentStage);
+  document.getElementById('ui-req-dps').textContent = dpsMet
     ? `${fmt(reqDps)} /초 ✔`
     : `${fmt(reqDps)} /초`;
 
@@ -3729,13 +4216,18 @@ function updateLiveHUD() {
   const stats = getPlayerStats();
   const c = state.combat;
 
-  // 골드 동전이 곡선 비행하여 #pill-gold에 하나씩 닿을 때마다 숫자가 차르륵 올라가도록 표시!
+  // 골드 동전 및 불꽃의 정수가 곡선 비행하여 상단 알약 UI에 하나씩 닿을 때마다 숫자가 차르륵 올라가도록 표시!
   const pendingGold = Math.min(state.gold, Math.max(0, state.pendingCoinGold || 0));
   const displayedGold = Math.max(0, Math.round(state.gold - pendingGold));
   document.getElementById('ui-gold').textContent = fmt(displayedGold);
 
   const essEl = document.getElementById('ui-essence');
-  if (essEl) essEl.textContent = fmt(state.essence || 0);
+  if (essEl) {
+    const curEssence = state.essence || 0;
+    const pendingEss = Math.min(curEssence, Math.max(0, state.pendingEssence || 0));
+    const displayedEssence = Math.max(0, Math.round(curEssence - pendingEss));
+    essEl.textContent = fmt(displayedEssence);
+  }
   document.getElementById('ui-sp').textContent = fmt(stats.sp);
   document.getElementById('ui-crit').textContent = `${stats.crit.toFixed(1)}%`;
   document.getElementById('ui-haste').textContent = `+${stats.haste.toFixed(0)}%`;
@@ -3749,43 +4241,46 @@ function updateLiveHUD() {
   const casterAvatar = document.getElementById('caster-avatar');
   const castingOrb = document.getElementById('casting-orb');
   const combBg = document.getElementById('combustion-bg');
-  casterAvatar.classList.toggle('casting-active', Boolean(c.castingSkill));
+  const isPyroReady =
+    c.castingSkill === 'pyroblast' || (state.grimoires.pyroblast && c.critStreak === 2);
+
+  casterAvatar.classList.toggle('casting-active', Boolean(c.castingSkill) && !isPyroReady);
+  casterAvatar.classList.toggle('pyro-ready-mode', isPyroReady);
   casterAvatar.classList.toggle('combustion-mode', c.combustionRem > 0);
-  castingOrb.classList.toggle('active', Boolean(c.castingSkill));
+  castingOrb.classList.toggle('active', Boolean(c.castingSkill) && !isPyroReady);
+  castingOrb.classList.toggle('pyro-ready', isPyroReady);
   combBg.classList.toggle('active', c.combustionRem > 0);
 
   const castFill = document.getElementById('castbar-fill');
+  const castWrapper = castFill ? castFill.parentElement : null;
   const castName = document.getElementById('castbar-name');
   const castTime = document.getElementById('castbar-time');
+  if (castWrapper) castWrapper.classList.toggle('pyro-cast', isPyroReady);
+  if (castFill) castFill.classList.toggle('pyro-cast', isPyroReady);
+
   if (c.castingSkill) {
     const progress = ((c.castTotal - c.castRemaining) / c.castTotal) * 100;
     castFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
-    castName.textContent = c.castingSkill === 'fireball' ? '🔥 화염구' : '🌋 거대 화염구';
+    if (c.castingSkill === 'pyroblast') {
+      castName.textContent = '🌋 거대 화염구 시전 중';
+    } else if (isPyroReady) {
+      castName.textContent = '🔥 화염구 (🌋거대 화염구 장전됨!)';
+    } else {
+      castName.textContent = '🔥 화염구';
+    }
     castTime.textContent = `${c.castRemaining.toFixed(1)}s`;
+  } else if (state.grimoires.pyroblast && c.critStreak === 2) {
+    castFill.style.width = '100%';
+    castName.textContent = '🌋 거대 화염구 준비 완료!';
+    castTime.textContent = '즉시 발사!';
   } else {
     castFill.style.width = '0%';
     castName.textContent = state.autoCast ? '🤖 자동 시전 중' : '대기 중';
     castTime.textContent = '';
   }
 
-  const waLeft = document.getElementById('wa-left');
-  const waRight = document.getElementById('wa-right');
-  waLeft.className = 'wa-bracket left';
-  waRight.className = 'wa-bracket right';
-  if (c.critStreak === 1) {
-    waLeft.classList.add('active-heat');
-  } else if (c.critStreak === 2) {
-    waLeft.classList.add('active-hotstreak');
-    waRight.classList.add('active-hotstreak');
-  }
-
   const buffRow = document.getElementById('player-buffs');
   let buffsHtml = '';
-  if (c.critStreak === 1) {
-    buffsHtml += `<div class="buff-chip heat">🔥 열기</div>`;
-  } else if (c.critStreak === 2) {
-    buffsHtml += `<div class="buff-chip hotstreak">🌋 연쇄 폭발!</div>`;
-  }
   if (c.combustionRem > 0) {
     buffsHtml += `<div class="buff-chip combustion">☀️ 마력 폭주 (${c.combustionRem.toFixed(1)}s)</div>`;
   }
@@ -3846,14 +4341,14 @@ function updateDpsMeterUI() {
   checkAndRecordDpsClear();
 
   const reqDps = getStageReqDps(state.currentStage);
-  const achieved = canAdvanceToNextStage();
+  const dpsMet = isStageDpsMet(state.currentStage);
 
   const dpsEl = document.getElementById('ui-current-dps');
   dpsEl.textContent = `${fmt(state.currentDps)} /초`;
-  dpsEl.classList.toggle('enough', state.currentDps >= reqDps || achieved);
+  dpsEl.classList.toggle('enough', state.currentDps >= reqDps || dpsMet);
 
   const reqEl = document.getElementById('ui-req-dps');
-  reqEl.textContent = achieved ? `${fmt(reqDps)} /초 ✔` : `${fmt(reqDps)} /초`;
+  reqEl.textContent = dpsMet ? `${fmt(reqDps)} /초 ✔` : `${fmt(reqDps)} /초`;
 
   const breakdownContainer = document.getElementById('skill-breakdown-bars');
   const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
@@ -3918,6 +4413,8 @@ function saveGame() {
       campaignCleared: state.campaignCleared,
       autoCast: state.autoCast,
       soundOn: state.soundOn,
+      bgmVolume: state.bgmVolume,
+      sfxVolume: state.sfxVolume,
       devMode: state.devMode,
       cheats: state.cheats,
       unfolded: state.unfolded,
@@ -3947,6 +4444,8 @@ function loadGame() {
     if (typeof data.campaignCleared === 'boolean') state.campaignCleared = data.campaignCleared;
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;
+    if (typeof data.bgmVolume === 'number') state.bgmVolume = Math.max(0, Math.min(1, data.bgmVolume));
+    if (typeof data.sfxVolume === 'number') state.sfxVolume = Math.max(0, Math.min(1, data.sfxVolume));
     if (typeof data.devMode === 'boolean') state.devMode = data.devMode;
     if (data.cheats) Object.assign(state.cheats, data.cheats);
     if (typeof data.bonusSkillPoints === 'number') state.bonusSkillPoints = data.bonusSkillPoints;
@@ -3997,7 +4496,7 @@ function initEvents() {
     }
   });
 
-  // 다음 도전 버튼: 반드시 canAdvanceToNextStage() (클리어 완료 + 요구 DPS 충족) 확인!
+  // 다음 도전 버튼: 반드시 canAdvanceToNextStage() (현재 스테이지 몬스터 1회 처치 완료 + 요구 DPS 충족) 확인!
   document.getElementById('btn-next-stage').addEventListener('click', () => {
     if (canAdvanceToNextStage()) {
       playSound('item_select');
@@ -4217,8 +4716,9 @@ function initEvents() {
     cheatEssenceBtn.addEventListener('click', () => {
       state.essence = (state.essence || 0) + 10000;
       playSound('item_select');
-      spawnFloatingText('🔥 +10,000 정수!', 'fct-essence', -42, { anchor: 'caster' });
       checkAndTriggerUnfolds(false);
+      triggerEssencePillPulse();
+      spawnFloatingText('🔥 +10,000 정수!', 'fct-essence', -42, { anchor: 'caster' });
       updateLiveHUD();
       renderInfusionUI();
       updateNotificationBadges();
@@ -4276,13 +4776,72 @@ function initEvents() {
   }
 
   const soundBtn = document.getElementById('btn-sound');
-  soundBtn.addEventListener('click', () => {
-    state.soundOn = !state.soundOn;
-    soundBtn.textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
-    updateCastingLoopSound();
-    updateBurningLoopSound();
-    saveGame();
+  const soundPopover = document.getElementById('sound-popover');
+  const soundMenuWrap = document.getElementById('sound-menu-wrap');
+  const muteAllBtn = document.getElementById('btn-sound-mute-all');
+  const bgmSlider = document.getElementById('slider-bgm-vol');
+  const sfxSlider = document.getElementById('slider-sfx-vol');
+
+  if (soundBtn && soundPopover) {
+    soundBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      soundPopover.classList.toggle('hidden');
+      updateSoundUI();
+    });
+  }
+
+  window.addEventListener('pointerdown', (e) => {
+    if (soundPopover && !soundPopover.classList.contains('hidden')) {
+      if (soundMenuWrap && !soundMenuWrap.contains(e.target)) {
+        soundPopover.classList.add('hidden');
+      }
+    }
   });
+
+  if (muteAllBtn) {
+    muteAllBtn.addEventListener('click', () => {
+      state.soundOn = !state.soundOn;
+      updateSoundUI();
+      updateBgmPlayback();
+      updateCastingLoopSound();
+      updateBurningLoopSound();
+      saveGame();
+    });
+  }
+
+  if (bgmSlider) {
+    bgmSlider.addEventListener('input', () => {
+      state.bgmVolume = Math.max(0, Math.min(1, Number(bgmSlider.value) / 100));
+      if (state.bgmVolume > 0 && !state.soundOn) {
+        state.soundOn = true;
+      }
+      updateSoundUI();
+      updateBgmPlayback();
+      saveGame();
+    });
+  }
+
+  if (sfxSlider) {
+    sfxSlider.addEventListener('input', () => {
+      state.sfxVolume = Math.max(0, Math.min(1, Number(sfxSlider.value) / 100));
+      if (state.sfxVolume > 0 && !state.soundOn) {
+        state.soundOn = true;
+      }
+      updateSoundUI();
+      updateCastingLoopSound();
+      updateBurningLoopSound();
+      saveGame();
+    });
+  }
+
+  // 브라우저 자동재생 정책 해제용: 첫 클릭 또는 키 입력 시 사운드가 켜져 있으면 즉시 BGM 재생 시작
+  const unlockBgmOnInteract = () => {
+    if (state.soundOn) {
+      updateBgmPlayback();
+    }
+  };
+  window.addEventListener('pointerdown', unlockBgmOnInteract);
+  window.addEventListener('keydown', unlockBgmOnInteract);
 
   document.getElementById('btn-reset-save').addEventListener('click', () => {
     if (confirm('처음부터 다시 시작하시겠습니까?')) {
@@ -4300,9 +4859,10 @@ window.addEventListener('DOMContentLoaded', () => {
   checkAndTriggerUnfolds(true);
   updateFlameEvolutionUI(true);
   updateDevCheatUI();
+  updateSoundUI();
   resizeCanvas();
   initEvents();
-  document.getElementById('btn-sound').textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
+  updateBgmPlayback();
   loadStage(state.currentStage);
   renderShopUI();
   renderInfusionUI();

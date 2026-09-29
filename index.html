@@ -40,7 +40,29 @@
       <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
       <button class="btn-top btn-dev-mode" id="btn-dev-mode" title="개발용 치트 UI를 활성화하거나 닫습니다">🛠️ 개발자 모드</button>
       <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
-      <button class="btn-top" id="btn-sound">🔊 사운드</button>
+      <div class="sound-menu-wrap" id="sound-menu-wrap">
+        <button class="btn-top" id="btn-sound" title="BGM 및 효과음(SFX) 볼륨을 조절합니다">🔊 사운드</button>
+        <div class="sound-popover hidden" id="sound-popover">
+          <div class="sound-popover-header">
+            <span class="sound-popover-title">🎧 사운드 볼륨</span>
+            <button type="button" class="sound-mute-toggle-btn" id="btn-sound-mute-all">🔊 켜짐</button>
+          </div>
+          <div class="sound-slider-row">
+            <div class="sound-slider-label-row">
+              <span class="sound-slider-label">🎵 배경음 (BGM)</span>
+              <span class="sound-slider-val" id="ui-bgm-vol-val">40%</span>
+            </div>
+            <input type="range" class="sound-range" id="slider-bgm-vol" min="0" max="100" step="1" value="40" />
+          </div>
+          <div class="sound-slider-row">
+            <div class="sound-slider-label-row">
+              <span class="sound-slider-label">💥 효과음 (SFX)</span>
+              <span class="sound-slider-val" id="ui-sfx-vol-val">80%</span>
+            </div>
+            <input type="range" class="sound-range" id="slider-sfx-vol" min="0" max="100" step="1" value="80" />
+          </div>
+        </div>
+      </div>
       <button class="btn-top btn-danger-outline" id="btn-reset-save">🗑️ 초기화</button>
     </div>
   </header>
@@ -146,9 +168,16 @@
 
           <!-- 우측 스테이지 몬스터 -->
           <div class="weakaura-container" id="target-stage-box">
-            <div class="wa-bracket left" id="wa-left">🔥</div>
             <div class="monster-box">
-              <!-- 몬스터 이미지 바로 위 고정 HP 바 (체력바만 단독 배치) -->
+              <!-- 몬스터 이미지 우측 상단 디버프 표시 -->
+              <div class="debuff-row" id="target-debuffs"></div>
+
+              <div class="dummy-avatar" id="dummy-avatar">
+                <div class="dummy-emoji" id="dummy-emoji">🟢</div>
+              </div>
+              <div class="monster-name-label" id="monster-name-label">초원 풀숲 슬라임</div>
+
+              <!-- 몬스터 이미지 아래쪽 고정 HP 바 (데미지 텍스트에 가려지지 않도록 하단 배치) -->
               <div class="monster-hp-wrap" id="monster-frame">
                 <div class="hp-bar-outer">
                   <div class="hp-bar-fill" id="target-hp-fill"></div>
@@ -158,16 +187,7 @@
                   </div>
                 </div>
               </div>
-
-              <!-- 몬스터 이미지 우측 상단 디버프 표시 -->
-              <div class="debuff-row" id="target-debuffs"></div>
-
-              <div class="dummy-avatar" id="dummy-avatar">
-                <div class="dummy-emoji" id="dummy-emoji">🟢</div>
-              </div>
-              <div class="monster-name-label" id="monster-name-label">초원 풀숲 슬라임</div>
             </div>
-            <div class="wa-bracket right" id="wa-right">🔥</div>
           </div>
 
           <!-- 우측 다음 도전 버튼 -->

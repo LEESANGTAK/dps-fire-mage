@@ -153,6 +153,101 @@ body {
   box-shadow: 0 0 12px rgba(52, 211, 153, 0.45);
 }
 
+/* 사운드 BGM / SFX 볼륨 조절 팝오버 */
+.sound-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.sound-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  width: 220px;
+  background: rgba(13, 18, 28, 0.97);
+  border: 1.5px solid #d69e2e;
+  border-radius: 10px;
+  padding: 11px 13px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.85), 0 0 16px rgba(251, 191, 36, 0.22);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sound-popover.hidden {
+  display: none !important;
+}
+
+.sound-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(214, 158, 46, 0.28);
+  padding-bottom: 6px;
+}
+
+.sound-popover-title {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #fde047;
+}
+
+.sound-mute-toggle-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.sound-mute-toggle-btn:hover {
+  border-color: #fbbf24;
+  background: #283548;
+}
+
+.sound-mute-toggle-btn.muted {
+  background: rgba(127, 29, 29, 0.45);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.sound-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sound-slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+}
+
+.sound-slider-label {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.sound-slider-val {
+  color: #fbbf24;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.sound-range {
+  width: 100%;
+  height: 6px;
+  accent-color: #fb923c;
+  cursor: pointer;
+}
+
 /* 개발자 모드 치트 패널 (아레나 좌측 상단) */
 .dev-cheat-panel {
   position: absolute;
@@ -461,10 +556,10 @@ body {
   border-radius: 99px;
 }
 
-/* Monster HP Bar Only (Floating Directly Above Monster Image) */
+/* Monster HP Bar Only (Positioned Directly Below Monster Image) */
 .monster-hp-wrap {
   position: absolute;
-  bottom: calc(100% + 10px);
+  top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   width: 176px;
@@ -590,7 +685,15 @@ body {
 
 .caster-avatar.casting-active {
   border-color: var(--fire-orange);
-  box-shadow: 0 0 22px rgba(255, 107, 43, 0.6);
+  box-shadow: 0 0 16px rgba(255, 107, 43, 0.45);
+}
+
+.caster-avatar.pyro-ready-mode {
+  border-color: #fde047 !important;
+  box-shadow:
+    0 0 30px rgba(239, 68, 68, 0.95),
+    0 0 14px #fde047,
+    inset 0 0 16px rgba(251, 191, 36, 0.55) !important;
 }
 
 .caster-avatar.evo-2.casting-active {
@@ -684,13 +787,13 @@ body {
 
 .casting-orb {
   position: absolute;
-  right: -18px;
-  top: 34px;
-  width: 22px;
-  height: 22px;
+  right: -14px;
+  top: 36px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: radial-gradient(circle, #fff 0%, #fde047 45%, #ff4500 85%, transparent 100%);
-  box-shadow: 0 0 16px #ff6b2b;
+  box-shadow: 0 0 10px #ff6b2b;
   opacity: 0;
   transform: scale(0.3);
   transition: opacity 0.1s, transform 0.1s;
@@ -698,13 +801,29 @@ body {
 }
 
 .casting-orb.active {
+  opacity: 0.9;
+  animation: orbChargePulse 0.28s infinite alternate;
+}
+
+.casting-orb.pyro-ready {
   opacity: 1;
-  animation: orbChargePulse 0.25s infinite alternate;
+  right: -26px;
+  top: 24px;
+  width: 36px;
+  height: 36px;
+  background: radial-gradient(circle, #ffffff 0%, #fef08a 32%, #f97316 64%, #dc2626 88%, transparent 100%) !important;
+  box-shadow: 0 0 24px #fde047, 0 0 42px #ef4444 !important;
+  animation: pyroOrbChargePulse 0.18s infinite alternate;
 }
 
 @keyframes orbChargePulse {
-  from { transform: scale(0.85); }
-  to { transform: scale(1.35); }
+  from { transform: scale(0.78); }
+  to { transform: scale(1.08); }
+}
+
+@keyframes pyroOrbChargePulse {
+  from { transform: scale(1.05); }
+  to { transform: scale(1.42); }
 }
 
 .caster-label {
@@ -836,8 +955,9 @@ body {
   justify-content: center;
   cursor: pointer;
   position: relative;
-  transition: transform 0.06s, border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  will-change: transform, filter;
 }
 
 .dummy-avatar:hover {
@@ -845,14 +965,125 @@ body {
 }
 
 .dummy-avatar.hit {
-  transform: scale(0.92) rotate(3deg);
+  animation: monsterHitJolt 0.18s cubic-bezier(0.22, 1, 0.36, 1);
   border-color: var(--fire-orange);
 }
 
 .dummy-avatar.crit-hit {
-  transform: scale(1.08) rotate(-4deg);
+  animation: monsterCritJolt 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   border-color: var(--fire-gold);
   box-shadow: 0 0 35px rgba(251, 191, 36, 0.65);
+}
+
+.dummy-avatar.knockback-pyro {
+  animation: monsterKnockbackPyro 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.25);
+  border-color: #ef4444;
+  box-shadow: 0 0 45px rgba(239, 68, 68, 0.9), 0 0 20px #fde047;
+}
+
+.dummy-avatar.knockback-meteor {
+  animation: monsterKnockbackMeteor 0.44s cubic-bezier(0.18, 0.89, 0.32, 1.25);
+  border-color: #fde047;
+  box-shadow: 0 0 52px rgba(251, 146, 60, 0.95), 0 0 24px #ffffff;
+}
+
+.dummy-avatar.respawn-pop {
+  animation: monsterRespawnPop 0.26s cubic-bezier(0.22, 1.28, 0.36, 1);
+}
+
+@keyframes monsterHitJolt {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: brightness(1);
+  }
+  30% {
+    transform: translate3d(9px, -2px, 0) scale(0.93) rotate(4deg);
+    filter: brightness(1.35);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterCritJolt {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: brightness(1);
+  }
+  28% {
+    transform: translate3d(16px, -4px, 0) scale(0.9, 1.08) rotate(7deg);
+    filter: brightness(1.65);
+  }
+  65% {
+    transform: translate3d(-3px, 1px, 0) scale(1.03) rotate(-2deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterKnockbackPyro {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  22% {
+    transform: translate3d(38px, -8px, 0) scale(0.84, 1.14) rotate(16deg);
+    filter: brightness(2) saturate(1.4);
+  }
+  52% {
+    transform: translate3d(26px, -3px, 0) scale(0.94, 1.05) rotate(10deg);
+    filter: brightness(1.35);
+  }
+  78% {
+    transform: translate3d(-6px, 2px, 0) scale(1.04, 0.97) rotate(-3deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterKnockbackMeteor {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  20% {
+    transform: translate3d(32px, 16px, 0) scale(1.22, 0.76) rotate(14deg);
+    filter: brightness(2.2) contrast(1.2);
+  }
+  48% {
+    transform: translate3d(20px, -10px, 0) scale(0.9, 1.1) rotate(8deg);
+    filter: brightness(1.4);
+  }
+  76% {
+    transform: translate3d(-5px, 3px, 0) scale(1.04, 0.96) rotate(-3deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterRespawnPop {
+  0% {
+    transform: scale(0.28);
+    opacity: 0.25;
+    filter: brightness(1.9);
+  }
+  62% {
+    transform: scale(1.09);
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
 }
 
 .dummy-emoji {
@@ -1079,12 +1310,23 @@ body {
   border-radius: 4px;
   position: relative;
   overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.castbar-wrapper.pyro-cast {
+  border-color: #fde047;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.75), inset 0 0 8px rgba(251, 191, 36, 0.35);
 }
 
 .castbar-fill {
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%);
+}
+
+.castbar-fill.pyro-cast {
+  background: linear-gradient(90deg, #991b1b 0%, #ef4444 52%, #fde047 100%);
+  box-shadow: 0 0 12px #ef4444;
 }
 
 .castbar-text {
@@ -2945,4 +3187,50 @@ body {
   border-color: #94a3b8;
 }
 
+.flying-essence-orb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #ffffff 0%, #bae6fd 26%, #38bdf8 58%, #7e22ce 100%);
+  border: 2px solid #e0f2fe;
+  box-shadow:
+    0 0 14px rgba(56, 189, 248, 0.95),
+    0 0 24px rgba(168, 85, 247, 0.7),
+    inset 0 -2px 4px rgba(88, 28, 135, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  will-change: transform, opacity;
+  z-index: 9999;
+}
+
+.flying-essence-orb::after {
+  content: '🔥';
+  font-size: 0.72rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px #38bdf8);
+}
+
+.essence-pill.essence-absorb-pulse {
+  animation: essencePillAbsorb 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes essencePillAbsorb {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.16);
+    border-color: #e0f2fe;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.48) 0%, rgba(147, 51, 234, 0.48) 100%);
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
