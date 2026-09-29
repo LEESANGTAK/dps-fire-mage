@@ -990,6 +990,41 @@ function updateFlameEvolutionUI(silent = false) {
   }
 }
 
+const rockDebris = [];
+
+function spawnMeteorRockDebris(x, y, scale = 1.0) {
+  const count = Math.max(8, Math.round(16 * scale));
+  for (let i = 0; i < count; i++) {
+    // 좌우 사방으로 퍼져 나가도록 각도 및 속도 설정
+    const side = i % 2 === 0 ? 1 : -1;
+    const vx = side * (65 + Math.random() * 270) * scale + (Math.random() * 40 - 20);
+    const vy = -(170 + Math.random() * 260) * scale;
+    const size = (6.5 + Math.random() * 9.5) * scale;
+    const vertCount = 5 + Math.floor(Math.random() * 3);
+    const verts = [];
+    for (let v = 0; v < vertCount; v++) {
+      const ang = (v / vertCount) * Math.PI * 2 + (Math.random() * 0.35 - 0.175);
+      const r = size * (0.62 + Math.random() * 0.48);
+      verts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+    }
+    rockDebris.push({
+      x: x + (Math.random() * 20 - 10) * scale,
+      y: y + (Math.random() * 12 - 6) * scale,
+      vx,
+      vy,
+      gravity: 820 * scale,
+      groundY: y + 16 + (Math.random() * 36 - 10) * scale,
+      bounced: false,
+      rot: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 22,
+      verts,
+      life: 0,
+      maxLife: 0.68 + Math.random() * 0.32,
+      isMolten: Math.random() < 0.65
+    });
+  }
+}
+
 function launchCustomProjectile(opts) {
   projectiles.push({
     type: opts.type || 'fireball',
@@ -1021,24 +1056,27 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   setTimeout(() => avatar.classList.remove('cast-recoil'), 120);
 
   if (scaleMult >= 0.9) {
-    playFireballSfx('fly', isPyro ? 0.78 : 0.62);
+    playFireballSfx('fly', isPyro ? 0.82 : 0.52);
   }
 
-  const baseRadius = isPyro ? 17 : 10;
+  // 일반 화염구는 작고 절제된 비주얼로 약화하고, 거대 화염구(pyroblast)는 압도적인 크기와 위성/이펙트를 갖도록 명확히 차별화!
+  const baseRadius = isPyro ? 20 : 6.2;
+  const effectiveEvoScale = isPyro ? evo.scale : 1 + (evo.scale - 1) * 0.38;
+
   launchCustomProjectile({
     type,
     startX: start.x,
     startY: start.y + offsetY,
     targetX: end.x,
     targetY: end.y + offsetY,
-    duration: isPyro ? 0.31 : 0.25,
-    radius: baseRadius * evo.scale * scaleMult,
+    duration: isPyro ? 0.31 : 0.24,
+    radius: baseRadius * effectiveEvoScale * scaleMult,
     colorCore: evo.colorCore,
     colorMid: evo.colorMid,
     colorEdge: evo.colorEdge,
     ringRgb: evo.ringRgb,
     evoTier: evo.tier,
-    orbiters: scaleMult >= 0.9 ? evo.orbiters : 0,
+    orbiters: isPyro && scaleMult >= 0.9 ? Math.max(2, evo.orbiters + 1) : 0,
     onHit: onHitCallback
   });
 }
@@ -1047,23 +1085,41 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
   const target = getTargetPos();
   const offsetX = scale < 1 ? Math.random() * 40 - 20 : 0;
   const offsetY = scale < 1 ? Math.random() * 24 - 12 : 10;
+  const fallDuration = 0.96 * Math.max(0.78, scale);
 
+  // 메테오 크기 1.5배 확대에 맞춰 지면 충돌 예고 마법진도 1.5배 확대
   groundEffects.push({
     x: target.x + offsetX,
     y: target.y + 32 + offsetY,
-    radius: 62 * scale,
+    radius: 93 * scale,
     life: 0,
-    maxLife: 0.9 * scale
+    maxLife: fallDuration
   });
 
+  // 거대 운석 암석 폴리곤 정점 생성 (회전하며 낙하하는 불타는 바위 덩어리 연출)
+  const meteorRadius = 51 * scale; // 기존 34 * scale 대비 정확히 1.5배!
+  const rockVerts = [];
+  const numVerts = 9;
+  for (let i = 0; i < numVerts; i++) {
+    const ang = (i / numVerts) * Math.PI * 2;
+    const r = meteorRadius * (0.68 + ((i * 37) % 10) * 0.026);
+    rockVerts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+  }
+
+  // 아레나 상단 하늘 영역(화면 안쪽)에 먼저 모습을 드러낸 뒤 서서히 내려오다 가속하도록 시작 위치 설정
+  const startX = target.x - 195 * scale + offsetX;
+  const startY = Math.max(95, target.y - 215 * scale);
+
   meteors.push({
-    startX: target.x - 210 * scale + offsetX,
-    startY: -50,
+    startX,
+    startY,
     targetX: target.x + offsetX,
     targetY: target.y + offsetY,
     progress: 0,
-    duration: 0.8 * scale,
-    radius: 34 * scale,
+    duration: fallDuration,
+    radius: meteorRadius,
+    rockVerts,
+    rot: Math.random() * Math.PI * 2,
     scale,
     onImpact: onImpactCallback
   });
@@ -1225,47 +1281,56 @@ function updateAndDrawVfx(dt) {
       groundEffects.splice(i, 1);
       continue;
     }
-    const alpha = 1 - g.life / g.maxLife;
+    const prog = g.life / g.maxLife;
+    const alpha = 1 - prog;
     ctx.save();
     ctx.translate(g.x, g.y);
     ctx.scale(1, 0.42);
     ctx.beginPath();
     ctx.arc(0, 0, g.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(251, 191, 36, ${alpha * 0.85})`;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(251, 191, 36, ${alpha * 0.9})`;
+    ctx.lineWidth = 3.5;
     ctx.stroke();
-    ctx.fillStyle = `rgba(239, 68, 68, ${alpha * 0.25})`;
+    ctx.fillStyle = `rgba(239, 68, 68, ${alpha * 0.28})`;
     ctx.fill();
+    // 내부 수축 타겟 링 연출
+    ctx.beginPath();
+    ctx.arc(0, 0, g.radius * (1 - prog * 0.65), 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.65})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.restore();
   }
 
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.progress += dt / p.duration;
+    const isPyro = p.type === 'pyroblast';
+
     if (p.progress >= 1) {
-      const isPyro = p.type === 'pyroblast';
-      const tierScale = 1 + (p.evoTier - 1) * 0.18;
+      const tierScale = 1 + (p.evoTier - 1) * (isPyro ? 0.18 : 0.08);
+      // 일반 화염구는 타격 파티클도 가볍고 작게, 거대 화염구는 화려하고 묵직하게!
       spawnParticles(
         p.targetX,
         p.targetY,
-        Math.round((isPyro ? 26 : 14) * tierScale),
+        isPyro ? Math.round(32 * tierScale) : 7,
         p.colorCore,
         p.colorMid,
-        (isPyro ? 1.35 : 0.9) * tierScale
+        isPyro ? 1.45 * tierScale : 0.62
       );
-      if (p.evoTier >= 2 || isPyro) {
+      if (isPyro) {
         shockwaves.push({
           x: p.targetX,
           y: p.targetY,
           life: 0,
-          maxLife: 0.28 + p.evoTier * 0.03,
-          maxRadius: (isPyro ? 52 : 34) + p.evoTier * 8,
+          maxLife: 0.32 + p.evoTier * 0.03,
+          maxRadius: 62 + p.evoTier * 10,
           rgb: p.ringRgb,
           flat: false,
-          lineWidth: p.evoTier >= 4 ? 4.5 : 3
+          lineWidth: 4.5
         });
+        triggerArenaShake('sm');
       }
-      triggerArenaShake(isPyro || p.evoTier >= 4 ? 'sm' : null);
       if (p.onHit) p.onHit();
       projectiles.splice(i, 1);
       continue;
@@ -1276,42 +1341,60 @@ function updateAndDrawVfx(dt) {
     const x = p.startX + (p.targetX - p.startX) * t;
     const y = p.startY + (p.targetY - p.startY) * t;
 
-    const trailCount = p.evoTier >= 4 ? 2 : 1;
-    for (let tr = 0; tr < trailCount; tr++) {
-      if (Math.random() < 0.85) {
+    if (isPyro) {
+      const trailCount = p.evoTier >= 3 ? 2 : 1;
+      for (let tr = 0; tr < trailCount; tr++) {
+        if (Math.random() < 0.9) {
+          particles.push({
+            x: x + (Math.random() * 8 - 4),
+            y: y + (Math.random() * 8 - 4),
+            vx: -65 + Math.random() * 25,
+            vy: -18 + Math.random() * 36,
+            radius: p.radius * (0.42 + p.evoTier * 0.04),
+            life: 0,
+            maxLife: 0.16 + p.evoTier * 0.02,
+            colorCore: p.colorCore,
+            colorEdge: p.colorMid
+          });
+        }
+      }
+    } else {
+      // 일반 화염구: 잔상 파티클을 작고 절제되게 표현
+      if (Math.random() < 0.4) {
         particles.push({
-          x: x + (Math.random() * 6 - 3),
-          y: y + (Math.random() * 6 - 3),
-          vx: -55 + Math.random() * 20,
-          vy: -14 + Math.random() * 28,
-          radius: p.radius * (0.38 + p.evoTier * 0.04),
+          x: x + (Math.random() * 3 - 1.5),
+          y: y + (Math.random() * 3 - 1.5),
+          vx: -35 + Math.random() * 12,
+          vy: -6 + Math.random() * 12,
+          radius: p.radius * 0.28,
           life: 0,
-          maxLife: 0.14 + p.evoTier * 0.02,
+          maxLife: 0.1,
           colorCore: p.colorCore,
           colorEdge: p.colorMid
         });
       }
     }
 
-    // 메인 진화 화염구 본체 그라데이션
-    const grad = ctx.createRadialGradient(x, y, 2, x, y, p.radius * 1.6);
+    // 본체 그라데이션: 일반 화염구는 작고 담백하게(1.22배), 거대 화염구는 거대한 화염 광채(1.85배)로 렌더링
+    const glowRadius = p.radius * (isPyro ? 1.85 : 1.22);
+    const grad = ctx.createRadialGradient(x, y, 1.5, x, y, glowRadius);
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.35, p.colorCore);
-    grad.addColorStop(0.72, p.colorMid);
+    grad.addColorStop(isPyro ? 0.38 : 0.28, p.colorCore);
+    grad.addColorStop(isPyro ? 0.75 : 0.65, p.colorMid);
     grad.addColorStop(1, p.colorEdge);
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(x, y, p.radius * 1.6, 0, Math.PI * 2);
+    ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tier 5 (태양신화): 회전하는 태양 코로나 십자 광선 연출
-    if (p.evoTier >= 5) {
+    // 거대 화염구 전용: 회전하는 태양 코로나 십자 광선 & 마력 위성(Orbiters)
+    if (isPyro) {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(state.combat.animTime * 9 + t * 6);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.lineWidth = 2.2;
-      const rayLen = p.radius * 1.85;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+      ctx.lineWidth = 2.4;
+      const rayLen = p.radius * 1.9;
       ctx.beginPath();
       ctx.moveTo(-rayLen, 0);
       ctx.lineTo(rayLen, 0);
@@ -1319,19 +1402,18 @@ function updateAndDrawVfx(dt) {
       ctx.lineTo(0, rayLen);
       ctx.stroke();
       ctx.restore();
-    }
 
-    // Tier 2~5: 화염구 주변을 나선형으로 회전하며 따라가는 마력 위성(Orbiters)
-    if (p.orbiters > 0) {
-      for (let ob = 0; ob < p.orbiters; ob++) {
-        const ang = state.combat.animTime * 14 + t * 10 + (ob * Math.PI * 2) / p.orbiters;
-        const dist = p.radius * 1.05;
-        const ox = x + Math.cos(ang) * dist * 0.65;
-        const oy = y + Math.sin(ang) * dist;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(ox, oy, 2.8 + p.evoTier * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+      if (p.orbiters > 0) {
+        for (let ob = 0; ob < p.orbiters; ob++) {
+          const ang = state.combat.animTime * 14 + t * 10 + (ob * Math.PI * 2) / p.orbiters;
+          const dist = p.radius * 1.12;
+          const ox = x + Math.cos(ang) * dist * 0.65;
+          const oy = y + Math.sin(ang) * dist;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(ox, oy, 3.2 + p.evoTier * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
   }
@@ -1339,40 +1421,143 @@ function updateAndDrawVfx(dt) {
   for (let i = meteors.length - 1; i >= 0; i--) {
     const m = meteors[i];
     m.progress += dt / m.duration;
+    // 초반에는 천천히 회전하다가 낙하 속도가 붙을수록 회전도 가속
+    const speedFactor = 0.4 + 3.2 * Math.pow(Math.min(1, m.progress), 2.2);
+    m.rot = (m.rot || 0) + dt * 5.5 * speedFactor;
+
     if (m.progress >= 1) {
-      spawnParticles(m.targetX, m.targetY, Math.round(40 * m.scale), '#fef08a', '#dc2626', 1.7 * m.scale);
-      triggerArenaShake(m.scale >= 0.9 ? 'lg' : 'sm');
+      // 메테오 충돌 시 대규모 화염 폭발 + 이중 충격파 + 사방으로 튀어 나가는 바위 파편들!
+      spawnParticles(m.targetX, m.targetY, Math.round(65 * m.scale), '#fef08a', '#dc2626', 2.2 * m.scale);
+      spawnMeteorRockDebris(m.targetX, m.targetY, m.scale);
+      shockwaves.push({
+        x: m.targetX,
+        y: m.targetY + 12,
+        life: 0,
+        maxLife: 0.45,
+        maxRadius: 125 * m.scale,
+        rgb: '251, 146, 60',
+        flat: true,
+        lineWidth: 6 * m.scale
+      });
+      shockwaves.push({
+        x: m.targetX,
+        y: m.targetY,
+        life: 0,
+        maxLife: 0.35,
+        maxRadius: 85 * m.scale,
+        rgb: '254, 240, 138',
+        flat: false,
+        lineWidth: 4.5 * m.scale
+      });
+      triggerArenaShake('lg');
       playSound('meteor_impact');
       if (m.onImpact) m.onImpact();
       meteors.splice(i, 1);
       continue;
     }
 
-    const t = m.progress * m.progress;
+    // 강한 Ease-In 가속 곡선 (p^3.5):
+    // 처음 상공에 나타났을 때는 아주 느리게 내려오다가, 점점 중력 가속도가 붙어 땅에 부딪힐 때 최고 속도로 격돌!
+    const t = Math.pow(m.progress, 3.5);
     const x = m.startX + (m.targetX - m.startX) * t;
     const y = m.startY + (m.targetY - m.startY) * t;
 
-    particles.push({
-      x: x + (Math.random() * 12 - 6),
-      y: y + (Math.random() * 12 - 6),
-      vx: -35,
-      vy: -35,
-      radius: (8 + Math.random() * 5) * m.scale,
-      life: 0,
-      maxLife: 0.22,
-      colorCore: '#fde047',
-      colorEdge: '#dc2626'
-    });
+    // 등장 직후(0~12%) 소환 팝인 스케일 연출
+    const appearScale = m.progress < 0.12 ? 0.35 + (m.progress / 0.12) * 0.65 : 1.0;
+    const curRadius = m.radius * appearScale;
 
-    const grad = ctx.createRadialGradient(x, y, 3, x, y, m.radius);
-    grad.addColorStop(0, '#fff');
-    grad.addColorStop(0.3, '#fde047');
-    grad.addColorStop(0.65, '#ea580c');
+    // 가속이 붙을수록 더 크고 맹렬해지는 화염 꼬리 파티클
+    const trailCount = m.progress > 0.45 ? 3 : 1;
+    for (let tr = 0; tr < trailCount; tr++) {
+      particles.push({
+        x: x + (Math.random() * 20 - 10) * m.scale * appearScale,
+        y: y + (Math.random() * 20 - 10) * m.scale * appearScale,
+        vx: (-25 - 65 * m.progress) + Math.random() * 20,
+        vy: (-25 - 65 * m.progress) + Math.random() * 20,
+        radius: (10 + Math.random() * 9) * m.scale * appearScale,
+        life: 0,
+        maxLife: 0.22 + m.progress * 0.08,
+        colorCore: '#fde047',
+        colorEdge: '#dc2626'
+      });
+    }
+
+    // 메테오 외곽 화염 코로나 광채 (1.5배 확대된 curRadius 기반)
+    const grad = ctx.createRadialGradient(x, y, 5, x, y, curRadius * 1.35);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.28, '#fde047');
+    grad.addColorStop(0.62, '#ea580c');
     grad.addColorStop(1, 'rgba(185, 28, 28, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(x, y, m.radius, 0, Math.PI * 2);
+    ctx.arc(x, y, curRadius * 1.35, 0, Math.PI * 2);
     ctx.fill();
+
+    // 메테오 중심부의 거대한 불타는 암석(운석) 폴리곤 렌더링
+    if (m.rockVerts && m.rockVerts.length > 0) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(appearScale, appearScale);
+      ctx.rotate(m.rot);
+      ctx.beginPath();
+      ctx.moveTo(m.rockVerts[0].x, m.rockVerts[0].y);
+      for (let v = 1; v < m.rockVerts.length; v++) {
+        ctx.lineTo(m.rockVerts[v].x, m.rockVerts[v].y);
+      }
+      ctx.closePath();
+      const rockGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, m.radius * 0.75);
+      rockGrad.addColorStop(0, '#fef08a');
+      rockGrad.addColorStop(0.45, '#b45309');
+      rockGrad.addColorStop(0.82, '#44403c');
+      rockGrad.addColorStop(1, '#1c1917');
+      ctx.fillStyle = rockGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 2.5 * m.scale;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // 메테오 충돌 시 사방으로 튀어 나가는 바위 파편(Rock Debris) 물리 업데이트 및 렌더링
+  for (let i = rockDebris.length - 1; i >= 0; i--) {
+    const d = rockDebris[i];
+    d.life += dt;
+    if (d.life >= d.maxLife) {
+      rockDebris.splice(i, 1);
+      continue;
+    }
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.vy += d.gravity * dt;
+    d.rot += d.vRot * dt;
+
+    // 지면에 닿으면 한 번 튕겨 오르는 바운스 물리 연출
+    if (!d.bounced && d.y >= d.groundY && d.vy > 0) {
+      d.y = d.groundY;
+      d.vy *= -0.44;
+      d.vx *= 0.72;
+      d.vRot *= 0.65;
+      d.bounced = true;
+    }
+
+    const alpha = d.life > d.maxLife * 0.7 ? Math.max(0, 1 - (d.life - d.maxLife * 0.7) / (d.maxLife * 0.3)) : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.rot);
+    ctx.beginPath();
+    ctx.moveTo(d.verts[0].x, d.verts[0].y);
+    for (let v = 1; v < d.verts.length; v++) {
+      ctx.lineTo(d.verts[v].x, d.verts[v].y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = d.isMolten ? '#44403c' : '#292524';
+    ctx.fill();
+    ctx.strokeStyle = d.isMolten ? '#f97316' : '#78716c';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
   }
 
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -1444,19 +1629,18 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   let holdTime = 0;
 
   if (isCrit) {
-    // 크리티컬 데미지: 물리 낙하(중력) 없이 타격 지점에 강렬하게 꽂힌 뒤 위로 쭉 올라감!
+    // 크리티컬 데미지: 처음에는 '팍~!' 하고 매우 빠른 초기 상향 속도로 위로 솟구쳤다가 급격히 감속(Ease-Out)
     if (Math.random() < 0.84) {
       fctArcState.lastSide *= -1;
     }
     const side = fctArcState.lastSide;
     x = pos.x + side * (6 + Math.random() * 20);
-    y = pos.y - 32 + offsetY + (Math.random() * 14 - 7);
+    y = pos.y - 24 + offsetY + (Math.random() * 14 - 7);
     vx = 0;
-    vy = isBig ? -78 : -70;
+    vy = isBig ? -540 : -475;
     gravity = 0;
-    maxLife = isBig ? 1.18 : 1.08;
-    // 스케일 펀치가 강하게 꽂히는 동안 위치 이동을 억제해 묵직한 타격감 부여
-    holdTime = 0.2;
+    maxLife = isBig ? 1.06 : 0.96;
+    holdTime = 0;
   } else if (isNormal) {
     // 일반 데미지: 연속 타격 시 좌/우 방향 교차 및 5단계 부채꼴 각도 순환
     if (Math.random() < 0.84) {
@@ -1795,15 +1979,21 @@ function updateFloatingTexts(dt) {
       f.el.classList.remove('crit-flash');
     }
 
-    // 크리티컬 임팩트 홀드 구간에서는 '팍!' 하고 제자리에 박히는 느낌을 위해 이동을 거의 멈췄다가 위로 부유
     const motionScale = f.life < f.holdTime ? (f.type === 'crit' ? 0.08 : 0.22) : 1.0;
     const effDt = dt * motionScale;
 
     f.x += f.vx * effDt;
     f.y += f.vy * effDt;
-    f.vy += f.gravity * effDt;
-    // 수평 공기 저항으로 자연스러운 포물선 곡률 형성
-    f.vx *= Math.pow(0.92, effDt * 60 * 0.016);
+
+    if (f.type === 'crit') {
+      // 강한 Ease-Out 감속: 처음엔 '팍~!' 하고 빠르게 위로 솟구쳤다가 급격히 속도가 감소해 잔잔하게 부유
+      f.vy *= Math.pow(0.002, effDt);
+      if (f.vy > -12) f.vy = -12;
+    } else {
+      f.vy += f.gravity * effDt;
+      // 수평 공기 저항으로 자연스러운 포물선 곡률 형성
+      f.vx *= Math.pow(0.92, effDt * 60 * 0.016);
+    }
 
     applyFloatingTextTransform(f);
   }
