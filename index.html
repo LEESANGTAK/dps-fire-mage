@@ -75,35 +75,7 @@
         <!-- 플로팅 데미지 & 골드 레이어 -->
         <div class="fct-layer" id="fct-layer"></div>
 
-        <!-- 상단: 몬스터 체력바 & 제한시간 바 -->
-        <div class="monster-hud">
-          <div class="monster-frame" id="monster-frame">
-            <div class="monster-header">
-              <span class="monster-name" id="target-stage-tag">STAGE 1</span>
-              <span class="monster-reward" id="target-reward">💰 4 G</span>
-            </div>
-
-            <div class="hp-bar-outer">
-              <div class="hp-bar-fill" id="target-hp-fill"></div>
-              <div class="hp-bar-text">
-                <span id="target-hp-text">120 / 120</span>
-                <span id="target-hp-pct">100%</span>
-              </div>
-            </div>
-
-            <div class="timer-bar-outer">
-              <div class="timer-bar-fill" id="target-timer-fill"></div>
-              <div class="timer-bar-text">
-                <span>⏳ 제한 시간</span>
-                <span id="target-timer-text">25.0s</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="debuff-row" id="target-debuffs"></div>
-        </div>
-
-        <!-- 중앙: 좌측 마법사 ➔ 우측 몬스터 (각각 하단에 이름 표시) -->
+        <!-- 중앙: 좌측 마법사 ➔ 우측 몬스터 (상단 HP바 + 중앙 이미지 + 하단 이름) -->
         <div class="center-stage">
           <!-- 좌측 플레이어 마법사 -->
           <div class="caster-box" id="caster-box">
@@ -116,10 +88,26 @@
             <div class="summon-active-badges" id="summon-active-badges"></div>
           </div>
 
-          <!-- 우측 스테이지 몬스터 (아래에 몬스터 이름 표시, 불필요한 안내문 제거) -->
+          <!-- 우측 스테이지 몬스터 (상단에 HP 바, 중앙에 이미지, 하단에 이름) -->
           <div class="weakaura-container" id="target-stage-box">
             <div class="wa-bracket left" id="wa-left">🔥</div>
             <div class="monster-box">
+              <div class="debuff-row" id="target-debuffs"></div>
+
+              <div class="monster-hp-wrap" id="monster-frame">
+                <div class="monster-hp-meta">
+                  <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
+                  <span class="monster-reward" id="target-reward">💰 6 G</span>
+                </div>
+                <div class="hp-bar-outer">
+                  <div class="hp-bar-fill" id="target-hp-fill"></div>
+                  <div class="hp-bar-text">
+                    <span id="target-hp-text">120 / 120</span>
+                    <span id="target-hp-pct">100%</span>
+                  </div>
+                </div>
+              </div>
+
               <div class="dummy-avatar" id="dummy-avatar">
                 <div class="dummy-emoji" id="dummy-emoji">🟢</div>
               </div>

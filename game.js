@@ -108,7 +108,7 @@ const SKILL_TREE_NODES = [
     name: '용암 골렘 소환',
     icon: '🗿',
     desc: (lv) =>
-      `전열 용암 골렘 소환 (2.8초마다 대지 강타 ${lv === 0 ? 110 : lv * 110}% & 제한시간 +${lv === 0 ? 0.8 : (lv * 0.8).toFixed(1)}초 연장)`
+      `전열 용암 골렘 소환 (2.8초마다 대지 강타 ${lv === 0 ? 110 : lv * 110}% & 화상 피해 +${lv === 0 ? 15 : lv * 15}% 증폭)`
   },
   {
     id: 'multishot',
@@ -119,7 +119,7 @@ const SKILL_TREE_NODES = [
     name: '갈래 화염구',
     icon: '✨',
     desc: (lv) =>
-      `화염구·거대 화염구 시전 시 탄환이 ${lv === 0 ? 2 : lv + 1}발로 갈라져 동시 발사`
+      `화염구·거대 화염구 시전 시 탄환이 ${lv === 0 ? 2 : lv + 1}발로 갈라져 직선 발사`
   },
   {
     id: 'rune_aura',
@@ -296,6 +296,8 @@ const state = {
   gold: 0,
   currentStage: 1,
   highestClearedStage: 0,
+  dpsClearedStage: 0,
+  maxDps: 0,
   autoAdvance: false,
   autoCast: false,
   soundOn: true,
@@ -337,10 +339,7 @@ const state = {
 
   monster: {
     hp: 120,
-    maxHp: 120,
-    timer: 25,
-    maxTimer: 25,
-    respawning: false
+    maxHp: 120
   },
 
   combat: {
@@ -395,7 +394,7 @@ const state = {
 };
 
 // ==========================================
-// 5. 스킬 포인트, 스탯 & 다음 스테이지 진입 조건 계산
+// 5. 스킬 포인트, 스탯 & 요구 DPS 달성 판정
 // ==========================================
 function getEarnedPhaseBossSp() {
   return Math.floor(state.highestClearedStage / 5);
@@ -462,16 +461,34 @@ function getPlayerStats() {
   };
 }
 
+function getStageReqDps(stageNum) {
+  const data = getStageData(stageNum);
+  return Math.ceil(data.hp / data.timeLimit);
+}
+
 /**
- * 다음 스테이지 도전 가능 여부:
- * 1) 현재 스테이지를 최소 1회 클리어했어야 함 (currentStage <= highestClearedStage)
- * 2) 내 실시간 DPS(state.currentDps)가 다음 스테이지의 요구 DPS(nextReqDps) 이상이어야 함!
+ * 요구 DPS 충족이 한번 이상 되면 다음 도전 버튼이 활성화된 상태를 영구 유지!
  */
+function checkAndRecordDpsClear() {
+  if (state.currentDps > state.maxDps) {
+    state.maxDps = state.currentDps;
+  }
+  const reqDps = getStageReqDps(state.currentStage);
+  if (state.currentDps >= reqDps || state.maxDps >= reqDps) {
+    if (state.currentStage > state.dpsClearedStage) {
+      state.dpsClearedStage = state.currentStage;
+      saveGame();
+    }
+  }
+}
+
 function canAdvanceToNextStage() {
-  if (state.currentStage > state.highestClearedStage) return false;
-  const nextStageData = getStageData(state.currentStage + 1);
-  const nextReqDps = Math.ceil(nextStageData.hp / nextStageData.timeLimit);
-  return state.currentDps >= nextReqDps;
+  const reqDps = getStageReqDps(state.currentStage);
+  return (
+    state.dpsClearedStage >= state.currentStage ||
+    state.maxDps >= reqDps ||
+    state.currentDps >= reqDps
+  );
 }
 
 function fmt(num) {
@@ -488,11 +505,90 @@ function fmt(num) {
 }
 
 // ==========================================
-// 6. 사운드 합성기
+// 6. 사운드 매니저 (화염구 WAV 효과음 루프 & 보조 효과음)
 // ==========================================
+const FIREBALL_SFX_FILES = {
+  ready: 'assets/sounds/sfx/fireball_ready.wav',
+  fly: 'assets/sounds/sfx/fireball_fly.wav',
+  explosion: 'assets/sounds/sfx/fireball_explosion.wav'
+};
+
+const preloadedSfx = {};
+const readyLoopAudio = new Audio(FIREBALL_SFX_FILES.ready);
+readyLoopAudio.preload = 'auto';
+readyLoopAudio.loop = true;
+readyLoopAudio.volume = 0.85;
+
+function initSfxAudio() {
+  for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
+    const audio = new Audio(src);
+    audio.preload = 'auto';
+    preloadedSfx[key] = audio;
+  }
+}
+initSfxAudio();
+
+function startFireballReadySound() {
+  if (!state.soundOn) return;
+  try {
+    readyLoopAudio.loop = true;
+    readyLoopAudio.volume = 0.85;
+    readyLoopAudio.currentTime = 0;
+    readyLoopAudio.play().catch(() => {});
+  } catch (e) {}
+}
+
+function ensureFireballReadyLooping() {
+  if (!state.soundOn) {
+    stopFireballReadySound();
+    return;
+  }
+  if (state.combat.castingSkill && readyLoopAudio.paused) {
+    try {
+      readyLoopAudio.loop = true;
+      readyLoopAudio.volume = 0.85;
+      readyLoopAudio.play().catch(() => {});
+    } catch (e) {}
+  } else if (!state.combat.castingSkill && !readyLoopAudio.paused) {
+    stopFireballReadySound();
+  }
+}
+
+function stopFireballReadySound() {
+  try {
+    if (!readyLoopAudio.paused) {
+      readyLoopAudio.pause();
+    }
+    readyLoopAudio.currentTime = 0;
+  } catch (e) {}
+}
+
+function playFireballSfx(kind, volume = 0.65) {
+  if (!state.soundOn) return;
+  if (kind === 'ready') {
+    startFireballReadySound();
+    return;
+  }
+  try {
+    const base = preloadedSfx[kind];
+    if (!base) return;
+    const snd = base.cloneNode();
+    snd.volume = volume;
+    snd.play().catch(() => {});
+  } catch (e) {}
+}
+
 let audioCtx = null;
 function playSound(type) {
   if (!state.soundOn) return;
+  if (type === 'launch') {
+    playFireballSfx('fly', 0.65);
+    return;
+  }
+  if (type === 'hit' || type === 'crit') {
+    playFireballSfx('explosion', type === 'crit' ? 0.8 : 0.55);
+    return;
+  }
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -500,43 +596,7 @@ function playSound(type) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const now = audioCtx.currentTime;
 
-    if (type === 'launch') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(240, now);
-      osc.frequency.exponentialRampToValueAtTime(110, now + 0.11);
-      gain.gain.setValueAtTime(0.05, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.11);
-    } else if (type === 'hit') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(160, now);
-      osc.frequency.exponentialRampToValueAtTime(55, now + 0.09);
-      gain.gain.setValueAtTime(0.07, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.09);
-    } else if (type === 'crit') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(85, now + 0.16);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.16);
-    } else if (type === 'proc') {
+    if (type === 'proc') {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
@@ -549,12 +609,13 @@ function playSound(type) {
       osc.start(now);
       osc.stop(now + 0.18);
     } else if (type === 'meteor_impact') {
+      playFireballSfx('explosion', 0.9);
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(110, now);
       osc.frequency.exponentialRampToValueAtTime(28, now + 0.38);
-      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.setValueAtTime(0.14, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -577,7 +638,7 @@ function playSound(type) {
 }
 
 // ==========================================
-// 7. 2D 캔버스 투사체, 메테오 & 소환수 렌더링 엔진
+// 7. 2D 캔버스 투사체(직선 비행), 메테오 & 소환수 렌더링 엔진
 // ==========================================
 const canvas = document.getElementById('vfx-canvas');
 const ctx = canvas.getContext('2d');
@@ -608,8 +669,8 @@ function getCasterPos() {
   const arena = document.getElementById('combat-arena').getBoundingClientRect();
   const caster = document.getElementById('caster-avatar').getBoundingClientRect();
   return {
-    x: caster.left - arena.left + caster.width * 0.75,
-    y: caster.top - arena.top + caster.height * 0.45
+    x: caster.left - arena.left + caster.width * 0.85,
+    y: caster.top - arena.top + caster.height * 0.5
   };
 }
 
@@ -647,9 +708,8 @@ function launchCustomProjectile(opts) {
     startY: opts.startY,
     targetX: opts.targetX,
     targetY: opts.targetY,
-    arcHeight: opts.arcHeight ?? -28,
     progress: 0,
-    duration: opts.duration || 0.3,
+    duration: opts.duration || 0.28,
     radius: opts.radius || 10,
     colorCore: opts.colorCore || '#fde047',
     colorMid: opts.colorMid || '#f97316',
@@ -657,7 +717,7 @@ function launchCustomProjectile(opts) {
   });
 }
 
-function launchProjectile(type, onHitCallback, customArcOffset = 0) {
+function launchProjectile(type, onHitCallback, offsetY = 0) {
   const start = getCasterPos();
   const end = getTargetPos();
   const isPyro = type === 'pyroblast';
@@ -666,16 +726,15 @@ function launchProjectile(type, onHitCallback, customArcOffset = 0) {
   avatar.classList.add('cast-recoil');
   setTimeout(() => avatar.classList.remove('cast-recoil'), 120);
 
-  playSound('launch');
+  playFireballSfx('fly', isPyro ? 0.78 : 0.62);
 
   launchCustomProjectile({
     type,
     startX: start.x,
-    startY: start.y,
-    targetX: end.x + (Math.random() * 14 - 7),
-    targetY: end.y + (Math.random() * 14 - 7),
-    arcHeight: (isPyro ? -55 : -26) + customArcOffset,
-    duration: isPyro ? 0.36 : 0.3,
+    startY: start.y + offsetY,
+    targetX: end.x,
+    targetY: end.y + offsetY,
+    duration: isPyro ? 0.32 : 0.26,
     radius: isPyro ? 17 : 10,
     colorCore: '#fde047',
     colorMid: '#f97316',
@@ -890,19 +949,20 @@ function updateAndDrawVfx(dt) {
       continue;
     }
 
+    // 곡선 없이 완전한 직선(Linear) 보간으로 비행
     const t = p.progress;
     const x = p.startX + (p.targetX - p.startX) * t;
-    const y = p.startY + (p.targetY - p.startY) * t + Math.sin(t * Math.PI) * p.arcHeight;
+    const y = p.startY + (p.targetY - p.startY) * t;
 
-    if (Math.random() < 0.7) {
+    if (Math.random() < 0.75) {
       particles.push({
-        x: x + (Math.random() * 6 - 3),
-        y: y + (Math.random() * 6 - 3),
-        vx: -30 + Math.random() * 20,
-        vy: -15 + Math.random() * 30,
+        x: x + (Math.random() * 4 - 2),
+        y: y + (Math.random() * 4 - 2),
+        vx: -45 + Math.random() * 15,
+        vy: -10 + Math.random() * 20,
         radius: p.radius * 0.42,
         life: 0,
-        maxLife: 0.16,
+        maxLife: 0.14,
         colorCore: p.colorCore,
         colorEdge: p.colorMid
       });
@@ -1026,21 +1086,19 @@ function spawnFloatingText(text, styleClass, offsetY = 0) {
 }
 
 // ==========================================
-// 9. 스테이지 설정 및 몬스터 처치/실패 처리
+// 9. 스테이지 설정 및 몬스터 처치 처리 (제한시간 제거)
 // ==========================================
 function loadStage(stageNum) {
   state.currentStage = Math.max(1, stageNum);
   const data = getStageData(state.currentStage);
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
-  state.monster.maxTimer = data.timeLimit;
-  state.monster.timer = data.timeLimit;
-  state.monster.respawning = false;
 
   state.combat.ignitePool = 0;
   state.combat.igniteRem = 0;
   state.combat.meteorBurnRem = 0;
 
+  checkAndRecordDpsClear();
   updateStageUI();
 }
 
@@ -1080,7 +1138,6 @@ function onMonsterKilled() {
   const pos = getTargetPos();
   spawnParticles(pos.x, pos.y, 24, '#fde047', '#22c55e', 1.2);
 
-  // DPS 재계산 후 요구 DPS를 충족했을 때만 자동 전진 실행!
   updateDpsMeterUI();
   if (state.autoAdvance && canAdvanceToNextStage()) {
     loadStage(state.currentStage + 1);
@@ -1092,19 +1149,6 @@ function onMonsterKilled() {
   renderShopUI();
   renderSkillTreeUI();
   updateNotificationBadges();
-}
-
-function onStageTimeout() {
-  spawnFloatingText('⏰ 시간 초과!', 'fct-proc', -30);
-
-  if (state.currentStage > 1 && state.currentStage > state.highestClearedStage) {
-    state.autoAdvance = false;
-    const chk = document.getElementById('chk-auto-advance');
-    if (chk) chk.checked = false;
-    loadStage(state.currentStage - 1);
-  } else {
-    loadStage(state.currentStage);
-  }
 }
 
 // ==========================================
@@ -1119,6 +1163,14 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   if (state.skillDamage[skillKey]) {
     state.skillDamage[skillKey].dmg += dmg;
   }
+
+  // 타격 즉시 DPS 달성 여부를 체크해 요구 DPS 충족 시 다음 도전 버튼을 즉시 영구 활성화
+  const windowSec = 6.0;
+  const sumDmg = state.dpsHistory
+    .filter((entry) => now - entry.time <= windowSec)
+    .reduce((acc, e) => acc + e.amount, 0);
+  state.currentDps = Math.round(sumDmg / windowSec);
+  checkAndRecordDpsClear();
 
   if (!isDotTick) {
     const dummyEl = document.getElementById('dummy-avatar');
@@ -1138,7 +1190,8 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   }
 
   if (isCrit && !isDotTick && skillKey !== 'ignite') {
-    const igniteRatio = state.grimoires.ignite ? 0.48 : 0.22;
+    const golemBonus = (state.skillTree.magma_golem || 0) * 0.15;
+    const igniteRatio = (state.grimoires.ignite ? 0.48 : 0.22) * (1 + golemBonus);
     const igniteAdd = dmg * igniteRatio;
     const remainingCarry = state.combat.igniteRem > 0 ? state.combat.ignitePool * (state.combat.igniteRem / 5.0) : 0;
     state.combat.ignitePool = remainingCarry + igniteAdd;
@@ -1191,9 +1244,8 @@ function fireElementalAttack() {
     type: 'elem_bolt',
     startX: casterCenter.x + 58,
     startY: casterCenter.y - 68,
-    targetX: target.x + (Math.random() * 18 - 9),
-    targetY: target.y + (Math.random() * 18 - 9),
-    arcHeight: -18,
+    targetX: target.x,
+    targetY: target.y,
     duration: 0.25,
     radius: 8,
     colorCore: '#fef08a',
@@ -1222,10 +1274,9 @@ function firePhoenixAttack() {
     type: 'phoenix_bolt',
     startX: casterCenter.x + 62,
     startY: casterCenter.y + 62,
-    targetX: target.x + (Math.random() * 16 - 8),
-    targetY: target.y + (Math.random() * 16 - 8),
-    arcHeight: 32,
-    duration: 0.28,
+    targetX: target.x,
+    targetY: target.y,
+    duration: 0.26,
     radius: 12,
     colorCore: '#ffffff',
     colorMid: '#facc15',
@@ -1256,9 +1307,6 @@ function fireMagmaGolemAttack() {
   const base = st.sp * (1.1 * lv) * st.summonMult;
   const finalDmg = isCrit ? base * st.critDmg : base;
 
-  const timeBonus = lv * 0.8;
-  state.monster.timer = Math.min(state.monster.maxTimer, state.monster.timer + timeBonus);
-
   dealDamage('summon_golem', finalDmg, isCrit, false);
 }
 
@@ -1278,10 +1326,10 @@ function fireWithMultishot(type, baseMult) {
 
   for (let i = 0; i < totalShots; i++) {
     const isMain = i === 0;
-    const delayMs = i * 95;
-    const arcOffset = i === 0 ? 0 : (i % 2 === 1 ? -28 : 28) * Math.ceil(i / 2);
+    const delayMs = i * 90;
+    const lineOffsetY = i === 0 ? 0 : (i % 2 === 1 ? -12 : 12) * Math.ceil(i / 2);
 
-    setTimeout(() => {
+    const doLaunch = () => {
       launchProjectile(
         type,
         () => {
@@ -1292,9 +1340,15 @@ function fireWithMultishot(type, baseMult) {
           const finalDmg = isCrit ? base * st.critDmg : base;
           dealDamage(type, finalDmg, isCrit, isMain);
         },
-        arcOffset
+        lineOffsetY
       );
-    }, delayMs);
+    };
+
+    if (delayMs === 0) {
+      doLaunch();
+    } else {
+      setTimeout(doLaunch, delayMs);
+    }
   }
 }
 
@@ -1310,6 +1364,7 @@ function triggerSkill(skillKey) {
     c.castRemaining = castTime;
     c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
     c.gcdRemaining = c.gcdTotal;
+    playFireballSfx('ready', 0.6);
     return true;
   }
 
@@ -1348,6 +1403,7 @@ function triggerSkill(skillKey) {
     c.castRemaining = castTime;
     c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
     c.gcdRemaining = c.gcdTotal;
+    playFireballSfx('ready', 0.7);
     return true;
   }
 
@@ -1458,18 +1514,17 @@ function updateNotificationBadges() {
   const availSp = getAvailableSkillPoints();
   const spentSp = getSpentSkillPoints();
 
-  // 1. 다음 스테이지 도전 버튼 (!) 배지 & 활성화 제어 (요구 DPS 충족 필수!)
+  // 1. 다음 스테이지 도전 버튼 (!) 배지 & 활성화 제어 (요구 DPS 1회 이상 충족 시 활성화 유지!)
   const canGoNext = canAdvanceToNextStage();
   const nextBtn = document.getElementById('btn-next-stage');
   const nextBtnText = document.getElementById('btn-next-stage-text');
   const nextStageData = getStageData(state.currentStage + 1);
-  const nextReqDps = Math.ceil(nextStageData.hp / nextStageData.timeLimit);
 
   nextBtn.disabled = !canGoNext;
   nextBtn.classList.toggle('ready-glow', canGoNext);
   nextBtnText.textContent = nextStageData.isPhaseBoss
-    ? `👑 보스 도전 (요구 ${fmt(nextReqDps)}) ▶`
-    : `다음 도전 (요구 ${fmt(nextReqDps)}) ▶`;
+    ? '👑 보스 도전 ▶'
+    : '다음 도전 ▶';
 
   setBadge('badge-next-stage', canGoNext);
 
@@ -1776,7 +1831,7 @@ function updateStageUI() {
   for (let i = 0; i < 5; i++) {
     const stg = phaseStartStage + i;
     const isBossDot = i === 4;
-    const isClearedDot = stg <= state.highestClearedStage;
+    const isClearedDot = stg <= Math.max(state.highestClearedStage, state.dpsClearedStage);
     const isCurrentDot = stg === state.currentStage;
     if (isBossDot) {
       dotsHtml += `<div class="p-dot boss-dot ${isClearedDot ? 'cleared' : ''} ${isCurrentDot ? 'current' : ''}">👑</div>`;
@@ -1810,14 +1865,17 @@ function updateStageUI() {
 
   document.getElementById('btn-prev-stage').disabled = state.currentStage <= 1;
 
-  const reqDps = Math.ceil(data.hp / data.timeLimit);
-  document.getElementById('ui-req-dps').textContent = `${fmt(reqDps)} /초`;
+  const reqDps = getStageReqDps(state.currentStage);
+  const achieved = canAdvanceToNextStage();
+  document.getElementById('ui-req-dps').textContent = achieved
+    ? `${fmt(reqDps)} /초 ✔`
+    : `${fmt(reqDps)} /초`;
 
   updateNotificationBadges();
 }
 
 // ==========================================
-// 16. 메인 게임 루프 (60 FPS)
+// 16. 메인 게임 루프 (60 FPS, 제한 시간 제거)
 // ==========================================
 let lastTime = performance.now();
 let uiRefreshAccum = 0;
@@ -1829,11 +1887,6 @@ function gameLoop(nowMs) {
   const c = state.combat;
   const stats = getPlayerStats();
 
-  state.monster.timer = Math.max(0, state.monster.timer - dt);
-  if (state.monster.timer <= 0 && state.monster.hp > 0) {
-    onStageTimeout();
-  }
-
   if (c.gcdRemaining > 0) {
     c.gcdRemaining = Math.max(0, c.gcdRemaining - dt);
   }
@@ -1844,6 +1897,7 @@ function gameLoop(nowMs) {
       const doneSkill = c.castingSkill;
       c.castingSkill = null;
       c.castRemaining = 0;
+      stopFireballReadySound();
       finishCast(doneSkill);
     }
   }
@@ -1938,6 +1992,7 @@ function gameLoop(nowMs) {
   }
 
   runSmartAutoCast();
+  ensureFireballReadyLooping();
   updateAndDrawVfx(dt);
   updateLiveHUD();
 
@@ -1967,12 +2022,6 @@ function updateLiveHUD() {
   document.getElementById('target-hp-fill').style.width = `${hpPct}%`;
   document.getElementById('target-hp-text').textContent = `${fmt(state.monster.hp)} / ${fmt(state.monster.maxHp)}`;
   document.getElementById('target-hp-pct').textContent = `${hpPct.toFixed(0)}%`;
-
-  const timerPct = Math.max(0, Math.min(100, (state.monster.timer / state.monster.maxTimer) * 100));
-  const timerFill = document.getElementById('target-timer-fill');
-  timerFill.style.width = `${timerPct}%`;
-  timerFill.classList.toggle('low-time', state.monster.timer <= 6);
-  document.getElementById('target-timer-text').textContent = `${state.monster.timer.toFixed(1)}s`;
 
   const casterAvatar = document.getElementById('caster-avatar');
   const castingOrb = document.getElementById('casting-orb');
@@ -2060,18 +2109,21 @@ function updateDpsMeterUI() {
   const now = performance.now() / 1000;
   const windowSec = 6.0;
 
-  // 수동 클릭 중 마우스를 상단 버튼으로 옮기는 3.5초 동안은 DPS 측정값이 급락해 버튼이 잠기지 않도록 기준 시각 유지
-  const refTime = now - state.lastCombatTime <= 3.5 ? state.lastCombatTime : now;
-  state.dpsHistory = state.dpsHistory.filter((entry) => refTime - entry.time <= windowSec);
+  state.dpsHistory = state.dpsHistory.filter((entry) => now - entry.time <= windowSec);
   const sumDmg = state.dpsHistory.reduce((acc, e) => acc + e.amount, 0);
   state.currentDps = Math.round(sumDmg / windowSec);
 
-  const stageData = getStageData(state.currentStage);
-  const reqDps = Math.ceil(stageData.hp / stageData.timeLimit);
+  checkAndRecordDpsClear();
+
+  const reqDps = getStageReqDps(state.currentStage);
+  const achieved = canAdvanceToNextStage();
 
   const dpsEl = document.getElementById('ui-current-dps');
   dpsEl.textContent = `${fmt(state.currentDps)} /초`;
-  dpsEl.classList.toggle('enough', state.currentDps >= reqDps);
+  dpsEl.classList.toggle('enough', state.currentDps >= reqDps || achieved);
+
+  const reqEl = document.getElementById('ui-req-dps');
+  reqEl.textContent = achieved ? `${fmt(reqDps)} /초 ✔` : `${fmt(reqDps)} /초`;
 
   const breakdownContainer = document.getElementById('skill-breakdown-bars');
   const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
@@ -2106,6 +2158,8 @@ function saveGame() {
       gold: state.gold,
       currentStage: state.currentStage,
       highestClearedStage: state.highestClearedStage,
+      dpsClearedStage: state.dpsClearedStage,
+      maxDps: state.maxDps,
       autoAdvance: state.autoAdvance,
       autoCast: state.autoCast,
       soundOn: state.soundOn,
@@ -2126,6 +2180,8 @@ function loadGame() {
     if (typeof data.gold === 'number') state.gold = data.gold;
     if (typeof data.currentStage === 'number') state.currentStage = data.currentStage;
     if (typeof data.highestClearedStage === 'number') state.highestClearedStage = data.highestClearedStage;
+    if (typeof data.dpsClearedStage === 'number') state.dpsClearedStage = data.dpsClearedStage;
+    if (typeof data.maxDps === 'number') state.maxDps = data.maxDps;
     if (typeof data.autoAdvance === 'boolean') state.autoAdvance = data.autoAdvance;
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;

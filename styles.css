@@ -337,44 +337,46 @@ body {
   75% { transform: translate(-4px, 2px); }
 }
 
-/* Monster HUD (Top of Arena) */
-.monster-hud {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 5;
-}
-
-.monster-frame {
-  width: 420px;
-  max-width: 95%;
+/* Monster HP Bar (Directly Above Monster Image) */
+.monster-hp-wrap {
+  width: 196px;
   background: rgba(13, 16, 23, 0.92);
   border: 2px solid #3a4459;
-  border-radius: 8px;
-  padding: 6px 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  border-radius: 7px;
+  padding: 5px 7px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.65);
+  margin-bottom: 4px;
 }
 
-.monster-header {
+.monster-hp-wrap.boss-frame {
+  border-color: #f59e0b;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.42);
+}
+
+.monster-hp-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 4px 5px;
-  font-size: 0.9rem;
+  padding: 0 2px 4px;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
+.monster-stage-mini {
+  color: #cbd5e1;
+}
+
 .monster-reward {
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   color: var(--fire-gold);
-  background: rgba(251, 191, 36, 0.12);
+  background: rgba(251, 191, 36, 0.14);
   border: 1px solid rgba(251, 191, 36, 0.35);
-  padding: 2px 7px;
+  padding: 1px 6px;
   border-radius: 4px;
 }
 
 .hp-bar-outer {
-  height: 24px;
+  height: 20px;
   background: #1b0f12;
   border: 1px solid #000;
   border-radius: 4px;
@@ -395,66 +397,32 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 10px;
-  font-size: 0.8rem;
+  padding: 0 8px;
+  font-size: 0.74rem;
   font-weight: 800;
   text-shadow: 1px 1px 2px #000;
   font-variant-numeric: tabular-nums;
 }
 
-.timer-bar-outer {
-  height: 16px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 3px;
-  position: relative;
-  overflow: hidden;
-  margin-top: 5px;
-}
-
-.timer-bar-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
-  transition: width 0.08s linear;
-}
-
-.timer-bar-fill.low-time {
-  background: linear-gradient(90deg, #dc2626 0%, #f97316 100%);
-}
-
-.timer-bar-text {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 8px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #e2e8f0;
-  text-shadow: 1px 1px 2px #000;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Debuff Row */
+/* Debuff Row (Above Monster HP Bar) */
 .debuff-row {
   display: flex;
-  gap: 8px;
-  margin-top: 6px;
-  min-height: 28px;
+  gap: 6px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
 }
 
 .debuff-chip {
   display: flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(153, 27, 27, 0.85);
+  gap: 4px;
+  background: rgba(153, 27, 27, 0.88);
   border: 1px solid #f87171;
   color: #fff;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 4px;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
@@ -474,6 +442,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  margin-top: 68px;
 }
 
 .caster-avatar {
@@ -521,7 +490,7 @@ body {
 .casting-orb {
   position: absolute;
   right: -18px;
-  top: 22px;
+  top: 34px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -559,11 +528,12 @@ body {
   align-items: center;
   justify-content: center;
   width: 290px;
-  height: 180px;
+  min-height: 230px;
 }
 
 .wa-bracket {
   position: absolute;
+  bottom: 24px;
   width: 52px;
   height: 140px;
   opacity: 0;
