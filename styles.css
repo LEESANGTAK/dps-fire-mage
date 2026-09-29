@@ -337,47 +337,77 @@ body {
   75% { transform: translate(-4px, 2px); }
 }
 
-/* Monster HP Bar (Floating Directly Above Monster Image) */
-.monster-hp-wrap {
+/* Arena Top-Center Stage & Reward Banner (Separated from Monster HP Bar) */
+.arena-stage-reward-banner {
   position: absolute;
-  bottom: calc(100% + 14px);
+  top: 90px;
   left: 50%;
   transform: translateX(-50%);
-  width: 204px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(13, 17, 26, 0.92);
+  border: 2px solid #334155;
+  border-radius: 99px;
+  padding: 8px 22px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7);
+  z-index: 14;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.arena-stage-reward-banner.boss-banner {
+  border-color: #f59e0b;
+  background: linear-gradient(90deg, rgba(69, 26, 3, 0.94) 0%, rgba(23, 15, 28, 0.94) 100%);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.48), 0 8px 22px rgba(0, 0, 0, 0.78);
+}
+
+.banner-sep {
+  color: #475569;
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.monster-stage-mini {
+  color: #f8fafc;
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+}
+
+.arena-stage-reward-banner.boss-banner .monster-stage-mini {
+  color: #fde047;
+}
+
+.monster-reward {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--fire-gold);
+  background: rgba(251, 191, 36, 0.15);
+  border: 1.5px solid rgba(251, 191, 36, 0.42);
+  padding: 3px 12px;
+  border-radius: 99px;
+}
+
+/* Monster HP Bar Only (Floating Directly Above Monster Image) */
+.monster-hp-wrap {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 176px;
   background: rgba(13, 16, 23, 0.94);
   border: 2px solid #3a4459;
-  border-radius: 8px;
-  padding: 6px 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+  border-radius: 7px;
+  padding: 3px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.75);
   z-index: 12;
   pointer-events: none;
 }
 
 .monster-hp-wrap.boss-frame {
   border-color: #f59e0b;
-  box-shadow: 0 0 18px rgba(245, 158, 11, 0.42);
-}
-
-.monster-hp-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2px 5px;
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.monster-stage-mini {
-  color: #e2e8f0;
-}
-
-.monster-reward {
-  font-size: 0.7rem;
-  color: var(--fire-gold);
-  background: rgba(251, 191, 36, 0.14);
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  padding: 1px 6px;
-  border-radius: 4px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.48);
 }
 
 .hp-bar-outer {
@@ -444,7 +474,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 28px 50px 0;
+  padding: 36px 50px 0;
   z-index: 6;
 }
 
@@ -453,7 +483,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 0;
 }
 
@@ -474,6 +504,26 @@ body {
 .caster-avatar.casting-active {
   border-color: var(--fire-orange);
   box-shadow: 0 0 22px rgba(255, 107, 43, 0.6);
+}
+
+.caster-avatar.evo-2.casting-active {
+  border-color: #ef4444;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.75);
+}
+
+.caster-avatar.evo-3.casting-active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.8);
+}
+
+.caster-avatar.evo-4.casting-active {
+  border-color: #c084fc;
+  box-shadow: 0 0 30px rgba(192, 132, 252, 0.85);
+}
+
+.caster-avatar.evo-5.casting-active {
+  border-color: #fde047;
+  box-shadow: 0 0 34px rgba(253, 224, 71, 0.95), 0 0 16px #ff4500;
 }
 
 .caster-avatar.combustion-mode {
@@ -532,6 +582,56 @@ body {
   padding: 3px 10px;
   border-radius: 10px;
   border: 1px solid rgba(255, 107, 43, 0.35);
+}
+
+/* 2단계: 화염 진화 단계 배지 (5 Tiers) */
+.flame-evo-badge {
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 2px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.flame-evo-badge:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+
+.flame-evo-badge.evo-tier-1 {
+  color: #fed7aa;
+  background: rgba(154, 52, 18, 0.55);
+  border: 1px solid #f97316;
+}
+
+.flame-evo-badge.evo-tier-2 {
+  color: #fecdd3;
+  background: rgba(159, 18, 57, 0.65);
+  border: 1px solid #fb7185;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+}
+
+.flame-evo-badge.evo-tier-3 {
+  color: #bae6fd;
+  background: rgba(3, 105, 161, 0.7);
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.flame-evo-badge.evo-tier-4 {
+  color: #f5d0fe;
+  background: rgba(107, 33, 168, 0.75);
+  border: 1px solid #c084fc;
+  box-shadow: 0 0 14px rgba(192, 132, 252, 0.55);
+}
+
+.flame-evo-badge.evo-tier-5 {
+  color: #fef08a;
+  background: linear-gradient(90deg, rgba(180, 83, 9, 0.85), rgba(153, 27, 27, 0.85));
+  border: 1px solid #fde047;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.75);
 }
 
 .weakaura-container {
@@ -2060,7 +2160,7 @@ body {
 
 .unfold-toast {
   position: absolute;
-  top: 72px;
+  top: 144px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, rgba(124, 45, 18, 0.96) 0%, rgba(30, 27, 75, 0.96) 100%);

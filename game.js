@@ -703,6 +703,145 @@ function spawnParticles(x, y, count, colorCore, colorEdge, speedScale = 1) {
   }
 }
 
+// ==========================================
+// 7-B. 2단계: 화염구의 시각적 진화 (5단계 외형·크기·위성·탄막 진화)
+// ==========================================
+const FLAME_EVOLUTION_TIERS = [
+  {
+    tier: 1,
+    name: '견습 불꽃',
+    badgeText: '🟠 Lv.1 견습 불꽃',
+    reqSp: 0,
+    reqEquipLv: 0,
+    colorCore: '#fde047',
+    colorMid: '#f97316',
+    colorEdge: 'rgba(239, 68, 68, 0)',
+    ringRgb: '251, 146, 60',
+    scale: 1.0,
+    orbiters: 0,
+    barrageCount: 0
+  },
+  {
+    tier: 2,
+    name: '홍련의 업화',
+    badgeText: '🔴 Lv.2 홍련의 업화',
+    reqSp: 22,
+    reqEquipLv: 4,
+    colorCore: '#ffffff',
+    colorMid: '#fb7185',
+    colorEdge: 'rgba(225, 29, 72, 0)',
+    ringRgb: '244, 63, 94',
+    scale: 1.18,
+    orbiters: 1,
+    barrageCount: 0
+  },
+  {
+    tier: 3,
+    name: '고열 청염',
+    badgeText: '🔵 Lv.3 고열 청염',
+    reqSp: 75,
+    reqEquipLv: 10,
+    colorCore: '#e0f2fe',
+    colorMid: '#38bdf8',
+    colorEdge: 'rgba(37, 99, 235, 0)',
+    ringRgb: '56, 189, 248',
+    scale: 1.34,
+    orbiters: 2,
+    barrageCount: 1
+  },
+  {
+    tier: 4,
+    name: '심연 비전화',
+    badgeText: '🟣 Lv.4 심연 비전화',
+    reqSp: 260,
+    reqEquipLv: 18,
+    colorCore: '#fae8ff',
+    colorMid: '#c084fc',
+    colorEdge: 'rgba(126, 34, 206, 0)',
+    ringRgb: '192, 132, 252',
+    scale: 1.5,
+    orbiters: 3,
+    barrageCount: 1
+  },
+  {
+    tier: 5,
+    name: '태양신화',
+    badgeText: '🌟 Lv.5 태양신화',
+    reqSp: 900,
+    reqEquipLv: 28,
+    colorCore: '#ffffff',
+    colorMid: '#fde047',
+    colorEdge: 'rgba(255, 69, 0, 0)',
+    ringRgb: '250, 204, 21',
+    scale: 1.68,
+    orbiters: 4,
+    barrageCount: 2
+  }
+];
+
+function getTotalEquipmentLevels() {
+  return Object.values(state.items).reduce((acc, lv) => acc + (lv || 0), 0);
+}
+
+function getUnlockedFlameTier() {
+  const sp = getPlayerStats().sp;
+  const eqLv = getTotalEquipmentLevels();
+  let unlocked = 1;
+  for (const t of FLAME_EVOLUTION_TIERS) {
+    if (sp >= t.reqSp || eqLv >= t.reqEquipLv) {
+      unlocked = t.tier;
+    }
+  }
+  return unlocked;
+}
+
+function getCurrentFlameEvolution() {
+  const activeTier = state.previewFlameTier > 0 ? state.previewFlameTier : getUnlockedFlameTier();
+  return FLAME_EVOLUTION_TIERS[Math.min(5, Math.max(1, activeTier)) - 1];
+}
+
+function updateFlameEvolutionUI(silent = false) {
+  const unlockedTier = getUnlockedFlameTier();
+  if (!state.highestFlameTier) state.highestFlameTier = 1;
+
+  if (unlockedTier > state.highestFlameTier) {
+    state.highestFlameTier = unlockedTier;
+    const newEvo = FLAME_EVOLUTION_TIERS[unlockedTier - 1];
+    if (!silent) {
+      showUnfoldToast(
+        `🔥 화염 마법 진화! [${newEvo.badgeText}]`,
+        `화염구의 크기(+${Math.round((newEvo.scale - 1) * 100)}%)와 마력 파장이 한 단계 진화했습니다!`
+      );
+      triggerUnfoldPop('flame-evo-badge');
+    }
+  }
+
+  const evo = getCurrentFlameEvolution();
+  const badgeEl = document.getElementById('flame-evo-badge');
+  if (badgeEl) {
+    const isPreview = state.previewFlameTier > 0;
+    const nextTierObj = FLAME_EVOLUTION_TIERS[evo.tier];
+    const nextHint = nextTierObj
+      ? `다음 진화(${nextTierObj.name}): 공격력 ${fmt(nextTierObj.reqSp)} 또는 총 장비 +${nextTierObj.reqEquipLv}강`
+      : '최고 단계 화염 진화 달성!';
+    badgeEl.className = `flame-evo-badge evo-tier-${evo.tier}`;
+    badgeEl.textContent = isPreview ? `${evo.badgeText} (미리보기)` : evo.badgeText;
+    badgeEl.title = `${nextHint} (클릭 시 1~5단계 외형 미리보기 전환)`;
+  }
+
+  const avatarEl = document.getElementById('caster-avatar');
+  if (avatarEl) {
+    for (let i = 1; i <= 5; i++) avatarEl.classList.remove(`evo-${i}`);
+    avatarEl.classList.add(`evo-${evo.tier}`);
+  }
+
+  const orbEl = document.getElementById('casting-orb');
+  if (orbEl) {
+    orbEl.style.background = `radial-gradient(circle, #fff 0%, ${evo.colorCore} 45%, ${evo.colorMid} 85%, transparent 100%)`;
+    orbEl.style.boxShadow = `0 0 ${14 + evo.tier * 3}px ${evo.colorMid}`;
+  }
+}
+
 function launchCustomProjectile(opts) {
   projectiles.push({
     type: opts.type || 'fireball',
@@ -715,31 +854,43 @@ function launchCustomProjectile(opts) {
     radius: opts.radius || 10,
     colorCore: opts.colorCore || '#fde047',
     colorMid: opts.colorMid || '#f97316',
+    colorEdge: opts.colorEdge || 'rgba(239, 68, 68, 0)',
+    ringRgb: opts.ringRgb || '251, 146, 60',
+    evoTier: opts.evoTier || 1,
+    orbiters: opts.orbiters || 0,
     onHit: opts.onHit
   });
 }
 
-function launchProjectile(type, onHitCallback, offsetY = 0) {
+function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   const start = getCasterPos();
   const end = getTargetPos();
   const isPyro = type === 'pyroblast';
+  const evo = getCurrentFlameEvolution();
 
   const avatar = document.getElementById('caster-avatar');
   avatar.classList.add('cast-recoil');
   setTimeout(() => avatar.classList.remove('cast-recoil'), 120);
 
-  playFireballSfx('fly', isPyro ? 0.78 : 0.62);
+  if (scaleMult >= 0.9) {
+    playFireballSfx('fly', isPyro ? 0.78 : 0.62);
+  }
 
+  const baseRadius = isPyro ? 17 : 10;
   launchCustomProjectile({
     type,
     startX: start.x,
     startY: start.y + offsetY,
     targetX: end.x,
     targetY: end.y + offsetY,
-    duration: isPyro ? 0.32 : 0.26,
-    radius: isPyro ? 17 : 10,
-    colorCore: '#fde047',
-    colorMid: '#f97316',
+    duration: isPyro ? 0.31 : 0.25,
+    radius: baseRadius * evo.scale * scaleMult,
+    colorCore: evo.colorCore,
+    colorMid: evo.colorMid,
+    colorEdge: evo.colorEdge,
+    ringRgb: evo.ringRgb,
+    evoTier: evo.tier,
+    orbiters: scaleMult >= 0.9 ? evo.orbiters : 0,
     onHit: onHitCallback
   });
 }
@@ -892,7 +1043,7 @@ function drawSummonsAndAuras(dt) {
     ctx.fillText(`용암 골렘 Lv.${golemLv}`, gx, gy + 26);
   }
 
-  // 5. 충격파
+  // 5. 충격파 (진화 단계별 컬러 지원)
   for (let i = shockwaves.length - 1; i >= 0; i--) {
     const sw = shockwaves[i];
     sw.life += dt;
@@ -902,13 +1053,14 @@ function drawSummonsAndAuras(dt) {
     }
     const prog = sw.life / sw.maxLife;
     const alpha = 1 - prog;
+    const rgb = sw.rgb || '251, 146, 60';
     ctx.save();
     ctx.translate(sw.x, sw.y);
-    ctx.scale(1, 0.45);
+    ctx.scale(1, sw.flat ? 0.45 : 0.85);
     ctx.beginPath();
     ctx.arc(0, 0, sw.maxRadius * prog, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(251, 146, 60, ${alpha})`;
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = `rgba(${rgb}, ${alpha})`;
+    ctx.lineWidth = sw.lineWidth || 4;
     ctx.stroke();
     ctx.restore();
   }
@@ -944,8 +1096,28 @@ function updateAndDrawVfx(dt) {
     p.progress += dt / p.duration;
     if (p.progress >= 1) {
       const isPyro = p.type === 'pyroblast';
-      spawnParticles(p.targetX, p.targetY, isPyro ? 24 : 12, p.colorCore, p.colorMid, isPyro ? 1.3 : 0.85);
-      triggerArenaShake(isPyro ? 'sm' : null);
+      const tierScale = 1 + (p.evoTier - 1) * 0.18;
+      spawnParticles(
+        p.targetX,
+        p.targetY,
+        Math.round((isPyro ? 26 : 14) * tierScale),
+        p.colorCore,
+        p.colorMid,
+        (isPyro ? 1.35 : 0.9) * tierScale
+      );
+      if (p.evoTier >= 2 || isPyro) {
+        shockwaves.push({
+          x: p.targetX,
+          y: p.targetY,
+          life: 0,
+          maxLife: 0.28 + p.evoTier * 0.03,
+          maxRadius: (isPyro ? 52 : 34) + p.evoTier * 8,
+          rgb: p.ringRgb,
+          flat: false,
+          lineWidth: p.evoTier >= 4 ? 4.5 : 3
+        });
+      }
+      triggerArenaShake(isPyro || p.evoTier >= 4 ? 'sm' : null);
       if (p.onHit) p.onHit();
       projectiles.splice(i, 1);
       continue;
@@ -956,29 +1128,64 @@ function updateAndDrawVfx(dt) {
     const x = p.startX + (p.targetX - p.startX) * t;
     const y = p.startY + (p.targetY - p.startY) * t;
 
-    if (Math.random() < 0.75) {
-      particles.push({
-        x: x + (Math.random() * 4 - 2),
-        y: y + (Math.random() * 4 - 2),
-        vx: -45 + Math.random() * 15,
-        vy: -10 + Math.random() * 20,
-        radius: p.radius * 0.42,
-        life: 0,
-        maxLife: 0.14,
-        colorCore: p.colorCore,
-        colorEdge: p.colorMid
-      });
+    const trailCount = p.evoTier >= 4 ? 2 : 1;
+    for (let tr = 0; tr < trailCount; tr++) {
+      if (Math.random() < 0.85) {
+        particles.push({
+          x: x + (Math.random() * 6 - 3),
+          y: y + (Math.random() * 6 - 3),
+          vx: -55 + Math.random() * 20,
+          vy: -14 + Math.random() * 28,
+          radius: p.radius * (0.38 + p.evoTier * 0.04),
+          life: 0,
+          maxLife: 0.14 + p.evoTier * 0.02,
+          colorCore: p.colorCore,
+          colorEdge: p.colorMid
+        });
+      }
     }
 
-    const grad = ctx.createRadialGradient(x, y, 2, x, y, p.radius * 1.55);
+    // 메인 진화 화염구 본체 그라데이션
+    const grad = ctx.createRadialGradient(x, y, 2, x, y, p.radius * 1.6);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.35, p.colorCore);
-    grad.addColorStop(0.7, p.colorMid);
-    grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+    grad.addColorStop(0.72, p.colorMid);
+    grad.addColorStop(1, p.colorEdge);
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(x, y, p.radius * 1.55, 0, Math.PI * 2);
+    ctx.arc(x, y, p.radius * 1.6, 0, Math.PI * 2);
     ctx.fill();
+
+    // Tier 5 (태양신화): 회전하는 태양 코로나 십자 광선 연출
+    if (p.evoTier >= 5) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(state.combat.animTime * 9 + t * 6);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 2.2;
+      const rayLen = p.radius * 1.85;
+      ctx.beginPath();
+      ctx.moveTo(-rayLen, 0);
+      ctx.lineTo(rayLen, 0);
+      ctx.moveTo(0, -rayLen);
+      ctx.lineTo(0, rayLen);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Tier 2~5: 화염구 주변을 나선형으로 회전하며 따라가는 마력 위성(Orbiters)
+    if (p.orbiters > 0) {
+      for (let ob = 0; ob < p.orbiters; ob++) {
+        const ang = state.combat.animTime * 14 + t * 10 + (ob * Math.PI * 2) / p.orbiters;
+        const dist = p.radius * 1.05;
+        const ox = x + Math.cos(ang) * dist * 0.65;
+        const oy = y + Math.sin(ang) * dist;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(ox, oy, 2.8 + p.evoTier * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 
   for (let i = meteors.length - 1; i >= 0; i--) {
@@ -1513,12 +1720,14 @@ function triggerAllSummonsSyncAttack() {
 // ==========================================
 function fireWithMultishot(type, baseMult) {
   const multiLv = state.skillTree.multishot || 0;
+  const evo = getCurrentFlameEvolution();
   const totalShots = 1 + multiLv;
 
+  // 1. 기본 탄환 + 갈래 화염구 특성 탄환
   for (let i = 0; i < totalShots; i++) {
     const isMain = i === 0;
-    const delayMs = i * 90;
-    const lineOffsetY = i === 0 ? 0 : (i % 2 === 1 ? -12 : 12) * Math.ceil(i / 2);
+    const delayMs = i * 85;
+    const lineOffsetY = i === 0 ? 0 : (i % 2 === 1 ? -13 : 13) * Math.ceil(i / 2);
 
     const doLaunch = () => {
       launchProjectile(
@@ -1531,7 +1740,8 @@ function fireWithMultishot(type, baseMult) {
           const finalDmg = isCrit ? base * st.critDmg : base;
           dealDamage(type, finalDmg, isCrit, isMain);
         },
-        lineOffsetY
+        lineOffsetY,
+        isMain ? 1.0 : 0.82
       );
     };
 
@@ -1539,6 +1749,28 @@ function fireWithMultishot(type, baseMult) {
       doLaunch();
     } else {
       setTimeout(doLaunch, delayMs);
+    }
+  }
+
+  // 2. 화염 진화(Tier 3~5) 탄막 인플레이션: 고열 청염 이상 진화 시 날렵한 보조 마력탄이 상하 궤적으로 추가 발사
+  if (evo.barrageCount > 0) {
+    for (let b = 0; b < evo.barrageCount; b++) {
+      const barrageDelay = 45 + b * 65;
+      const barrageOffsetY = (b % 2 === 0 ? -24 : 24) + (Math.random() * 10 - 5);
+      setTimeout(() => {
+        launchProjectile(
+          type,
+          () => {
+            const st = getPlayerStats();
+            const isCrit = Math.random() * 100 < st.crit;
+            const base = st.sp * (baseMult * 0.22);
+            const finalDmg = isCrit ? base * st.critDmg : base;
+            dealDamage(type, finalDmg, isCrit, false);
+          },
+          barrageOffsetY,
+          0.62
+        );
+      }, barrageDelay);
     }
   }
 }
@@ -2314,8 +2546,13 @@ function updateStageUI() {
   const monsterFrame = document.getElementById('monster-frame');
   monsterFrame.classList.toggle('boss-frame', data.isPhaseBoss);
 
+  const stageBanner = document.getElementById('arena-stage-banner');
+  if (stageBanner) {
+    stageBanner.classList.toggle('boss-banner', data.isPhaseBoss);
+  }
+
   document.getElementById('target-stage-tag').textContent = data.isPhaseBoss
-    ? `👑 BOSS [P${data.phase}-${data.stepInPhase}]`
+    ? `👑 BOSS [STAGE ${data.phase}-${data.stepInPhase}]`
     : `STAGE ${data.phase}-${data.stepInPhase}`;
 
   // 몬스터 이미지와 그 아래 몬스터 이름 표시
@@ -2815,9 +3052,26 @@ function initEvents() {
     state.items[id] = (state.items[id] || 0) + 1;
     playSound('kill');
     checkAndTriggerUnfolds(false);
+    updateFlameEvolutionUI(false);
     saveGame();
     renderShopUI();
   });
+
+  const flameBadgeBtn = document.getElementById('flame-evo-badge');
+  if (flameBadgeBtn) {
+    flameBadgeBtn.addEventListener('click', () => {
+      const curPreview = state.previewFlameTier || 0;
+      if (curPreview === 0) {
+        state.previewFlameTier = 1;
+      } else if (curPreview < 5) {
+        state.previewFlameTier = curPreview + 1;
+      } else {
+        state.previewFlameTier = 0;
+      }
+      playSound('proc');
+      updateFlameEvolutionUI(true);
+    });
+  }
 
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
@@ -2855,6 +3109,7 @@ function initEvents() {
 window.addEventListener('DOMContentLoaded', () => {
   loadGame();
   checkAndTriggerUnfolds(true);
+  updateFlameEvolutionUI(true);
   resizeCanvas();
   initEvents();
   document.getElementById('chk-auto-advance').checked = state.autoAdvance;

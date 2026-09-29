@@ -98,6 +98,13 @@
           </div>
         </div>
 
+        <!-- 화면 상단 가운데: 현재 스테이지 및 처치 보상 골드 배너 (체력바에서 분리) -->
+        <div class="arena-stage-reward-banner" id="arena-stage-banner">
+          <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
+          <span class="banner-sep">|</span>
+          <span class="monster-reward" id="target-reward">💰 6 G</span>
+        </div>
+
         <!-- 아레나 중앙: 좌측 마법사 ➔ 우측 몬스터 (수평 정렬, 몬스터 상단 HP바 & 우측 상단 디버프) -->
         <div class="center-stage">
           <!-- 좌측 플레이어 마법사 -->
@@ -108,6 +115,9 @@
               <div class="casting-orb" id="casting-orb"></div>
             </div>
             <div class="caster-label">화염 마법사</div>
+            <div class="flame-evo-badge evo-tier-1" id="flame-evo-badge" title="공격력과 장비 성장에 따라 화염 마법의 색상·크기·탄막이 5단계로 진화합니다 (클릭 시 진화 정보 확인)">
+              🟠 Lv.1 견습 불꽃
+            </div>
             <div class="summon-active-badges" id="summon-active-badges"></div>
           </div>
 
@@ -115,12 +125,8 @@
           <div class="weakaura-container" id="target-stage-box">
             <div class="wa-bracket left" id="wa-left">🔥</div>
             <div class="monster-box">
-              <!-- 몬스터 이미지 바로 위 고정 HP 바 -->
+              <!-- 몬스터 이미지 바로 위 고정 HP 바 (체력바만 단독 배치) -->
               <div class="monster-hp-wrap" id="monster-frame">
-                <div class="monster-hp-meta">
-                  <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
-                  <span class="monster-reward" id="target-reward">💰 6 G</span>
-                </div>
                 <div class="hp-bar-outer">
                   <div class="hp-bar-fill" id="target-hp-fill"></div>
                   <div class="hp-bar-text">
