@@ -3019,12 +3019,12 @@ function checkAndTriggerUnfolds(silent = false) {
   const u = state.unfolded;
   let changed = false;
 
-  // 1. 첫 몬스터 처치 또는 첫 골드(4G+) 획득 시: 마법 습득 상점 & 스테이지 네비게이션 개방
+  // 1. 첫 몬스터 처치 또는 첫 골드(4G+) 획득 시: 주문서 상점 & 스테이지 네비게이션 개방
   if (!u.grimoireShop && (state.gold >= 4 || state.highestClearedStage >= 1 || state.grimoires.autocast)) {
     u.grimoireShop = true;
     changed = true;
     if (!silent) {
-      showUnfoldToast('🔓 새로운 시스템 해금: 마법 연구소!', '우측 [📜 마법 습득] 상점에서 새로운 마법서를 구매할 수 있습니다.');
+      showUnfoldToast('🔓 새로운 시스템 해금: 마법 연구소!', '우측 [📜 주문서] 상점에서 새로운 주문서를 구매할 수 있습니다.');
       triggerUnfoldPop('grimoire-section');
     }
   }
@@ -3821,18 +3821,6 @@ function initEvents() {
     });
   }
 
-  const testEssBtn = document.getElementById('btn-grant-test-essence');
-  if (testEssBtn) {
-    testEssBtn.addEventListener('click', () => {
-      state.essence = (state.essence || 0) + 25;
-      playSound('item_select');
-      spawnFloatingText('🔥 +25 정수!', 'fct-essence', -42, { anchor: 'caster' });
-      checkAndTriggerUnfolds(false);
-      saveGame();
-      renderInfusionUI();
-    });
-  }
-
   const treeContainer = document.getElementById('skill-tree-container');
   treeContainer.addEventListener('mouseover', (e) => {
     const inspectEl = e.target.closest('[data-inspect-node]');
@@ -3870,15 +3858,6 @@ function initEvents() {
     state.skillTree[id] = lv + 1;
     playSound('item_select');
     spawnFloatingText(`🌟 ${node.name} Lv.${lv + 1}!`, 'fct-proc', -42, { anchor: 'caster' });
-    saveGame();
-    renderSkillTreeUI();
-  });
-
-  document.getElementById('btn-grant-test-sp').addEventListener('click', () => {
-    state.bonusSkillPoints = (state.bonusSkillPoints || 0) + 1;
-    playSound('item_select');
-    spawnFloatingText('🌟 +1 SP!', 'fct-proc', -40, { anchor: 'caster' });
-    checkAndTriggerUnfolds(false);
     saveGame();
     renderSkillTreeUI();
   });
@@ -3987,16 +3966,43 @@ function initEvents() {
     });
   }
 
-  const cheatGoldBtn = document.getElementById('btn-cheat-gold-100');
+  const cheatGoldBtn = document.getElementById('btn-cheat-gold');
   if (cheatGoldBtn) {
     cheatGoldBtn.addEventListener('click', () => {
-      state.gold += 100;
+      state.gold += 10000;
       playSound('drop_coin');
       triggerGoldPillPulse();
-      spawnFloatingText('💰 +100 G', 'fct-gold', -40, { anchor: 'caster' });
+      spawnFloatingText('💰 +10,000 G', 'fct-gold', -40, { anchor: 'caster' });
       checkAndTriggerUnfolds(false);
       updateLiveHUD();
       renderShopUI();
+      updateNotificationBadges();
+      saveGame();
+    });
+  }
+
+  const cheatEssenceBtn = document.getElementById('btn-cheat-essence');
+  if (cheatEssenceBtn) {
+    cheatEssenceBtn.addEventListener('click', () => {
+      state.essence = (state.essence || 0) + 10000;
+      playSound('item_select');
+      spawnFloatingText('🔥 +10,000 정수!', 'fct-essence', -42, { anchor: 'caster' });
+      checkAndTriggerUnfolds(false);
+      updateLiveHUD();
+      renderInfusionUI();
+      updateNotificationBadges();
+      saveGame();
+    });
+  }
+
+  const cheatSpBtn = document.getElementById('btn-cheat-sp');
+  if (cheatSpBtn) {
+    cheatSpBtn.addEventListener('click', () => {
+      state.bonusSkillPoints = (state.bonusSkillPoints || 0) + 10000;
+      playSound('item_select');
+      spawnFloatingText('🌟 +10,000 SP!', 'fct-proc', -40, { anchor: 'caster' });
+      checkAndTriggerUnfolds(false);
+      renderSkillTreeUI();
       updateNotificationBadges();
       saveGame();
     });
@@ -4029,7 +4035,7 @@ function initEvents() {
       state.unfolded.skillTree = true;
       state.unfolded.hallOfFame = true;
       playSound('item_select');
-      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 마법 습득, 장비 강화, 마법 부여, 특성 트리, 명예의 전당이 모두 펼쳐졌습니다.');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 명예의 전당이 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
       updateSkillActionBarVisibility();
       renderInfusionUI();
