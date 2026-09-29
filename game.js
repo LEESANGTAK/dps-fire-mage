@@ -505,19 +505,14 @@ function fmt(num) {
 }
 
 // ==========================================
-// 6. 사운드 매니저 (화염구 WAV 효과음 루프 & 보조 효과음)
+// 6. 사운드 매니저 (화염구 발사/폭발 WAV 효과음 & 보조 효과음)
 // ==========================================
 const FIREBALL_SFX_FILES = {
-  ready: 'assets/sounds/sfx/fireball_ready.wav',
   fly: 'assets/sounds/sfx/fireball_fly.wav',
   explosion: 'assets/sounds/sfx/fireball_explosion.wav'
 };
 
 const preloadedSfx = {};
-const readyLoopAudio = new Audio(FIREBALL_SFX_FILES.ready);
-readyLoopAudio.preload = 'auto';
-readyLoopAudio.loop = true;
-readyLoopAudio.volume = 0.85;
 
 function initSfxAudio() {
   for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
@@ -528,47 +523,8 @@ function initSfxAudio() {
 }
 initSfxAudio();
 
-function startFireballReadySound() {
-  if (!state.soundOn) return;
-  try {
-    readyLoopAudio.loop = true;
-    readyLoopAudio.volume = 0.85;
-    readyLoopAudio.currentTime = 0;
-    readyLoopAudio.play().catch(() => {});
-  } catch (e) {}
-}
-
-function ensureFireballReadyLooping() {
-  if (!state.soundOn) {
-    stopFireballReadySound();
-    return;
-  }
-  if (state.combat.castingSkill && readyLoopAudio.paused) {
-    try {
-      readyLoopAudio.loop = true;
-      readyLoopAudio.volume = 0.85;
-      readyLoopAudio.play().catch(() => {});
-    } catch (e) {}
-  } else if (!state.combat.castingSkill && !readyLoopAudio.paused) {
-    stopFireballReadySound();
-  }
-}
-
-function stopFireballReadySound() {
-  try {
-    if (!readyLoopAudio.paused) {
-      readyLoopAudio.pause();
-    }
-    readyLoopAudio.currentTime = 0;
-  } catch (e) {}
-}
-
 function playFireballSfx(kind, volume = 0.65) {
   if (!state.soundOn) return;
-  if (kind === 'ready') {
-    startFireballReadySound();
-    return;
-  }
   try {
     const base = preloadedSfx[kind];
     if (!base) return;
@@ -1364,7 +1320,6 @@ function triggerSkill(skillKey) {
     c.castRemaining = castTime;
     c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
     c.gcdRemaining = c.gcdTotal;
-    playFireballSfx('ready', 0.6);
     return true;
   }
 
@@ -1403,7 +1358,6 @@ function triggerSkill(skillKey) {
     c.castRemaining = castTime;
     c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
     c.gcdRemaining = c.gcdTotal;
-    playFireballSfx('ready', 0.7);
     return true;
   }
 
@@ -1897,7 +1851,6 @@ function gameLoop(nowMs) {
       const doneSkill = c.castingSkill;
       c.castingSkill = null;
       c.castRemaining = 0;
-      stopFireballReadySound();
       finishCast(doneSkill);
     }
   }
@@ -1992,7 +1945,6 @@ function gameLoop(nowMs) {
   }
 
   runSmartAutoCast();
-  ensureFireballReadyLooping();
   updateAndDrawVfx(dt);
   updateLiveHUD();
 

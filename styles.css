@@ -293,15 +293,15 @@ body {
 .combat-arena {
   position: relative;
   flex: 1;
-  background: radial-gradient(circle at 50% 45%, #1d2230 0%, #0d1118 82%);
+  background: radial-gradient(circle at 50% 52%, #1d2230 0%, #0d1118 82%);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 0 0 16px 0;
   overflow: hidden;
-  min-height: 330px;
+  min-height: 420px;
 }
 
 .vfx-canvas {
@@ -337,15 +337,20 @@ body {
   75% { transform: translate(-4px, 2px); }
 }
 
-/* Monster HP Bar (Directly Above Monster Image) */
+/* Monster HP Bar (Floating Directly Above Monster Image) */
 .monster-hp-wrap {
-  width: 196px;
-  background: rgba(13, 16, 23, 0.92);
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 204px;
+  background: rgba(13, 16, 23, 0.94);
   border: 2px solid #3a4459;
-  border-radius: 7px;
-  padding: 5px 7px;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.65);
-  margin-bottom: 4px;
+  border-radius: 8px;
+  padding: 6px 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+  z-index: 12;
+  pointer-events: none;
 }
 
 .monster-hp-wrap.boss-frame {
@@ -357,13 +362,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2px 4px;
-  font-size: 0.72rem;
+  padding: 0 2px 5px;
+  font-size: 0.74rem;
   font-weight: 800;
 }
 
 .monster-stage-mini {
-  color: #cbd5e1;
+  color: #e2e8f0;
 }
 
 .monster-reward {
@@ -404,45 +409,52 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Debuff Row (Above Monster HP Bar) */
+/* Debuff Row (Floating Upper-Right of Monster Image) */
 .debuff-row {
+  position: absolute;
+  top: 6px;
+  left: calc(100% + 12px);
   display: flex;
+  flex-direction: column;
   gap: 6px;
-  min-height: 24px;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  white-space: nowrap;
+  z-index: 12;
+  pointer-events: none;
 }
 
 .debuff-chip {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(153, 27, 27, 0.88);
+  background: rgba(153, 27, 27, 0.9);
   border: 1px solid #f87171;
   color: #fff;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 0.7rem;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: 0.72rem;
   font-weight: 700;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
 }
 
-/* Center Stage: Left Caster -> Right Monster */
+/* Center Stage: Left Caster -> Right Monster (Horizontally Aligned) */
 .center-stage {
   position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 30px;
+  padding: 28px 50px 0;
   z-index: 6;
 }
 
 .caster-box {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-top: 68px;
+  margin-top: 0;
 }
 
 .caster-avatar {
@@ -528,7 +540,6 @@ body {
   align-items: center;
   justify-content: center;
   width: 290px;
-  min-height: 230px;
 }
 
 .wa-bracket {
@@ -1065,16 +1076,17 @@ body {
   100% { opacity: 0; transform: scale(1.25); }
 }
 
-/* 4. Compact DPS Meter Panel (Bottom of Left Column) */
+/* 4. Compact DPS Meter Panel (Top of Combat Arena) */
 .dps-meter-panel {
+  position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 16px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 16px;
-  height: 82px;
+  background: rgba(17, 22, 32, 0.94);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 18px;
+  height: 76px;
   flex-shrink: 0;
 }
 
@@ -1467,12 +1479,15 @@ body {
 }
 
 .summon-active-badges {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 180px;
-  margin-top: 2px;
+  width: 200px;
 }
 
 .summon-chip {
@@ -1713,6 +1728,7 @@ body {
    7. Monster Name Label & App Notification Badge (!)
    ========================================== */
 .monster-box {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;

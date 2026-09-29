@@ -58,14 +58,14 @@
         </button>
 
         <div class="stage-auto-wrap">
-          <label class="auto-advance-label" title="요구 DPS 달성 및 처치 시 다음 몬스터로 자동 이동">
+          <label class="auto-advance-label" title="목표 DPS 달성 및 처치 시 다음 몬스터로 자동 이동">
             <input type="checkbox" id="chk-auto-advance" />
             <span>자동 전진</span>
           </label>
         </div>
       </div>
 
-      <!-- 2. 중앙 전투 아레나 -->
+      <!-- 2. 중앙 전투 아레나 (상단 DPS 미터기 + 중앙 대결 + 하단 스킬바) -->
       <div class="combat-arena" id="combat-arena">
         <div class="combustion-aura-bg" id="combustion-bg"></div>
 
@@ -75,7 +75,26 @@
         <!-- 플로팅 데미지 & 골드 레이어 -->
         <div class="fct-layer" id="fct-layer"></div>
 
-        <!-- 중앙: 좌측 마법사 ➔ 우측 몬스터 (상단 HP바 + 중앙 이미지 + 하단 이름) -->
+        <!-- 아레나 상단: 컴팩트 DPS 미터기 -->
+        <div class="dps-meter-panel">
+          <div class="dps-meter-left">
+            <div class="dps-stat-box">
+              <span class="dps-label">⚡ 현재 DPS</span>
+              <span class="dps-current-val" id="ui-current-dps">0 /초</span>
+            </div>
+            <div class="dps-vs-divider">VS</div>
+            <div class="dps-stat-box target-req">
+              <span class="dps-label">🎯 목표 DPS</span>
+              <span class="dps-req-val" id="ui-req-dps">5 /초</span>
+            </div>
+          </div>
+
+          <div class="dps-breakdown-mini" id="skill-breakdown-bars">
+            <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
+          </div>
+        </div>
+
+        <!-- 아레나 중앙: 좌측 마법사 ➔ 우측 몬스터 (수평 정렬, 몬스터 상단 HP바 & 우측 상단 디버프) -->
         <div class="center-stage">
           <!-- 좌측 플레이어 마법사 -->
           <div class="caster-box" id="caster-box">
@@ -88,12 +107,11 @@
             <div class="summon-active-badges" id="summon-active-badges"></div>
           </div>
 
-          <!-- 우측 스테이지 몬스터 (상단에 HP 바, 중앙에 이미지, 하단에 이름) -->
+          <!-- 우측 스테이지 몬스터 -->
           <div class="weakaura-container" id="target-stage-box">
             <div class="wa-bracket left" id="wa-left">🔥</div>
             <div class="monster-box">
-              <div class="debuff-row" id="target-debuffs"></div>
-
+              <!-- 몬스터 이미지 바로 위 고정 HP 바 -->
               <div class="monster-hp-wrap" id="monster-frame">
                 <div class="monster-hp-meta">
                   <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
@@ -108,6 +126,9 @@
                 </div>
               </div>
 
+              <!-- 몬스터 이미지 우측 상단 디버프 표시 -->
+              <div class="debuff-row" id="target-debuffs"></div>
+
               <div class="dummy-avatar" id="dummy-avatar">
                 <div class="dummy-emoji" id="dummy-emoji">🟢</div>
               </div>
@@ -117,7 +138,7 @@
           </div>
         </div>
 
-        <!-- 하단 플레이어 시전바 & 스킬 액션바 -->
+        <!-- 아레나 하단: 플레이어 시전바 & 스킬 액션바 -->
         <div class="player-hud">
           <div class="player-buff-row" id="player-buffs"></div>
 
@@ -182,25 +203,6 @@
               <div class="cd-overlay" id="cd-5"></div>
             </button>
           </div>
-        </div>
-      </div>
-
-      <!-- 3. 하단 컴팩트 DPS 미터기 -->
-      <div class="dps-meter-panel">
-        <div class="dps-meter-left">
-          <div class="dps-stat-box">
-            <span class="dps-label">⚡ 내 실시간 DPS</span>
-            <span class="dps-current-val" id="ui-current-dps">0 /초</span>
-          </div>
-          <div class="dps-vs-divider">VS</div>
-          <div class="dps-stat-box target-req">
-            <span class="dps-label">🎯 요구 DPS</span>
-            <span class="dps-req-val" id="ui-req-dps">5 /초</span>
-          </div>
-        </div>
-
-        <div class="dps-breakdown-mini" id="skill-breakdown-bars">
-          <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
         </div>
       </div>
     </section>
