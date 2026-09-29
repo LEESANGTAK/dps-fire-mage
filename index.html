@@ -38,6 +38,7 @@
 
     <div class="top-controls">
       <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
+      <button class="btn-top btn-dev-mode" id="btn-dev-mode" title="개발용 치트 UI를 활성화하거나 닫습니다">🛠️ 개발자 모드</button>
       <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
       <button class="btn-top" id="btn-sound">🔊 사운드</button>
       <button class="btn-top btn-danger-outline" id="btn-reset-save">🗑️ 초기화</button>
@@ -77,6 +78,22 @@
 
           <div class="dps-breakdown-mini" id="skill-breakdown-bars">
             <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
+          </div>
+        </div>
+
+        <!-- 개발자 모드 치트 패널 (개발자 모드 활성화 시 노출) -->
+        <div class="dev-cheat-panel hidden" id="dev-cheat-panel">
+          <div class="dev-cheat-header">
+            <span class="dev-cheat-title">🛠️ 개발자 치트</span>
+          </div>
+          <div class="dev-cheat-actions">
+            <button type="button" class="dev-cheat-btn" id="btn-cheat-gold-100">
+              💰 즉시 골드 +100
+            </button>
+            <button type="button" class="dev-cheat-btn dev-cheat-toggle" id="btn-cheat-always-crit">
+              <span>💥 모든 데미지 치명타</span>
+              <span class="dev-toggle-pill" id="ui-cheat-crit-state">OFF</span>
+            </button>
           </div>
         </div>
 

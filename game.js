@@ -389,6 +389,10 @@ const state = {
   campaignCleared: false,
   autoCast: false,
   soundOn: true,
+  devMode: false,
+  cheats: {
+    alwaysCrit: false
+  },
 
   // 실시간 측정 DPS 및 최근 전투 시각
   currentDps: 0,
@@ -572,6 +576,10 @@ function getPlayerStats() {
   if (state.combat.combustionRem > 0) {
     crit = 100;
     haste += 20;
+  }
+
+  if (state.cheats && state.cheats.alwaysCrit) {
+    crit = 100;
   }
 
   crit = Math.min(100, crit);
@@ -1915,6 +1923,12 @@ function onMonsterKilled() {
 // 10. 데미지 적용 & 연쇄 치명타 / 유성우 판정
 // ==========================================
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false) {
+  if (state.cheats && state.cheats.alwaysCrit) {
+    if (!isCrit) {
+      rawDamage *= getPlayerStats().critDmg;
+      isCrit = true;
+    }
+  }
   const dmg = Math.max(1, Math.round(rawDamage));
   const now = performance.now() / 1000;
 
@@ -1940,11 +1954,11 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   }
 
   const isBigSkill = skillKey === 'pyroblast' || skillKey === 'meteor';
-  if (isDotTick || skillKey === 'ignite') {
+  if ((isDotTick || skillKey === 'ignite') && !(state.cheats && state.cheats.alwaysCrit)) {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-dot', 5);
   } else if (isCrit) {
     spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
-    playSound('crit');
+    if (!isDotTick) playSound('crit');
   } else {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-normal', 0);
     playSound('hit');
@@ -3453,6 +3467,28 @@ function updateDpsMeterUI() {
   updateNotificationBadges();
 }
 
+function updateDevCheatUI() {
+  const devBtn = document.getElementById('btn-dev-mode');
+  const devPanel = document.getElementById('dev-cheat-panel');
+  const critBtn = document.getElementById('btn-cheat-always-crit');
+  const critStateEl = document.getElementById('ui-cheat-crit-state');
+
+  if (devBtn) {
+    devBtn.classList.toggle('active', Boolean(state.devMode));
+    devBtn.textContent = state.devMode ? '🛠️ 개발자 모드: ON' : '🛠️ 개발자 모드';
+  }
+  if (devPanel) {
+    devPanel.classList.toggle('hidden', !state.devMode);
+  }
+  const alwaysCritOn = Boolean(state.cheats && state.cheats.alwaysCrit);
+  if (critBtn) {
+    critBtn.classList.toggle('active', alwaysCritOn);
+  }
+  if (critStateEl) {
+    critStateEl.textContent = alwaysCritOn ? 'ON' : 'OFF';
+  }
+}
+
 // ==========================================
 // 18. 세이브 / 로드 & 이벤트 바인딩
 // ==========================================
@@ -3470,6 +3506,8 @@ function saveGame() {
       campaignCleared: state.campaignCleared,
       autoCast: state.autoCast,
       soundOn: state.soundOn,
+      devMode: state.devMode,
+      cheats: state.cheats,
       unfolded: state.unfolded,
       bonusSkillPoints: state.bonusSkillPoints,
       skillTree: state.skillTree,
@@ -3497,6 +3535,8 @@ function loadGame() {
     if (typeof data.campaignCleared === 'boolean') state.campaignCleared = data.campaignCleared;
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;
+    if (typeof data.devMode === 'boolean') state.devMode = data.devMode;
+    if (data.cheats) Object.assign(state.cheats, data.cheats);
     if (typeof data.bonusSkillPoints === 'number') state.bonusSkillPoints = data.bonusSkillPoints;
     if (data.unfolded) Object.assign(state.unfolded, data.unfolded);
     if (data.skillTree) Object.assign(state.skillTree, data.skillTree);
@@ -3747,6 +3787,48 @@ function initEvents() {
     });
   }
 
+  const devModeBtn = document.getElementById('btn-dev-mode');
+  if (devModeBtn) {
+    devModeBtn.addEventListener('click', () => {
+      state.devMode = !state.devMode;
+      playSound('item_select');
+      updateDevCheatUI();
+      saveGame();
+    });
+  }
+
+  const cheatGoldBtn = document.getElementById('btn-cheat-gold-100');
+  if (cheatGoldBtn) {
+    cheatGoldBtn.addEventListener('click', () => {
+      state.gold += 100;
+      playSound('drop_coin');
+      triggerGoldPillPulse();
+      spawnFloatingText('💰 +100 G', 'fct-gold', -40, { anchor: 'caster' });
+      checkAndTriggerUnfolds(false);
+      updateLiveHUD();
+      renderShopUI();
+      updateNotificationBadges();
+      saveGame();
+    });
+  }
+
+  const cheatCritBtn = document.getElementById('btn-cheat-always-crit');
+  if (cheatCritBtn) {
+    cheatCritBtn.addEventListener('click', () => {
+      state.cheats.alwaysCrit = !state.cheats.alwaysCrit;
+      playSound('item_select');
+      spawnFloatingText(
+        state.cheats.alwaysCrit ? '💥 100% 치명타 ON!' : '💥 100% 치명타 OFF',
+        'fct-proc',
+        -40,
+        { anchor: 'caster' }
+      );
+      updateDevCheatUI();
+      updateLiveHUD();
+      saveGame();
+    });
+  }
+
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
     unfoldAllBtn.addEventListener('click', () => {
@@ -3789,6 +3871,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadGame();
   checkAndTriggerUnfolds(true);
   updateFlameEvolutionUI(true);
+  updateDevCheatUI();
   resizeCanvas();
   initEvents();
   document.getElementById('btn-sound').textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
