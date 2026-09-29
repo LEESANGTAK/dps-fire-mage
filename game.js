@@ -71,17 +71,20 @@ function getStageData(stageNum) {
 }
 
 // ==========================================
-// 2. 스킬 트리 (소환수 & 마법 변이)
+// 2. 스킬 트리 (와우 스타일 3x3 특성 트리 노드 & 연결 구조)
 // ==========================================
 const SKILL_TREE_NODES = [
-  // TIER 1
+  // TIER 1 (Row 1)
   {
     id: 'fire_elem',
     tier: 1,
+    row: 1,
+    col: 1,
     reqTotalSp: 0,
     cost: 1,
     maxLv: 3,
     name: '불의 정령 소환',
+    shortName: '불의 정령',
     icon: '🔥',
     desc: (lv) =>
       `불의 정령 상시 소환 (1.3초마다 공격력의 ${lv === 0 ? 45 : lv * 45}% 화염탄 발사 및 화상 연장)`
@@ -89,23 +92,29 @@ const SKILL_TREE_NODES = [
   {
     id: 'phoenix',
     tier: 1,
+    row: 1,
+    col: 3,
     reqTotalSp: 0,
     cost: 1,
     maxLv: 3,
     name: '비전 불사조 소환',
+    shortName: '비전 불사조',
     icon: '🦅',
     desc: (lv) =>
       `불사조 상시 소환 (2.4초마다 100% 치명타 섬광 ${lv === 0 ? 65 : lv * 65}% & 연쇄 폭발 유도)`
   },
 
-  // TIER 2
+  // TIER 2 (Row 2)
   {
     id: 'magma_golem',
     tier: 2,
+    row: 2,
+    col: 1,
     reqTotalSp: 1,
     cost: 1,
     maxLv: 3,
     name: '용암 골렘 소환',
+    shortName: '용암 골렘',
     icon: '🗿',
     desc: (lv) =>
       `전열 용암 골렘 소환 (2.8초마다 대지 강타 ${lv === 0 ? 110 : lv * 110}% & 화상 피해 +${lv === 0 ? 15 : lv * 15}% 증폭)`
@@ -113,10 +122,13 @@ const SKILL_TREE_NODES = [
   {
     id: 'multishot',
     tier: 2,
+    row: 2,
+    col: 2,
     reqTotalSp: 1,
     cost: 1,
     maxLv: 3,
     name: '갈래 화염구',
+    shortName: '갈래 화염구',
     icon: '✨',
     desc: (lv) =>
       `화염구·거대 화염구 시전 시 탄환이 ${lv === 0 ? 2 : lv + 1}발로 갈라져 직선 발사`
@@ -124,23 +136,29 @@ const SKILL_TREE_NODES = [
   {
     id: 'rune_aura',
     tier: 2,
+    row: 2,
+    col: 3,
     reqTotalSp: 1,
     cost: 1,
     maxLv: 3,
     name: '고대 가속 마법진',
+    shortName: '가속 마법진',
     icon: '⚡',
     desc: (lv) =>
       `마법사 및 모든 소환수의 공격·시전 속도 +${lv === 0 ? 18 : lv * 18}% 증가`
   },
 
-  // TIER 3
+  // TIER 3 (Row 3 - 궁극 특성)
   {
     id: 'legion_sync',
     tier: 3,
+    row: 3,
+    col: 1,
     reqTotalSp: 3,
     cost: 2,
     maxLv: 2,
     name: '태양왕의 군단 일제사격',
+    shortName: '군단 일제사격',
     icon: '👑',
     desc: (lv) =>
       `거대 화염구 발사 시 모든 소환수 즉시 일제 공격 & 소환수 피해 +${lv === 0 ? 50 : lv * 50}%`
@@ -148,14 +166,29 @@ const SKILL_TREE_NODES = [
   {
     id: 'meteor_rain',
     tier: 3,
+    row: 3,
+    col: 3,
     reqTotalSp: 3,
     cost: 2,
     maxLv: 2,
     name: '종말의 유성우',
+    shortName: '종말의 유성우',
     icon: '☄️',
     desc: (lv) =>
       `치명타 적중 시 ${lv === 0 ? 14 : lv * 14}% 확률로 미니 운석 자동 낙하`
   }
+];
+
+// 와우 특성 트리 노드 간 연결 화살표 정의 (from -> to)
+const SKILL_TREE_LINKS = [
+  { from: 'fire_elem', to: 'magma_golem' },
+  { from: 'fire_elem', to: 'multishot' },
+  { from: 'phoenix', to: 'rune_aura' },
+  { from: 'phoenix', to: 'multishot' },
+  { from: 'magma_golem', to: 'legion_sync' },
+  { from: 'multishot', to: 'legion_sync' },
+  { from: 'multishot', to: 'meteor_rain' },
+  { from: 'rune_aura', to: 'meteor_rain' }
 ];
 
 // ==========================================
@@ -305,6 +338,14 @@ const state = {
   // 실시간 측정 DPS 및 최근 전투 시각
   currentDps: 0,
   lastCombatTime: 0,
+
+  // 1단계: Magic Archery 스타일 점진적 언폴딩(Unfolding) 해금 상태
+  unfolded: {
+    stageNav: false,
+    grimoireShop: false,
+    equipShop: false,
+    skillTree: false
+  },
 
   bonusSkillPoints: 0,
   skillTree: {
@@ -505,11 +546,12 @@ function fmt(num) {
 }
 
 // ==========================================
-// 6. 사운드 매니저 (화염구 발사/폭발 WAV 효과음 & 보조 효과음)
+// 6. 사운드 매니저 (화염구 발사/폭발/크리티컬 폭발 WAV 효과음 & 보조 효과음)
 // ==========================================
 const FIREBALL_SFX_FILES = {
   fly: 'assets/sounds/sfx/fireball_fly.wav',
-  explosion: 'assets/sounds/sfx/fireball_explosion.wav'
+  explosion: 'assets/sounds/sfx/fireball_explosion.wav',
+  explosion_crit: 'assets/sounds/sfx/fireball_explosion_critical.wav'
 };
 
 const preloadedSfx = {};
@@ -541,8 +583,12 @@ function playSound(type) {
     playFireballSfx('fly', 0.65);
     return;
   }
-  if (type === 'hit' || type === 'crit') {
-    playFireballSfx('explosion', type === 'crit' ? 0.8 : 0.55);
+  if (type === 'hit') {
+    playFireballSfx('explosion', 0.58);
+    return;
+  }
+  if (type === 'crit') {
+    playFireballSfx('explosion_crit', 0.85);
     return;
   }
   try {
@@ -565,7 +611,7 @@ function playSound(type) {
       osc.start(now);
       osc.stop(now + 0.18);
     } else if (type === 'meteor_impact') {
-      playFireballSfx('explosion', 0.9);
+      playFireballSfx('explosion_crit', 0.92);
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sawtooth';
@@ -991,6 +1037,7 @@ function updateAndDrawVfx(dt) {
     ctx.fill();
     ctx.globalAlpha = 1;
   }
+  updateFloatingTexts(dt);
 }
 
 function triggerArenaShake(level) {
@@ -1003,42 +1050,228 @@ function triggerArenaShake(level) {
 }
 
 // ==========================================
-// 8. 플로팅 텍스트 (와우 스타일 데미지 & 골드 보상)
+// 8. 플로팅 텍스트 (와우 스타일 포물선 궤적 & 크리티컬 스케일 펀치)
 // ==========================================
-function spawnFloatingText(text, styleClass, offsetY = 0) {
+const floatingTexts = [];
+const fctArcState = {
+  lastSide: 1,
+  fanStep: 0,
+  dotSide: -1
+};
+
+function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   const layer = document.getElementById('fct-layer');
-  const pos = getTargetPos();
-  const el = document.createElement('div');
-  el.className = `fct-item ${styleClass}`;
-  el.textContent = text;
+  if (!layer) return;
 
-  let rx = pos.x;
-  let ry = pos.y + offsetY;
-  let driftX = 0;
-
-  if (styleClass === 'fct-crit') {
-    rx = pos.x + (Math.random() * 36 - 18);
-    ry = pos.y - 38 + offsetY + (Math.random() * 16 - 8);
-    driftX = 0;
-  } else if (styleClass === 'fct-dot') {
-    const side = Math.random() < 0.5 ? -1 : 1;
-    rx = pos.x + side * (18 + Math.random() * 26);
-    ry = pos.y - 10 + offsetY + (Math.random() * 18 - 9);
-    driftX = side * (10 + Math.random() * 14);
-  } else if (styleClass === 'fct-normal') {
-    rx = pos.x + (Math.random() * 44 - 22);
-    ry = pos.y - 24 + offsetY + (Math.random() * 14 - 7);
-    driftX = Math.random() * 24 - 12;
-  } else {
-    rx = pos.x + (Math.random() * 40 - 20);
-    ry = pos.y - 28 + offsetY;
+  // 화면 내 과도한 DOM 누적으로 인한 프레임 드랍 방지
+  while (floatingTexts.length >= 45) {
+    const oldest = floatingTexts.shift();
+    if (oldest && oldest.el) oldest.el.remove();
   }
 
-  el.style.left = `${rx}px`;
-  el.style.top = `${ry}px`;
-  el.style.setProperty('--drift-x', `${driftX.toFixed(1)}px`);
+  const pos = getTargetPos();
+  const isCrit = styleClass === 'fct-crit';
+  const isDot = styleClass === 'fct-dot';
+  const isNormal = styleClass === 'fct-normal';
+  const isGold = styleClass === 'fct-gold';
+  const isBig = Boolean(extraOpts.isBig);
+
+  const el = document.createElement('div');
+  el.className = `fct-item ${styleClass}${isCrit ? ' crit-flash' : ''}${isCrit && isBig ? ' fct-big-crit' : ''}`;
+  el.textContent = text;
+
+  let x = pos.x;
+  let y = pos.y + offsetY;
+  let vx = 0;
+  let vy = -200;
+  let gravity = 680;
+  let maxLife = 0.95;
+  let holdTime = 0;
+
+  if (isCrit || isNormal) {
+    // 연속 타격 시 좌/우 방향을 기본 교차하되 약간의 변칙과 5단계 부채꼴 각도 밴드를 순환시켜 매번 다른 궤적 생성
+    if (Math.random() < 0.84) {
+      fctArcState.lastSide *= -1;
+    }
+    const side = fctArcState.lastSide;
+    const band = fctArcState.fanStep;
+    fctArcState.fanStep = (fctArcState.fanStep + 1) % 5;
+
+    // 5단계 발사 각도 프로파일 (고각 분수형 ~ 광각 곡선형)
+    const angleProfiles = [
+      { vxMin: 48, vxMax: 74, vyMin: -255, vyMax: -285 },
+      { vxMin: 92, vxMax: 128, vyMin: -215, vyMax: -245 },
+      { vxMin: 32, vxMax: 56, vyMin: -275, vyMax: -305 },
+      { vxMin: 118, vxMax: 154, vyMin: -190, vyMax: -220 },
+      { vxMin: 72, vxMax: 104, vyMin: -235, vyMax: -265 }
+    ];
+    const prof = angleProfiles[band];
+    const randVx = prof.vxMin + Math.random() * (prof.vxMax - prof.vxMin);
+    const randVy = prof.vyMin + Math.random() * (prof.vyMax - prof.vyMin);
+
+    if (isCrit) {
+      x = pos.x + side * (8 + Math.random() * 18);
+      y = pos.y - 24 + offsetY + (Math.random() * 16 - 8);
+      vx = side * randVx * (isBig ? 1.22 : 1.12);
+      vy = randVy * (isBig ? 1.16 : 1.08);
+      gravity = 760;
+      maxLife = isBig ? 1.12 : 1.04;
+      // 와우 크리티컬 특유의 타격 순간 '팍~!!!' 하고 꽂히는 짧은 임팩트 홀드
+      holdTime = 0.068;
+    } else {
+      x = pos.x + side * (5 + Math.random() * 16);
+      y = pos.y - 12 + offsetY + (Math.random() * 16 - 8);
+      vx = side * randVx;
+      vy = randVy;
+      gravity = 720;
+      maxLife = 0.92;
+    }
+  } else if (isDot) {
+    // 도트(화상/연소) 데미지는 몬스터 좌/우 측면에서 짧고 경쾌한 포물선으로 톡톡 튀어나와 바닥으로 낙하
+    fctArcState.dotSide *= -1;
+    const side = Math.random() < 0.85 ? fctArcState.dotSide : -fctArcState.dotSide;
+    x = pos.x + side * (24 + Math.random() * 20);
+    y = pos.y - 2 + offsetY + (Math.random() * 16 - 8);
+    vx = side * (62 + Math.random() * 55);
+    vy = -(145 + Math.random() * 48);
+    gravity = 650;
+    maxLife = 0.82;
+  } else if (isGold) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    x = pos.x + (Math.random() * 24 - 12);
+    y = pos.y - 20 + offsetY;
+    vx = side * (35 + Math.random() * 45);
+    vy = -(225 + Math.random() * 35);
+    gravity = 620;
+    maxLife = 1.08;
+  } else {
+    // 프록 알림 (🔥 연쇄 폭발! 등)
+    x = pos.x + (Math.random() * 16 - 8);
+    y = pos.y - 32 + offsetY;
+    vx = (Math.random() - 0.5) * 36;
+    vy = -165;
+    gravity = 420;
+    maxLife = 1.05;
+    holdTime = 0.08;
+  }
+
+  const item = {
+    el,
+    type: isCrit ? 'crit' : isDot ? 'dot' : isNormal ? 'normal' : isGold ? 'gold' : 'proc',
+    isBig,
+    x,
+    y,
+    vx,
+    vy,
+    gravity,
+    life: 0,
+    maxLife,
+    holdTime,
+    flashed: isCrit
+  };
+
+  applyFloatingTextTransform(item);
   layer.appendChild(el);
-  setTimeout(() => el.remove(), 1200);
+  floatingTexts.push(item);
+}
+
+function applyFloatingTextTransform(f) {
+  const t = f.life;
+  const prog = Math.min(1, t / f.maxLife);
+  let scale = 1.0;
+
+  if (f.type === 'crit') {
+    // 와우 크리티컬 스케일 펀치: 초고속(42ms)으로 2.2~2.45배까지 '팍~!!!' 커진 뒤 탄성 있게 안착
+    const peak = f.isBig ? 2.45 : 2.18;
+    const settle = f.isBig ? 1.14 : 1.04;
+    if (t < 0.042) {
+      const p = t / 0.042;
+      const easeOut = 1 - Math.pow(1 - p, 3);
+      scale = 0.22 + (peak - 0.22) * easeOut;
+    } else if (t < 0.115) {
+      const p = (t - 0.042) / (0.115 - 0.042);
+      const easeInOut = p * p * (3 - 2 * p);
+      scale = peak - (peak - settle * 0.88) * easeInOut;
+    } else if (t < 0.175) {
+      const p = (t - 0.115) / (0.175 - 0.115);
+      scale = settle * 0.88 + (settle * 1.08 - settle * 0.88) * Math.sin(p * Math.PI);
+    } else {
+      scale = settle;
+    }
+  } else if (f.type === 'normal') {
+    // 일반 데미지: '뿅!' 하고 탄력 있게 튀어나오는 팝인 스케일
+    if (t < 0.05) {
+      const p = t / 0.05;
+      scale = 0.32 + (1.24 - 0.32) * (1 - Math.pow(1 - p, 2));
+    } else if (t < 0.11) {
+      const p = (t - 0.05) / 0.06;
+      scale = 1.24 - 0.24 * p;
+    } else {
+      scale = 1.0;
+    }
+  } else if (f.type === 'dot') {
+    if (t < 0.045) {
+      const p = t / 0.045;
+      scale = 0.4 + (1.14 - 0.4) * p;
+    } else if (t < 0.095) {
+      const p = (t - 0.045) / 0.05;
+      scale = 1.14 - 0.18 * p;
+    } else {
+      scale = 0.96;
+    }
+  } else {
+    // proc / gold
+    if (t < 0.055) {
+      const p = t / 0.055;
+      scale = 0.35 + (1.32 - 0.35) * (1 - Math.pow(1 - p, 2));
+    } else if (t < 0.12) {
+      const p = (t - 0.055) / 0.065;
+      scale = 1.32 - 0.32 * p;
+    } else {
+      scale = 1.0;
+    }
+  }
+
+  // 낙하 후반부(65%~100%)에 바닥 쪽으로 떨어지며 자연스럽게 페이드 아웃 & 미세 축소
+  let opacity = 1.0;
+  if (prog > 0.65) {
+    const fadeProg = (prog - 0.65) / 0.35;
+    opacity = Math.max(0, Math.pow(1 - fadeProg, 1.45));
+    scale *= 1 - fadeProg * 0.12;
+  }
+
+  f.el.style.opacity = opacity.toFixed(3);
+  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})`;
+}
+
+function updateFloatingTexts(dt) {
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const f = floatingTexts[i];
+    f.life += dt;
+    if (f.life >= f.maxLife) {
+      f.el.remove();
+      floatingTexts.splice(i, 1);
+      continue;
+    }
+
+    // 크리티컬 첫 임팩트 순간 화이트핫 플래시 해제
+    if (f.flashed && f.life >= 0.065) {
+      f.flashed = false;
+      f.el.classList.remove('crit-flash');
+    }
+
+    // 크리티컬 임팩트 홀드 구간에서는 '팍!' 하고 박히는 느낌을 위해 이동 속도를 잠시 늦췄다가 포물선 가속
+    const motionScale = f.life < f.holdTime ? 0.22 : 1.0;
+    const effDt = dt * motionScale;
+
+    f.x += f.vx * effDt;
+    f.y += f.vy * effDt;
+    f.vy += f.gravity * effDt;
+    // 수평 공기 저항으로 자연스러운 포물선 곡률 형성
+    f.vx *= Math.pow(0.92, effDt * 60 * 0.016);
+
+    applyFloatingTextTransform(f);
+  }
 }
 
 // ==========================================
@@ -1094,6 +1327,7 @@ function onMonsterKilled() {
   const pos = getTargetPos();
   spawnParticles(pos.x, pos.y, 24, '#fde047', '#22c55e', 1.2);
 
+  checkAndTriggerUnfolds(false);
   updateDpsMeterUI();
   if (state.autoAdvance && canAdvanceToNextStage()) {
     loadStage(state.currentStage + 1);
@@ -1135,10 +1369,11 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     dummyEl.classList.add(isCrit ? 'crit-hit' : 'hit');
   }
 
+  const isBigSkill = skillKey === 'pyroblast' || skillKey === 'meteor';
   if (isDotTick || skillKey === 'ignite') {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-dot', 5);
   } else if (isCrit) {
-    spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8);
+    spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
     playSound('crit');
   } else {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-normal', 0);
@@ -1548,12 +1783,81 @@ function getItemCost(item) {
   return Math.round(item.baseCost * Math.pow(item.costScale, lv));
 }
 
+let selectedTalentId = 'fire_elem';
+
+function buildTalentTooltipHtml(nodeId) {
+  const n = SKILL_TREE_NODES.find((x) => x.id === nodeId) || SKILL_TREE_NODES[0];
+  const availSp = getAvailableSkillPoints();
+  const spentSp = getSpentSkillPoints();
+  const lv = state.skillTree[n.id] || 0;
+  const isMax = lv >= n.maxLv;
+  const tierUnlocked = spentSp >= n.reqTotalSp;
+  const canLearn = tierUnlocked && !isMax && availSp >= n.cost;
+
+  let reqHtml = '';
+  if (isMax) {
+    reqHtml = `<div class="wow-tt-req is-max">★ 최고 단계 달성 (마스터 완료)</div>`;
+  } else if (!tierUnlocked) {
+    reqHtml = `<div class="wow-tt-req is-locked">🔒 하위 특성에 총 ${n.reqTotalSp} SP 투자 필요 (현재 ${spentSp} SP)</div>`;
+  } else if (availSp < n.cost) {
+    reqHtml = `<div class="wow-tt-req is-locked">필요 포인트: ${n.cost} SP (보유 SP 부족)</div>`;
+  } else {
+    reqHtml = `<div class="wow-tt-req is-ready">필요 포인트: ${n.cost} SP · 아이콘 클릭 시 즉시 습득</div>`;
+  }
+
+  let effectHtml = '';
+  if (lv === 0) {
+    effectHtml = `
+      <div class="wow-tt-section">
+        <div class="wow-tt-label next">다음 단계 (1/${n.maxLv}):</div>
+        <div class="wow-tt-desc next">${n.desc(1)}</div>
+      </div>
+    `;
+  } else if (isMax) {
+    effectHtml = `
+      <div class="wow-tt-section">
+        <div class="wow-tt-label current">현재 효과 (${lv}/${n.maxLv}):</div>
+        <div class="wow-tt-desc current">${n.desc(lv)}</div>
+      </div>
+    `;
+  } else {
+    effectHtml = `
+      <div class="wow-tt-section">
+        <div class="wow-tt-label current">현재 효과 (${lv}/${n.maxLv}):</div>
+        <div class="wow-tt-desc current">${n.desc(lv)}</div>
+      </div>
+      <div class="wow-tt-section next-block">
+        <div class="wow-tt-label next">다음 단계 (${lv + 1}/${n.maxLv}):</div>
+        <div class="wow-tt-desc next">${n.desc(lv + 1)}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="wow-tt-header">
+      <div class="wow-tt-title-wrap">
+        <span class="wow-tt-icon">${n.icon}</span>
+        <div>
+          <div class="wow-tt-name">${n.name}</div>
+          <div class="wow-tt-rank">단계 ${lv} / ${n.maxLv}</div>
+        </div>
+      </div>
+      <button class="wow-tt-learn-btn has-badge-anchor" data-tree-node="${n.id}" ${!canLearn ? 'disabled' : ''}>
+        <span>${isMax ? '마스터' : !tierUnlocked ? `🔒 ${n.reqTotalSp} SP` : `습득 (${n.cost} SP)`}</span>
+        <span class="noti-badge ${canLearn ? '' : 'hidden'}">!</span>
+      </button>
+    </div>
+    ${reqHtml}
+    ${effectHtml}
+  `;
+}
+
 function renderSkillTreeUI() {
   const availSp = getAvailableSkillPoints();
   const spentSp = getSpentSkillPoints();
 
   document.getElementById('ui-tab-sp-badge').textContent = `${availSp} SP`;
-  document.getElementById('ui-tree-sp-box').textContent = `보유: ${availSp} SP`;
+  document.getElementById('ui-tree-sp-box').textContent = `특성 포인트: ${availSp} SP (누적 ${spentSp} SP)`;
 
   const badgesEl = document.getElementById('summon-active-badges');
   const activeChips = [];
@@ -1564,53 +1868,138 @@ function renderSkillTreeUI() {
   badgesEl.innerHTML = activeChips.join('');
 
   const container = document.getElementById('skill-tree-container');
-  const tiers = [
-    { tier: 1, title: 'TIER 1 : 원소 & 환수 소환', req: 0 },
-    { tier: 2, title: 'TIER 2 : 전열 골렘 & 다중 탄환', req: 1 },
-    { tier: 3, title: 'TIER 3 : 군단 일제사격 & 유성우', req: 3 }
-  ];
 
-  container.innerHTML = tiers
-    .map((t) => {
-      const tierUnlocked = spentSp >= t.req;
-      const nodes = SKILL_TREE_NODES.filter((n) => n.tier === t.tier);
-      const nodesHtml = nodes
-        .map((n) => {
-          const lv = state.skillTree[n.id] || 0;
-          const isMax = lv >= n.maxLv;
-          const canLearn = tierUnlocked && !isMax && availSp >= n.cost;
-          return `
-            <div class="st-node-card ${lv > 0 ? 'unlocked-node' : ''} ${canLearn ? 'can-learn' : ''} ${!tierUnlocked ? 'locked-tier' : ''}">
-              <div class="shop-card-left">
-                <div class="st-node-icon">${n.icon}</div>
-                <div class="shop-info">
-                  <div class="shop-title">
-                    <span>${n.name}</span>
-                    <span class="shop-lv-tag">${lv} / ${n.maxLv}</span>
-                  </div>
-                  <div class="shop-desc">${n.desc(lv)}</div>
-                </div>
-              </div>
-              <button class="st-node-btn has-badge-anchor" data-tree-node="${n.id}" ${!canLearn ? 'disabled' : ''}>
-                <span>${isMax ? '✔ 마스터' : !tierUnlocked ? `🔒 ${t.req} SP` : `습득 (${n.cost} SP)`}</span>
-                <span class="noti-badge ${canLearn ? '' : 'hidden'}">!</span>
-              </button>
+  // 좌표 계산 헬퍼 (viewBox 300 x 288 기준)
+  const getCoord = (node) => ({
+    x: (node.col - 0.5) * 100,
+    y: (node.row - 1) * 96 + 40
+  });
+
+  // 1. 노드 간 화살표 연결선(SVG) 생성
+  const svgLinesHtml = SKILL_TREE_LINKS.map((link) => {
+    const fromNode = SKILL_TREE_NODES.find((n) => n.id === link.from);
+    const toNode = SKILL_TREE_NODES.find((n) => n.id === link.to);
+    if (!fromNode || !toNode) return '';
+
+    const p1 = getCoord(fromNode);
+    const p2 = getCoord(toNode);
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+
+    // 아이콘 테두리 바깥에서 시작해 타겟 아이콘 테두리 직전에 화살표가 닿도록 오프셋 적용
+    const x1 = (p1.x + ux * 26).toFixed(1);
+    const y1 = (p1.y + uy * 26).toFixed(1);
+    const x2 = (p2.x - ux * 31).toFixed(1);
+    const y2 = (p2.y - uy * 31).toFixed(1);
+
+    const fromLv = state.skillTree[fromNode.id] || 0;
+    const toLv = state.skillTree[toNode.id] || 0;
+    const toTierUnlocked = spentSp >= toNode.reqTotalSp;
+
+    let stateCls = 'locked';
+    let markerId = 'wow-arrow-locked';
+    if (toLv > 0 || (fromLv > 0 && toTierUnlocked)) {
+      stateCls = 'active';
+      markerId = 'wow-arrow-active';
+    } else if (toTierUnlocked) {
+      stateCls = 'ready';
+      markerId = 'wow-arrow-ready';
+    }
+
+    return `
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="wow-link-casing" />
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="wow-link-line ${stateCls}" marker-end="url(#${markerId})" />
+    `;
+  }).join('');
+
+  // 2. 3x3 와우 특성 그리드 셀 생성
+  const tierLabels = {
+    1: '1단계 · 기본 소환',
+    2: '2단계 · 1 SP 요구',
+    3: '3단계 · 3 SP 궁극'
+  };
+
+  let gridRowsHtml = '';
+  for (let r = 1; r <= 3; r++) {
+    const tierReq = r === 1 ? 0 : r === 2 ? 1 : 3;
+    const tierUnlocked = spentSp >= tierReq;
+    let cellsHtml = '';
+
+    for (let c = 1; c <= 3; c++) {
+      const n = SKILL_TREE_NODES.find((node) => node.row === r && node.col === c);
+      if (!n) {
+        cellsHtml += `<div class="wow-tree-cell empty-cell"></div>`;
+        continue;
+      }
+
+      const lv = state.skillTree[n.id] || 0;
+      const isMax = lv >= n.maxLv;
+      const canLearn = tierUnlocked && !isMax && availSp >= n.cost;
+      const isSelected = n.id === selectedTalentId;
+
+      let stateClass = 'state-locked';
+      if (isMax) stateClass = 'state-max';
+      else if (canLearn) stateClass = 'state-learnable';
+      else if (lv > 0) stateClass = 'state-invested';
+      else if (tierUnlocked) stateClass = 'state-unlocked';
+
+      cellsHtml += `
+        <div class="wow-tree-cell">
+          <button
+            type="button"
+            class="wow-talent-node ${stateClass} ${isSelected ? 'is-selected' : ''} has-badge-anchor"
+            data-tree-node="${n.id}"
+            data-inspect-node="${n.id}"
+          >
+            <div class="wow-node-frame">
+              <span class="wow-node-icon">${n.icon}</span>
+              <span class="wow-node-rank">${lv}/${n.maxLv}</span>
+              ${!tierUnlocked ? '<span class="wow-node-lock">🔒</span>' : ''}
             </div>
-          `;
-        })
-        .join('');
-
-      return `
-        <div class="st-tier-block">
-          <div class="st-tier-header">
-            <span>${t.title}</span>
-            <span>${tierUnlocked ? '🔓' : `🔒 ${t.req} SP`}</span>
-          </div>
-          <div class="st-nodes-grid">${nodesHtml}</div>
+            <span class="wow-node-name">${n.shortName}</span>
+            <span class="noti-badge ${canLearn ? '' : 'hidden'}">!</span>
+          </button>
         </div>
       `;
-    })
-    .join('');
+    }
+
+    gridRowsHtml += `
+      <div class="wow-tree-row ${tierUnlocked ? 'tier-open' : 'tier-locked'}">
+        <div class="wow-tier-side-tag">
+          <span>${tierLabels[r]}</span>
+        </div>
+        ${cellsHtml}
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="wow-tree-board">
+      <svg class="wow-tree-svg" viewBox="0 0 300 288" preserveAspectRatio="none">
+        <defs>
+          <marker id="wow-arrow-locked" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+            <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#475569" />
+          </marker>
+          <marker id="wow-arrow-ready" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+            <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#d97706" />
+          </marker>
+          <marker id="wow-arrow-active" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+            <path d="M0,0.5 L5.5,3 L0,5.5 Z" fill="#fde047" />
+          </marker>
+        </defs>
+        ${svgLinesHtml}
+      </svg>
+      <div class="wow-tree-grid">
+        ${gridRowsHtml}
+      </div>
+    </div>
+    <div class="wow-talent-tooltip" id="wow-talent-tooltip">
+      ${buildTalentTooltipHtml(selectedTalentId)}
+    </div>
+  `;
 
   updateNotificationBadges();
 }
@@ -1700,10 +2089,135 @@ function renderShopUI() {
   updateNotificationBadges();
 }
 
+let unfoldToastTimer = null;
+
+function showUnfoldToast(title, desc) {
+  const toastEl = document.getElementById('unfold-toast');
+  if (!toastEl) return;
+  toastEl.innerHTML = `
+    <div class="unfold-toast-title">${title}</div>
+    <div class="unfold-toast-desc">${desc}</div>
+  `;
+  toastEl.classList.remove('hidden', 'toast-pop');
+  void toastEl.offsetWidth;
+  toastEl.classList.add('toast-pop');
+
+  if (unfoldToastTimer) clearTimeout(unfoldToastTimer);
+  unfoldToastTimer = setTimeout(() => {
+    toastEl.classList.add('hidden');
+  }, 3200);
+}
+
+function triggerUnfoldPop(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.classList.remove('unfold-pop-anim');
+  void el.offsetWidth;
+  el.classList.add('unfold-pop-anim');
+}
+
+function checkAndTriggerUnfolds(silent = false) {
+  const u = state.unfolded;
+  let changed = false;
+
+  // 1. 첫 몬스터 처치 또는 첫 골드(4G+) 획득 시: 마법 습득 상점 & 스테이지 네비게이션 개방
+  if (!u.grimoireShop && (state.gold >= 4 || state.highestClearedStage >= 1 || state.grimoires.autocast)) {
+    u.grimoireShop = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast('🔓 새로운 시스템 해금: 마법 연구소!', '우측 [📜 마법 습득] 상점에서 새로운 마법서를 구매할 수 있습니다.');
+      triggerUnfoldPop('grimoire-section');
+    }
+  }
+
+  if (!u.stageNav && (state.highestClearedStage >= 1 || state.dpsClearedStage >= 1 || state.currentStage > 1)) {
+    u.stageNav = true;
+    changed = true;
+    if (!silent) {
+      triggerUnfoldPop('stage-nav-bar');
+    }
+  }
+
+  // 2. 자동 시전 마법진 구매(또는 장비 1개 이상 보유) 시: 장비 강화 상점 & 자동 시전 버튼 & 치명타/시전속도 스탯 개방
+  const hasAnyEquip = Object.values(state.items).some((lv) => lv > 0);
+  if (!u.equipShop && (state.grimoires.autocast || hasAnyEquip || state.highestClearedStage >= 3)) {
+    u.equipShop = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast('🔓 새로운 시스템 해금: 자동 시전 & 장비 강화!', '이제 마법을 자동으로 시전하고 장비를 강화해 스탯을 높일 수 있습니다.');
+      triggerUnfoldPop('item-section');
+      triggerUnfoldPop('btn-auto-cast');
+      triggerUnfoldPop('pill-crit');
+      triggerUnfoldPop('pill-haste');
+    }
+  }
+
+  // 3. Stage 5 보스 격파 또는 SP 보유/투자 시: 소환수 & 특성 트리 탭 개방
+  const hasSpProgress =
+    state.highestClearedStage >= 5 ||
+    getEarnedPhaseBossSp() > 0 ||
+    (state.bonusSkillPoints || 0) > 0 ||
+    getSpentSkillPoints() > 0;
+  if (!u.skillTree && hasSpProgress) {
+    u.skillTree = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast('🔓 새로운 시스템 해금: 소환수 & 특성 트리!', '우측 상단 [🌳 스킬 트리] 탭에서 강력한 소환수와 마법 특성을 습득하세요!');
+      triggerUnfoldPop('right-mode-tabs');
+    }
+  }
+
+  applyUnfoldedVisibility();
+  if (changed && !silent) {
+    saveGame();
+  }
+}
+
+function applyUnfoldedVisibility() {
+  const u = state.unfolded;
+
+  // 상단 치명타/시전속도 알약
+  const pillCrit = document.getElementById('pill-crit');
+  const pillHaste = document.getElementById('pill-haste');
+  if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
+  if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
+
+  // 스테이지 네비게이션 바
+  const stageNav = document.getElementById('stage-nav-bar');
+  if (stageNav) stageNav.classList.toggle('unfold-hidden', !u.stageNav);
+
+  // 우측 상단 [상점 / 스킬 트리] 탭 전환 바
+  const modeTabs = document.getElementById('right-mode-tabs');
+  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.skillTree);
+
+  // 우측 상점 내부: 초기 봉인 안내 vs 마법 습득 vs 장비 강화
+  const sealedCard = document.getElementById('unfold-sealed-shop');
+  const grimoireSec = document.getElementById('grimoire-section');
+  const itemSec = document.getElementById('item-section');
+  if (sealedCard) sealedCard.classList.toggle('unfold-hidden', u.grimoireShop);
+  if (grimoireSec) grimoireSec.classList.toggle('unfold-hidden', !u.grimoireShop);
+  if (itemSec) itemSec.classList.toggle('unfold-hidden', !u.equipShop);
+
+  // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
+  const unfoldAllBtn = document.getElementById('btn-unfold-all');
+  if (unfoldAllBtn) {
+    const allDone = u.stageNav && u.grimoireShop && u.equipShop && u.skillTree;
+    unfoldAllBtn.style.display = allDone ? 'none' : '';
+  }
+}
+
 function updateSkillActionBarVisibility() {
+  checkAndTriggerUnfolds(true);
+
   const btn2 = document.getElementById('skill-2');
   const icon2 = document.getElementById('icon-2');
   const charges2 = document.getElementById('charges-2');
+  // 2번 스킬 슬롯도 자동 시전 마법진 해금(또는 불꽃 작렬 습득) 전에는 숨겨서 초반 [1] 화염구에 집중!
+  if (state.grimoires.autocast || state.grimoires.fireblast || state.unfolded.equipShop) {
+    btn2.classList.remove('hidden-slot');
+  } else {
+    btn2.classList.add('hidden-slot');
+  }
   if (state.grimoires.fireblast) {
     btn2.classList.remove('locked-skill');
     icon2.textContent = '💥';
@@ -1761,8 +2275,9 @@ function updateSkillActionBarVisibility() {
 
   const autoBtn = document.getElementById('btn-auto-cast');
   const autoBtnText = document.getElementById('btn-auto-cast-text');
+  autoBtn.classList.toggle('unfold-hidden', !state.unfolded.equipShop && !state.grimoires.autocast);
   if (!state.grimoires.autocast) {
-    autoBtn.className = 'auto-cast-btn locked has-badge-anchor';
+    autoBtn.className = `auto-cast-btn locked has-badge-anchor ${!state.unfolded.equipShop ? 'unfold-hidden' : ''}`;
     autoBtnText.textContent = '🔒 자동 시전';
   } else if (state.autoCast) {
     autoBtn.className = 'auto-cast-btn active has-badge-anchor';
@@ -2115,6 +2630,7 @@ function saveGame() {
       autoAdvance: state.autoAdvance,
       autoCast: state.autoCast,
       soundOn: state.soundOn,
+      unfolded: state.unfolded,
       bonusSkillPoints: state.bonusSkillPoints,
       skillTree: state.skillTree,
       grimoires: state.grimoires,
@@ -2138,6 +2654,7 @@ function loadGame() {
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;
     if (typeof data.bonusSkillPoints === 'number') state.bonusSkillPoints = data.bonusSkillPoints;
+    if (data.unfolded) Object.assign(state.unfolded, data.unfolded);
     if (data.skillTree) Object.assign(state.skillTree, data.skillTree);
     if (data.grimoires) Object.assign(state.grimoires, data.grimoires);
     if (data.items) Object.assign(state.items, data.items);
@@ -2207,17 +2724,39 @@ function initEvents() {
   document.getElementById('tab-btn-shop').addEventListener('click', () => switchRightTab('shop'));
   document.getElementById('tab-btn-tree').addEventListener('click', () => switchRightTab('tree'));
 
-  document.getElementById('skill-tree-container').addEventListener('click', (e) => {
+  const treeContainer = document.getElementById('skill-tree-container');
+  treeContainer.addEventListener('mouseover', (e) => {
+    const inspectEl = e.target.closest('[data-inspect-node]');
+    if (!inspectEl) return;
+    const id = inspectEl.getAttribute('data-inspect-node');
+    if (!id || id === selectedTalentId) return;
+
+    selectedTalentId = id;
+    treeContainer.querySelectorAll('.wow-talent-node').forEach((nodeBtn) => {
+      nodeBtn.classList.toggle('is-selected', nodeBtn.getAttribute('data-inspect-node') === id);
+    });
+    const tooltipEl = document.getElementById('wow-talent-tooltip');
+    if (tooltipEl) {
+      tooltipEl.innerHTML = buildTalentTooltipHtml(id);
+    }
+  });
+
+  treeContainer.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-tree-node]');
     if (!btn) return;
     const id = btn.getAttribute('data-tree-node');
     const node = SKILL_TREE_NODES.find((n) => n.id === id);
     if (!node) return;
 
+    selectedTalentId = id;
     const lv = state.skillTree[id] || 0;
     const availSp = getAvailableSkillPoints();
     const spentSp = getSpentSkillPoints();
-    if (lv >= node.maxLv || availSp < node.cost || spentSp < node.reqTotalSp) return;
+
+    if (lv >= node.maxLv || availSp < node.cost || spentSp < node.reqTotalSp) {
+      renderSkillTreeUI();
+      return;
+    }
 
     state.skillTree[id] = lv + 1;
     playSound('proc');
@@ -2230,6 +2769,7 @@ function initEvents() {
     state.bonusSkillPoints = (state.bonusSkillPoints || 0) + 1;
     playSound('proc');
     spawnFloatingText('🌟 +1 SP!', 'fct-proc', -40);
+    checkAndTriggerUnfolds(false);
     saveGame();
     renderSkillTreeUI();
   });
@@ -2257,6 +2797,7 @@ function initEvents() {
     }
     playSound('proc');
     spawnFloatingText(`📜 ${g.name}!`, 'fct-proc', -35);
+    checkAndTriggerUnfolds(false);
     saveGame();
     renderShopUI();
   });
@@ -2273,9 +2814,25 @@ function initEvents() {
     state.gold -= cost;
     state.items[id] = (state.items[id] || 0) + 1;
     playSound('kill');
+    checkAndTriggerUnfolds(false);
     saveGame();
     renderShopUI();
   });
+
+  const unfoldAllBtn = document.getElementById('btn-unfold-all');
+  if (unfoldAllBtn) {
+    unfoldAllBtn.addEventListener('click', () => {
+      state.unfolded.stageNav = true;
+      state.unfolded.grimoireShop = true;
+      state.unfolded.equipShop = true;
+      state.unfolded.skillTree = true;
+      playSound('proc');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 마법 습득, 장비 강화, 특성 트리가 모두 펼쳐졌습니다.');
+      applyUnfoldedVisibility();
+      updateSkillActionBarVisibility();
+      saveGame();
+    });
+  }
 
   const soundBtn = document.getElementById('btn-sound');
   soundBtn.addEventListener('click', () => {
@@ -2297,6 +2854,7 @@ function initEvents() {
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
   loadGame();
+  checkAndTriggerUnfolds(true);
   resizeCanvas();
   initEvents();
   document.getElementById('chk-auto-advance').checked = state.autoAdvance;

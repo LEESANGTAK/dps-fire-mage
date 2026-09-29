@@ -653,7 +653,7 @@ body {
   to { opacity: 1; }
 }
 
-/* Floating Combat Text Layer (Authentic WoW Style) */
+/* Floating Combat Text Layer (Authentic WoW Parabolic Arc & Scale Punch) */
 .fct-layer {
   position: absolute;
   inset: 0;
@@ -664,30 +664,35 @@ body {
 
 .fct-item {
   position: absolute;
-  font-family: 'Arial Black', 'Impact', 'Pretendard', sans-serif;
+  left: 0;
+  top: 0;
+  font-family: 'Impact', 'Arial Black', 'Pretendard', sans-serif;
   font-weight: 900;
   white-space: nowrap;
   pointer-events: none;
+  user-select: none;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.5px;
-  --drift-x: 0px;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
-/* 일반 직접 피해: 깔끔하게 위로 떠오르는 밝은 황백색 숫자 */
+/* 일반 직접 피해: 밝고 선명한 와우 마법 피해 골드/아이보리 톤 */
 .fct-normal {
-  font-size: 1.35rem;
-  color: #fffbeb;
+  font-size: 1.42rem;
+  color: #fff8dc;
   text-shadow:
     -1.5px -1.5px 0 #000,
      1.5px -1.5px 0 #000,
     -1.5px  1.5px 0 #000,
      1.5px  1.5px 0 #000,
-     0px 3px 5px rgba(0, 0, 0, 0.85);
-  z-index: 22;
-  animation: wowNormalFloat 1.0s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+     0px  2px 0 #000,
+     0px  4px 6px rgba(0, 0, 0, 0.85);
+  z-index: 24;
 }
 
-/* 치명타(크리티컬) 피해: 와우 특유의 큰 노란 숫자가 '팍~!' 하고 튀어나와 박히는 타격감 */
+/* 치명타(크리티컬) 피해: 와우 특유의 강렬한 황금빛 + 두꺼운 외곽선 + 화염 광채 */
 .fct-crit {
   font-size: 2.35rem;
   color: #ffd100;
@@ -696,39 +701,56 @@ body {
      2px -2px 0 #000,
     -2px  2px 0 #000,
      2px  2px 0 #000,
-     0px  4px 0 #000,
-     0px  0px 16px rgba(255, 140, 0, 0.95);
-  z-index: 30;
-  animation: wowCritSlam 1.15s linear forwards;
+     0px -2px 0 #000,
+     0px  3.5px 0 #000,
+     0px  0px 18px rgba(255, 120, 0, 0.95),
+     0px  5px 10px rgba(0, 0, 0, 0.95);
+  z-index: 32;
+}
+
+/* 치명타 첫 타격 순간(팍~!!!) 화이트핫 임팩트 플래시 */
+.fct-crit.crit-flash {
+  color: #ffffff;
+  text-shadow:
+    -2px -2px 0 #000,
+     2px -2px 0 #000,
+    -2px  2px 0 #000,
+     2px  2px 0 #000,
+     0px  0px 24px #fde047,
+     0px  0px 40px #ff4500;
+}
+
+/* 대형 주력기(불덩이 작열, 운석 낙하) 크리티컬 추가 강조 */
+.fct-crit.fct-big-crit {
+  font-size: 2.65rem;
+  color: #ffe135;
 }
 
 /* 도트(DoT) 지속 피해: 와우 특유의 선명한 오렌지색 숫자 */
 .fct-dot {
-  font-size: 1.12rem;
+  font-size: 1.14rem;
   color: #ff8000;
   text-shadow:
     -1.5px -1.5px 0 #000,
      1.5px -1.5px 0 #000,
     -1.5px  1.5px 0 #000,
      1.5px  1.5px 0 #000,
-     0px 2px 4px rgba(0, 0, 0, 0.9);
+     0px  2px 4px rgba(0, 0, 0, 0.9);
   z-index: 21;
-  animation: wowDotFloat 0.95s ease-out forwards;
 }
 
 /* 프록 / 시스템 알림 */
 .fct-proc {
   font-family: 'Pretendard', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 800;
   color: #fef08a;
-  background: rgba(185, 28, 28, 0.9);
-  border: 1px solid #fde047;
-  padding: 3px 10px;
-  border-radius: 5px;
-  box-shadow: 0 0 14px rgba(251, 191, 36, 0.55);
-  z-index: 26;
-  animation: wowNormalFloat 1.15s ease-out forwards;
+  background: rgba(185, 28, 28, 0.92);
+  border: 1.5px solid #fde047;
+  padding: 3px 11px;
+  border-radius: 6px;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.65), 0 4px 10px rgba(0, 0, 0, 0.7);
+  z-index: 35;
 }
 
 /* 골드 획득 */
@@ -737,90 +759,13 @@ body {
   font-size: 1.18rem;
   font-weight: 800;
   color: #fde047;
-  background: rgba(20, 83, 45, 0.9);
+  background: rgba(20, 83, 45, 0.92);
   border: 1px solid #4ade80;
-  padding: 2px 9px;
+  padding: 2px 10px;
   border-radius: 99px;
   text-shadow: 1px 1px 2px #000;
-  z-index: 28;
-  animation: wowNormalFloat 1.2s ease-out forwards;
-}
-
-@keyframes wowNormalFloat {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.7);
-  }
-  12% {
-    opacity: 1;
-    transform: translate(calc(-50% + var(--drift-x) * 0.2), calc(-50% - 10px)) scale(1.05);
-  }
-  25% {
-    opacity: 1;
-    transform: translate(calc(-50% + var(--drift-x) * 0.4), calc(-50% - 18px)) scale(1.0);
-  }
-  75% {
-    opacity: 1;
-    transform: translate(calc(-50% + var(--drift-x) * 0.85), calc(-50% - 42px)) scale(1.0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(calc(-50% + var(--drift-x)), calc(-50% - 58px)) scale(0.95);
-  }
-}
-
-@keyframes wowCritSlam {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.25);
-  }
-  6% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.82);
-  }
-  13% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(0.92);
-  }
-  20% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-  27% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.0);
-  }
-  72% {
-    opacity: 1;
-    transform: translate(-50%, calc(-50% - 10px)) scale(1.0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, calc(-50% - 34px)) scale(0.9);
-  }
-}
-
-@keyframes wowDotFloat {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.65);
-  }
-  15% {
-    opacity: 1;
-    transform: translate(calc(-50% + var(--drift-x) * 0.25), calc(-50% - 8px)) scale(1.08);
-  }
-  30% {
-    opacity: 1;
-    transform: translate(calc(-50% + var(--drift-x) * 0.45), calc(-50% - 16px)) scale(1.0);
-  }
-  78% {
-    opacity: 0.95;
-    transform: translate(calc(-50% + var(--drift-x) * 0.85), calc(-50% - 36px)) scale(1.0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(calc(-50% + var(--drift-x)), calc(-50% - 50px)) scale(0.92);
-  }
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  z-index: 34;
 }
 
 /* Player HUD Bottom inside Arena */
@@ -1629,99 +1574,386 @@ body {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px;
   overflow-y: auto;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.st-tier-block {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+/* WoW Talent Tree Board (Dark Fiery Arcane Backdrop + Grid) */
+.wow-tree-board {
+  position: relative;
+  height: 288px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 1.5px solid #4b3621;
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.85), inset 0 0 12px rgba(234, 88, 12, 0.15);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(239, 68, 68, 0.16) 0%, transparent 60%),
+    radial-gradient(circle at 50% 85%, rgba(245, 158, 11, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, #161118 0%, #10131c 52%, #191115 100%);
+  overflow: hidden;
 }
 
-.st-tier-header {
-  font-size: 0.74rem;
-  font-weight: 800;
-  color: #cbd5e1;
-  background: #1a2233;
-  padding: 4px 10px;
-  border-radius: 4px;
-  border-left: 3px solid var(--fire-gold);
-  display: flex;
-  justify-content: space-between;
+.wow-tree-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.st-nodes-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+.wow-link-casing {
+  stroke: #090c12;
+  stroke-width: 7px;
+  stroke-linecap: round;
 }
 
-.st-node-card {
-  display: flex;
-  justify-content: space-between;
+.wow-link-line {
+  stroke-width: 3.5px;
+  stroke-linecap: round;
+  transition: stroke 0.2s;
+}
+
+.wow-link-line.locked {
+  stroke: #334155;
+  stroke-dasharray: 4 3;
+}
+
+.wow-link-line.ready {
+  stroke: #d97706;
+}
+
+.wow-link-line.active {
+  stroke: #fde047;
+  filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.8));
+}
+
+.wow-tree-grid {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: repeat(3, 96px);
+  width: 100%;
+  height: 100%;
+}
+
+.wow-tree-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   align-items: center;
-  gap: 10px;
-  background: #171e2c;
-  border: 1px solid #2d384d;
-  border-radius: 8px;
-  padding: 9px 11px;
-  transition: all 0.15s;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.12);
 }
 
-.st-node-card.unlocked-node {
-  border-color: #a855f7;
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.16) 0%, #171e2c 100%);
+.wow-tree-row:last-child {
+  border-bottom: none;
 }
 
-.st-node-card.can-learn {
-  border-color: var(--fire-gold);
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+.wow-tree-row.tier-locked {
+  background: rgba(5, 8, 14, 0.38);
 }
 
-.st-node-card.locked-tier {
-  opacity: 0.5;
+.wow-tier-side-tag {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgba(203, 213, 225, 0.55);
+  pointer-events: none;
+  letter-spacing: 0.2px;
 }
 
-.st-node-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: #0f141f;
-  border: 1px solid #3b4861;
+.wow-tree-row.tier-open .wow-tier-side-tag {
+  color: rgba(253, 224, 71, 0.75);
+}
+
+.wow-tree-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  height: 100%;
+}
+
+.wow-talent-node {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: transform 0.12s;
+}
+
+.wow-talent-node:hover {
+  transform: scale(1.06);
+}
+
+.wow-talent-node:active {
+  transform: scale(0.96);
+}
+
+.wow-node-frame {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  background: radial-gradient(circle at 35% 30%, #262f42 0%, #0d111a 100%);
+  border: 2.5px solid #475569;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+
+.wow-node-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8));
+}
+
+/* 우하단 와우식 [0/3] 랭크 카운터 배지 */
+.wow-node-rank {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: #070a10;
+  border: 1.5px solid #475569;
+  color: #94a3b8;
+  font-size: 0.66rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  padding: 0px 5px;
+  border-radius: 4px;
+  line-height: 1.25;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
+}
+
+.wow-node-lock {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  font-size: 0.72rem;
+  filter: drop-shadow(0 1px 2px #000);
+}
+
+.wow-node-name {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+  white-space: nowrap;
+}
+
+/* 노드 상태별 스타일 (와우 정통 컬러 규격: 잠금=회색, 습득가능=초록, 투자중=황금, 마스터=찬란한 골드) */
+.wow-talent-node.state-locked .wow-node-frame {
+  border-color: #2d3748;
+  background: #0b0e14;
+}
+
+.wow-talent-node.state-locked .wow-node-icon {
+  filter: grayscale(0.95) brightness(0.48);
+}
+
+.wow-talent-node.state-locked .wow-node-name {
+  color: #64748b;
+}
+
+.wow-talent-node.state-unlocked .wow-node-frame {
+  border-color: #64748b;
+}
+
+.wow-talent-node.state-learnable .wow-node-frame {
+  border-color: #22c55e;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.55), inset 0 0 8px rgba(34, 197, 94, 0.25);
+}
+
+.wow-talent-node.state-learnable .wow-node-rank {
+  border-color: #22c55e;
+  color: #4ade80;
+}
+
+.wow-talent-node.state-learnable .wow-node-name {
+  color: #bbf7d0;
+}
+
+.wow-talent-node.state-invested .wow-node-frame {
+  border-color: #f59e0b;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+}
+
+.wow-talent-node.state-invested .wow-node-rank {
+  border-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.wow-talent-node.state-invested .wow-node-name {
+  color: #fde68a;
+}
+
+.wow-talent-node.state-max .wow-node-frame {
+  border-color: #fde047;
+  background: radial-gradient(circle at 35% 30%, #451a03 0%, #18100c 100%);
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.75), inset 0 0 10px rgba(251, 191, 36, 0.35);
+}
+
+.wow-talent-node.state-max .wow-node-rank {
+  border-color: #fde047;
+  background: #422006;
+  color: #fef08a;
+}
+
+.wow-talent-node.state-max .wow-node-name {
+  color: #fde047;
+}
+
+.wow-talent-node.is-selected .wow-node-frame {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* 하단 고정 와우 스타일 툴팁 패널 */
+.wow-talent-tooltip {
+  background: linear-gradient(180deg, #0b101b 0%, #070a12 100%);
+  border: 1.5px solid #94a3b8;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.85), inset 0 0 0 1px rgba(251, 191, 36, 0.22);
+  border-radius: 7px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+
+.wow-tt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 6px;
+}
+
+.wow-tt-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wow-tt-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: #141b29;
+  border: 1px solid #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
-.st-node-btn {
-  background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
+.wow-tt-name {
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #ffd100;
+}
+
+.wow-tt-rank {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.wow-tt-learn-btn {
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
   color: #fff;
-  border: 1px solid #c084fc;
-  padding: 7px 11px;
+  border: 1px solid #4ade80;
+  padding: 6px 11px;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: filter 0.12s;
 }
 
-.st-node-btn:hover:not(:disabled) {
+.wow-tt-learn-btn:hover:not(:disabled) {
   filter: brightness(1.15);
 }
 
-.st-node-btn:disabled {
-  background: #1f2937;
-  border-color: #374151;
+.wow-tt-learn-btn:disabled {
+  background: #1e293b;
+  border-color: #334155;
   color: #64748b;
   cursor: not-allowed;
+}
+
+.wow-tt-req {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.wow-tt-req.is-locked {
+  color: #f87171;
+}
+
+.wow-tt-req.is-ready {
+  color: #4ade80;
+}
+
+.wow-tt-req.is-max {
+  color: #fde047;
+}
+
+.wow-tt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wow-tt-section.next-block {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.16);
+}
+
+.wow-tt-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.wow-tt-label.current {
+  color: #fde047;
+}
+
+.wow-tt-label.next {
+  color: #4ade80;
+}
+
+.wow-tt-desc {
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.wow-tt-desc.current {
+  color: #f8fafc;
+}
+
+.wow-tt-desc.next {
+  color: #bbf7d0;
 }
 
 /* ==========================================
@@ -1795,4 +2027,130 @@ body {
   to {
     transform: scale(1.14) translateY(-2px);
   }
+}
+
+/* ==========================================
+   8. Magic Archery Style Unfolding System
+   ========================================== */
+.unfold-hidden {
+  display: none !important;
+}
+
+.unfold-pop-anim {
+  animation: unfoldRevealAnim 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes unfoldRevealAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+    filter: brightness(1.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.65);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+.unfold-toast {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, rgba(124, 45, 18, 0.96) 0%, rgba(30, 27, 75, 0.96) 100%);
+  border: 2px solid #fde047;
+  border-radius: 10px;
+  padding: 10px 18px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 22px rgba(251, 191, 36, 0.55);
+  z-index: 45;
+  pointer-events: none;
+  min-width: 280px;
+}
+
+.unfold-toast.hidden {
+  display: none !important;
+}
+
+.unfold-toast.toast-pop {
+  animation: unfoldToastSlide 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes unfoldToastSlide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.85);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.04);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  84% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(0.95);
+  }
+}
+
+.unfold-toast-title {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #fde047;
+  margin-bottom: 3px;
+  text-shadow: 0 2px 4px #000;
+}
+
+.unfold-toast-desc {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.unfold-sealed-card {
+  flex: 1;
+  background: radial-gradient(circle at 50% 35%, rgba(124, 58, 237, 0.14) 0%, #111622 75%);
+  border: 1px dashed #475569;
+  border-radius: 8px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.sealed-icon {
+  font-size: 2.6rem;
+  filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.6));
+  animation: orbChargePulse 1.2s infinite alternate;
+}
+
+.sealed-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #e2e8f0;
+}
+
+.sealed-desc {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.sealed-desc b {
+  color: #fde047;
 }

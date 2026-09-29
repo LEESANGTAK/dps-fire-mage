@@ -22,17 +22,18 @@
         <span class="label">⚔️ 공격력</span>
         <span class="value" id="ui-sp">10</span>
       </div>
-      <div class="stat-pill">
+      <div class="stat-pill" id="pill-crit">
         <span class="label">💥 치명타</span>
         <span class="value" id="ui-crit">5.0%</span>
       </div>
-      <div class="stat-pill">
+      <div class="stat-pill" id="pill-haste">
         <span class="label">⚡ 시전속도</span>
         <span class="value" id="ui-haste">+0%</span>
       </div>
     </div>
 
     <div class="top-controls">
+      <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
       <button class="btn-top" id="btn-sound">🔊 사운드</button>
       <button class="btn-top btn-danger-outline" id="btn-reset-save">🗑️ 초기화</button>
     </div>
@@ -43,7 +44,7 @@
     <!-- 좌측: 전투 아레나 & DPS 미터기 -->
     <section class="combat-column">
       <!-- 1. 간소화된 스테이지 네비게이션 바 -->
-      <div class="stage-nav-bar">
+      <div class="stage-nav-bar" id="stage-nav-bar">
         <button class="stage-nav-btn" id="btn-prev-stage" title="이전 몬스터로 이동">◀ 이전</button>
 
         <div class="stage-center-info">
@@ -68,6 +69,9 @@
       <!-- 2. 중앙 전투 아레나 (상단 DPS 미터기 + 중앙 대결 + 하단 스킬바) -->
       <div class="combat-arena" id="combat-arena">
         <div class="combustion-aura-bg" id="combustion-bg"></div>
+
+        <!-- 언폴딩(시스템 해금) 축하 토스트 배너 -->
+        <div class="unfold-toast hidden" id="unfold-toast"></div>
 
         <!-- 2D 투사체 & 소환수 캔버스 -->
         <canvas class="vfx-canvas" id="vfx-canvas"></canvas>
@@ -168,7 +172,7 @@
               <div class="cd-overlay" id="cd-1"></div>
             </button>
 
-            <button class="skill-btn locked-skill has-badge-anchor" id="skill-2" data-skill="fireblast" title="[2] 불꽃 작렬 (즉시 시전, 100% 치명타)">
+            <button class="skill-btn locked-skill hidden-slot has-badge-anchor" id="skill-2" data-skill="fireblast" title="[2] 불꽃 작렬 (즉시 시전, 100% 치명타)">
               <span class="skill-hotkey">2</span>
               <span class="skill-icon" id="icon-2">🔒</span>
               <span class="skill-name" id="name-2">불꽃 작렬</span>
@@ -207,9 +211,9 @@
       </div>
     </section>
 
-    <!-- 우측: 간소화된 [🛒 상점] / [🌳 스킬 트리] -->
-    <aside class="shop-column">
-      <div class="right-mode-tabs">
+    <!-- 우측: 언폴딩 [🛒 상점] / [🌳 스킬 트리] -->
+    <aside class="shop-column" id="shop-column">
+      <div class="right-mode-tabs" id="right-mode-tabs">
         <button class="right-tab-btn active has-badge-anchor" id="tab-btn-shop" data-right-tab="shop">
           <span>🛒 상점</span>
           <span class="noti-badge hidden" id="badge-tab-shop">!</span>
@@ -223,7 +227,18 @@
 
       <!-- 탭 1: 상점 뷰 -->
       <div class="right-tab-pane active" id="pane-shop">
-        <div class="shop-section grimoire-section">
+        <!-- 초기 언폴딩 전 안내 카드 (첫 몬스터 처치 전) -->
+        <div class="unfold-sealed-card" id="unfold-sealed-shop">
+          <div class="sealed-icon">🔮</div>
+          <div class="sealed-title">봉인된 마법 연구소</div>
+          <div class="sealed-desc">
+            좌측의 <b>초원 풀숲 슬라임</b>에게<br />
+            <b>[1] 🔥 화염구</b>를 발사해 첫 토벌을 완료하면<br />
+            마법서 상점이 개방됩니다!
+          </div>
+        </div>
+
+        <div class="shop-section grimoire-section" id="grimoire-section">
           <div class="panel-title-row">
             <span>📜 마법 습득</span>
             <span class="section-sub" id="grimoire-progress">0 / 6</span>
@@ -231,7 +246,7 @@
           <div class="shop-list" id="grimoire-shop-list"></div>
         </div>
 
-        <div class="shop-section item-section">
+        <div class="shop-section item-section" id="item-section">
           <div class="panel-title-row">
             <span>⚔️ 장비 강화</span>
             <span class="section-sub" id="ui-power-summary">공격력 10</span>
