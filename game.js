@@ -378,12 +378,15 @@ const INFUSION_LIST = [
 // ==========================================
 const state = {
   gold: 0,
+  pendingCoinGold: 0,
   essence: 0,
   currentStage: 1,
   highestClearedStage: 0,
   dpsClearedStage: 0,
   maxDps: 0,
-  autoAdvance: false,
+  playTimeSec: 0,
+  totalKills: 0,
+  campaignCleared: false,
   autoCast: false,
   soundOn: true,
 
@@ -397,7 +400,8 @@ const state = {
     grimoireShop: false,
     equipShop: false,
     infusionShop: false,
-    skillTree: false
+    skillTree: false,
+    hallOfFame: false
   },
 
   bonusSkillPoints: 0,
@@ -573,10 +577,14 @@ function getPlayerStats() {
   crit = Math.min(100, crit);
   cdr = Math.min(0.6, cdr);
 
+  const isAbyssUnlocked = state.campaignCleared || state.highestClearedStage >= 20;
+  const abyssSpMult = isAbyssUnlocked ? 1.35 : 1.0;
+  const abyssEssenceMult = isAbyssUnlocked ? 2.0 : 1.0;
+
   const summonMult = 1 + (state.skillTree.legion_sync || 0) * 0.5;
-  const infusionSpMult = (1 + azureLv * 0.15) * (1 + totalInfLv * 0.02);
+  const infusionSpMult = (1 + azureLv * 0.15) * (1 + totalInfLv * 0.02) * abyssSpMult;
   const goldMult = 1 + alchemyLv * 0.22;
-  const essenceMult = 1 + alchemyLv * 0.08;
+  const essenceMult = (1 + alchemyLv * 0.08) * abyssEssenceMult;
   const igniteMult = 1 + ignitionLv * 0.25;
   const siphonChance = ignitionLv * 0.03;
 
@@ -639,15 +647,21 @@ function fmt(num) {
 }
 
 // ==========================================
-// 6. 사운드 매니저 (화염구 발사/폭발/크리티컬 폭발 WAV 효과음 & 보조 효과음)
+// 6. 사운드 매니저 (화염구 발사/폭발/크리티컬 폭발/아이템 선택/골드 도착/도트 화상 효과음)
 // ==========================================
 const FIREBALL_SFX_FILES = {
   fly: 'assets/sounds/sfx/fireball_fly.wav',
   explosion: 'assets/sounds/sfx/fireball_explosion.wav',
-  explosion_crit: 'assets/sounds/sfx/fireball_explosion_critical.wav'
+  explosion_crit: 'assets/sounds/sfx/fireball_explosion_critical.wav',
+  item_select: 'assets/sounds/sfx/item_select.wav',
+  drop_coin: 'assets/sounds/sfx/drop_coin.mp3'
 };
 
 const preloadedSfx = {};
+const burningLoopAudio = new Audio('assets/sounds/sfx/burning.mp3');
+burningLoopAudio.preload = 'auto';
+burningLoopAudio.loop = true;
+burningLoopAudio.volume = 0.55;
 
 function initSfxAudio() {
   for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
@@ -657,6 +671,22 @@ function initSfxAudio() {
   }
 }
 initSfxAudio();
+
+function updateBurningLoopSound() {
+  const c = state.combat;
+  const isDotBurning = state.soundOn && ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0);
+  try {
+    if (isDotBurning) {
+      if (burningLoopAudio.paused) {
+        burningLoopAudio.play().catch(() => {});
+      }
+    } else {
+      if (!burningLoopAudio.paused) {
+        burningLoopAudio.pause();
+      }
+    }
+  } catch (e) {}
+}
 
 function playFireballSfx(kind, volume = 0.65) {
   if (!state.soundOn) return;
@@ -682,6 +712,14 @@ function playSound(type) {
   }
   if (type === 'crit') {
     playFireballSfx('explosion_crit', 0.85);
+    return;
+  }
+  if (type === 'item_select') {
+    playFireballSfx('item_select', 0.78);
+    return;
+  }
+  if (type === 'drop_coin' || type === 'coin_tick') {
+    playFireballSfx('drop_coin', 0.78);
     return;
   }
   try {
@@ -716,18 +754,6 @@ function playSound(type) {
       gain.connect(audioCtx.destination);
       osc.start(now);
       osc.stop(now + 0.38);
-    } else if (type === 'kill') {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(660, now + 0.07);
-      gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.22);
     }
   } catch (e) {}
 }
@@ -1369,7 +1395,7 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     if (oldest && oldest.el) oldest.el.remove();
   }
 
-  const pos = getTargetPos();
+  const pos = extraOpts.anchor === 'caster' ? getCasterCenter() : getTargetPos();
   const isCrit = styleClass === 'fct-crit';
   const isDot = styleClass === 'fct-dot';
   const isNormal = styleClass === 'fct-normal';
@@ -1437,7 +1463,7 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     gravity = 650;
     maxLife = 0.82;
   } else if (isGold) {
-    const side = styleClass === 'fct-essence' ? 1 : Math.random() < 0.5 ? -1 : 1;
+    const side = Math.random() < 0.5 ? -1 : 1;
     x = pos.x + (Math.random() * 24 - 12);
     y = pos.y - 20 + offsetY;
     vx = side * (38 + Math.random() * 45);
@@ -1544,6 +1570,158 @@ function applyFloatingTextTransform(f) {
   f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})`;
 }
 
+// ==========================================
+// 8-B. 캔디크러시 스타일 골드 동전 곡선 비행 흡수 연출 (#target-reward ➔ #pill-gold)
+// ==========================================
+const flyingCoins = [];
+let goldPulseTimeout = null;
+
+function triggerGoldPillPulse() {
+  const pill = document.getElementById('pill-gold');
+  if (!pill) return;
+  pill.classList.remove('gold-absorb-pulse');
+  void pill.offsetWidth;
+  pill.classList.add('gold-absorb-pulse');
+  if (goldPulseTimeout) clearTimeout(goldPulseTimeout);
+  goldPulseTimeout = setTimeout(() => {
+    pill.classList.remove('gold-absorb-pulse');
+  }, 250);
+}
+
+function spawnGoldCoinFlight(totalGold, isBigReward = false) {
+  const layer = document.getElementById('coin-fx-layer');
+  const rewardEl = document.getElementById('target-reward');
+  const goldPillEl = document.getElementById('pill-gold') || document.getElementById('ui-gold');
+
+  if (!layer || !rewardEl || !goldPillEl) {
+    state.pendingCoinGold = 0;
+    return;
+  }
+
+  // 출발지(#target-reward) 배지 팝 애니메이션
+  rewardEl.classList.remove('reward-pop');
+  void rewardEl.offsetWidth;
+  rewardEl.classList.add('reward-pop');
+
+  const startRect = rewardEl.getBoundingClientRect();
+  const endRect = goldPillEl.getBoundingClientRect();
+
+  const baseStartX = startRect.left + startRect.width * 0.5;
+  const baseStartY = startRect.top + startRect.height * 0.5;
+  const endX = endRect.left + endRect.width * 0.5;
+  const endY = endRect.top + endRect.height * 0.5;
+
+  const coinCount = isBigReward ? 9 : 6;
+  const baseShare = Math.floor(totalGold / coinCount);
+  let remainingShare = totalGold;
+
+  state.pendingCoinGold = (state.pendingCoinGold || 0) + totalGold;
+
+  for (let i = 0; i < coinCount; i++) {
+    const share = i === coinCount - 1 ? remainingShare : baseShare;
+    remainingShare -= share;
+
+    const el = document.createElement('div');
+    el.className = 'flying-gold-coin';
+    el.style.opacity = '0';
+    layer.appendChild(el);
+
+    const startX = baseStartX + (Math.random() * 14 - 7);
+    const startY = baseStartY + (Math.random() * 8 - 4);
+
+    // 캔디크러시 스타일 우아한 3차 베지어 곡선(Cubic Bezier Curve) 제어점 생성
+    // 동전이 하나씩 튀어나올 때마다 살짝 아래·외곽으로 둥글게 부풀어 올랐다가 호를 그리며 상단 골드 UI로 빨려 들어감
+    const curveSide = i % 2 === 0 ? -1 : 1;
+    const spreadFactor = 1 + (i % 3) * 0.28;
+    const cp1X = startX + curveSide * (68 * spreadFactor) + (Math.random() * 24 - 12);
+    const cp1Y = startY + 54 + (i % 3) * 20 + Math.random() * 14;
+
+    const cp2X = (startX + endX) * 0.5 + curveSide * (52 * spreadFactor) + (Math.random() * 18 - 9);
+    const cp2Y = Math.min(startY, endY) - 28 - (i % 2) * 18;
+
+    flyingCoins.push({
+      el,
+      startX,
+      startY,
+      cp1X,
+      cp1Y,
+      cp2X,
+      cp2Y,
+      endX: endX + (Math.random() * 10 - 5),
+      endY: endY + (Math.random() * 6 - 3),
+      delay: i * 0.058, // 하나씩 다다다닥 튀어나오는 시간차(58ms)
+      life: 0,
+      duration: 0.58 + (i % 3) * 0.04,
+      goldShare: share,
+      started: false
+    });
+  }
+}
+
+function updateFlyingCoins(dt) {
+  for (let i = flyingCoins.length - 1; i >= 0; i--) {
+    const c = flyingCoins[i];
+    if (c.delay > 0) {
+      c.delay -= dt;
+      continue;
+    }
+
+    if (!c.started) {
+      c.started = true;
+      c.el.style.opacity = '1';
+    }
+
+    c.life += dt;
+    const rawT = Math.min(1, c.life / c.duration);
+
+    if (rawT >= 1) {
+      c.el.remove();
+      flyingCoins.splice(i, 1);
+      state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - c.goldShare);
+      if (flyingCoins.length === 0) {
+        state.pendingCoinGold = 0;
+      }
+      triggerGoldPillPulse();
+      playSound('drop_coin');
+      continue;
+    }
+
+    // 초반(0~22%)엔 톡 튀어나오며 완만하게 곡선을 시작하고, 후반부로 갈수록 가속하며 흡수되는 이징 곡선
+    const u = rawT < 0.25
+      ? rawT * 0.85
+      : 0.2125 + Math.pow((rawT - 0.25) / 0.75, 1.75) * 0.7875;
+    const inv = 1 - u;
+
+    // 3차 베지어 곡선 B(u) 계산
+    const x =
+      inv * inv * inv * c.startX +
+      3 * inv * inv * u * c.cp1X +
+      3 * inv * u * u * c.cp2X +
+      u * u * u * c.endX;
+    const y =
+      inv * inv * inv * c.startY +
+      3 * inv * inv * u * c.cp1Y +
+      3 * inv * u * u * c.cp2Y +
+      u * u * u * c.endY;
+
+    // 팝아웃 스케일 펀치 후 골드 알약으로 빨려 들어갈 때 자연스럽게 축소
+    let scale = 1.0;
+    if (rawT < 0.16) {
+      const p = rawT / 0.16;
+      scale = 0.28 + (1.24 - 0.28) * (1 - Math.pow(1 - p, 2));
+    } else if (rawT < 0.3) {
+      const p = (rawT - 0.16) / 0.14;
+      scale = 1.24 - 0.24 * p;
+    } else if (rawT > 0.78) {
+      const p = (rawT - 0.78) / 0.22;
+      scale = 1.0 - 0.32 * p;
+    }
+
+    const rotDeg = rawT * 360;
+    c.el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)}) rotate(${rotDeg.toFixed(0)}deg)`;
+  }
+}
+
 function updateFloatingTexts(dt) {
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const f = floatingTexts[i];
@@ -1572,6 +1750,8 @@ function updateFloatingTexts(dt) {
 
     applyFloatingTextTransform(f);
   }
+
+  updateFlyingCoins(dt);
 }
 
 // ==========================================
@@ -1586,6 +1766,7 @@ function loadStage(stageNum) {
   state.combat.ignitePool = 0;
   state.combat.igniteRem = 0;
   state.combat.meteorBurnRem = 0;
+  updateBurningLoopSound();
 
   checkAndRecordDpsClear();
   updateStageUI();
@@ -1618,8 +1799,11 @@ function onMonsterKilled() {
   const data = getStageData(state.currentStage);
   const stats = getPlayerStats();
   const isFirstClear = state.currentStage > state.highestClearedStage;
+  const isFirstRagnarosKill = state.currentStage === 20 && !state.campaignCleared;
   let totalGold = Math.max(1, Math.round(data.gold * (stats.goldMult || 1)));
   let gainedEssence = 0;
+
+  state.totalKills = (state.totalKills || 0) + 1;
 
   if (isFirstClear) {
     state.highestClearedStage = state.currentStage;
@@ -1632,11 +1816,8 @@ function onMonsterKilled() {
       if (data.phase === 1) {
         switchRightTab('tree');
       }
-    } else {
-      spawnFloatingText(`🎉 +${fmt(totalGold)} G`, 'fct-gold', -42);
     }
   } else {
-    spawnFloatingText(`💰 +${fmt(totalGold)} G`, 'fct-gold', -32);
     // Stage 2 이상 반복 처치 시: 보스는 100% 확정 드롭, 일반 몬스터는 38% 확률로 불꽃의 정수 드롭
     if (state.currentStage >= 2) {
       const dropChance = data.isPhaseBoss ? 1.0 : 0.38;
@@ -1650,22 +1831,29 @@ function onMonsterKilled() {
   }
 
   state.gold += totalGold;
+  // 몬스터에서 골드 텍스트를 띄우는 대신, 상단 배너(#target-reward)에서 최상단 골드(#pill-gold)로 동전이 하나씩 곡선 비행 흡수!
+  spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
+
   if (gainedEssence > 0) {
     state.essence = (state.essence || 0) + gainedEssence;
     spawnFloatingText(`🔥 +${fmt(gainedEssence)} 정수`, 'fct-essence', -54);
   }
-  playSound('kill');
 
   const pos = getTargetPos();
   spawnParticles(pos.x, pos.y, 24, '#fde047', '#22c55e', 1.2);
 
+  if (isFirstRagnarosKill || state.highestClearedStage >= 20) {
+    state.campaignCleared = true;
+    state.unfolded.hallOfFame = true;
+  }
+
   checkAndTriggerUnfolds(false);
   updateDpsMeterUI();
-  if (state.autoAdvance && canAdvanceToNextStage()) {
-    loadStage(state.currentStage + 1);
-  } else {
-    loadStage(state.currentStage);
+
+  if (isFirstRagnarosKill) {
+    openVictoryModal(true);
   }
+  loadStage(state.currentStage);
 
   saveGame();
   renderShopUI();
@@ -2443,10 +2631,21 @@ function renderInfusionUI() {
 }
 
 function renderShopUI() {
-  const weaponBadge = document.getElementById('caster-weapon-icon');
-  if (state.items.sunfire_staff > 0) weaponBadge.textContent = '🔱';
-  else if (state.items.oak_wand > 0) weaponBadge.textContent = '🪄';
-  else weaponBadge.textContent = '';
+  const eqLeftContainer = document.getElementById('caster-equipped-left');
+  if (eqLeftContainer) {
+    const ownedEquip = EQUIPMENT_LIST.filter((it) => (state.items[it.id] || 0) > 0);
+    eqLeftContainer.innerHTML = ownedEquip
+      .map((it) => {
+        const lv = state.items[it.id] || 0;
+        return `
+          <div class="caster-eq-slot" title="${it.name} (+${lv}강) — ${it.desc}">
+            <span class="caster-eq-icon">${it.icon}</span>
+            <span class="caster-eq-lv">+${lv}</span>
+          </div>
+        `;
+      })
+      .join('');
+  }
 
   const grimContainer = document.getElementById('grimoire-shop-list');
   const learnedCount = Object.values(state.grimoires).filter(Boolean).length;
@@ -2572,7 +2771,7 @@ function checkAndTriggerUnfolds(silent = false) {
     u.stageNav = true;
     changed = true;
     if (!silent) {
-      triggerUnfoldPop('stage-nav-bar');
+      triggerUnfoldPop('btn-next-stage');
     }
   }
 
@@ -2619,6 +2818,16 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
+  // 4. Stage 20(화염군주 라그나로스) 클리어 시: 상단 명예의 전당 & 무한 심연 모드 해금
+  if (!u.hallOfFame && (state.campaignCleared || state.highestClearedStage >= 20)) {
+    u.hallOfFame = true;
+    state.campaignCleared = true;
+    changed = true;
+    if (!silent) {
+      triggerUnfoldPop('btn-hall-of-fame');
+    }
+  }
+
   applyUnfoldedVisibility();
   if (changed && !silent) {
     saveGame();
@@ -2628,17 +2837,15 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 정수/치명타/시전속도 알약
+  // 상단 정수/치명타/시전속도 알약 & 명예의 전당 버튼
   const pillEssence = document.getElementById('pill-essence');
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
+  const hallBtn = document.getElementById('btn-hall-of-fame');
   if (pillEssence) pillEssence.classList.toggle('unfold-hidden', !u.infusionShop);
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
-
-  // 스테이지 네비게이션 바
-  const stageNav = document.getElementById('stage-nav-bar');
-  if (stageNav) stageNav.classList.toggle('unfold-hidden', !u.stageNav);
+  if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
 
   // 우측 상단 [상점 / 마법 부여 / 스킬 트리] 탭 전환 바
   const modeTabs = document.getElementById('right-mode-tabs');
@@ -2659,7 +2866,7 @@ function applyUnfoldedVisibility() {
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
-    const allDone = u.stageNav && u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree;
+    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame;
     unfoldAllBtn.style.display = allDone ? 'none' : '';
   }
 }
@@ -2749,7 +2956,10 @@ function updateSkillActionBarVisibility() {
 function updateStageUI() {
   const data = getStageData(state.currentStage);
   const stats = getPlayerStats();
-  document.getElementById('ui-phase-num').textContent = `PHASE ${data.phase}`;
+  const isAbyssStage = state.currentStage > 20;
+  const phaseEl = document.getElementById('ui-phase-num');
+  phaseEl.textContent = isAbyssStage ? `🌌 ABYSS ${data.phase - 4}` : `PHASE ${data.phase}`;
+  phaseEl.classList.toggle('abyss-phase', isAbyssStage);
   document.getElementById('ui-stage-num').textContent = `${data.stepInPhase} / 5`;
 
   // 5단계 도트 진행도
@@ -2776,11 +2986,13 @@ function updateStageUI() {
   const stageBanner = document.getElementById('arena-stage-banner');
   if (stageBanner) {
     stageBanner.classList.toggle('boss-banner', data.isPhaseBoss);
+    stageBanner.classList.toggle('abyss-banner', isAbyssStage && !data.isPhaseBoss);
   }
 
+  const stageLabelPrefix = isAbyssStage ? 'ABYSS' : 'STAGE';
   document.getElementById('target-stage-tag').textContent = data.isPhaseBoss
-    ? `👑 BOSS [STAGE ${data.phase}-${data.stepInPhase}]`
-    : `STAGE ${data.phase}-${data.stepInPhase}`;
+    ? `👑 BOSS [${stageLabelPrefix} ${data.phase}-${data.stepInPhase}]`
+    : `${stageLabelPrefix} ${data.phase}-${data.stepInPhase}`;
 
   // 몬스터 이미지와 그 아래 몬스터 이름 표시
   document.getElementById('dummy-emoji').textContent = data.emoji;
@@ -2816,6 +3028,82 @@ function updateStageUI() {
 }
 
 // ==========================================
+// 15-B. 4단계: Stage 20(화염군주 라그나로스) 토벌 명예의 전당 엔딩 모달 & 무한 심연 모드
+// ==========================================
+function formatPlayTime(sec) {
+  const totalSec = Math.max(0, Math.floor(sec || 0));
+  const hrs = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  if (hrs > 0) {
+    return `${hrs}시간 ${mins}분 ${secs}초`;
+  }
+  return `${mins}분 ${secs}초`;
+}
+
+function openVictoryModal(isFirstVictory = false) {
+  const modal = document.getElementById('victory-modal');
+  const grid = document.getElementById('victory-stats-grid');
+  const titleEl = document.getElementById('victory-modal-title');
+  const subEl = document.getElementById('victory-modal-subtitle');
+  const jump20Btn = document.getElementById('btn-victory-jump-20');
+  if (!modal || !grid) return;
+
+  const stats = getPlayerStats();
+  const evo = getCurrentFlameEvolution();
+  const cleared20 = state.campaignCleared || state.highestClearedStage >= 20;
+
+  if (isFirstVictory) {
+    titleEl.textContent = '👑 화염군주 라그나로스 최초 토벌 완료!';
+    subEl.textContent = '불타는 심연의 지배자를 물리치고 아제로스 최고의 대마법사 반열에 올랐습니다!';
+  } else if (cleared20) {
+    titleEl.textContent = '🏆 대마법사 명예의 전당 & 무한 심연 기록';
+    subEl.textContent = 'Stage 20 라그나로스를 정복하고 끝없는 심연 균열(Stage 21+)을 탐사 중입니다.';
+  } else {
+    titleEl.textContent = '🏆 대마법사 원정 기록실 (목표: Stage 20)';
+    subEl.textContent = 'Phase 4 최종 보스 [화염군주 라그나로스 (Stage 4-5)]를 토벌하면 무한 심연 축복이 개방됩니다!';
+  }
+
+  if (jump20Btn) {
+    jump20Btn.style.display = state.currentStage === 20 ? 'none' : '';
+  }
+
+  grid.innerHTML = `
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">최고 돌파 스테이지</span>
+      <span class="victory-stat-val gold">STAGE ${state.highestClearedStage} ${cleared20 ? '👑' : ''}</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">최고 달성 DPS</span>
+      <span class="victory-stat-val gold">${fmt(state.maxDps)} /초</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">최종 주문 공격력 & 화염 단계</span>
+      <span class="victory-stat-val cyan">${fmt(stats.sp)} (${evo.name})</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">마법 부여 & 특성 투자</span>
+      <span class="victory-stat-val cyan">주입 ${getTotalInfusionLevels()} Lv · 특성 ${getSpentSkillPoints()} SP</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">누적 토벌 몬스터</span>
+      <span class="victory-stat-val">${fmt(state.totalKills || 0)} 마리</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">누적 전투 시간</span>
+      <span class="victory-stat-val">${formatPlayTime(state.playTimeSec)}</span>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+}
+
+function closeVictoryModal() {
+  const modal = document.getElementById('victory-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// ==========================================
 // 16. 메인 게임 루프 (60 FPS, 제한 시간 제거)
 // ==========================================
 let lastTime = performance.now();
@@ -2824,6 +3112,8 @@ let uiRefreshAccum = 0;
 function gameLoop(nowMs) {
   const dt = Math.min(0.1, (nowMs - lastTime) / 1000);
   lastTime = nowMs;
+
+  state.playTimeSec = (state.playTimeSec || 0) + dt;
 
   const c = state.combat;
   const stats = getPlayerStats();
@@ -2931,6 +3221,7 @@ function gameLoop(nowMs) {
     }
   }
 
+  updateBurningLoopSound();
   runSmartAutoCast();
   updateAndDrawVfx(dt);
   updateLiveHUD();
@@ -2951,7 +3242,11 @@ function updateLiveHUD() {
   const stats = getPlayerStats();
   const c = state.combat;
 
-  document.getElementById('ui-gold').textContent = fmt(state.gold);
+  // 골드 동전이 곡선 비행하여 #pill-gold에 하나씩 닿을 때마다 숫자가 차르륵 올라가도록 표시!
+  const pendingGold = Math.min(state.gold, Math.max(0, state.pendingCoinGold || 0));
+  const displayedGold = Math.max(0, Math.round(state.gold - pendingGold));
+  document.getElementById('ui-gold').textContent = fmt(displayedGold);
+
   const essEl = document.getElementById('ui-essence');
   if (essEl) essEl.textContent = fmt(state.essence || 0);
   document.getElementById('ui-sp').textContent = fmt(stats.sp);
@@ -3102,7 +3397,9 @@ function saveGame() {
       highestClearedStage: state.highestClearedStage,
       dpsClearedStage: state.dpsClearedStage,
       maxDps: state.maxDps,
-      autoAdvance: state.autoAdvance,
+      playTimeSec: state.playTimeSec,
+      totalKills: state.totalKills,
+      campaignCleared: state.campaignCleared,
       autoCast: state.autoCast,
       soundOn: state.soundOn,
       unfolded: state.unfolded,
@@ -3127,7 +3424,9 @@ function loadGame() {
     if (typeof data.highestClearedStage === 'number') state.highestClearedStage = data.highestClearedStage;
     if (typeof data.dpsClearedStage === 'number') state.dpsClearedStage = data.dpsClearedStage;
     if (typeof data.maxDps === 'number') state.maxDps = data.maxDps;
-    if (typeof data.autoAdvance === 'boolean') state.autoAdvance = data.autoAdvance;
+    if (typeof data.playTimeSec === 'number') state.playTimeSec = data.playTimeSec;
+    if (typeof data.totalKills === 'number') state.totalKills = data.totalKills;
+    if (typeof data.campaignCleared === 'boolean') state.campaignCleared = data.campaignCleared;
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;
     if (typeof data.bonusSkillPoints === 'number') state.bonusSkillPoints = data.bonusSkillPoints;
@@ -3171,8 +3470,7 @@ function initEvents() {
 
   document.getElementById('btn-prev-stage').addEventListener('click', () => {
     if (state.currentStage > 1) {
-      state.autoAdvance = false;
-      document.getElementById('chk-auto-advance').checked = false;
+      playSound('item_select');
       loadStage(state.currentStage - 1);
       saveGame();
     }
@@ -3181,14 +3479,10 @@ function initEvents() {
   // 다음 도전 버튼: 반드시 canAdvanceToNextStage() (클리어 완료 + 요구 DPS 충족) 확인!
   document.getElementById('btn-next-stage').addEventListener('click', () => {
     if (canAdvanceToNextStage()) {
+      playSound('item_select');
       loadStage(state.currentStage + 1);
       saveGame();
     }
-  });
-
-  document.getElementById('chk-auto-advance').addEventListener('change', (e) => {
-    state.autoAdvance = e.target.checked;
-    saveGame();
   });
 
   document.getElementById('btn-auto-cast').addEventListener('click', () => {
@@ -3218,8 +3512,8 @@ function initEvents() {
 
       state.essence -= cost;
       state.infusions[id] = lv + 1;
-      playSound('proc');
-      spawnFloatingText(`🔮 ${inf.name} Lv.${lv + 1}!`, 'fct-essence', -40);
+      playSound('item_select');
+      spawnFloatingText(`🔮 ${inf.name} Lv.${lv + 1}!`, 'fct-essence', -40, { anchor: 'caster' });
       checkAndTriggerUnfolds(false);
       updateFlameEvolutionUI(false);
       updateStageUI();
@@ -3233,8 +3527,8 @@ function initEvents() {
   if (testEssBtn) {
     testEssBtn.addEventListener('click', () => {
       state.essence = (state.essence || 0) + 25;
-      playSound('proc');
-      spawnFloatingText('🔥 +25 정수!', 'fct-essence', -42);
+      playSound('item_select');
+      spawnFloatingText('🔥 +25 정수!', 'fct-essence', -42, { anchor: 'caster' });
       checkAndTriggerUnfolds(false);
       saveGame();
       renderInfusionUI();
@@ -3276,16 +3570,16 @@ function initEvents() {
     }
 
     state.skillTree[id] = lv + 1;
-    playSound('proc');
-    spawnFloatingText(`🌟 ${node.name} Lv.${lv + 1}!`, 'fct-proc', -42);
+    playSound('item_select');
+    spawnFloatingText(`🌟 ${node.name} Lv.${lv + 1}!`, 'fct-proc', -42, { anchor: 'caster' });
     saveGame();
     renderSkillTreeUI();
   });
 
   document.getElementById('btn-grant-test-sp').addEventListener('click', () => {
     state.bonusSkillPoints = (state.bonusSkillPoints || 0) + 1;
-    playSound('proc');
-    spawnFloatingText('🌟 +1 SP!', 'fct-proc', -40);
+    playSound('item_select');
+    spawnFloatingText('🌟 +1 SP!', 'fct-proc', -40, { anchor: 'caster' });
     checkAndTriggerUnfolds(false);
     saveGame();
     renderSkillTreeUI();
@@ -3295,7 +3589,7 @@ function initEvents() {
     for (const k of Object.keys(state.skillTree)) {
       state.skillTree[k] = 0;
     }
-    playSound('kill');
+    playSound('item_select');
     saveGame();
     renderSkillTreeUI();
   });
@@ -3312,8 +3606,8 @@ function initEvents() {
     if (id === 'autocast') {
       state.autoCast = true;
     }
-    playSound('proc');
-    spawnFloatingText(`📜 ${g.name}!`, 'fct-proc', -35);
+    playSound('item_select');
+    spawnFloatingText(`📜 ${g.name}!`, 'fct-proc', -35, { anchor: 'caster' });
     checkAndTriggerUnfolds(false);
     saveGame();
     renderShopUI();
@@ -3330,7 +3624,7 @@ function initEvents() {
 
     state.gold -= cost;
     state.items[id] = (state.items[id] || 0) + 1;
-    playSound('kill');
+    playSound('item_select');
     checkAndTriggerUnfolds(false);
     updateFlameEvolutionUI(false);
     saveGame();
@@ -3348,8 +3642,40 @@ function initEvents() {
       } else {
         state.previewFlameTier = 0;
       }
-      playSound('proc');
+      playSound('item_select');
       updateFlameEvolutionUI(true);
+    });
+  }
+
+  const hallBtn = document.getElementById('btn-hall-of-fame');
+  if (hallBtn) {
+    hallBtn.addEventListener('click', () => {
+      playSound('item_select');
+      openVictoryModal(false);
+    });
+  }
+
+  const vicContinueBtn = document.getElementById('btn-victory-continue');
+  if (vicContinueBtn) {
+    vicContinueBtn.addEventListener('click', () => {
+      playSound('item_select');
+      closeVictoryModal();
+      if (state.currentStage === 20 && canAdvanceToNextStage()) {
+        loadStage(21);
+        saveGame();
+      }
+    });
+  }
+
+  const vicJump20Btn = document.getElementById('btn-victory-jump-20');
+  if (vicJump20Btn) {
+    vicJump20Btn.addEventListener('click', () => {
+      playSound('item_select');
+      closeVictoryModal();
+      state.highestClearedStage = Math.max(state.highestClearedStage, 19);
+      state.dpsClearedStage = Math.max(state.dpsClearedStage, 19);
+      loadStage(20);
+      saveGame();
     });
   }
 
@@ -3361,8 +3687,9 @@ function initEvents() {
       state.unfolded.equipShop = true;
       state.unfolded.infusionShop = true;
       state.unfolded.skillTree = true;
-      playSound('proc');
-      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 마법 습득, 장비 강화, 마법 부여, 특성 트리가 모두 펼쳐졌습니다.');
+      state.unfolded.hallOfFame = true;
+      playSound('item_select');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 마법 습득, 장비 강화, 마법 부여, 특성 트리, 명예의 전당이 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
       updateSkillActionBarVisibility();
       renderInfusionUI();
@@ -3374,6 +3701,7 @@ function initEvents() {
   soundBtn.addEventListener('click', () => {
     state.soundOn = !state.soundOn;
     soundBtn.textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
+    updateBurningLoopSound();
     saveGame();
   });
 
@@ -3394,7 +3722,6 @@ window.addEventListener('DOMContentLoaded', () => {
   updateFlameEvolutionUI(true);
   resizeCanvas();
   initEvents();
-  document.getElementById('chk-auto-advance').checked = state.autoAdvance;
   document.getElementById('btn-sound').textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
   loadStage(state.currentStage);
   renderShopUI();

@@ -163,28 +163,19 @@ body {
   min-height: 0;
 }
 
-/* Stage Navigation Bar */
-.stage-nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
-  padding: 8px 14px;
-  border-radius: 8px;
-}
-
+/* Stage Navigation Buttons & Phase Info */
 .stage-nav-btn {
   background: #1c2434;
   border: 1px solid #334155;
   color: var(--text-main);
-  padding: 7px 14px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: 0.84rem;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.15s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
 }
 
 .stage-nav-btn:hover:not(:disabled) {
@@ -213,8 +204,7 @@ body {
 .stage-center-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
+  gap: 8px;
   justify-content: center;
 }
 
@@ -226,52 +216,6 @@ body {
   padding: 3px 9px;
   border-radius: 5px;
   letter-spacing: 0.5px;
-}
-
-.stage-monster-title {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #f8fafc;
-}
-
-.stage-clear-tag {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 99px;
-  background: rgba(251, 191, 36, 0.15);
-  border: 1px solid rgba(251, 191, 36, 0.45);
-  color: var(--fire-gold);
-}
-
-.stage-clear-tag.cleared {
-  background: rgba(34, 197, 94, 0.16);
-  border-color: rgba(34, 197, 94, 0.5);
-  color: #4ade80;
-}
-
-.stage-auto-wrap {
-  display: flex;
-  align-items: center;
-}
-
-.auto-advance-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #cbd5e1;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid #2d3748;
-}
-
-.auto-advance-label input {
-  accent-color: var(--fire-orange);
-  cursor: pointer;
 }
 
 /* Onboarding Banner */
@@ -349,22 +293,29 @@ body {
   75% { transform: translate(-4px, 2px); }
 }
 
-/* Arena Top-Center Stage & Reward Banner (Separated from Monster HP Bar) */
-.arena-stage-reward-banner {
+/* Arena Top-Center Phase Info + Stage & Reward Banner */
+.arena-top-stage-header {
   position: absolute;
-  top: 90px;
+  top: 86px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
+  z-index: 14;
+  pointer-events: none;
+}
+
+.arena-stage-reward-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   background: rgba(13, 17, 26, 0.92);
   border: 2px solid #334155;
   border-radius: 99px;
-  padding: 8px 22px;
+  padding: 9px 26px;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7);
-  z-index: 14;
-  pointer-events: none;
   white-space: nowrap;
 }
 
@@ -377,14 +328,14 @@ body {
 .banner-sep {
   color: #475569;
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .monster-stage-mini {
   color: #f8fafc;
-  font-size: 1.08rem;
+  font-size: 1.18rem;
   font-weight: 900;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
 }
 
 .arena-stage-reward-banner.boss-banner .monster-stage-mini {
@@ -392,12 +343,12 @@ body {
 }
 
 .monster-reward {
-  font-size: 0.95rem;
+  font-size: 1.02rem;
   font-weight: 800;
   color: var(--fire-gold);
   background: rgba(251, 191, 36, 0.15);
   border: 1.5px solid rgba(251, 191, 36, 0.42);
-  padding: 3px 12px;
+  padding: 4px 14px;
   border-radius: 99px;
 }
 
@@ -479,15 +430,30 @@ body {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
 }
 
-/* Center Stage: Left Caster -> Right Monster (Horizontally Aligned) */
+/* Center Stage: Left [◀ 이전] -> Caster -> Monster -> Right [다음 도전 ▶] */
 .center-stage {
   position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 36px 50px 0;
+  padding: 44px 105px 0;
   z-index: 6;
+}
+
+.arena-side-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 16;
+}
+
+.arena-side-nav.left {
+  left: 18px;
+}
+
+.arena-side-nav.right {
+  right: 18px;
 }
 
 .caster-box {
@@ -553,12 +519,58 @@ body {
   line-height: 1;
 }
 
-.equipped-weapon-badge {
+.caster-equipped-left {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 47px;
+  transform: translateY(-50%);
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(4, auto);
+  direction: rtl;
+  gap: 6px;
+  z-index: 12;
+}
+
+.caster-eq-slot {
+  direction: ltr;
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  background: radial-gradient(circle at 35% 30%, #263248 0%, #0f1522 100%);
+  border: 1.5px solid #475569;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.caster-eq-slot:hover {
+  transform: scale(1.1);
+  border-color: var(--fire-gold);
+}
+
+.caster-eq-icon {
+  font-size: 1.18rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.75));
+}
+
+.caster-eq-lv {
   position: absolute;
   bottom: -4px;
   right: -4px;
-  font-size: 1.35rem;
-  filter: drop-shadow(0 2px 4px #000);
+  background: #0b0f18;
+  border: 1px solid #fbbf24;
+  color: #fde047;
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 0 4px;
+  border-radius: 99px;
+  line-height: 1.25;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
 }
 
 .casting-orb {
@@ -2198,7 +2210,7 @@ body {
 
 .unfold-toast {
   position: absolute;
-  top: 144px;
+  top: 174px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, rgba(124, 45, 18, 0.96) 0%, rgba(30, 27, 75, 0.96) 100%);
@@ -2488,4 +2500,291 @@ body {
   border-color: rgba(250, 204, 21, 0.55);
   color: #fde047;
 }
+
+/* ==========================================
+   10. Candy Crush Style Curved Gold Coin Flight & Absorption
+   ========================================== */
+.coin-fx-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.flying-gold-coin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, #ffffff 0%, #fef08a 26%, #fbbf24 62%, #b45309 100%);
+  border: 2px solid #fffbeb;
+  box-shadow:
+    0 0 12px rgba(251, 191, 36, 0.92),
+    0 0 22px rgba(245, 158, 11, 0.55),
+    inset 0 -2px 4px rgba(146, 64, 14, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #78350f;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.flying-gold-coin::after {
+  content: 'G';
+  font-family: 'Arial Black', 'Pretendard', sans-serif;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.monster-reward {
+  display: inline-block;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
+}
+
+.monster-reward.reward-pop {
+  animation: rewardGoldPop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rewardGoldPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.26);
+    background: rgba(251, 191, 36, 0.38);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.gold-pill.gold-absorb-pulse {
+  animation: goldPillAbsorb 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes goldPillAbsorb {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+    border-color: #fef08a;
+    background: rgba(251, 191, 36, 0.36);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ==========================================
+   11. Step 4: Stage 20 Hall of Fame Victory Modal & Endless Abyss Mode
+   ========================================== */
+.btn-hall-of-fame {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.38) 0%, rgba(109, 40, 217, 0.38) 100%);
+  color: #fde047;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.28);
+}
+
+.btn-hall-of-fame:hover {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.55) 0%, rgba(124, 58, 237, 0.55) 100%);
+  border-color: #fef08a;
+}
+
+.phase-badge.abyss-phase {
+  background: linear-gradient(135deg, #be123c, #6d28d9);
+  border: 1px solid #f43f5e;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.45);
+}
+
+.arena-stage-reward-banner.abyss-banner {
+  border-color: #a855f7;
+  background: linear-gradient(90deg, rgba(59, 7, 100, 0.94) 0%, rgba(17, 24, 39, 0.94) 100%);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.48), 0 8px 22px rgba(0, 0, 0, 0.78);
+}
+
+.victory-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 15, 0.84);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.victory-modal-backdrop.hidden {
+  display: none !important;
+}
+
+.victory-modal-card {
+  width: 100%;
+  max-width: 520px;
+  background: radial-gradient(circle at 50% 0%, rgba(180, 83, 9, 0.32) 0%, #111622 65%, #0c1018 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 14px;
+  padding: 26px 24px;
+  text-align: center;
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.92),
+    0 0 40px rgba(251, 191, 36, 0.38);
+  animation: victoryModalPop 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes victoryModalPop {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.victory-crown-badge {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: #fef08a;
+  background: linear-gradient(90deg, #b45309, #7c3aed);
+  border: 1px solid #fde047;
+  padding: 4px 14px;
+  border-radius: 99px;
+  margin-bottom: 10px;
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.45);
+}
+
+.victory-title {
+  font-size: 1.48rem;
+  font-weight: 900;
+  color: #fde047;
+  text-shadow: 0 2px 10px rgba(245, 158, 11, 0.55);
+  margin-bottom: 6px;
+}
+
+.victory-subtitle {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+.victory-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.victory-stat-item {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #2e3b52;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.victory-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.victory-stat-val {
+  font-size: 1.02rem;
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+.victory-stat-val.gold {
+  color: #fde047;
+}
+
+.victory-stat-val.cyan {
+  color: #38bdf8;
+}
+
+.victory-abyss-banner {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.35) 0%, rgba(14, 116, 144, 0.28) 100%);
+  border: 1px solid #a855f7;
+  border-radius: 9px;
+  padding: 11px 14px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.abyss-banner-title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #e9d5ff;
+  margin-bottom: 4px;
+}
+
+.abyss-banner-desc {
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.abyss-banner-desc b {
+  color: #fde047;
+}
+
+.victory-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.victory-btn {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.victory-btn.primary {
+  background: linear-gradient(135deg, #d97706 0%, #7c3aed 100%);
+  border: 1.5px solid #fde047;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.45);
+}
+
+.victory-btn.primary:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.victory-btn.secondary {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  padding: 9px 14px;
+}
+
+.victory-btn.secondary:hover {
+  background: #334155;
+  border-color: #94a3b8;
+}
+
 

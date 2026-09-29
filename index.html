@@ -14,7 +14,7 @@
     </div>
 
     <div class="stats-summary">
-      <div class="stat-pill gold-pill">
+      <div class="stat-pill gold-pill" id="pill-gold">
         <span class="label">💰 골드</span>
         <span class="value" id="ui-gold">0</span>
       </div>
@@ -37,6 +37,7 @@
     </div>
 
     <div class="top-controls">
+      <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
       <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
       <button class="btn-top" id="btn-sound">🔊 사운드</button>
       <button class="btn-top btn-danger-outline" id="btn-reset-save">🗑️ 초기화</button>
@@ -47,30 +48,7 @@
   <main class="main-layout">
     <!-- 좌측: 전투 아레나 & DPS 미터기 -->
     <section class="combat-column">
-      <!-- 1. 간소화된 스테이지 네비게이션 바 -->
-      <div class="stage-nav-bar" id="stage-nav-bar">
-        <button class="stage-nav-btn" id="btn-prev-stage" title="이전 몬스터로 이동">◀ 이전</button>
-
-        <div class="stage-center-info">
-          <div class="phase-badge" id="ui-phase-num">PHASE 1</div>
-          <div class="stage-badge" id="ui-stage-num">1 / 5</div>
-          <div class="phase-dots" id="ui-phase-dots" title="5번째 최종 보스 처치 시 스킬 포인트(+1 SP) 획득"></div>
-        </div>
-
-        <button class="stage-nav-btn next-challenge has-badge-anchor" id="btn-next-stage" disabled>
-          <span id="btn-next-stage-text">다음 도전 ▶</span>
-          <span class="noti-badge hidden" id="badge-next-stage">!</span>
-        </button>
-
-        <div class="stage-auto-wrap">
-          <label class="auto-advance-label" title="목표 DPS 달성 및 처치 시 다음 몬스터로 자동 이동">
-            <input type="checkbox" id="chk-auto-advance" />
-            <span>자동 전진</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- 2. 중앙 전투 아레나 (상단 DPS 미터기 + 중앙 대결 + 하단 스킬바) -->
+      <!-- 중앙 전투 아레나 (상단 DPS 미터기 + 상단 중앙 페이즈/스테이지 배너 + 좌우 이동 버튼 & 중앙 대결 + 하단 스킬바) -->
       <div class="combat-arena" id="combat-arena">
         <div class="combustion-aura-bg" id="combustion-bg"></div>
 
@@ -102,20 +80,35 @@
           </div>
         </div>
 
-        <!-- 화면 상단 가운데: 현재 스테이지 및 처치 보상 골드 배너 (체력바에서 분리) -->
-        <div class="arena-stage-reward-banner" id="arena-stage-banner">
-          <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
-          <span class="banner-sep">|</span>
-          <span class="monster-reward" id="target-reward">💰 6 G</span>
+        <!-- 화면 상단 가운데: 페이즈 진행도 + 현재 스테이지 및 처치 보상 골드 배너 -->
+        <div class="arena-top-stage-header" id="arena-top-stage-header">
+          <div class="stage-center-info" id="stage-center-info">
+            <div class="phase-badge" id="ui-phase-num">PHASE 1</div>
+            <div class="stage-badge" id="ui-stage-num">1 / 5</div>
+            <div class="phase-dots" id="ui-phase-dots" title="5번째 최종 보스 처치 시 스킬 포인트(+1 SP) 획득"></div>
+          </div>
+
+          <div class="arena-stage-reward-banner" id="arena-stage-banner">
+            <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
+            <span class="banner-sep">|</span>
+            <span class="monster-reward" id="target-reward">💰 4 G</span>
+          </div>
         </div>
 
-        <!-- 아레나 중앙: 좌측 마법사 ➔ 우측 몬스터 (수평 정렬, 몬스터 상단 HP바 & 우측 상단 디버프) -->
+        <!-- 아레나 중앙: 좌측 [◀ 이전] ➔ 마법사 ➔ 몬스터 ➔ 우측 [다음 도전 ▶] -->
         <div class="center-stage">
+          <!-- 좌측 이전 스테이지 버튼 -->
+          <div class="arena-side-nav left">
+            <button class="stage-nav-btn" id="btn-prev-stage" title="이전 몬스터로 이동">◀ 이전</button>
+          </div>
+
           <!-- 좌측 플레이어 마법사 -->
           <div class="caster-box" id="caster-box">
+            <!-- 캐릭터 이미지 왼쪽에 표시되는 획득 장비 목록 -->
+            <div class="caster-equipped-left" id="caster-equipped-left"></div>
+
             <div class="caster-avatar" id="caster-avatar">
               <span class="caster-emoji">🧙‍♂️</span>
-              <span class="equipped-weapon-badge" id="caster-weapon-icon"></span>
               <div class="casting-orb" id="casting-orb"></div>
             </div>
             <div class="caster-label">화염 마법사</div>
@@ -149,6 +142,14 @@
               <div class="monster-name-label" id="monster-name-label">초원 풀숲 슬라임</div>
             </div>
             <div class="wa-bracket right" id="wa-right">🔥</div>
+          </div>
+
+          <!-- 우측 다음 도전 버튼 -->
+          <div class="arena-side-nav right">
+            <button class="stage-nav-btn next-challenge has-badge-anchor" id="btn-next-stage" disabled>
+              <span id="btn-next-stage-text">다음 도전 ▶</span>
+              <span class="noti-badge hidden" id="badge-next-stage">!</span>
+            </button>
           </div>
         </div>
 
@@ -306,6 +307,38 @@
       </div>
     </aside>
   </main>
+
+  <!-- 골드 동전 곡선 비행 흡수 연출 전용 전체화면 오버레이 -->
+  <div class="coin-fx-layer" id="coin-fx-layer"></div>
+
+  <!-- 4단계: Stage 20(화염군주 라그나로스) 토벌 시 명예의 전당 엔딩 & 무한 심연 모드 모달 -->
+  <div class="victory-modal-backdrop hidden" id="victory-modal">
+    <div class="victory-modal-card">
+      <div class="victory-crown-badge">👑 VICTORY · HALL OF FAME</div>
+      <h2 class="victory-title" id="victory-modal-title">화염군주 라그나로스 토벌 완료!</h2>
+      <p class="victory-subtitle" id="victory-modal-subtitle">
+        불타는 심연의 지배자를 물리치고 아제로스 최고의 대마법사 반열에 올랐습니다!
+      </p>
+
+      <div class="victory-stats-grid" id="victory-stats-grid"></div>
+
+      <div class="victory-abyss-banner">
+        <div class="abyss-banner-title">🌌 무한 심연 모드 (STAGE 21+) 개방 효과</div>
+        <div class="abyss-banner-desc">
+          Stage 20 클리어 특전으로 <b>최종 주문 공격력 +35%</b> 및 <b>🔥 불꽃의 정수 획득량 2배</b> 축복이 영구 부여됩니다!
+        </div>
+      </div>
+
+      <div class="victory-actions">
+        <button class="victory-btn primary" id="btn-victory-continue">
+          🌌 무한 심연(Stage 21+) 계속 도전하기
+        </button>
+        <button class="victory-btn secondary" id="btn-victory-jump-20" title="Stage 20 최종 보스 라그나로스에게 즉시 이동합니다">
+          🔥 Stage 20 라그나로스 결전장으로 이동
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="game.js"></script>
 </body>
