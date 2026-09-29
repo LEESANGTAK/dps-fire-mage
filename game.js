@@ -323,10 +323,62 @@ const EQUIPMENT_LIST = [
 ];
 
 // ==========================================
+// 3-B. 3단계: 제2 자원 '불꽃의 정수' & 고대 마법 부여(Infusion) 데이터
+// ==========================================
+const INFUSION_LIST = [
+  {
+    id: 'azure_core',
+    name: '청염 코어 주입',
+    icon: '🔵',
+    maxLv: 15,
+    baseCost: 2,
+    costScale: 1.45,
+    desc: (lv) => `최종 주문 공격력 곱연산 증폭 +${lv * 15}%`
+  },
+  {
+    id: 'chrono_engraving',
+    name: '시공 가속 각인',
+    icon: '⏳',
+    maxLv: 10,
+    baseCost: 3,
+    costScale: 1.5,
+    desc: (lv) => `시전 속도 +${lv * 6}% · 스킬 재사용 대기시간 감소 +${(lv * 2.5).toFixed(1)}%`
+  },
+  {
+    id: 'gold_alchemy',
+    name: '황금 연금 변환',
+    icon: '💎',
+    maxLv: 12,
+    baseCost: 3,
+    costScale: 1.48,
+    desc: (lv) => `몬스터 토벌 골드 획득량 +${lv * 22}% · 정수 획득량 +${lv * 8}%`
+  },
+  {
+    id: 'ruin_eye',
+    name: '파멸의 예지안',
+    icon: '👁️',
+    maxLv: 10,
+    baseCost: 4,
+    costScale: 1.52,
+    desc: (lv) => `치명타 확률 +${(lv * 3.5).toFixed(1)}% · 치명타 피해 +${lv * 18}%`
+  },
+  {
+    id: 'primordial_ignition',
+    name: '태고의 발화 핵',
+    icon: '🌋',
+    maxLv: 10,
+    baseCost: 5,
+    costScale: 1.55,
+    desc: (lv) => `화상(도트) 피해량 +${lv * 25}% · 치명타 시 ${lv * 3}% 확률로 🔥정수 +1 추출`
+  }
+];
+
+// ==========================================
 // 4. 게임 상태 (State)
 // ==========================================
 const state = {
   gold: 0,
+  essence: 0,
   currentStage: 1,
   highestClearedStage: 0,
   dpsClearedStage: 0,
@@ -344,6 +396,7 @@ const state = {
     stageNav: false,
     grimoireShop: false,
     equipShop: false,
+    infusionShop: false,
     skillTree: false
   },
 
@@ -376,6 +429,14 @@ const state = {
     chrono_watch: 0,
     firelord_crown: 0,
     arcane_grail: 0
+  },
+
+  infusions: {
+    azure_core: 0,
+    chrono_engraving: 0,
+    gold_alchemy: 0,
+    ruin_eye: 0,
+    primordial_ignition: 0
   },
 
   monster: {
@@ -455,6 +516,16 @@ function getAvailableSkillPoints() {
   return Math.max(0, total - getSpentSkillPoints());
 }
 
+function getTotalInfusionLevels() {
+  if (!state.infusions) return 0;
+  return Object.values(state.infusions).reduce((acc, lv) => acc + (lv || 0), 0);
+}
+
+function getInfusionCost(inf) {
+  const lv = state.infusions[inf.id] || 0;
+  return Math.max(1, Math.round(inf.baseCost * Math.pow(inf.costScale, lv)));
+}
+
 function getPlayerStats() {
   let sp = 10;
   let crit = 5;
@@ -476,6 +547,19 @@ function getPlayerStats() {
     }
   }
 
+  // 마법 부여(Infusion) 패시브 및 공명 시너지 반영
+  const azureLv = state.infusions.azure_core || 0;
+  const chronoLv = state.infusions.chrono_engraving || 0;
+  const alchemyLv = state.infusions.gold_alchemy || 0;
+  const ruinLv = state.infusions.ruin_eye || 0;
+  const ignitionLv = state.infusions.primordial_ignition || 0;
+  const totalInfLv = getTotalInfusionLevels();
+
+  haste += chronoLv * 6;
+  cdr += chronoLv * 0.025;
+  crit += ruinLv * 3.5;
+  critDmg += ruinLv * 0.18;
+
   const runeLv = state.skillTree.rune_aura || 0;
   if (runeLv > 0) {
     haste += runeLv * 18;
@@ -487,18 +571,27 @@ function getPlayerStats() {
   }
 
   crit = Math.min(100, crit);
-  cdr = Math.min(0.5, cdr);
+  cdr = Math.min(0.6, cdr);
 
   const summonMult = 1 + (state.skillTree.legion_sync || 0) * 0.5;
+  const infusionSpMult = (1 + azureLv * 0.15) * (1 + totalInfLv * 0.02);
+  const goldMult = 1 + alchemyLv * 0.22;
+  const essenceMult = 1 + alchemyLv * 0.08;
+  const igniteMult = 1 + ignitionLv * 0.25;
+  const siphonChance = ignitionLv * 0.03;
 
   return {
-    sp: Math.round(sp * (1 + bonusPct)),
+    sp: Math.round(sp * (1 + bonusPct) * infusionSpMult),
     crit,
     haste,
     critDmg,
     cdr,
     speedMult: 1 + haste / 100,
-    summonMult
+    summonMult,
+    goldMult,
+    essenceMult,
+    igniteMult,
+    siphonChance
   };
 }
 
@@ -1280,7 +1373,7 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   const isCrit = styleClass === 'fct-crit';
   const isDot = styleClass === 'fct-dot';
   const isNormal = styleClass === 'fct-normal';
-  const isGold = styleClass === 'fct-gold';
+  const isGold = styleClass === 'fct-gold' || styleClass === 'fct-essence';
   const isBig = Boolean(extraOpts.isBig);
 
   const el = document.createElement('div');
@@ -1344,10 +1437,10 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     gravity = 650;
     maxLife = 0.82;
   } else if (isGold) {
-    const side = Math.random() < 0.5 ? -1 : 1;
+    const side = styleClass === 'fct-essence' ? 1 : Math.random() < 0.5 ? -1 : 1;
     x = pos.x + (Math.random() * 24 - 12);
     y = pos.y - 20 + offsetY;
-    vx = side * (35 + Math.random() * 45);
+    vx = side * (38 + Math.random() * 45);
     vy = -(225 + Math.random() * 35);
     gravity = 620;
     maxLife = 1.08;
@@ -1427,7 +1520,7 @@ function applyFloatingTextTransform(f) {
       scale = 0.96;
     }
   } else {
-    // proc / gold
+    // proc / gold / essence
     if (t < 0.055) {
       const p = t / 0.055;
       scale = 0.35 + (1.32 - 0.35) * (1 - Math.pow(1 - p, 2));
@@ -1500,20 +1593,38 @@ function loadStage(stageNum) {
 
 function switchRightTab(tabName) {
   document.getElementById('tab-btn-shop').classList.toggle('active', tabName === 'shop');
+  const infBtn = document.getElementById('tab-btn-infusion');
+  if (infBtn) infBtn.classList.toggle('active', tabName === 'infusion');
   document.getElementById('tab-btn-tree').classList.toggle('active', tabName === 'tree');
+
   document.getElementById('pane-shop').classList.toggle('active', tabName === 'shop');
+  const infPane = document.getElementById('pane-infusion');
+  if (infPane) infPane.classList.toggle('active', tabName === 'infusion');
   document.getElementById('pane-tree').classList.toggle('active', tabName === 'tree');
   updateNotificationBadges();
 }
 
+function getFirstClearEssenceBonus(stageNum) {
+  if (stageNum < 2) return 0;
+  const data = getStageData(stageNum);
+  const stats = getPlayerStats();
+  const base = data.isPhaseBoss
+    ? Math.max(8, stageNum * 2)
+    : Math.max(2, Math.floor(stageNum * 0.85));
+  return Math.max(1, Math.round(base * (stats.essenceMult || 1)));
+}
+
 function onMonsterKilled() {
   const data = getStageData(state.currentStage);
+  const stats = getPlayerStats();
   const isFirstClear = state.currentStage > state.highestClearedStage;
-  let totalGold = data.gold;
+  let totalGold = Math.max(1, Math.round(data.gold * (stats.goldMult || 1)));
+  let gainedEssence = 0;
 
   if (isFirstClear) {
     state.highestClearedStage = state.currentStage;
-    totalGold += data.firstBonus;
+    totalGold += Math.round(data.firstBonus * (stats.goldMult || 1));
+    gainedEssence = getFirstClearEssenceBonus(state.currentStage);
 
     if (data.isPhaseBoss) {
       spawnFloatingText(`👑 보스 격파! 🌟 +1 SP!`, 'fct-proc', -60);
@@ -1526,9 +1637,23 @@ function onMonsterKilled() {
     }
   } else {
     spawnFloatingText(`💰 +${fmt(totalGold)} G`, 'fct-gold', -32);
+    // Stage 2 이상 반복 처치 시: 보스는 100% 확정 드롭, 일반 몬스터는 38% 확률로 불꽃의 정수 드롭
+    if (state.currentStage >= 2) {
+      const dropChance = data.isPhaseBoss ? 1.0 : 0.38;
+      if (Math.random() < dropChance) {
+        const baseDrop = data.isPhaseBoss
+          ? Math.max(2, Math.floor(state.currentStage * 0.5))
+          : Math.max(1, Math.floor(state.currentStage * 0.28));
+        gainedEssence = Math.max(1, Math.round(baseDrop * (stats.essenceMult || 1)));
+      }
+    }
   }
 
   state.gold += totalGold;
+  if (gainedEssence > 0) {
+    state.essence = (state.essence || 0) + gainedEssence;
+    spawnFloatingText(`🔥 +${fmt(gainedEssence)} 정수`, 'fct-essence', -54);
+  }
   playSound('kill');
 
   const pos = getTargetPos();
@@ -1544,6 +1669,7 @@ function onMonsterKilled() {
 
   saveGame();
   renderShopUI();
+  renderInfusionUI();
   renderSkillTreeUI();
   updateNotificationBadges();
 }
@@ -1588,18 +1714,26 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   }
 
   if (isCrit && !isDotTick && skillKey !== 'ignite') {
+    const st = getPlayerStats();
     const golemBonus = (state.skillTree.magma_golem || 0) * 0.15;
-    const igniteRatio = (state.grimoires.ignite ? 0.48 : 0.22) * (1 + golemBonus);
+    const igniteRatio = (state.grimoires.ignite ? 0.48 : 0.22) * (1 + golemBonus) * (st.igniteMult || 1);
     const igniteAdd = dmg * igniteRatio;
     const remainingCarry = state.combat.igniteRem > 0 ? state.combat.ignitePool * (state.combat.igniteRem / 5.0) : 0;
     state.combat.ignitePool = remainingCarry + igniteAdd;
     state.combat.igniteRem = 5.0;
 
+    // 태고의 발화 핵 마법 부여: 치명타 시 일정 확률로 즉시 불꽃의 정수 +1 추출
+    if (st.siphonChance > 0 && Math.random() < st.siphonChance) {
+      state.essence = (state.essence || 0) + 1;
+      spawnFloatingText('🔥 +1 정수 추출!', 'fct-essence', -36);
+      renderInfusionUI();
+    }
+
     const rainLv = state.skillTree.meteor_rain || 0;
     if (rainLv > 0 && skillKey !== 'meteor' && Math.random() < rainLv * 0.14) {
       launchMeteorVfx(() => {
-        const st = getPlayerStats();
-        dealDamage('meteor', st.sp * 1.45 * st.critDmg, true, false);
+        const curSt = getPlayerStats();
+        dealDamage('meteor', curSt.sp * 1.45 * curSt.critDmg, true, false);
       }, 0.65);
     }
   }
@@ -1995,6 +2129,18 @@ function updateNotificationBadges() {
 
   setBadge('badge-tab-shop', anyShopAffordable);
 
+  // 4-B. 마법 부여 탭 (!) 배지: 구매 가능한 마법 부여가 있을 때 표시
+  let anyInfusionAffordable = false;
+  for (const inf of INFUSION_LIST) {
+    const lv = state.infusions[inf.id] || 0;
+    const cost = getInfusionCost(inf);
+    if (lv < inf.maxLv && (state.essence || 0) >= cost) {
+      anyInfusionAffordable = true;
+      break;
+    }
+  }
+  setBadge('badge-tab-infusion', anyInfusionAffordable);
+
   // 5. 스킬 트리 탭 (!) 배지: 투자 가능한 스킬 트리 노드가 있을 때 표시
   let anyTreeLearnable = false;
   for (const n of SKILL_TREE_NODES) {
@@ -2236,6 +2382,66 @@ function renderSkillTreeUI() {
   updateNotificationBadges();
 }
 
+function renderInfusionUI() {
+  const ess = state.essence || 0;
+  const totalLv = getTotalInfusionLevels();
+
+  const tabBadge = document.getElementById('ui-tab-essence-badge');
+  if (tabBadge) tabBadge.textContent = `${fmt(ess)} 🔥`;
+
+  const headerBox = document.getElementById('ui-infusion-essence-box');
+  if (headerBox) headerBox.textContent = `🔥 ${fmt(ess)} 정수`;
+
+  const resBar = document.getElementById('ui-infusion-resonance');
+  if (resBar) {
+    resBar.innerHTML = `공명 등급 합계: <b>${totalLv} Lv</b> · 최종 피해 공명 보너스 <b>+${totalLv * 2}%</b>`;
+  }
+
+  const listEl = document.getElementById('infusion-shop-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = INFUSION_LIST.map((inf) => {
+    const lv = state.infusions[inf.id] || 0;
+    const isMax = lv >= inf.maxLv;
+    const cost = getInfusionCost(inf);
+    const canBuy = !isMax && ess >= cost;
+
+    let pipsHtml = '';
+    for (let i = 1; i <= inf.maxLv; i++) {
+      const filled = i <= lv;
+      pipsHtml += `<span class="inf-pip ${filled ? 'filled' : ''} ${isMax ? 'maxed' : ''}"></span>`;
+    }
+
+    const descText = lv === 0
+      ? `다음(Lv.1): ${inf.desc(1)}`
+      : isMax
+        ? `최고 단계: ${inf.desc(lv)}`
+        : `현재: ${inf.desc(lv)} ➔ 다음: ${inf.desc(lv + 1)}`;
+
+    return `
+      <div class="infusion-card ${canBuy ? 'affordable' : ''} ${isMax ? 'maxed-infusion' : ''}">
+        <div class="shop-card-left">
+          <div class="inf-icon">${inf.icon}</div>
+          <div class="shop-info">
+            <div class="shop-title">
+              <span>${inf.name}</span>
+              <span class="inf-lv-tag ${isMax ? 'is-max' : ''}">${isMax ? `★ MAX (${lv}/${inf.maxLv})` : `Lv.${lv}/${inf.maxLv}`}</span>
+            </div>
+            <div class="shop-desc">${descText}</div>
+            <div class="inf-pips-row">${pipsHtml}</div>
+          </div>
+        </div>
+        <button class="inf-buy-btn has-badge-anchor ${isMax ? 'done-btn' : ''}" data-infusion="${inf.id}" ${isMax || !canBuy ? 'disabled' : ''}>
+          <span>${isMax ? '✔ 마스터' : `주입 🔥 ${fmt(cost)}`}</span>
+          <span class="noti-badge ${canBuy ? '' : 'hidden'}">!</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  updateNotificationBadges();
+}
+
 function renderShopUI() {
   const weaponBadge = document.getElementById('caster-weapon-icon');
   if (state.items.sunfire_staff > 0) weaponBadge.textContent = '🔱';
@@ -2384,6 +2590,20 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
+  // 2-B. Stage 2 클리어 또는 불꽃의 정수 획득/투자 시: 불꽃의 정수 & [🔮 마법 부여] 탭 개방
+  if (!u.infusionShop && ((state.essence || 0) > 0 || state.highestClearedStage >= 2 || getTotalInfusionLevels() > 0)) {
+    u.infusionShop = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast(
+        '🔓 새로운 시스템 해금: 불꽃의 정수 & 마법 부여!',
+        '우측 상단 [🔮 마법 부여] 탭에서 🔥 정수를 주입해 고대 유물 패시브를 각성하세요!'
+      );
+      triggerUnfoldPop('pill-essence');
+      triggerUnfoldPop('right-mode-tabs');
+    }
+  }
+
   // 3. Stage 5 보스 격파 또는 SP 보유/투자 시: 소환수 & 특성 트리 탭 개방
   const hasSpProgress =
     state.highestClearedStage >= 5 ||
@@ -2395,7 +2615,7 @@ function checkAndTriggerUnfolds(silent = false) {
     changed = true;
     if (!silent) {
       showUnfoldToast('🔓 새로운 시스템 해금: 소환수 & 특성 트리!', '우측 상단 [🌳 스킬 트리] 탭에서 강력한 소환수와 마법 특성을 습득하세요!');
-      triggerUnfoldPop('right-mode-tabs');
+      triggerUnfoldPop('tab-btn-tree');
     }
   }
 
@@ -2408,9 +2628,11 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 치명타/시전속도 알약
+  // 상단 정수/치명타/시전속도 알약
+  const pillEssence = document.getElementById('pill-essence');
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
+  if (pillEssence) pillEssence.classList.toggle('unfold-hidden', !u.infusionShop);
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
 
@@ -2418,9 +2640,13 @@ function applyUnfoldedVisibility() {
   const stageNav = document.getElementById('stage-nav-bar');
   if (stageNav) stageNav.classList.toggle('unfold-hidden', !u.stageNav);
 
-  // 우측 상단 [상점 / 스킬 트리] 탭 전환 바
+  // 우측 상단 [상점 / 마법 부여 / 스킬 트리] 탭 전환 바
   const modeTabs = document.getElementById('right-mode-tabs');
-  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.skillTree);
+  const tabInfBtn = document.getElementById('tab-btn-infusion');
+  const tabTreeBtn = document.getElementById('tab-btn-tree');
+  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.infusionShop && !u.skillTree);
+  if (tabInfBtn) tabInfBtn.classList.toggle('unfold-hidden', !u.infusionShop);
+  if (tabTreeBtn) tabTreeBtn.classList.toggle('unfold-hidden', !u.skillTree);
 
   // 우측 상점 내부: 초기 봉인 안내 vs 마법 습득 vs 장비 강화
   const sealedCard = document.getElementById('unfold-sealed-shop');
@@ -2433,7 +2659,7 @@ function applyUnfoldedVisibility() {
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
-    const allDone = u.stageNav && u.grimoireShop && u.equipShop && u.skillTree;
+    const allDone = u.stageNav && u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree;
     unfoldAllBtn.style.display = allDone ? 'none' : '';
   }
 }
@@ -2522,6 +2748,7 @@ function updateSkillActionBarVisibility() {
 
 function updateStageUI() {
   const data = getStageData(state.currentStage);
+  const stats = getPlayerStats();
   document.getElementById('ui-phase-num').textContent = `PHASE ${data.phase}`;
   document.getElementById('ui-stage-num').textContent = `${data.stepInPhase} / 5`;
 
@@ -2561,11 +2788,19 @@ function updateStageUI() {
   monsterNameLabel.textContent = data.isPhaseBoss ? `👑 ${data.name}` : data.name;
   monsterNameLabel.classList.toggle('boss-label', data.isPhaseBoss);
 
-  let rewardText = isCleared
-    ? `💰 ${fmt(data.gold)} G`
-    : `💰 ${fmt(data.gold + data.firstBonus)} G`;
+  const dispGold = isCleared
+    ? Math.max(1, Math.round(data.gold * (stats.goldMult || 1)))
+    : Math.max(1, Math.round((data.gold + data.firstBonus) * (stats.goldMult || 1)));
+  let rewardText = `💰 ${fmt(dispGold)} G`;
+
+  if (!isCleared && state.currentStage >= 2) {
+    const firstEss = getFirstClearEssenceBonus(state.currentStage);
+    if (firstEss > 0) {
+      rewardText += ` · 🔥 ${fmt(firstEss)}`;
+    }
+  }
   if (!isCleared && data.isPhaseBoss) {
-    rewardText += ' + 🌟1 SP';
+    rewardText += ' · 🌟1 SP';
   }
   document.getElementById('target-reward').textContent = rewardText;
 
@@ -2717,6 +2952,8 @@ function updateLiveHUD() {
   const c = state.combat;
 
   document.getElementById('ui-gold').textContent = fmt(state.gold);
+  const essEl = document.getElementById('ui-essence');
+  if (essEl) essEl.textContent = fmt(state.essence || 0);
   document.getElementById('ui-sp').textContent = fmt(stats.sp);
   document.getElementById('ui-crit').textContent = `${stats.crit.toFixed(1)}%`;
   document.getElementById('ui-haste').textContent = `+${stats.haste.toFixed(0)}%`;
@@ -2860,6 +3097,7 @@ function saveGame() {
   try {
     const payload = {
       gold: state.gold,
+      essence: state.essence,
       currentStage: state.currentStage,
       highestClearedStage: state.highestClearedStage,
       dpsClearedStage: state.dpsClearedStage,
@@ -2871,7 +3109,8 @@ function saveGame() {
       bonusSkillPoints: state.bonusSkillPoints,
       skillTree: state.skillTree,
       grimoires: state.grimoires,
-      items: state.items
+      items: state.items,
+      infusions: state.infusions
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   } catch (e) {}
@@ -2883,6 +3122,7 @@ function loadGame() {
     if (!raw) return;
     const data = JSON.parse(raw);
     if (typeof data.gold === 'number') state.gold = data.gold;
+    if (typeof data.essence === 'number') state.essence = data.essence;
     if (typeof data.currentStage === 'number') state.currentStage = data.currentStage;
     if (typeof data.highestClearedStage === 'number') state.highestClearedStage = data.highestClearedStage;
     if (typeof data.dpsClearedStage === 'number') state.dpsClearedStage = data.dpsClearedStage;
@@ -2895,6 +3135,7 @@ function loadGame() {
     if (data.skillTree) Object.assign(state.skillTree, data.skillTree);
     if (data.grimoires) Object.assign(state.grimoires, data.grimoires);
     if (data.items) Object.assign(state.items, data.items);
+    if (data.infusions) Object.assign(state.infusions, data.infusions);
   } catch (e) {}
 }
 
@@ -2959,7 +3200,46 @@ function initEvents() {
   });
 
   document.getElementById('tab-btn-shop').addEventListener('click', () => switchRightTab('shop'));
+  const infTabBtn = document.getElementById('tab-btn-infusion');
+  if (infTabBtn) infTabBtn.addEventListener('click', () => switchRightTab('infusion'));
   document.getElementById('tab-btn-tree').addEventListener('click', () => switchRightTab('tree'));
+
+  const infListEl = document.getElementById('infusion-shop-list');
+  if (infListEl) {
+    infListEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-infusion]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-infusion');
+      const inf = INFUSION_LIST.find((x) => x.id === id);
+      if (!inf) return;
+      const lv = state.infusions[id] || 0;
+      const cost = getInfusionCost(inf);
+      if (lv >= inf.maxLv || (state.essence || 0) < cost) return;
+
+      state.essence -= cost;
+      state.infusions[id] = lv + 1;
+      playSound('proc');
+      spawnFloatingText(`🔮 ${inf.name} Lv.${lv + 1}!`, 'fct-essence', -40);
+      checkAndTriggerUnfolds(false);
+      updateFlameEvolutionUI(false);
+      updateStageUI();
+      saveGame();
+      renderInfusionUI();
+      renderShopUI();
+    });
+  }
+
+  const testEssBtn = document.getElementById('btn-grant-test-essence');
+  if (testEssBtn) {
+    testEssBtn.addEventListener('click', () => {
+      state.essence = (state.essence || 0) + 25;
+      playSound('proc');
+      spawnFloatingText('🔥 +25 정수!', 'fct-essence', -42);
+      checkAndTriggerUnfolds(false);
+      saveGame();
+      renderInfusionUI();
+    });
+  }
 
   const treeContainer = document.getElementById('skill-tree-container');
   treeContainer.addEventListener('mouseover', (e) => {
@@ -3079,11 +3359,13 @@ function initEvents() {
       state.unfolded.stageNav = true;
       state.unfolded.grimoireShop = true;
       state.unfolded.equipShop = true;
+      state.unfolded.infusionShop = true;
       state.unfolded.skillTree = true;
       playSound('proc');
-      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 마법 습득, 장비 강화, 특성 트리가 모두 펼쳐졌습니다.');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 마법 습득, 장비 강화, 마법 부여, 특성 트리가 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
       updateSkillActionBarVisibility();
+      renderInfusionUI();
       saveGame();
     });
   }
@@ -3116,6 +3398,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-sound').textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
   loadStage(state.currentStage);
   renderShopUI();
+  renderInfusionUI();
   renderSkillTreeUI();
   updateNotificationBadges();
   requestAnimationFrame(gameLoop);

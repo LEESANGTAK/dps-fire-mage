@@ -18,6 +18,10 @@
         <span class="label">💰 골드</span>
         <span class="value" id="ui-gold">0</span>
       </div>
+      <div class="stat-pill essence-pill" id="pill-essence" title="몬스터 토벌 및 치명타 추출로 획득하는 고대 마력 자원입니다 (마법 부여에 사용)">
+        <span class="label">🔥 정수</span>
+        <span class="value" id="ui-essence">0</span>
+      </div>
       <div class="stat-pill">
         <span class="label">⚔️ 공격력</span>
         <span class="value" id="ui-sp">10</span>
@@ -217,12 +221,17 @@
       </div>
     </section>
 
-    <!-- 우측: 언폴딩 [🛒 상점] / [🌳 스킬 트리] -->
+    <!-- 우측: 언폴딩 [🛒 상점] / [🔮 마법 부여] / [🌳 스킬 트리] -->
     <aside class="shop-column" id="shop-column">
       <div class="right-mode-tabs" id="right-mode-tabs">
         <button class="right-tab-btn active has-badge-anchor" id="tab-btn-shop" data-right-tab="shop">
           <span>🛒 상점</span>
           <span class="noti-badge hidden" id="badge-tab-shop">!</span>
+        </button>
+        <button class="right-tab-btn has-badge-anchor" id="tab-btn-infusion" data-right-tab="infusion">
+          <span>🔮 마법 부여</span>
+          <span class="essence-tab-badge" id="ui-tab-essence-badge">0 🔥</span>
+          <span class="noti-badge hidden" id="badge-tab-infusion">!</span>
         </button>
         <button class="right-tab-btn has-badge-anchor" id="tab-btn-tree" data-right-tab="tree">
           <span>🌳 스킬 트리</span>
@@ -261,7 +270,26 @@
         </div>
       </div>
 
-      <!-- 탭 2: 스킬 트리 뷰 -->
+      <!-- 탭 2: 마법 부여 (제2 자원: 불꽃의 정수) 뷰 -->
+      <div class="right-tab-pane" id="pane-infusion">
+        <div class="infusion-header-box">
+          <div class="inf-header-top">
+            <span class="inf-title">🔮 고대 불꽃 마법 부여</span>
+            <span class="inf-essence-box" id="ui-infusion-essence-box">🔥 0 정수</span>
+          </div>
+          <div class="inf-resonance-bar" id="ui-infusion-resonance">
+            공명 등급 합계: <b>0 Lv</b> · 최종 피해 공명 보너스 <b>+0%</b>
+          </div>
+          <div class="inf-header-actions">
+            <span class="inf-sub-hint">스테이지 최초 토벌·보스 처치·치명타 추출 시 🔥 정수 획득</span>
+            <button class="btn-top inf-test-btn" id="btn-grant-test-essence">🎁 체험용 +25 정수</button>
+          </div>
+        </div>
+
+        <div class="shop-list infusion-list" id="infusion-shop-list"></div>
+      </div>
+
+      <!-- 탭 3: 스킬 트리 뷰 -->
       <div class="right-tab-pane" id="pane-tree">
         <div class="skill-tree-header-box">
           <div class="st-header-top">

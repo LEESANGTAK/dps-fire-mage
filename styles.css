@@ -102,6 +102,18 @@ body {
   font-size: 1rem;
 }
 
+.essence-pill {
+  border-color: #38bdf8;
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.25) 0%, rgba(88, 28, 135, 0.25) 100%);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.22);
+}
+
+.essence-pill .value {
+  color: #7dd3fc;
+  font-size: 1rem;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
+}
+
 .top-controls {
   display: flex;
   gap: 8px;
@@ -868,6 +880,21 @@ body {
   z-index: 34;
 }
 
+/* 불꽃의 정수 획득 */
+.fct-essence {
+  font-family: 'Pretendard', sans-serif;
+  font-size: 1.22rem;
+  font-weight: 900;
+  color: #e0f2fe;
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.94) 0%, rgba(109, 40, 217, 0.94) 100%);
+  border: 1.5px solid #38bdf8;
+  padding: 2px 11px;
+  border-radius: 99px;
+  text-shadow: 0 1px 3px #000;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.65), 0 4px 10px rgba(0, 0, 0, 0.7);
+  z-index: 35;
+}
+
 /* Player HUD Bottom inside Arena */
 .player-hud {
   display: flex;
@@ -1547,8 +1574,7 @@ body {
 
 /* Right Mode Tabs */
 .right-mode-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 6px;
   background: var(--bg-panel);
   padding: 6px;
@@ -1558,18 +1584,21 @@ body {
 }
 
 .right-tab-btn {
+  flex: 1;
+  min-width: 0;
   background: #161d2a;
   border: 1px solid #293548;
   color: var(--text-muted);
-  padding: 8px 10px;
+  padding: 8px 6px;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  white-space: nowrap;
   transition: all 0.15s;
 }
 
@@ -1593,9 +1622,18 @@ body {
 .sp-tab-badge {
   background: #7c3aed;
   color: #fff;
-  font-size: 0.68rem;
-  padding: 1px 6px;
+  font-size: 0.65rem;
+  padding: 1px 5px;
   border-radius: 99px;
+}
+
+.essence-tab-badge {
+  background: linear-gradient(135deg, #0284c7, #6d28d9);
+  color: #e0f2fe;
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 99px;
+  border: 1px solid rgba(56, 189, 248, 0.45);
 }
 
 .right-tab-pane {
@@ -2254,3 +2292,200 @@ body {
 .sealed-desc b {
   color: #fde047;
 }
+
+/* ==========================================
+   9. Flame Essence & Magic Infusion System
+   ========================================== */
+.infusion-header-box {
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.18) 0%, rgba(46, 16, 101, 0.25) 100%);
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.inf-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inf-title {
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #e0f2fe;
+}
+
+.inf-essence-box {
+  background: rgba(14, 116, 144, 0.35);
+  border: 1px solid #38bdf8;
+  color: #7dd3fc;
+  font-weight: 900;
+  font-size: 0.78rem;
+  padding: 2px 9px;
+  border-radius: 99px;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.28);
+}
+
+.inf-resonance-bar {
+  background: rgba(9, 13, 22, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 0.73rem;
+  color: #cbd5e1;
+}
+
+.inf-resonance-bar b {
+  color: #38bdf8;
+  font-weight: 900;
+}
+
+.inf-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inf-sub-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.25;
+}
+
+.inf-test-btn {
+  border-color: #38bdf8;
+  background: rgba(14, 116, 144, 0.25);
+  color: #bae6fd;
+  font-size: 0.71rem;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.inf-test-btn:hover {
+  background: rgba(14, 116, 144, 0.45);
+}
+
+.infusion-list {
+  flex: 1;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infusion-card {
+  background: linear-gradient(135deg, #131b29 0%, #171528 100%);
+  border: 1px solid #28354a;
+  border-radius: 8px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.15s;
+}
+
+.infusion-card.affordable {
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+}
+
+.infusion-card.maxed-infusion {
+  border-color: rgba(250, 204, 21, 0.55);
+  background: linear-gradient(135deg, rgba(69, 26, 3, 0.26) 0%, rgba(30, 27, 75, 0.35) 100%);
+}
+
+.inf-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.22);
+}
+
+.inf-lv-tag {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.inf-lv-tag.is-max {
+  color: #fde047;
+  background: rgba(250, 204, 21, 0.18);
+  border-color: rgba(250, 204, 21, 0.48);
+}
+
+.inf-pips-row {
+  display: flex;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.inf-pip {
+  width: 8px;
+  height: 4px;
+  border-radius: 2px;
+  background: #263145;
+}
+
+.inf-pip.filled {
+  background: #38bdf8;
+  box-shadow: 0 0 4px rgba(56, 189, 248, 0.7);
+}
+
+.inf-pip.filled.maxed {
+  background: #fde047;
+  box-shadow: 0 0 5px rgba(250, 204, 21, 0.8);
+}
+
+.inf-buy-btn {
+  background: linear-gradient(180deg, #0284c7 0%, #4f46e5 100%);
+  color: #fff;
+  border: 1px solid #7dd3fc;
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+
+.inf-buy-btn:hover:not(:disabled) {
+  filter: brightness(1.14);
+  transform: translateY(-1px);
+}
+
+.inf-buy-btn:disabled {
+  background: #1f2937;
+  border-color: #374151;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.inf-buy-btn.done-btn {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(250, 204, 21, 0.55);
+  color: #fde047;
+}
+
