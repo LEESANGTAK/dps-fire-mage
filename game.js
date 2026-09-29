@@ -663,6 +663,11 @@ burningLoopAudio.preload = 'auto';
 burningLoopAudio.loop = true;
 burningLoopAudio.volume = 0.55;
 
+const fireballCastAudio = new Audio('assets/sounds/sfx/fireball_ready.mp3');
+fireballCastAudio.preload = 'auto';
+fireballCastAudio.loop = true;
+fireballCastAudio.volume = 0.58;
+
 function initSfxAudio() {
   for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
     const audio = new Audio(src);
@@ -683,6 +688,22 @@ function updateBurningLoopSound() {
     } else {
       if (!burningLoopAudio.paused) {
         burningLoopAudio.pause();
+      }
+    }
+  } catch (e) {}
+}
+
+function updateCastingLoopSound() {
+  const c = state.combat;
+  const isCasting = state.soundOn && Boolean(c.castingSkill) && c.castRemaining > 0;
+  try {
+    if (isCasting) {
+      if (fireballCastAudio.paused) {
+        fireballCastAudio.play().catch(() => {});
+      }
+    } else {
+      if (!fireballCastAudio.paused) {
+        fireballCastAudio.pause();
       }
     }
   } catch (e) {}
@@ -1414,8 +1435,22 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   let maxLife = 0.95;
   let holdTime = 0;
 
-  if (isCrit || isNormal) {
-    // 연속 타격 시 좌/우 방향을 기본 교차하되 약간의 변칙과 5단계 부채꼴 각도 밴드를 순환시켜 매번 다른 궤적 생성
+  if (isCrit) {
+    // 크리티컬 데미지: 물리 낙하(중력) 없이 타격 지점에 강렬하게 꽂힌 뒤 위로 쭉 올라감!
+    if (Math.random() < 0.84) {
+      fctArcState.lastSide *= -1;
+    }
+    const side = fctArcState.lastSide;
+    x = pos.x + side * (6 + Math.random() * 20);
+    y = pos.y - 32 + offsetY + (Math.random() * 14 - 7);
+    vx = 0;
+    vy = isBig ? -78 : -70;
+    gravity = 0;
+    maxLife = isBig ? 1.18 : 1.08;
+    // 스케일 펀치가 강하게 꽂히는 동안 위치 이동을 억제해 묵직한 타격감 부여
+    holdTime = 0.2;
+  } else if (isNormal) {
+    // 일반 데미지: 연속 타격 시 좌/우 방향 교차 및 5단계 부채꼴 각도 순환
     if (Math.random() < 0.84) {
       fctArcState.lastSide *= -1;
     }
@@ -1423,7 +1458,6 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     const band = fctArcState.fanStep;
     fctArcState.fanStep = (fctArcState.fanStep + 1) % 5;
 
-    // 5단계 발사 각도 프로파일 (고각 분수형 ~ 광각 곡선형)
     const angleProfiles = [
       { vxMin: 48, vxMax: 74, vyMin: -255, vyMax: -285 },
       { vxMin: 92, vxMax: 128, vyMin: -215, vyMax: -245 },
@@ -1435,23 +1469,12 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     const randVx = prof.vxMin + Math.random() * (prof.vxMax - prof.vxMin);
     const randVy = prof.vyMin + Math.random() * (prof.vyMax - prof.vyMin);
 
-    if (isCrit) {
-      x = pos.x + side * (8 + Math.random() * 18);
-      y = pos.y - 24 + offsetY + (Math.random() * 16 - 8);
-      vx = side * randVx * (isBig ? 1.22 : 1.12);
-      vy = randVy * (isBig ? 1.16 : 1.08);
-      gravity = 760;
-      maxLife = isBig ? 1.12 : 1.04;
-      // 와우 크리티컬 특유의 타격 순간 '팍~!!!' 하고 꽂히는 짧은 임팩트 홀드
-      holdTime = 0.068;
-    } else {
-      x = pos.x + side * (5 + Math.random() * 16);
-      y = pos.y - 12 + offsetY + (Math.random() * 16 - 8);
-      vx = side * randVx;
-      vy = randVy;
-      gravity = 720;
-      maxLife = 0.92;
-    }
+    x = pos.x + side * (5 + Math.random() * 16);
+    y = pos.y - 12 + offsetY + (Math.random() * 16 - 8);
+    vx = side * randVx;
+    vy = randVy;
+    gravity = 720;
+    maxLife = 0.92;
   } else if (isDot) {
     // 도트(화상/연소) 데미지는 몬스터 좌/우 측면에서 짧고 경쾌한 포물선으로 톡톡 튀어나와 바닥으로 낙하
     fctArcState.dotSide *= -1;
@@ -1505,22 +1528,42 @@ function applyFloatingTextTransform(f) {
   const t = f.life;
   const prog = Math.min(1, t / f.maxLife);
   let scale = 1.0;
+  let rotDeg = 0;
 
   if (f.type === 'crit') {
-    // 와우 크리티컬 스케일 펀치: 초고속(42ms)으로 2.2~2.45배까지 '팍~!!!' 커진 뒤 탄성 있게 안착
-    const peak = f.isBig ? 2.45 : 2.18;
-    const settle = f.isBig ? 1.14 : 1.04;
-    if (t < 0.042) {
-      const p = t / 0.042;
+    // 강화된 크리티컬 스케일 펀치:
+    // 1) 폭발적 팽창 (0~55ms: 0.15배 ➔ 최대 2.9~3.35배)
+    // 2) 최대 크기 체공 (55~105ms: 눈에 확실히 각인되는 임팩트 홀드)
+    // 3) 묵직한 스탬프 내리꽂기 & 언더슈트 (105~185ms: 팍! 하고 화면에 박힘)
+    // 4) 탄성 리바운드 안착 (185~270ms: 쫀득한 반동 후 정착)
+    const peak = f.isBig ? 3.35 : 2.9;
+    const settle = f.isBig ? 1.28 : 1.15;
+    if (t < 0.055) {
+      const p = t / 0.055;
       const easeOut = 1 - Math.pow(1 - p, 3);
-      scale = 0.22 + (peak - 0.22) * easeOut;
-    } else if (t < 0.115) {
-      const p = (t - 0.042) / (0.115 - 0.042);
-      const easeInOut = p * p * (3 - 2 * p);
-      scale = peak - (peak - settle * 0.88) * easeInOut;
-    } else if (t < 0.175) {
-      const p = (t - 0.115) / (0.175 - 0.115);
-      scale = settle * 0.88 + (settle * 1.08 - settle * 0.88) * Math.sin(p * Math.PI);
+      scale = 0.15 + (peak - 0.15) * easeOut;
+      rotDeg = -4.5 * Math.sin(p * Math.PI);
+    } else if (t < 0.105) {
+      const p = (t - 0.055) / 0.05;
+      scale = peak - peak * 0.05 * p;
+      rotDeg = 3.2 * (1 - p);
+    } else if (t < 0.185) {
+      const p = (t - 0.105) / 0.08;
+      const slamEase = p * p;
+      const under = settle * 0.82;
+      scale = peak * 0.95 - (peak * 0.95 - under) * slamEase;
+      rotDeg = -2.2 * Math.sin(p * Math.PI);
+    } else if (t < 0.27) {
+      const p = (t - 0.185) / 0.085;
+      const under = settle * 0.82;
+      const over = settle * 1.12;
+      if (p < 0.55) {
+        const subP = p / 0.55;
+        scale = under + (over - under) * (1 - Math.pow(1 - subP, 2));
+      } else {
+        const subP = (p - 0.55) / 0.45;
+        scale = over - (over - settle) * subP;
+      }
     } else {
       scale = settle;
     }
@@ -1558,16 +1601,22 @@ function applyFloatingTextTransform(f) {
     }
   }
 
-  // 낙하 후반부(65%~100%)에 바닥 쪽으로 떨어지며 자연스럽게 페이드 아웃 & 미세 축소
   let opacity = 1.0;
-  if (prog > 0.65) {
+  if (f.type === 'crit') {
+    // 크리티컬은 위로 쭉 올라가면서 후반부(68%~100%)에 자연스럽게 페이드 아웃
+    if (prog > 0.68) {
+      const fadeProg = (prog - 0.68) / 0.32;
+      opacity = Math.max(0, Math.pow(1 - fadeProg, 1.4));
+    }
+  } else if (prog > 0.65) {
     const fadeProg = (prog - 0.65) / 0.35;
     opacity = Math.max(0, Math.pow(1 - fadeProg, 1.45));
     scale *= 1 - fadeProg * 0.12;
   }
 
   f.el.style.opacity = opacity.toFixed(3);
-  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})`;
+  const rotStr = rotDeg !== 0 ? ` rotate(${rotDeg.toFixed(1)}deg)` : '';
+  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})${rotStr}`;
 }
 
 // ==========================================
@@ -1732,14 +1781,14 @@ function updateFloatingTexts(dt) {
       continue;
     }
 
-    // 크리티컬 첫 임팩트 순간 화이트핫 플래시 해제
-    if (f.flashed && f.life >= 0.065) {
+    // 크리티컬 첫 임팩트 순간 화이트핫 플래시 해제 (최대 스케일 체공 시점까지 유지)
+    if (f.flashed && f.life >= 0.105) {
       f.flashed = false;
       f.el.classList.remove('crit-flash');
     }
 
-    // 크리티컬 임팩트 홀드 구간에서는 '팍!' 하고 박히는 느낌을 위해 이동 속도를 잠시 늦췄다가 포물선 가속
-    const motionScale = f.life < f.holdTime ? 0.22 : 1.0;
+    // 크리티컬 임팩트 홀드 구간에서는 '팍!' 하고 제자리에 박히는 느낌을 위해 이동을 거의 멈췄다가 위로 부유
+    const motionScale = f.life < f.holdTime ? (f.type === 'crit' ? 0.08 : 0.22) : 1.0;
     const effDt = dt * motionScale;
 
     f.x += f.vx * effDt;
@@ -1936,6 +1985,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         state.combat.streakTimer = 12.0;
         spawnFloatingText('🔥 연쇄 폭발!', 'fct-proc', -48);
         playSound('proc');
+        triggerReadyFlash('skill-3');
       }
     } else if (skillKey === 'fireball') {
       if (state.combat.critStreak === 1) {
@@ -2109,6 +2159,7 @@ function triggerSkill(skillKey) {
     c.castRemaining = castTime;
     c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
     c.gcdRemaining = c.gcdTotal;
+    updateCastingLoopSound();
     return true;
   }
 
@@ -2147,6 +2198,7 @@ function triggerSkill(skillKey) {
     c.castRemaining = castTime;
     c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
     c.gcdRemaining = c.gcdTotal;
+    updateCastingLoopSound();
     return true;
   }
 
@@ -2157,7 +2209,7 @@ function triggerSkill(skillKey) {
     c.combustionRem = 8.0;
     c.combustionCdTotal = Math.max(14, 30 * (1 - stats.cdr));
     c.combustionCdRem = c.combustionCdTotal;
-    spawnFloatingText('☀️ 마력 폭주!', 'fct-proc', -45);
+    spawnFloatingText('☀️ 마력 폭주!', 'fct-proc', -45, { anchor: 'caster' });
     playSound('proc');
     return true;
   }
@@ -2202,7 +2254,8 @@ function runSmartAutoCast() {
   if (state.grimoires.meteor && c.meteorCdRem <= 0) {
     triggerSkill('meteor');
   }
-  if (state.grimoires.pyroblast && c.critStreak === 2) {
+  // 연쇄 폭발(즉시 시전 거대 화염구)이 발동했을 때, 현재 시전/GCD가 끝나고 테두리 빛 효과가 잠시(0.55초) 보여진 뒤 발사!
+  if (state.grimoires.pyroblast && c.critStreak === 2 && !c.castingSkill && c.gcdRemaining <= 0 && c.streakTimer <= 11.45) {
     triggerSkill('pyroblast');
   }
   if (state.grimoires.fireblast && c.fbCharges > 0) {
@@ -2210,7 +2263,7 @@ function runSmartAutoCast() {
       triggerSkill('fireblast');
     }
   }
-  if (!c.castingSkill && c.gcdRemaining <= 0) {
+  if (!c.castingSkill && c.gcdRemaining <= 0 && !(state.grimoires.pyroblast && c.critStreak === 2)) {
     triggerSkill('fireball');
   }
 }
@@ -2235,12 +2288,17 @@ function setRadialSweep(el, remaining, total, showNumber = true) {
   }
 }
 
+const readyFlashTimers = {};
 function triggerReadyFlash(btnId) {
   const btn = document.getElementById(btnId);
-  if (!btn) return;
+  if (!btn || btn.classList.contains('hidden-slot') || btn.classList.contains('locked-skill')) return;
   btn.classList.remove('cd-ready-flash');
   void btn.offsetWidth;
   btn.classList.add('cd-ready-flash');
+  if (readyFlashTimers[btnId]) clearTimeout(readyFlashTimers[btnId]);
+  readyFlashTimers[btnId] = setTimeout(() => {
+    btn.classList.remove('cd-ready-flash');
+  }, 560);
 }
 
 // ==========================================
@@ -3128,6 +3186,10 @@ function gameLoop(nowMs) {
       const doneSkill = c.castingSkill;
       c.castingSkill = null;
       c.castRemaining = 0;
+      updateCastingLoopSound();
+      if (!state.autoCast && doneSkill === 'fireball') {
+        triggerReadyFlash('skill-1');
+      }
       finishCast(doneSkill);
     }
   }
@@ -3159,10 +3221,15 @@ function gameLoop(nowMs) {
   if (state.grimoires.fireblast && c.fbCharges < c.fbMaxCharges) {
     c.fbRechargeRem -= dt;
     if (c.fbRechargeRem <= 0) {
+      const prevCharges = c.fbCharges;
       c.fbCharges++;
       if (c.fbCharges < c.fbMaxCharges) {
         c.fbRechargeTotal = Math.max(3.5, (9.0 * (1 - stats.cdr)) / stats.speedMult);
         c.fbRechargeRem = c.fbRechargeTotal;
+        // 0충전에서 1충전이 되어 다시 사용 가능해졌을 때도 번쩍임 연출!
+        if (prevCharges === 0) {
+          triggerReadyFlash('skill-2');
+        }
       } else {
         c.fbRechargeRem = 0;
         triggerReadyFlash('skill-2');
@@ -3221,6 +3288,7 @@ function gameLoop(nowMs) {
     }
   }
 
+  updateCastingLoopSound();
   updateBurningLoopSound();
   runSmartAutoCast();
   updateAndDrawVfx(dt);
@@ -3323,12 +3391,12 @@ function updateLiveHUD() {
     } else {
       setRadialSweep(document.getElementById('cd-2'), 0, 0, false);
     }
-    const shouldGlow2 = state.grimoires.pyroblast && c.critStreak === 1 && c.fbCharges > 0;
-    document.getElementById('skill-2').classList.toggle('proc-glow', shouldGlow2);
+    document.getElementById('skill-2').classList.remove('proc-glow');
   }
 
   if (state.grimoires.pyroblast) {
     setRadialSweep(document.getElementById('gcd-3'), c.critStreak === 2 ? 0 : c.gcdRemaining, c.gcdTotal, false);
+    // 원래 시전시간이 있는 [3] 거대 화염구가 연쇄 폭발 시너지로 즉시 시전 가능할 때 테두리의 얇은 선을 따라 빛나는 와우 프록 효과 활성화
     document.getElementById('skill-3').classList.toggle('proc-glow', c.critStreak === 2);
   }
 
@@ -3701,6 +3769,7 @@ function initEvents() {
   soundBtn.addEventListener('click', () => {
     state.soundOn = !state.soundOn;
     soundBtn.textContent = state.soundOn ? '🔊 사운드' : '🔇 음소거';
+    updateCastingLoopSound();
     updateBurningLoopSound();
     saveGame();
   });
