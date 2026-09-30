@@ -2088,6 +2088,7 @@ const floatingTexts = [];
 const fctArcState = {
   lastSide: 1,
   fanStep: 0,
+  critStep: 0,
   dotSide: -1
 };
 
@@ -2121,17 +2122,35 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   let holdTime = 0;
 
   if (isCrit) {
-    // 크리티컬 데미지: 처음에는 '팍~!' 하고 매우 빠른 초기 상향 속도로 위로 솟구쳤다가 급격히 감속(Ease-Out)
-    if (Math.random() < 0.84) {
+    // 크리티컬 데미지: 가장 낮은 속도(-240)와 가장 높은 속도(-960)가 정확히 4배 차이가 나도록 설정하고,
+    // 연속 치명타 시 텍스트가 절대 한곳에 겹치지 않도록 5단계 교차 속도 대역(저속 ➔ 고속 ➔ 중저속 ➔ 최고속 ➔ 중속) 순환!
+    if (Math.random() < 0.88) {
       fctArcState.lastSide *= -1;
     }
     const side = fctArcState.lastSide;
-    x = pos.x + side * (6 + Math.random() * 20);
-    y = pos.y - 24 + offsetY + (Math.random() * 14 - 7);
-    vx = 0;
-    vy = isBig ? -540 : -475;
+    const critBand = fctArcState.critStep;
+    fctArcState.critStep = (fctArcState.critStep + 1) % 5;
+
+    // 최저 240 ~ 최고 960 (4.0배 차이) 구간을 5개 교차 대역으로 분배
+    const critVelBands = [
+      { vyMin: -240, vyMax: -320, vxMin: 28, vxMax: 52 },   // 1단계: 최저속 (1.0x ~ 1.33x)
+      { vyMin: -700, vyMax: -810, vxMin: 68, vxMax: 96 },   // 2단계: 고속 (2.9x ~ 3.38x)
+      { vyMin: -370, vyMax: -470, vxMin: 84, vxMax: 112 },  // 3단계: 중저속 + 넓은 측면 (1.54x ~ 1.96x)
+      { vyMin: -850, vyMax: -960, vxMin: 36, vxMax: 68 },   // 4단계: 최고속 (3.54x ~ 4.0x)
+      { vyMin: -520, vyMax: -640, vxMin: 52, vxMax: 84 }    // 5단계: 중속 (2.17x ~ 2.67x)
+    ];
+    const bandProf = critVelBands[critBand];
+    const bigMult = isBig ? 1.12 : 1.0;
+
+    const randVy = (bandProf.vyMin + Math.random() * (bandProf.vyMax - bandProf.vyMin)) * bigMult;
+    const randVx = (bandProf.vxMin + Math.random() * (bandProf.vxMax - bandProf.vxMin)) * bigMult;
+
+    x = pos.x + side * (8 + Math.random() * 22);
+    y = pos.y - 18 + offsetY + (Math.random() * 16 - 8);
+    vx = side * randVx;
+    vy = randVy;
     gravity = 0;
-    maxLife = isBig ? 1.06 : 0.96;
+    maxLife = isBig ? 1.08 : 0.98;
     holdTime = 0;
   } else if (isNormal) {
     // 일반 데미지: 연속 타격 시 좌/우 방향 교차 및 5단계 부채꼴 각도 순환
@@ -2576,7 +2595,9 @@ function updateFloatingTexts(dt) {
 
     if (f.type === 'crit') {
       // 강한 Ease-Out 감속: 처음엔 '팍~!' 하고 빠르게 위로 솟구쳤다가 급격히 속도가 감소해 잔잔하게 부유
-      f.vy *= Math.pow(0.002, effDt);
+      const decay = Math.pow(0.002, effDt);
+      f.vx *= decay;
+      f.vy *= decay;
       if (f.vy > -12) f.vy = -12;
     } else {
       f.vy += f.gravity * effDt;
