@@ -1115,6 +1115,12 @@ function getCasterCenter() {
   };
 }
 
+function getActorGroundPos(id) {
+  const arena = document.getElementById('combat-arena').getBoundingClientRect();
+  const actor = document.getElementById(id).getBoundingClientRect();
+  return { x: actor.left - arena.left + actor.width * 0.5, y: actor.bottom - arena.top };
+}
+
 function getCasterPos() {
   const arena = document.getElementById('combat-arena').getBoundingClientRect();
   const muzzle = document.getElementById('mage-muzzle').getBoundingClientRect();
@@ -1184,7 +1190,7 @@ function spawnHitMark(markChar) {
 
   const markEl = document.createElement('div');
   markEl.className = 'monster-hit-mark';
-  markEl.textContent = markChar;
+  markEl.setAttribute('aria-hidden', 'true');
   const offsetX = (Math.random() - 0.5) * 36;
   const offsetY = (Math.random() - 0.5) * 20;
   markEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
@@ -1593,7 +1599,8 @@ function drawSummonsAndAuras(dt) {
   const runeLv = state.skillTree.rune_aura || 0;
   if (runeLv > 0) {
     gCtx.save();
-    gCtx.translate(casterCenter.x, casterCenter.y + 46);
+    const feet = getActorGroundPos('caster-avatar');
+    gCtx.translate(feet.x, feet.y);
     gCtx.scale(1, 0.42);
     gCtx.rotate(c.animTime * 1.4);
 
@@ -1612,66 +1619,16 @@ function drawSummonsAndAuras(dt) {
     gCtx.restore();
   }
 
-  // 1-B. 거대 화염구 준비 상태 (시전 중이거나 연쇄 폭발 즉시 발사 대기 중일 때 지팡이 끝에 거대 태양 구체 & 십자 코로나 & 마력 위성 연출!)
-  const isPyroReady =
-    c.castingSkill === 'pyroblast' || (state.grimoires.pyroblast && c.critStreak === 2);
-  if (isPyroReady) {
-    const casterPos = getCasterPos();
-    const ox = casterPos.x + 12;
-    const oy = casterPos.y - 4;
-    const pulse = 1 + Math.sin(c.animTime * 14) * 0.14;
-    const chargeR = 22 * pulse;
-
-    // 거대 화염구 차징 코로나 광채
-    const pyroGrad = ctx.createRadialGradient(ox, oy, 2, ox, oy, chargeR * 1.65);
-    pyroGrad.addColorStop(0, '#ffffff');
-    pyroGrad.addColorStop(0.32, '#fef08a');
-    pyroGrad.addColorStop(0.68, '#ea580c');
-    pyroGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
-    ctx.fillStyle = pyroGrad;
-    ctx.beginPath();
-    ctx.arc(ox, oy, chargeR * 1.65, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 회전하는 태양 코로나 십자 광선 (일반 화염구 준비 상태에는 없는 거대 화염구만의 시그니처 연출!)
-    ctx.save();
-    ctx.translate(ox, oy);
-    ctx.rotate(c.animTime * 7.5);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.lineWidth = 2.6;
-    const rayLen = chargeR * 1.55;
-    ctx.beginPath();
-    ctx.moveTo(-rayLen, 0);
-    ctx.lineTo(rayLen, 0);
-    ctx.moveTo(0, -rayLen);
-    ctx.lineTo(0, rayLen);
-    ctx.stroke();
-
-    // 대각선 보조 코로나 광선
-    ctx.rotate(Math.PI / 4);
-    ctx.strokeStyle = 'rgba(253, 224, 71, 0.8)';
-    ctx.lineWidth = 1.8;
-    const subRayLen = chargeR * 1.15;
-    ctx.beginPath();
-    ctx.moveTo(-subRayLen, 0);
-    ctx.lineTo(subRayLen, 0);
-    ctx.moveTo(0, -subRayLen);
-    ctx.lineTo(0, subRayLen);
-    ctx.stroke();
-    ctx.restore();
-
-    // 주변을 빠르게 공전하는 3개의 화염 마력 위성
-    for (let ob = 0; ob < 3; ob++) {
-      const ang = c.animTime * 11 + (ob * Math.PI * 2) / 3;
-      const sx = ox + Math.cos(ang) * (chargeR * 1.15);
-      const sy = oy + Math.sin(ang) * (chargeR * 0.72);
-      ctx.fillStyle = '#fef08a';
-      ctx.beginPath();
-      ctx.arc(sx, sy, 3.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  // 시전 준비도 투사체와 같은 만화풍 이미지로 통일합니다.
+  const isPyroReady = c.castingSkill === 'pyroblast' || (state.grimoires.pyroblast && c.critStreak === 2);
+  if (c.castingSkill || isPyroReady) {
+    const tip = getCasterPos();
+    const charge = c.castingSkill ? Math.max(0, 1 - c.castRemaining / c.castTotal) : 1;
+    drawComicProjectile(ctx, {
+      type: isPyroReady ? 'pyroblast' : 'fireball', radius: (isPyroReady ? 8 : 4) * (0.5 + charge * 0.5),
+      startX: tip.x - 1, startY: tip.y, targetX: tip.x + 1, targetY: tip.y
+    }, tip.x, tip.y, 0.5);
   }
-
   // 2. 불의 정령
   const elemLv = state.skillTree.fire_elem || 0;
   if (elemLv > 0) {
@@ -1811,7 +1768,7 @@ function drawSummonsAndAuras(dt) {
   // 4-B. 불장판 (몬스터 이미지 뒤쪽/발밑 바닥 레이어 #ground-vfx-canvas 에 1.5배 넓어진 화염 지대 렌더링!)
   if (c.flamePatchRem > 0) {
     const fx = targetCenter.x;
-    const fy = targetCenter.y + 56; // 몬스터 아바타 하단 발밑 바닥 위치
+    const fy = getActorGroundPos('dummy-avatar').y; // 실제 접지 위치
     const fadeAlpha = Math.min(1, c.flamePatchRem / 0.6);
     const pulse = 1 + Math.sin(c.animTime * 9) * 0.06;
     const patchRadius = 111 * pulse; // 기존 74 대비 1.5배 넓어진 반경!
@@ -2007,9 +1964,8 @@ function updateAndDrawVfx(dt) {
     // 1) 가속도: 출발 시 마력이 방출되어 살짝 가속하며 타격 지점에 내리꽂힘
     // 2) 호(Arc): 기계적 1자 직선 대신 자연스러운 상향 호를 그리며 비행
     const rawP = Math.min(1, Math.max(0, p.progress));
-    const t = rawP;
-    const easeT = isPyro ? Math.pow(rawP, 1.25) : Math.pow(rawP, 1.12);
-    const arcHeight = isPyro ? -15 : -8;
+    const easeT = isPyro ? Math.pow(rawP, 1.5) : Math.pow(rawP, 1.35);
+    const arcHeight = isPyro ? -35 : -20;
     const arcOffset = Math.sin(rawP * Math.PI) * arcHeight;
 
     const x = p.startX + (p.targetX - p.startX) * easeT;
@@ -2049,47 +2005,7 @@ function updateAndDrawVfx(dt) {
       }
     }
 
-    // 본체 그라데이션: 일반 화염구는 작고 담백하게(1.22배), 거대 화염구는 거대한 화염 광채(1.85배)로 렌더링
-    const glowRadius = p.radius * (isPyro ? 1.85 : 1.22);
-    const grad = ctx.createRadialGradient(x, y, 1.5, x, y, glowRadius);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(isPyro ? 0.38 : 0.28, p.colorCore);
-    grad.addColorStop(isPyro ? 0.75 : 0.65, p.colorMid);
-    grad.addColorStop(1, p.colorEdge);
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 거대 화염구 전용: 회전하는 태양 코로나 십자 광선 & 마력 위성(Orbiters)
-    if (isPyro) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(state.combat.animTime * 9 + easeT * 6);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
-      ctx.lineWidth = 2.4;
-      const rayLen = p.radius * 1.9;
-      ctx.beginPath();
-      ctx.moveTo(-rayLen, 0);
-      ctx.lineTo(rayLen, 0);
-      ctx.moveTo(0, -rayLen);
-      ctx.lineTo(0, rayLen);
-      ctx.stroke();
-      ctx.restore();
-
-      if (p.orbiters > 0) {
-        for (let ob = 0; ob < p.orbiters; ob++) {
-          const ang = state.combat.animTime * 14 + easeT * 10 + (ob * Math.PI * 2) / p.orbiters;
-          const dist = p.radius * 1.12;
-          const ox = x + Math.cos(ang) * dist * 0.65;
-          const oy = y + Math.sin(ang) * dist;
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(ox, oy, 3.2 + p.evoTier * 0.4, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
+    drawComicProjectile(ctx, p, x, y, rawP);
   }
 
   for (let i = meteors.length - 1; i >= 0; i--) {
@@ -3054,6 +2970,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     }
   }
   const dmg = Math.max(1, Math.round(rawDamage));
+  if (isCrit && !isDotTick && canTriggerStreak) mageGesture.hitStop = 0.03;
   const now = performance.now() / 1000;
   const willKill = state.monster.hp - dmg <= 0;
 
@@ -4799,8 +4716,8 @@ function gameLoop(nowMs) {
     updateCastingLoopSound();
     updateBurningLoopSound();
     runSmartAutoCast();
-    updateAndDrawVfx(dt);
     updateMageMotion(dt, false);
+    updateAndDrawVfx(dt);
     updateLiveHUD();
   } catch (loopErr) {
     console.error('gameLoop internal error:', loopErr);

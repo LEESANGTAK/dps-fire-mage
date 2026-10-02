@@ -168,7 +168,7 @@
             <div class="caster-equipped-left" id="caster-equipped-left"></div>
 
             <div class="caster-avatar" id="caster-avatar">
-              <div class="mage-art" id="mage-art" role="img" aria-label="화염 마법사" data-pose="idle"><span class="mage-muzzle" id="mage-muzzle"></span><span class="mage-hand-flame"></span></div>
+              <div class="mage-art" id="mage-art" role="img" aria-label="화염 마법사" data-pose="idle"><canvas id="mage-pose-canvas" width="640" height="640" aria-hidden="true"></canvas><span class="mage-muzzle" id="mage-muzzle"></span></div>
               <div class="casting-orb" id="casting-orb"></div>
               <div class="heat-sigils" id="heat-sigils" aria-label="연속 치명타"><i></i><i></i></div>
             </div>
@@ -423,6 +423,7 @@
     </div>
   </div>
 
+  <script src="combat-art.js"></script>
   <script src="mage-motion.js"></script>
   <script src="game.js"></script>
 </body>

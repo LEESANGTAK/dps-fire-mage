@@ -44,20 +44,23 @@
 .caster-avatar.casting-active, .caster-avatar.pyro-ready-mode, .caster-avatar.combustion-mode {
   box-shadow: none !important;
 }
+/* 화면 중앙 정렬을 없애고, 배경의 바닥선에 두 배우의 발을 직접 고정합니다. */
+.combat-arena { --floor-line: 72%; background-size: 100% 100%; }
+.center-stage { position: absolute; inset: 0; display: block; padding: 0; pointer-events: none; }
+.caster-box { position: absolute; left: 27%; top: var(--floor-line); transform: translateX(-50%); }
+.caster-avatar { --actor-height: 150px; height: var(--actor-height); margin-top: calc(var(--actor-height) * -1); bottom: 0; left: 0; }
+.weakaura-container { position: absolute; left: 68%; top: var(--floor-line); transform: translateX(-50%); }
+.dummy-avatar { --monster-height: 126px; height: var(--monster-height); margin-top: calc(var(--monster-height) * -1); right: 0; bottom: 0; pointer-events: auto; }
+.dummy-emoji[data-art='slime'] { --slime-size: 220px; position: absolute; width: var(--slime-size); height: var(--slime-size); bottom: calc(var(--slime-size) * -0.1252); }
+.caster-avatar::before, .dummy-avatar:has([data-art='slime'])::before { bottom: -5px; height: 12px; }
+.mage-art[data-pose] { width: var(--mage-width); aspect-ratio: 1; bottom: -1px; background: none; clip-path: none; transform: none; transition: filter .25s ease-out; }
+#mage-pose-canvas { width: 100%; height: 100%; display: block; }
+.mage-muzzle { left: var(--muzzle-x, 97%); top: var(--muzzle-y, 66%); }
+.arena-side-nav, .flame-evo-badge { pointer-events: auto; }
 .caster-avatar.combustion-mode, .caster-avatar.cast-recoil { transform: none; }
 .caster-avatar::before { content: ''; position: absolute; bottom: 9%; left: -15%; width: 130%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, #08070cb0, #4a3a5055 55%, transparent 72%); }
 .dummy-avatar:has([data-art='slime'])::before { content: ''; position: absolute; bottom: 8%; width: 110%; height: 15%; border-radius: 50%; background: radial-gradient(ellipse, #09080bb0, transparent 72%); }
-.mage-art[data-pose='idle'] { background-position: 0 0; transform: scale(1); }
-.mage-art[data-pose='anticipation'] { background-position: 50% 0; transform: translateX(-10%) scale(.98, .96) rotate(-2deg); }
-.mage-art[data-pose='charge'] { background-position: 100% 0; transform: translateX(-7%) rotate(-1deg); }
-/* 발사 포즈는 뻗은 지팡이를 포함하도록 넓게 읽고, 아랫줄의 발 기준을 보정합니다. */
-.mage-art[data-pose='release'] { width: calc(var(--mage-width) * 1.18); aspect-ratio: 1.18; background-size: 254.2373% 200%; background-position: 0 100%; transform: translateY(10.3%) scale(1.04, .98); }
-.mage-art[data-pose='release'][data-heavy='true'] { transform: translateY(10.3%) scale(1.09, .95) rotate(2deg); }
-.mage-art[data-pose='recoil'] { background-position: 50% 100%; clip-path: inset(0 0 0 16%); transform: translate(-10%,10.3%) scale(.98, 1.02) rotate(-2deg); }
-.mage-art[data-pose='hot'] { background-position: 100% 100%; transform: translate(-7%,10.3%) scale(1.02); }
-.mage-muzzle { position: absolute; left: 92%; top: 43%; width: 1px; height: 1px; }
-.mage-hand-flame { position: absolute; left: 62%; top: 40%; width: 13%; height: 15%; opacity: 0; border-radius: 65% 30% 65% 35%; background: radial-gradient(ellipse at 50% 70%, #fff7ca 5%, #ffbd47 35%, #ff6525 70%, transparent 72%); transform: scale(calc(.4 + var(--charge, 0) * .8)) rotate(-20deg); filter: drop-shadow(0 0 3px #ff9d26); }
-.mage-art[data-pose='charge'] .mage-hand-flame { opacity: 1; left: 72%; top: 23%; }
+.mage-muzzle { position: absolute; left: var(--muzzle-x, 97%); top: var(--muzzle-y, 66%); width: 1px; height: 1px; }
 .mage-art.motion-combustion { filter: drop-shadow(0 0 12px #ffad38aa); }
 .mage-art.motion-paused { transition: none; animation-play-state: paused; }
 .casting-orb { display: none; }
@@ -124,9 +127,31 @@
 @media (prefers-reduced-motion: reduce) {
   .art-followup, .combustion-aura-bg.active { animation: none; }
   .mage-art, .heat-sigils i { transition: none; }
-  .mage-art[data-pose='anticipation'] { transform: translateX(-10%); }
-  .mage-art[data-pose='charge'] { transform: translateX(-7%); }
-  .mage-art[data-pose='release'] { transform: translateY(10.3%); }
-  .mage-art[data-pose='recoil'] { transform: translate(-10%,10.3%); }
-  .mage-art[data-pose='hot'] { transform: translate(-7%,10.3%); }
+}
+
+/* 모든 포즈는 같은 캔버스와 발 원점을 사용합니다. 포즈별 CSS 이동은 사용하지 않습니다. */
+.mage-art[data-pose] { width: var(--mage-width); aspect-ratio: 1; bottom: -1px; background: none; clip-path: none; transform: none; }
+.heat-sigils { bottom: 25%; right: calc(100% + 2px); }
+.monster-hit-mark { width: 56px; height: 56px; font-size: 0; background: url('assets/art/comic-skill-atlas.png') right top / 200% 200%; mix-blend-mode: screen; clip-path: polygon(50% 0,60% 25%,90% 10%,75% 40%,100% 50%,75% 60%,90% 90%,60% 75%,50% 100%,40% 75%,10% 90%,25% 60%,0 50%,25% 40%,10% 10%,40% 25%); }
+.dummy-avatar.impact-stop, .dummy-avatar.impact-stop .dummy-emoji { animation-play-state: paused !important; }
+.caster-avatar::before, .dummy-avatar:has([data-art='slime'])::before { bottom: -5px; height: 12px; }
+.center-stage { padding: 0; }
+@media (max-width: 768px) {
+  .combat-arena { --floor-line: 68%; height: 550px; min-height: 550px; }
+  .monster-box { gap: 4px; }
+  .monster-name-label { font-size: .72rem; line-height: 1.2; padding: 2px 8px; }
+  .monster-hp-wrap { top: calc(100% + 2px); padding: 2px; }
+  .hp-bar-outer { height: 18px; }
+  .caster-avatar { --actor-height: 110px; height: var(--actor-height); bottom: 0; left: 0; }
+  .dummy-avatar { --monster-height: 110px; height: var(--monster-height); bottom: 0; right: 0; }
+  .dummy-emoji[data-art='slime'] { --slime-size: 160px; width: var(--slime-size); height: var(--slime-size); }
+}
+@media (max-width: 480px) {
+  .caster-avatar { --actor-height: 100px; height: var(--actor-height); }
+  .dummy-avatar { --monster-height: 100px; height: var(--monster-height); }
+  .dummy-emoji[data-art='slime'] { --slime-size: 130px; width: var(--slime-size); height: var(--slime-size); }
+  .caster-box { left: 26%; }
+  .weakaura-container { left: 67%; width: 180px; }
+  .arena-side-nav { top: 49%; }
+  .arena-side-nav.left { top: 40%; }
 }
