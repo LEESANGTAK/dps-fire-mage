@@ -87,3 +87,13 @@ assert.equal(slimePool.length, 48);
 assert.ok(slimePool.every(p => p.vy < 0 && p.maxLife <= 0.63));
 vm.runInContext('spawnSlimeSplash(slimePool,100,100,160,false,true,100,true)', projectileContext);
 assert.equal(slimePool.length, 48);
+
+const { livingMageMotion } = require('./mage-motion.js');
+assert.equal(livingMageMotion(10, true, false).breath, 1);
+assert.equal(livingMageMotion(10, true, false).hat, 0);
+assert.notDeepEqual(livingMageMotion(1, false, false), livingMageMotion(2, false, false));
+for(let i=0;i<1000;i++) {
+  const idle = livingMageMotion(i/10,false,false);
+  assert.ok(Math.abs(idle.breath-1)<=0.0121 && Math.abs(idle.shear)<=0.0101);
+  assert.ok(Math.abs(livingMageMotion(i/10,false,true).hat)<=1.401);
+}

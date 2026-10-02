@@ -155,3 +155,32 @@
   .arena-side-nav { top: 49%; }
   .arena-side-nav.left { top: 40%; }
 }
+
+/* 대기와 피격은 서로 다른 층에서 움직입니다. 원점은 항상 바닥입니다. */
+.monster-idle {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  transform-origin: 50% 100%; animation: creature-watch 6.7s cubic-bezier(.45,0,.35,1) infinite;
+}
+.monster-idle:has([data-art='slime']) { animation: slime-breathe 4.3s cubic-bezier(.45,0,.3,1) infinite; }
+.monster-idle:has([data-variant='blue']) { animation-duration: 5.1s; animation-delay: -1.4s; }
+@keyframes slime-breathe {
+  0%, 100% { transform: scale(1,1) skewX(0deg); }
+  18% { transform: scale(1.045,.958) skewX(-.8deg); }
+  38% { transform: scale(.985,1.023) skewX(.5deg); }
+  52% { transform: scale(1.008,.992) skewX(0deg); }
+  74% { transform: scale(1.025,.977) skewX(.7deg); }
+  87% { transform: scale(.992,1.012) skewX(-.3deg); }
+}
+@keyframes creature-watch {
+  0%,100% { transform: scale(1,1) rotate(0deg); }
+  23% { transform: scale(1.012,.989) rotate(-1deg); }
+  41% { transform: scale(.994,1.009) rotate(.35deg); }
+  61% { transform: scale(1.006,.994) rotate(0deg); }
+  82% { transform: scale(.99,1.015) rotate(.8deg); }
+}
+/* 피격은 대기보다 우선하며, 전투 정지 때 대기도 함께 멈춥니다. */
+.dummy-avatar.impact-stop .monster-idle,
+.living-paused .monster-idle, .living-paused .art-followup, .living-paused .combustion-aura-bg.active {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) { .monster-idle { animation: none !important; } }

@@ -44,9 +44,24 @@ function armTarget(combat, gesture) {
   return 0;
 }
 
+// 서로 다른 주기와 시차로 단순한 한 박자 반복을 피합니다.
+function livingMageMotion(time, reduced, engaged) {
+  if (reduced) return { breath: 1, shear: 0, wrist: 0, hat: 0, cloth: 0 };
+  const quiet = engaged ? 0.35 : 1;
+  return {
+    breath: 1 + Math.sin(time * 1.8) * 0.012,
+    shear: (Math.sin(time * 1.05) * 0.007 + Math.sin(time * 0.43) * 0.003) * quiet,
+    wrist: Math.sin(time * 1.8 - 0.65) * 0.022 * quiet,
+    hat: Math.sin(time * 1.05 - 0.9) * 4 * quiet,
+    cloth: Math.sin(time * 1.4 - 1.2) * 3 * quiet
+  };
+}
+
 function renderStandingMage(context, art, dt, reduced) {
   const spring = mageSpring;
-  const target = reduced ? 0 : armTarget(state.combat, mageGesture);
+  const engaged = state.combat.castingSkill || mageGesture.remaining > 0;
+  const idle = livingMageMotion(spring.time, reduced, engaged);
+  const target = reduced ? 0 : armTarget(state.combat, mageGesture) + idle.wrist;
   // 발사 자세는 피해·투사체 생성과 같은 프레임에 맞춥니다.
   spring.arm = target;
   spring.armVelocity = 0;
@@ -66,8 +81,18 @@ function renderStandingMage(context, art, dt, reduced) {
   }
   context.clearRect(0, 0, 640, 640);
   context.save(); context.translate(ox, oy);
+  // 발 위치를 중심으로 호흡과 무게 이동을 적용해 접지를 유지합니다.
+  context.transform(1, 0, idle.shear, idle.breath, -idle.shear * 482, 482 * (1 - idle.breath));
   context.save(); context.beginPath(); context.rect(sx, sy, w, h); armPath(); context.clip('evenodd');
-  context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore();
+  for (let row = 0; row < h; row += 6) {
+    const sourceY = sy + row;
+    const influence = Math.max(0, Math.min(1, (482 - sourceY) / 180));
+    const hat = sourceY < 270 ? idle.hat * Math.pow((270 - sourceY) / 205, 2) : 0;
+    const hem = sourceY > 370 && sourceY < 450 ? idle.cloth * Math.sin((sourceY - 370) / 80 * Math.PI) : 0;
+    const strip = Math.min(6, h - row);
+    context.drawImage(mageSheet, sx, sourceY, w, strip, sx + (hat + hem) * influence, sourceY, w, strip + 0.3);
+  }
+  context.restore();
   context.save(); context.translate(...pivot); context.rotate(elbowAngle); context.translate(-pivot[0], -pivot[1]);
   function handPath() {
     context.moveTo(333, 310); context.lineTo(355, 304); context.lineTo(397, 252);
@@ -85,8 +110,8 @@ function renderStandingMage(context, art, dt, reduced) {
   const localY = wrist[1] - pivot[1] + dx * Math.sin(wristAngle) + dy * Math.cos(wristAngle);
   const x = ox + pivot[0] + localX * Math.cos(elbowAngle) - localY * Math.sin(elbowAngle);
   const y = oy + pivot[1] + localX * Math.sin(elbowAngle) + localY * Math.cos(elbowAngle);
-  art.style.setProperty('--muzzle-x', `${x / 640 * 100}%`);
-  art.style.setProperty('--muzzle-y', `${y / 640 * 100}%`);
+  art.style.setProperty('--muzzle-x', `${(x + idle.shear * (y - oy - 482)) / 640 * 100}%`);
+  art.style.setProperty('--muzzle-y', `${(oy + 482 + (y - oy - 482) * idle.breath) / 640 * 100}%`);
 }
 
 function renderMage(art, pose, dt, reduced) {
@@ -94,6 +119,7 @@ function renderMage(art, pose, dt, reduced) {
   if (!surface || !surface.getContext || !mageSheet || !mageSheet.complete || !mageSheet.naturalWidth) return;
   const context = surface.getContext('2d');
   const spring = mageSpring;
+  spring.time += dt;
   if (pose === 'idle') {
     renderStandingMage(context, art, dt, reduced);
     spring.weights = { idle: 1 }; spring.pose = 'idle';
@@ -109,7 +135,6 @@ function renderMage(art, pose, dt, reduced) {
   if (pose === 'hot') { lean = 2; squash = -0.025; }
   if (reduced) { spring.x = 0; spring.squash = 0; spring.cloth = 0; }
   else advanceSpring(spring, dt, lean, squash);
-  spring.time += dt;
   // 짧은 포즈 연결과 연속 변형을 함께 사용해 딱 끊기는 전환을 완화합니다.
   const blend = reduced || dt === 0 ? 0 : 1 - Math.exp(-dt / 0.035);
   for (const key of Object.keys(mageFrames)) {
@@ -180,6 +205,8 @@ function updateMageMotion(dt, paused) {
   const art = document.getElementById('mage-art');
   if (!art) return;
   art.classList.toggle('motion-paused', paused);
+  const arena = document.getElementById('combat-arena');
+  if (arena && arena.classList) arena.classList.toggle('living-paused', paused);
   if (paused) return;
   const target = document.getElementById('dummy-avatar');
   const stopped = mageGesture.hitStop > 0;
@@ -201,4 +228,4 @@ function updateMageMotion(dt, paused) {
 }
 
 // 포즈 전환 경계는 브라우저 없이도 검증할 수 있습니다.
-if (typeof module !== 'undefined') module.exports = { selectMagePose, advanceSpring, mageFrames, armTarget };
+if (typeof module !== 'undefined') module.exports = { selectMagePose, advanceSpring, mageFrames, armTarget, livingMageMotion };
