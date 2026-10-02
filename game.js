@@ -4561,11 +4561,11 @@ function doAscend() {
   state.combat.meteorBurnRem = 0;
   state.combat.flamePatchRem = 0;
 
-  // 3. 연출: 화면 전체 불사조 황금빛 폭발 파티클 및 사운드
+  // 3. 연출: 화면 전체 불사조 황금빛 폭발 파티클 및 웅장한 승천 사운드
   playSound('proc');
-  playSound('summon_spirit');
+  playSound('meteor_impact');
   const casterCenter = getCasterCenter();
-  spawnParticles(casterCenter.x, casterCenter.y, 42, '#fef08a', '#ea580c', 2.0);
+  spawnParticles(casterCenter.x, casterCenter.y, 48, '#fef08a', '#ea580c', 2.2);
   triggerArenaShake('lg');
 
   spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(2)}배)`, 'fct-proc', -55, { isBig: true });
