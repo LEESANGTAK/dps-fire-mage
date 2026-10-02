@@ -709,12 +709,57 @@ fireballCastAudio.preload = 'auto';
 fireballCastAudio.loop = true;
 fireballCastAudio.volume = 0.58;
 
-const BGM_TRACK_FILES = [
-  'assets/sounds/bgm/Infinite Dungeon Loop_00.mp3',
-  'assets/sounds/bgm/Infinite Dungeon Loop_01.mp3'
+const BGM_TRACKS = [
+  { title: '무한 던전 I', src: 'assets/sounds/bgm/Infinite Dungeon Loop_00.mp3' },
+  { title: '무한 던전 II', src: 'assets/sounds/bgm/Infinite Dungeon Loop_01.mp3' },
+  { title: '선술집의 변덕 A', src: 'assets/sounds/bgm/Tavern Whimsy.mp3' },
+  { title: '선술집의 변덕 B', src: 'assets/sounds/bgm/Tavern Whimsy (1).mp3' },
+  { title: "요새의 파수병 A", src: "assets/sounds/bgm/The Keep's Watch.mp3" },
+  { title: "요새의 파수병 B", src: "assets/sounds/bgm/The Keep's Watch (1).mp3" }
 ];
 const bgmAudios = [];
-let currentBgmIndex = 0;
+let currentBgmIndex = -1;
+let bgmShuffleQueue = [];
+
+function getNextBgmIndex() {
+  if (bgmAudios.length <= 1) return 0;
+  if (bgmShuffleQueue.length === 0) {
+    const indices = bgmAudios.map((_, i) => i);
+    // Fisher-Yates 셔플
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    // 직전에 재생했던 곡과 새 큐의 첫 곡이 같다면 뒤로 보냄
+    if (indices[0] === currentBgmIndex && indices.length > 1) {
+      const first = indices.shift();
+      indices.push(first);
+    }
+    bgmShuffleQueue = indices;
+  }
+  return bgmShuffleQueue.shift();
+}
+
+function playNextBgmTrack() {
+  if (!bgmAudios.length) return;
+  currentBgmIndex = getNextBgmIndex();
+  const effVol = getEffectiveBgmVol();
+
+  bgmAudios.forEach((aud, idx) => {
+    if (idx !== currentBgmIndex && !aud.paused) {
+      aud.pause();
+      aud.currentTime = 0;
+    }
+  });
+
+  const nextAudio = bgmAudios[currentBgmIndex];
+  if (nextAudio && effVol > 0) {
+    nextAudio.volume = effVol;
+    nextAudio.currentTime = 0;
+    nextAudio.play().catch(() => {});
+  }
+  updateSoundUI();
+}
 
 function getEffectiveBgmVol() {
   if (!state.soundOn) return 0;
@@ -728,25 +773,23 @@ function getEffectiveSfxVol(baseVol = 0.75) {
 }
 
 function initBgmAudio() {
-  BGM_TRACK_FILES.forEach((src, idx) => {
-    const audio = new Audio(src);
+  BGM_TRACKS.forEach((track) => {
+    const audio = new Audio(track.src);
     audio.preload = 'auto';
     audio.loop = false;
     audio.volume = 0.4;
     audio.addEventListener('ended', () => {
-      currentBgmIndex = (idx + 1) % bgmAudios.length;
-      const effVol = getEffectiveBgmVol();
-      if (effVol > 0) {
-        const nextAudio = bgmAudios[currentBgmIndex];
-        if (nextAudio) {
-          nextAudio.volume = effVol;
-          nextAudio.currentTime = 0;
-          nextAudio.play().catch(() => {});
-        }
-      }
+      playNextBgmTrack();
+    });
+    audio.addEventListener('error', () => {
+      // 로드 또는 디코딩 실패 시 다음 곡으로 안전하게 스킵
+      playNextBgmTrack();
     });
     bgmAudios.push(audio);
   });
+  if (bgmAudios.length > 0) {
+    currentBgmIndex = getNextBgmIndex();
+  }
 }
 initBgmAudio();
 
@@ -755,6 +798,9 @@ function updateBgmPlayback() {
   try {
     const effVol = getEffectiveBgmVol();
     if (effVol > 0) {
+      if (currentBgmIndex < 0 || currentBgmIndex >= bgmAudios.length) {
+        currentBgmIndex = getNextBgmIndex();
+      }
       bgmAudios.forEach((aud, idx) => {
         aud.volume = effVol;
         if (idx !== currentBgmIndex && !aud.paused) {
@@ -773,6 +819,7 @@ function updateBgmPlayback() {
         }
       });
     }
+    updateSoundUI();
   } catch (e) {}
 }
 
@@ -895,6 +942,16 @@ function updateSoundUI() {
   const sfxValEl = document.getElementById('ui-sfx-vol-val');
   if (sfxSlider) sfxSlider.value = String(sfxPct);
   if (sfxValEl) sfxValEl.textContent = state.soundOn ? `${sfxPct}%` : '음소거';
+
+  const bgmTrackTitleEl = document.getElementById('ui-bgm-title');
+  if (bgmTrackTitleEl) {
+    if (currentBgmIndex >= 0 && currentBgmIndex < BGM_TRACKS.length) {
+      bgmTrackTitleEl.textContent = `🎲 ${BGM_TRACKS[currentBgmIndex].title}`;
+      bgmTrackTitleEl.title = `현재 트랙: ${BGM_TRACKS[currentBgmIndex].title} (${currentBgmIndex + 1}/${BGM_TRACKS.length})`;
+    } else {
+      bgmTrackTitleEl.textContent = '🎲 랜덤 재생';
+    }
+  }
 }
 
 // ==========================================
@@ -4839,6 +4896,18 @@ function initEvents() {
       updateSoundUI();
       updateBgmPlayback();
       saveGame();
+    });
+  }
+
+  const skipBtn = document.getElementById('btn-sound-skip');
+  if (skipBtn) {
+    skipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!state.soundOn) {
+        state.soundOn = true;
+        updateSoundUI();
+      }
+      playNextBgmTrack();
     });
   }
 

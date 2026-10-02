@@ -248,6 +248,46 @@ body {
   cursor: pointer;
 }
 
+.sound-track-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(71, 85, 105, 0.4);
+}
+
+.sound-track-info {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.sound-skip-btn {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.sound-skip-btn:hover {
+  background: #475569;
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
 /* 개발자 모드 치트 패널 (아레나 좌측 상단) */
 .dev-cheat-panel {
   position: absolute;
