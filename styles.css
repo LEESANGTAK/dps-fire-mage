@@ -3512,3 +3512,54 @@ body {
   }
 }
 
+/* ==========================================
+   스킬 숙련도 연마 (Skill Mastery) 시각 스타일
+   ========================================== */
+.mastery-card {
+  border-left: 3px solid rgba(249, 115, 22, 0.45);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, background 0.2s ease;
+}
+
+.mastery-card.affordable {
+  border-left-color: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.18);
+}
+
+.mastery-card:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.mastery-bonus-val {
+  color: #f59e0b;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.mastery-arrow {
+  color: #64748b;
+  margin: 0 4px;
+  font-size: 0.8rem;
+}
+
+.mastery-next {
+  color: #4ade80;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.mastery-bonus-preview {
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+#ui-mastery-summary:not(:empty) {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fed7aa;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+

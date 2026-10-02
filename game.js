@@ -405,6 +405,15 @@ function getAscensionDamageMult() {
   return Math.pow(2.5, count);
 }
 
+function isSkillUnlocked(skillId) {
+  if (skillId === 'fireball') return true;
+  if (skillId === 'fireblast') return Boolean(state.grimoires && state.grimoires.fireblast);
+  if (skillId === 'pyroblast') return Boolean(state.grimoires && state.grimoires.pyroblast);
+  if (skillId === 'meteor') return Boolean(state.grimoires && state.grimoires.meteor);
+  if (skillId === 'flame_patch') return Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0);
+  return false;
+}
+
 // ==========================================
 // 3-C. 3단계: 제2 자원 '불꽃의 정수' & 고대 마법 부여(Infusion) 데이터
 // ==========================================
@@ -3963,16 +3972,28 @@ function renderShopUI() {
     .join('');
 
   const masteryContainer = document.getElementById('mastery-shop-list');
+  const masterySection = document.getElementById('mastery-section');
   if (masteryContainer) {
-    masteryContainer.innerHTML = SKILL_MASTERY_LIST.map((m) => {
+    const unlockedMasteries = SKILL_MASTERY_LIST.filter((m) => isSkillUnlocked(m.id));
+    if (masterySection) {
+      masterySection.style.display = unlockedMasteries.length > 0 ? '' : 'none';
+    }
+
+    const totalMasteryLvs = Object.values(state.skillMastery || {}).reduce((a, b) => a + b, 0);
+    const summaryEl = document.getElementById('ui-mastery-summary');
+    if (summaryEl) {
+      summaryEl.textContent = totalMasteryLvs > 0 ? `누적 ${totalMasteryLvs} Lv` : '';
+    }
+
+    masteryContainer.innerHTML = unlockedMasteries.map((m) => {
       const lv = (state.skillMastery && state.skillMastery[m.id]) || 0;
       const cost = getSkillMasteryCost(m);
       const canBuy = state.gold >= cost;
       const curBonus = (lv * m.bonusPerLv * 100).toFixed(0);
       const nextBonus = ((lv + 1) * m.bonusPerLv * 100).toFixed(0);
-      const descText = lv === 0
-        ? `${m.desc} (다음: +${nextBonus}%)`
-        : `현재: +${curBonus}% ➔ 다음: +${nextBonus}%`;
+      const statDisplay = lv === 0
+        ? `<span class="mastery-bonus-preview">+${nextBonus}% 강화</span>`
+        : `<span class="mastery-bonus-val">+${curBonus}%</span> <span class="mastery-arrow">➔</span> <span class="mastery-next">+${nextBonus}%</span>`;
 
       return `
         <div class="shop-card mastery-card ${canBuy ? 'affordable' : ''}">
@@ -3981,13 +4002,13 @@ function renderShopUI() {
             <div class="shop-info">
               <div class="shop-title">
                 <span>${m.name}</span>
-                <span class="shop-lv-tag ${lv > 0 ? 'is-max' : ''}">Lv.${lv}</span>
+                ${lv > 0 ? `<span class="shop-lv-tag is-max">Lv.${lv}</span>` : ''}
               </div>
-              <div class="shop-desc">${descText}</div>
+              <div class="shop-desc">${statDisplay}</div>
             </div>
           </div>
           <button class="shop-buy-btn has-badge-anchor" data-mastery="${m.id}" ${!canBuy ? 'disabled' : ''}>
-            <span>연마 💰 ${fmt(cost)} G</span>
+            <span>💰 ${fmt(cost)} G</span>
             <span class="noti-badge ${canBuy ? '' : 'hidden'}">!</span>
           </button>
         </div>
@@ -4128,12 +4149,14 @@ function applyUnfoldedVisibility() {
   if (tabInfBtn) tabInfBtn.classList.toggle('unfold-hidden', !u.infusionShop);
   if (tabTreeBtn) tabTreeBtn.classList.toggle('unfold-hidden', !u.skillTree);
 
-  // 우측 상점 내부: 초기 봉인 안내 vs 마법 습득 vs 장비 강화
+  // 우측 상점 내부: 초기 봉인 안내 vs 마법 습득 vs 스킬 연마 vs 장비 강화
   const sealedCard = document.getElementById('unfold-sealed-shop');
   const grimoireSec = document.getElementById('grimoire-section');
+  const masterySec = document.getElementById('mastery-section');
   const itemSec = document.getElementById('item-section');
   if (sealedCard) sealedCard.classList.toggle('unfold-hidden', u.grimoireShop);
   if (grimoireSec) grimoireSec.classList.toggle('unfold-hidden', !u.grimoireShop);
+  if (masterySec) masterySec.classList.toggle('unfold-hidden', !u.grimoireShop);
   if (itemSec) itemSec.classList.toggle('unfold-hidden', !u.equipShop);
 
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
@@ -5101,6 +5124,7 @@ function initEvents() {
     }
     saveGame();
     renderSkillTreeUI();
+    renderShopUI();
   });
 
   document.getElementById('btn-respec-tree').addEventListener('click', () => {
@@ -5114,6 +5138,7 @@ function initEvents() {
     updateSkillActionBarVisibility();
     saveGame();
     renderSkillTreeUI();
+    renderShopUI();
   });
 
   document.getElementById('grimoire-shop-list').addEventListener('click', (e) => {
