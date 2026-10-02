@@ -1,0 +1,109 @@
+/* 손그림 전장: 정보 영역은 차분하게, 연계 순간만 선명하게 강조합니다. */
+:root {
+  --bg-dark: #100e13;
+  --bg-panel: #1c1820;
+  --bg-panel-header: #282027;
+  --border-color: #554338;
+  --text-main: #f0e5d2;
+  --text-muted: #b5aaa0;
+}
+.top-bar {
+  background: linear-gradient(180deg, #30252a, #18151b);
+  border-bottom: 2px solid #75543b;
+}
+.combat-arena {
+  background: linear-gradient(180deg, rgba(9,12,21,.48), rgba(9,12,21,.12) 50%, rgba(13,10,16,.88)), url('assets/art/arena.png') center 55% / cover;
+  border: 3px solid #806044;
+  box-shadow: inset 0 0 0 2px #271c18, inset 0 0 65px #090b16, 0 8px 24px #0008;
+}
+.dps-meter-panel { background: linear-gradient(180deg, #211b23ee, #15141bd9); border-bottom-color: #72543a; }
+.stage-nav-btn, .btn-top, .auto-cast-btn {
+  border-color: #77573e;
+  background: linear-gradient(180deg, #403039, #231b25);
+  box-shadow: inset 0 1px #b18a5140, 0 3px 5px #0005;
+}
+.player-hud { position: relative; z-index: 10; flex-shrink: 0; }
+.center-stage { min-height: 240px; }
+.caster-avatar {
+  width: 150px; height: 150px;
+  background: radial-gradient(ellipse at 50% 86%, #ff9c272a, transparent 65%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transition: transform .18s cubic-bezier(.16,1,.3,1);
+}
+.mage-art {
+  position: absolute; width: 190%; height: 190%; left: -45%; top: -70%;
+  object-fit: contain; pointer-events: none;
+  filter: drop-shadow(0 9px 5px #0008);
+  transform-origin: 50% 85%;
+  transition: filter .3s cubic-bezier(.16,1,.3,1);
+}
+.caster-avatar.casting-active, .caster-avatar.pyro-ready-mode, .caster-avatar.combustion-mode {
+  box-shadow: none !important;
+}
+.casting-active .mage-art { animation: mage-gather 1.2s cubic-bezier(.45,0,.2,1) infinite alternate; }
+.pyro-ready-mode .mage-art { filter: drop-shadow(0 0 10px #ff7515aa) drop-shadow(0 9px 5px #0008); }
+.combustion-mode .mage-art { filter: drop-shadow(0 0 16px #ffaf36bb) drop-shadow(0 0 4px #ffe5a3); }
+.heat-sigils { position: absolute; bottom: 0; display: flex; gap: 12px; z-index: 8; }
+.heat-sigils[hidden] { display: none; }
+.heat-sigils i { width: 12px; height: 12px; transform: rotate(45deg); border: 2px solid #9a754c; background: #231a22; transition: background .18s ease-out, box-shadow .18s ease-out; }
+.heat-sigils[data-heat='1'] i:first-child, .heat-sigils[data-heat='2'] i {
+  background: #ffe1a0; border-color: #fff0c5; box-shadow: 0 0 10px #ff7319;
+}
+.dummy-avatar:has([data-art='slime']) { background: transparent; border-color: transparent; box-shadow: none; }
+.dummy-emoji[data-art='slime'] {
+  width: 220px; height: 220px; font-size: 0;
+  background: url('assets/art/slime.png') center / contain no-repeat;
+  filter: drop-shadow(0 12px 5px #0007);
+}
+.dummy-emoji[data-variant='blue'] { filter: hue-rotate(85deg) drop-shadow(0 12px 5px #0007); }
+.action-bar { padding: 10px 14px; border: 2px solid #735238; border-radius: 12px; background: linear-gradient(180deg, #35262aea, #17131cec); box-shadow: inset 0 2px #cba86d30, 0 8px 18px #0007; }
+.skill-btn[data-skill='fireball'], .skill-btn[data-skill='fireblast'], .skill-btn[data-skill='pyroblast'], .skill-btn[data-skill='combustion'] {
+  border: 2px solid #ad8150; background-color: #21151a;
+  box-shadow: inset 0 0 0 1px #ffdda44a, 0 3px 5px #0009;
+}
+.skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='pyroblast'],[data-skill='combustion']) .skill-icon {
+  position: absolute; inset: 0; font-size: 0;
+  background-image: url('assets/art/skill-atlas.png'); background-size: 200% 200%; border-radius: 5px;
+}
+[data-skill='fireball'] .skill-icon { background-position: left top; }
+[data-skill='fireblast'] .skill-icon { background-position: right top; }
+[data-skill='pyroblast'] .skill-icon { background-position: left bottom; }
+[data-skill='combustion'] .skill-icon { background-position: right bottom; }
+.skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='pyroblast'],[data-skill='combustion']) .skill-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 3px 0; background: #140e16ce; text-shadow: 0 1px 2px #000; }
+.skill-hotkey { padding: 1px 4px; border-radius: 3px; background: #160f17bc; color: #ffdfaa; }
+.art-followup { border-color: #fff1bb !important; animation: followup-breathe .8s cubic-bezier(.45,0,.2,1) infinite alternate; }
+.art-active { border-color: #fff0b2 !important; box-shadow: 0 0 18px #ff8a24b0 !important; }
+.art-hot-streak .castbar-wrapper { border-color: #ffd17a; box-shadow: 0 0 12px #ff6a2540; }
+.combustion-aura-bg.active { background: radial-gradient(ellipse at 30% 55%, #ff901f32, transparent 62%); animation: art-fire-breathe 1.8s cubic-bezier(.45,0,.2,1) infinite alternate; }
+@keyframes mage-gather { from { transform: scale(.97,1.01) rotate(-1deg); } to { transform: scale(1.01,.99) rotate(1deg); } }
+@keyframes followup-breathe { from { box-shadow: 0 0 4px #ffb12940; } to { box-shadow: 0 0 15px #ffb129a0; } }
+@keyframes art-fire-breathe { from { opacity: .55; } to { opacity: 1; } }
+@media (max-width: 768px) {
+  .combat-arena { height: 530px; min-height: 530px; max-height: none; }
+  .center-stage { padding: 60px 75px 0; min-height: 240px; }
+  .caster-avatar { width: 94px; height: 110px; }
+  .mage-art { width: 170%; height: 170%; left: -35%; top: -50%; }
+  .dummy-emoji[data-art='slime'] { width: 160px; height: 160px; }
+  .action-bar { padding: 7px; }
+  .stage-center-info { flex-shrink: 0; width: max-content; white-space: nowrap; }
+  .dps-breakdown-mini { display: none; }
+  .arena-top-stage-header { top: 64px; }
+}
+@media (max-width: 480px) {
+  .center-stage { padding: 80px 42px 0; justify-content: space-between; }
+  .caster-avatar { width: 80px; height: 100px; left: 0; bottom: 0; }
+  .mage-art { width: 165%; height: 165%; left: -32.5%; top: -35%; }
+  .dummy-avatar { width: 90px; height: 100px; right: 0; bottom: 0; }
+  .dummy-emoji[data-art='slime'] { width: 130px; height: 130px; }
+  .arena-side-nav { top: 40%; }
+  .arena-side-nav.left { left: 8px; }
+  .arena-side-nav.right { right: 8px; }
+  .flame-evo-badge { font-size: .6rem; white-space: nowrap; }
+  .monster-hp-wrap { width: 145px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .casting-active .mage-art, .art-followup, .combustion-aura-bg.active { animation: none; }
+  .mage-art, .heat-sigils i { transition: none; }
+}

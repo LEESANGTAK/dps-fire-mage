@@ -4415,7 +4415,11 @@ function updateStageUI() {
     : `${stageLabelPrefix} ${data.phase}-${data.stepInPhase}`;
 
   // 몬스터 이미지와 그 아래 몬스터 이름 표시
-  document.getElementById('dummy-emoji').textContent = data.emoji;
+  const monsterArt = document.getElementById('dummy-emoji');
+  monsterArt.textContent = data.emoji;
+  monsterArt.dataset.art = data.stage <= 2 ? 'slime' : '';
+  monsterArt.dataset.variant = data.stage === 2 ? 'blue' : '';
+  monsterArt.setAttribute('aria-label', data.name);
   const monsterNameLabel = document.getElementById('monster-name-label');
   monsterNameLabel.textContent = data.isPhaseBoss ? `👑 ${data.name}` : data.name;
   monsterNameLabel.classList.toggle('boss-label', data.isPhaseBoss);
@@ -4851,6 +4855,16 @@ function updateLiveHUD() {
   castingOrb.classList.toggle('active', Boolean(c.castingSkill) && !isPyroReady);
   castingOrb.classList.toggle('pyro-ready', isPyroReady);
   combBg.classList.toggle('active', c.combustionRem > 0);
+  // 연계 신호는 실제 치명타와 발화 상태를 그대로 따라갑니다.
+  const arenaArt = document.getElementById('combat-arena');
+  arenaArt.classList.toggle('art-combustion', c.combustionRem > 0);
+  arenaArt.classList.toggle('art-hot-streak', Boolean(state.grimoires.pyroblast && c.critStreak === 2));
+  const heatSigils = document.getElementById('heat-sigils');
+  heatSigils.hidden = !state.grimoires.pyroblast;
+  heatSigils.dataset.heat = String(c.critStreak);
+  heatSigils.setAttribute('aria-label', `연속 치명타 ${c.critStreak}회`);
+  document.getElementById('skill-2').classList.toggle('art-followup', Boolean(state.grimoires.pyroblast && c.critStreak === 1 && c.fbCharges > 0));
+  document.getElementById('skill-4').classList.toggle('art-active', c.combustionRem > 0);
 
   const castFill = document.getElementById('castbar-fill');
   const castWrapper = castFill ? castFill.parentElement : null;
