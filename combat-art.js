@@ -55,17 +55,26 @@ function emitComicTrail(projectile, x, y, dt, pool, reduced) {
 
 // 점액은 불꽃과 별도로 짧은 포물선과 접지 후 납작한 여운을 갖습니다.
 let lastSlimeSplashAt = -Infinity;
-function spawnSlimeSplash(pool, x, y, groundY, blue, strong, now, reduced) {
+function spawnSlimeSplash(pool, x, y, groundY, blue, strong, now, reduced, bounds = null) {
   if (reduced || now - lastSlimeSplashAt < (strong ? 0.055 : 0.09)) return;
   lastSlimeSplashAt = now;
   const available = Math.max(0, 48 - pool.filter(p => p.slimeDrop).length);
   const count = Math.min(available, strong ? 11 : 5);
+  const size = bounds ? bounds.width : 180;
+  const left = bounds ? bounds.x : x - size * 0.5;
+  const top = bounds ? bounds.y : groundY - size * 0.875;
+  // 원화의 측면 윤곽을 따라 분출하며 얼굴과 몸 중앙에는 생성하지 않습니다.
+  const outlets = [[0.31,0.43,-1],[0.67,0.43,1],[0.27,0.58,-1],[0.73,0.58,1],[0.225,0.73,-1],[0.855,0.73,1]];
+  const scale = size / 220;
   for (let i = 0; i < count; i++) {
+    const [u, v, side] = outlets[i % outlets.length];
     pool.push({
-      slimeDrop: true, x: x + (Math.random() - 0.5) * 16, y,
-      vx: (Math.random() - 0.35) * (strong ? 210 : 135),
-      vy: -95 - Math.random() * (strong ? 145 : 90), groundY,
-      radius: (strong ? 3.5 : 2.5) + Math.random() * 3,
+      slimeDrop: true,
+      x: left + u * size + side * Math.random() * 4 * scale,
+      y: top + v * size + (Math.random() - 0.5) * 5 * scale,
+      vx: side * (100 + Math.random() * (strong ? 120 : 65)) * scale,
+      vy: -(45 + Math.random() * (strong ? 110 : 75)) * scale, groundY,
+      radius: ((strong ? 3.5 : 2.5) + Math.random() * 3) * scale,
       life: 0, maxLife: 0.48 + Math.random() * 0.15,
       colorCore: blue ? '#8ee3e8' : '#d1ed75', colorEdge: blue ? '#448fbb' : '#84a33b'
     });

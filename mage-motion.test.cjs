@@ -97,3 +97,10 @@ for(let i=0;i<1000;i++) {
   assert.ok(Math.abs(idle.breath-1)<=0.0121 && Math.abs(idle.shear)<=0.0101);
   assert.ok(Math.abs(livingMageMotion(i/10,false,true).hat)<=1.401);
 }
+
+const edgePool = [];
+projectileContext.edgePool = edgePool;
+vm.runInContext('spawnSlimeSplash(edgePool,110,100,190,false,true,101,false,{x:0,y:0,width:220})', projectileContext);
+assert.ok(edgePool.every(p => p.x < 80 || p.x > 140), '몸 중앙에는 점액을 생성하지 않습니다.');
+assert.ok(edgePool.filter(p => p.x < 80).every(p => p.vx < 0));
+assert.ok(edgePool.filter(p => p.x > 140).every(p => p.vx > 0));

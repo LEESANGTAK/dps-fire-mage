@@ -2968,10 +2968,13 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   const dummyEmoji = document.getElementById('dummy-emoji');
   const targetPos = getTargetPos();
   if (!isDotTick && dummyEmoji && dummyEmoji.dataset.art === 'slime') {
+    const slimeBounds = dummyEmoji.getBoundingClientRect();
+    const arenaBounds = document.getElementById('combat-arena').getBoundingClientRect();
     spawnSlimeSplash(particles, targetPos.x, targetPos.y,
       getActorGroundPos('dummy-avatar').y, dummyEmoji.dataset.variant === 'blue',
       isCrit || isBigSkill || willKill, now,
-      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+      { x: slimeBounds.left - arenaBounds.left, y: slimeBounds.top - arenaBounds.top, width: slimeBounds.width });
   }
 
   if (dummyEl && !willKill) {
