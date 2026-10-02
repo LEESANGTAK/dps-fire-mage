@@ -555,7 +555,8 @@ const state = {
 
   monster: {
     hp: 120,
-    maxHp: 120
+    maxHp: 120,
+    isDying: false
   },
 
   combat: {
@@ -2821,6 +2822,7 @@ function loadStage(stageNum) {
   const data = getStageData(state.currentStage);
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
+  state.monster.isDying = false;
 
   state.combat.ignitePool = 0;
   state.combat.igniteRem = 0;
@@ -2853,9 +2855,13 @@ function getFirstClearEssenceBonus(stageNum) {
 }
 
 function onMonsterKilled() {
+  if (state.monster.isDying) return;
+  state.monster.isDying = true;
+
   const data = getStageData(state.currentStage);
   const stats = getPlayerStats();
   const isFirstClear = state.currentStage > state.highestClearedStage;
+  const isFirstRagnarosKill = state.currentStage === 20 && !state.campaignCleared;
   const isRagnarosKill = state.currentStage === 20;
   let totalGold = Math.max(1, Math.round(data.gold * (stats.goldMult || 1)));
   let gainedEssence = 0;
@@ -3053,7 +3059,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   }
 
   state.monster.hp = Math.max(0, state.monster.hp - dmg);
-  if (state.monster.hp <= 0) {
+  if (state.monster.hp <= 0 && !state.monster.isDying) {
     onMonsterKilled();
   }
 }
