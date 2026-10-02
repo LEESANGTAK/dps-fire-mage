@@ -3168,8 +3168,12 @@ function triggerSkill(skillKey) {
   }
 
   if (skillKey === 'pyroblast') {
-    if (!state.grimoires.pyroblast) return false;
+    if (!state.grimoires.pyroblast) {
+      spawnFloatingText('🔒 마법서: 거대 화염구 습득 필요', 'fct-normal', -35, { anchor: 'caster' });
+      return false;
+    }
 
+    // 1. 몰아치는 열기 (치명타 2연속 몰열): 즉시 시전 발사!
     if (c.critStreak === 2) {
       c.critStreak = 0;
       c.streakTimer = 0;
@@ -3178,7 +3182,10 @@ function triggerSkill(skillKey) {
       return true;
     }
 
-    if (c.castingSkill || c.gcdRemaining > 0) return false;
+    // 2. 이미 거대 화염구를 시전 중이라면 중복 시전 방지
+    if (c.castingSkill === 'pyroblast') return false;
+
+    // 3. 일반 화염구 시전 중이거나 대기/GCD 중인 경우 -> 즉시 거대 화염구(2.5초) 하드 캐스팅으로 전환!
     const castTime = Math.max(0.7, 2.5 / stats.speedMult);
     c.castingSkill = 'pyroblast';
     c.castTotal = castTime;
@@ -3259,6 +3266,10 @@ function triggerSkill(skillKey) {
 function finishCast(skillKey) {
   if (skillKey === 'fireball') {
     fireWithMultishot('fireball', 1.0);
+    // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 거대 화염구 즉시 발사 연계!
+    if (state.combat.critStreak === 2 && isSkillAutoActive('pyroblast') && state.grimoires.pyroblast) {
+      triggerSkill('pyroblast');
+    }
   } else if (skillKey === 'pyroblast') {
     fireWithMultishot('pyroblast', 1.55);
     triggerAllSummonsSyncAttack();
@@ -3284,22 +3295,37 @@ function runSmartAutoCast() {
   if (isSkillAutoActive('meteor') && state.grimoires.meteor && c.meteorCdRem <= 0) {
     triggerSkill('meteor');
   }
-  // 연쇄 폭발(즉시 시전 거대 화염구)이 발동했을 때, 현재 시전/GCD가 끝나고 테두리 빛 효과가 잠시(0.55초) 보여진 뒤 발사!
+
+  // 1. 몰아치는 열기 (즉시 시전 거대 화염구): 몰열 2스택 상태라면 지체 없이 최우선 발사!
   if (
     isSkillAutoActive('pyroblast') &&
     state.grimoires.pyroblast &&
-    c.critStreak === 2 &&
-    !c.castingSkill &&
-    c.gcdRemaining <= 0 &&
-    c.streakTimer <= 11.45
+    c.critStreak === 2
   ) {
-    triggerSkill('pyroblast');
+    if (!c.castingSkill || c.castRemaining <= 0.12) {
+      triggerSkill('pyroblast');
+    }
   }
+
+  // 2. 불꽃 작렬 (확정 치명타): 1스택일 때 즉시 2스택 완성 유도 또는 완충 시 즉시 소모
   if (isSkillAutoActive('fireblast') && state.grimoires.fireblast && c.fbCharges > 0) {
     if (!state.grimoires.pyroblast || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
       triggerSkill('fireblast');
     }
   }
+
+  // 3. 거대 화염구 단독 자동 시전 (화염구 AUTO가 꺼져 있고 거대 화염구 AUTO만 켜진 경우 하드 캐스팅)
+  if (
+    isSkillAutoActive('pyroblast') &&
+    !isSkillAutoActive('fireball') &&
+    state.grimoires.pyroblast &&
+    !c.castingSkill &&
+    c.gcdRemaining <= 0
+  ) {
+    triggerSkill('pyroblast');
+  }
+
+  // 4. 일반 화염구 기본 시전 (몰열 2스택 대기 중이 아닐 때)
   if (
     isSkillAutoActive('fireball') &&
     !c.castingSkill &&
