@@ -79,4 +79,3 @@ for(let i=1;i<=300;i++) {
   assert.ok(Math.abs(angle - previousAngle) < 0.01, '손목 복귀가 연속이어야 합니다.');
   previousAngle = angle;
 }
-
