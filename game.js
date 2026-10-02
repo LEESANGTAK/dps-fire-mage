@@ -404,6 +404,7 @@ const state = {
   totalKills: 0,
   campaignCleared: false,
   autoCast: false,
+  autoAdvance: true,
   soundOn: true,
   bgmVolume: 0.4,
   sfxVolume: 0.8,
@@ -2774,9 +2775,20 @@ function onMonsterKilled() {
 
   if (isFirstRagnarosKill) {
     openVictoryModal(true);
+    loadStage(state.currentStage);
+  } else if (state.autoAdvance !== false && canAdvanceToNextStage()) {
+    // 목표 DPS 달성 및 몬스터 1회 이상 처치 완료 시 다음 도전으로 자동 진입!
+    loadStage(state.currentStage + 1);
+    const nextData = getStageData(state.currentStage);
+    spawnFloatingText(
+      nextData.isPhaseBoss ? '👑 보스 구역 자동 진입!' : '🚀 다음 도전 자동 진입!',
+      'fct-proc',
+      -50
+    );
+  } else {
+    // 공격 흐름이 끊기지 않도록 즉시 새 몬스터를 스폰하되, 팝업 등장 모션(.respawn-pop) 적용!
+    loadStage(state.currentStage);
   }
-  // 공격 흐름이 끊기지 않도록 즉시 새 몬스터를 스폰하되, 팝업 등장 모션(.respawn-pop) 적용!
-  loadStage(state.currentStage);
   const dummyEl = document.getElementById('dummy-avatar');
   if (dummyEl) {
     dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
@@ -4490,6 +4502,7 @@ function saveGame() {
       totalKills: state.totalKills,
       campaignCleared: state.campaignCleared,
       autoCast: state.autoCast,
+      autoAdvance: state.autoAdvance,
       soundOn: state.soundOn,
       bgmVolume: state.bgmVolume,
       sfxVolume: state.sfxVolume,
@@ -4521,6 +4534,7 @@ function loadGame() {
     if (typeof data.totalKills === 'number') state.totalKills = data.totalKills;
     if (typeof data.campaignCleared === 'boolean') state.campaignCleared = data.campaignCleared;
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
+    if (typeof data.autoAdvance === 'boolean') state.autoAdvance = data.autoAdvance;
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;
     if (typeof data.bgmVolume === 'number') state.bgmVolume = Math.max(0, Math.min(1, data.bgmVolume));
     if (typeof data.sfxVolume === 'number') state.sfxVolume = Math.max(0, Math.min(1, data.sfxVolume));
@@ -4582,6 +4596,15 @@ function initEvents() {
       saveGame();
     }
   });
+
+  const autoAdvanceChk = document.getElementById('chk-auto-advance');
+  if (autoAdvanceChk) {
+    autoAdvanceChk.checked = state.autoAdvance !== false;
+    autoAdvanceChk.addEventListener('change', () => {
+      state.autoAdvance = autoAdvanceChk.checked;
+      saveGame();
+    });
+  }
 
   document.getElementById('btn-auto-cast').addEventListener('click', () => {
     if (!state.grimoires.autocast) return;
