@@ -52,3 +52,42 @@ function emitComicTrail(projectile, x, y, dt, pool, reduced) {
     });
   }
 }
+
+// 점액은 불꽃과 별도로 짧은 포물선과 접지 후 납작한 여운을 갖습니다.
+let lastSlimeSplashAt = -Infinity;
+function spawnSlimeSplash(pool, x, y, groundY, blue, strong, now, reduced) {
+  if (reduced || now - lastSlimeSplashAt < (strong ? 0.055 : 0.09)) return;
+  lastSlimeSplashAt = now;
+  const available = Math.max(0, 48 - pool.filter(p => p.slimeDrop).length);
+  const count = Math.min(available, strong ? 11 : 5);
+  for (let i = 0; i < count; i++) {
+    pool.push({
+      slimeDrop: true, x: x + (Math.random() - 0.5) * 16, y,
+      vx: (Math.random() - 0.35) * (strong ? 210 : 135),
+      vy: -95 - Math.random() * (strong ? 145 : 90), groundY,
+      radius: (strong ? 3.5 : 2.5) + Math.random() * 3,
+      life: 0, maxLife: 0.48 + Math.random() * 0.15,
+      colorCore: blue ? '#8ee3e8' : '#d1ed75', colorEdge: blue ? '#448fbb' : '#84a33b'
+    });
+  }
+}
+
+function drawSlimeDrop(painter, drop, dt) {
+  drop.vx *= Math.exp(-2.8 * dt);
+  drop.vy += 600 * dt;
+  const landed = drop.y >= drop.groundY - drop.radius;
+  if (landed) {
+    drop.y = drop.groundY - 1; drop.vx *= Math.exp(-18 * dt); drop.vy = 0;
+    drop.maxLife = Math.min(drop.maxLife, drop.life + 0.12);
+  }
+  const alpha = Math.min(1, (drop.maxLife - drop.life) / 0.15);
+  const stretch = landed ? 0.35 : Math.min(1.7, 1 + Math.abs(drop.vy) / 300);
+  painter.save(); painter.translate(drop.x, drop.y);
+  if (!landed) painter.rotate(Math.atan2(drop.vy, drop.vx) - Math.PI / 2);
+  painter.globalAlpha = alpha;
+  painter.beginPath(); painter.ellipse(0, 0, drop.radius / stretch, drop.radius * stretch, 0, 0, Math.PI * 2);
+  painter.fillStyle = drop.colorEdge; painter.fill();
+  painter.strokeStyle = '#292231'; painter.lineWidth = 1.2; painter.stroke();
+  painter.beginPath(); painter.ellipse(-drop.radius * 0.2, -drop.radius * 0.3, drop.radius * 0.3, drop.radius * 0.45, 0, 0, Math.PI * 2);
+  painter.fillStyle = drop.colorCore; painter.fill(); painter.restore();
+}

@@ -2214,6 +2214,10 @@ function updateAndDrawVfx(dt) {
     }
     pt.x += pt.vx * dt;
     pt.y += pt.vy * dt;
+    if (pt.slimeDrop) {
+      drawSlimeDrop(ctx, pt, dt);
+      continue;
+    }
     const alpha = 1 - pt.life / pt.maxLife;
     ctx.fillStyle = pt.life < pt.maxLife * 0.4 ? pt.colorCore : pt.colorEdge;
     ctx.globalAlpha = alpha;
@@ -2963,6 +2967,12 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   const dummyEl = document.getElementById('dummy-avatar');
   const dummyEmoji = document.getElementById('dummy-emoji');
   const targetPos = getTargetPos();
+  if (!isDotTick && dummyEmoji && dummyEmoji.dataset.art === 'slime') {
+    spawnSlimeSplash(particles, targetPos.x, targetPos.y,
+      getActorGroundPos('dummy-avatar').y, dummyEmoji.dataset.variant === 'blue',
+      isCrit || isBigSkill || willKill, now,
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
 
   if (dummyEl && !willKill) {
     const hitClasses = [

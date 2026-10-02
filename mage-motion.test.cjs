@@ -79,3 +79,11 @@ for(let i=1;i<=300;i++) {
   assert.ok(Math.abs(angle - previousAngle) < 0.01, '손목 복귀가 연속이어야 합니다.');
   previousAngle = angle;
 }
+
+const slimePool = [];
+projectileContext.slimePool = slimePool;
+vm.runInContext('for(let i=0;i<100;i++) spawnSlimeSplash(slimePool,100,100,160,false,true,i*0.1,false)', projectileContext);
+assert.equal(slimePool.length, 48);
+assert.ok(slimePool.every(p => p.vy < 0 && p.maxLife <= 0.63));
+vm.runInContext('spawnSlimeSplash(slimePool,100,100,160,false,true,100,true)', projectileContext);
+assert.equal(slimePool.length, 48);
