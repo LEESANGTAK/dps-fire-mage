@@ -243,7 +243,7 @@ const GRIMOIRE_LIST = [
     name: '마법서: 마력 폭주 [4]',
     icon: '☀️',
     cost: 1800,
-    desc: '8초간 모든 마법 100% 치명타 & 시전 속도 증가'
+    desc: '기본 2초간 모든 마법 100% 치명타 & 시전 가속 (연마로 지속시간 연장)'
   },
   {
     id: 'meteor',
@@ -385,8 +385,26 @@ const SKILL_MASTERY_LIST = [
     costScale: 1.22,
     bonusPerLv: 0.12,
     desc: '메테오 피해량 +12%'
+  },
+  {
+    id: 'combustion',
+    name: '마력 폭주 연마',
+    icon: '☀️',
+    baseCost: 180,
+    costScale: 1.18,
+    bonusPerLv: 0.2,
+    type: 'duration',
+    desc: '마력 폭주 지속시간 +0.2초'
   }
 ];
+
+function getCombustionDuration() {
+  const base = 2.0;
+  const lv = (state.skillMastery && state.skillMastery.combustion) || 0;
+  const mastery = SKILL_MASTERY_LIST.find((m) => m.id === 'combustion');
+  const bonus = mastery ? mastery.bonusPerLv : 0.2;
+  return Number((base + lv * bonus).toFixed(1));
+}
 
 function getSkillMasteryCost(mastery) {
   const lv = (state.skillMastery && state.skillMastery[mastery.id]) || 0;
@@ -409,6 +427,7 @@ function isSkillUnlocked(skillId) {
   if (skillId === 'fireball') return true;
   if (skillId === 'fireblast') return Boolean(state.grimoires && state.grimoires.fireblast);
   if (skillId === 'pyroblast') return Boolean(state.grimoires && state.grimoires.pyroblast);
+  if (skillId === 'combustion') return Boolean(state.grimoires && state.grimoires.combustion);
   if (skillId === 'meteor') return Boolean(state.grimoires && state.grimoires.meteor);
   if (skillId === 'flame_patch') return Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0);
   return false;
@@ -560,6 +579,7 @@ const state = {
     fireball: 0,
     fireblast: 0,
     pyroblast: 0,
+    combustion: 0,
     flame_patch: 0,
     meteor: 0
   },
@@ -3309,7 +3329,7 @@ function triggerSkill(skillKey) {
     if (!state.grimoires.combustion) return false;
     if (c.combustionCdRem > 0) return false;
 
-    c.combustionRem = 8.0;
+    c.combustionRem = getCombustionDuration();
     c.combustionCdTotal = Math.max(14, 30 * (1 - stats.cdr));
     c.combustionCdRem = c.combustionCdTotal;
     spawnFloatingText('☀️ 마력 폭주!', 'fct-proc', -45, { anchor: 'caster' });
@@ -4002,11 +4022,20 @@ function renderShopUI() {
       const lv = (state.skillMastery && state.skillMastery[m.id]) || 0;
       const cost = getSkillMasteryCost(m);
       const canBuy = state.gold >= cost;
-      const curBonus = (lv * m.bonusPerLv * 100).toFixed(0);
-      const nextBonus = ((lv + 1) * m.bonusPerLv * 100).toFixed(0);
-      const statDisplay = lv === 0
-        ? `<span class="mastery-bonus-preview">+${nextBonus}% 강화</span>`
-        : `<span class="mastery-bonus-val">+${curBonus}%</span> <span class="mastery-arrow">➔</span> <span class="mastery-next">+${nextBonus}%</span>`;
+      let statDisplay = '';
+      if (m.type === 'duration') {
+        const curDur = (2.0 + lv * m.bonusPerLv).toFixed(1);
+        const nextDur = (2.0 + (lv + 1) * m.bonusPerLv).toFixed(1);
+        statDisplay = lv === 0
+          ? `<span class="mastery-bonus-preview">지속 2.0s ➔ ${nextDur}s (+${m.bonusPerLv}s)</span>`
+          : `<span class="mastery-bonus-val">지속 ${curDur}s</span> <span class="mastery-arrow">➔</span> <span class="mastery-next">${nextDur}s</span> <span class="mastery-bonus-preview">(+${m.bonusPerLv}s)</span>`;
+      } else {
+        const curBonus = (lv * m.bonusPerLv * 100).toFixed(0);
+        const nextBonus = ((lv + 1) * m.bonusPerLv * 100).toFixed(0);
+        statDisplay = lv === 0
+          ? `<span class="mastery-bonus-preview">+${nextBonus}% 강화</span>`
+          : `<span class="mastery-bonus-val">+${curBonus}%</span> <span class="mastery-arrow">➔</span> <span class="mastery-next">+${nextBonus}%</span>`;
+      }
 
       return `
         <div class="shop-card mastery-card ${canBuy ? 'affordable' : ''}">
@@ -4191,7 +4220,10 @@ function updateSkillActionBarVisibility() {
     btn2.classList.toggle('hidden-slot', !hasFireblast);
     btn2.classList.toggle('locked-skill', !hasFireblast);
     if (icon2) icon2.textContent = '💥';
-    if (charges2) charges2.style.display = hasFireblast ? 'block' : 'none';
+    if (charges2) {
+      charges2.style.display = hasFireblast ? 'block' : 'none';
+      charges2.textContent = (state.combat && state.combat.fbCharges > 0) ? state.combat.fbCharges : '';
+    }
   }
 
   const btn3 = document.getElementById('skill-3');
@@ -4211,6 +4243,7 @@ function updateSkillActionBarVisibility() {
     btn4.classList.toggle('hidden-slot', !hasCombustion);
     btn4.classList.toggle('locked-skill', !hasCombustion);
     if (icon4) icon4.textContent = '☀️';
+    btn4.title = `[4] 마력 폭주 (${getCombustionDuration().toFixed(1)}초간 모든 마법 100% 치명타 & 가속)`;
   }
 
   const btn5 = document.getElementById('skill-5');
@@ -4346,9 +4379,6 @@ function updateStageUI() {
     if (firstEss > 0) {
       rewardText += ` · 🔥 ${fmt(firstEss)}`;
     }
-  }
-  if (!isCleared && data.isPhaseBoss) {
-    rewardText += ' · 🌟1 SP';
   }
   document.getElementById('target-reward').textContent = rewardText;
 
@@ -4822,7 +4852,8 @@ function updateLiveHUD() {
   setRadialSweep(document.getElementById('gcd-1'), c.gcdRemaining, c.gcdTotal, false);
 
   if (state.grimoires.fireblast) {
-    document.getElementById('charges-2').textContent = c.fbCharges;
+    const charges2 = document.getElementById('charges-2');
+    if (charges2) charges2.textContent = c.fbCharges > 0 ? c.fbCharges : '';
     if (c.fbCharges === 0) {
       setRadialSweep(document.getElementById('cd-2'), c.fbRechargeRem, c.fbRechargeTotal, true);
     } else {
@@ -5228,6 +5259,7 @@ function initEvents() {
       state.skillMastery[id] = (state.skillMastery[id] || 0) + 1;
       playSound('item_select');
       spawnFloatingText(`✨ ${m.name} Lv.${state.skillMastery[id]}!`, 'fct-proc', -35, { anchor: 'caster' });
+      updateSkillActionBarVisibility();
       saveGame();
       renderShopUI();
     });
