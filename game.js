@@ -1851,6 +1851,7 @@ function updateAndDrawVfx(dt) {
     // 1) 가속도: 출발 시 마력이 방출되어 살짝 가속하며 타격 지점에 내리꽂힘
     // 2) 호(Arc): 기계적 1자 직선 대신 자연스러운 상향 호를 그리며 비행
     const rawP = Math.min(1, Math.max(0, p.progress));
+    const t = rawP;
     const easeT = isPyro ? Math.pow(rawP, 1.25) : Math.pow(rawP, 1.12);
     const arcHeight = isPyro ? -15 : -8;
     const arcOffset = Math.sin(rawP * Math.PI) * arcHeight;
@@ -1908,7 +1909,7 @@ function updateAndDrawVfx(dt) {
     if (isPyro) {
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(state.combat.animTime * 9 + t * 6);
+      ctx.rotate(state.combat.animTime * 9 + easeT * 6);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
       ctx.lineWidth = 2.4;
       const rayLen = p.radius * 1.9;
@@ -1922,7 +1923,7 @@ function updateAndDrawVfx(dt) {
 
       if (p.orbiters > 0) {
         for (let ob = 0; ob < p.orbiters; ob++) {
-          const ang = state.combat.animTime * 14 + t * 10 + (ob * Math.PI * 2) / p.orbiters;
+          const ang = state.combat.animTime * 14 + easeT * 10 + (ob * Math.PI * 2) / p.orbiters;
           const dist = p.radius * 1.12;
           const ox = x + Math.cos(ang) * dist * 0.65;
           const oy = y + Math.sin(ang) * dist;
@@ -4443,16 +4444,22 @@ function gameLoop(nowMs) {
     }
   }
 
-  updateCastingLoopSound();
-  updateBurningLoopSound();
-  runSmartAutoCast();
-  updateAndDrawVfx(dt);
-  updateLiveHUD();
+  try {
+    updateCastingLoopSound();
+    updateBurningLoopSound();
+    runSmartAutoCast();
+    updateAndDrawVfx(dt);
+    updateLiveHUD();
+  } catch (loopErr) {
+    console.error('gameLoop internal error:', loopErr);
+  }
 
   uiRefreshAccum += dt;
   if (uiRefreshAccum >= 0.25) {
     uiRefreshAccum = 0;
-    updateDpsMeterUI();
+    try {
+      updateDpsMeterUI();
+    } catch (e) {}
   }
 
   requestAnimationFrame(gameLoop);
