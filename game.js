@@ -12,11 +12,11 @@ const SAVE_KEY = 'MAGE_SLAYER_STAGE_SAVE_V7';
 // ==========================================
 const STAGE_MONSTERS = [
   // PHASE 1 (Stage 1 ~ 5)
-  { stage: 1, name: '초원 풀숲 슬라임', emoji: '🟢', hp: 120, timeLimit: 25, gold: 4, firstBonus: 2 },
-  { stage: 2, name: '푸른 늪지 슬라임', emoji: '🔵', hp: 230, timeLimit: 25, gold: 7, firstBonus: 4 },
-  { stage: 3, name: '들판 거대 들쥐', emoji: '🐀', hp: 420, timeLimit: 25, gold: 12, firstBonus: 8 },
-  { stage: 4, name: '고블린 정찰병', emoji: '👺', hp: 750, timeLimit: 25, gold: 20, firstBonus: 14 },
-  { stage: 5, name: '붉은송곳니 군주', emoji: '🐗', hp: 1400, timeLimit: 28, gold: 35, firstBonus: 35 },
+  { stage: 1, name: '초원 풀숲 슬라임', emoji: '🟢', hp: 50, timeLimit: 25, gold: 4, firstBonus: 2 },
+  { stage: 2, name: '푸른 늪지 슬라임', emoji: '🔵', hp: 110, timeLimit: 25, gold: 7, firstBonus: 4 },
+  { stage: 3, name: '들판 거대 들쥐', emoji: '🐀', hp: 240, timeLimit: 25, gold: 12, firstBonus: 8 },
+  { stage: 4, name: '고블린 정찰병', emoji: '👺', hp: 480, timeLimit: 25, gold: 20, firstBonus: 14 },
+  { stage: 5, name: '붉은송곳니 군주', emoji: '🐗', hp: 1000, timeLimit: 28, gold: 35, firstBonus: 35 },
 
   // PHASE 2 (Stage 6 ~ 10)
   { stage: 6, name: '잿빛 숲 늑대', emoji: '🐺', hp: 2400, timeLimit: 25, gold: 52, firstBonus: 40 },
@@ -585,8 +585,8 @@ const state = {
   },
 
   monster: {
-    hp: 120,
-    maxHp: 120,
+    hp: 50,
+    maxHp: 50,
     isDying: false
   },
 
