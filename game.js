@@ -513,6 +513,7 @@ const state = {
 
     elemTimer: 0,
     elemRecoil: 0,
+    elemSpawnTimer: 0,
     phoenixTimer: 0,
     phoenixRecoil: 0,
     golemTimer: 0,
@@ -704,7 +705,8 @@ const FIREBALL_SFX_FILES = {
   meteor_fly: 'assets/sounds/sfx/meteor_fly.mp3',
   meteor_explosion: 'assets/sounds/sfx/meteor_explosion.mp3',
   swish: 'assets/sounds/sfx/swish.mp3',
-  monster_destroy: 'assets/sounds/sfx/monster_destroy.mp3'
+  monster_destroy: 'assets/sounds/sfx/monster_destroy.mp3',
+  summon_spirit: 'assets/sounds/sfx/Summoning the Fire Spirit.mp3'
 };
 
 const preloadedSfx = {};
@@ -922,6 +924,9 @@ function playSound(type) {
   }
   if (type === 'monster_destroy') {
     return playFireballSfx('monster_destroy', 0.96);
+  }
+  if (type === 'summon_spirit' || type === 'summon_fire_spirit') {
+    return playFireballSfx('summon_spirit', 0.95);
   }
   return null;
 }
@@ -1519,20 +1524,61 @@ function drawSummonsAndAuras(dt) {
     const ex = casterCenter.x + 58 + c.elemRecoil * 8;
     const ey = casterCenter.y - 68 + bobY;
 
-    const grad = ctx.createRadialGradient(ex, ey, 4, ex, ey, 28);
+    // 12대 애니메이션 원칙(Squash & Stretch, Follow Through, Ease-In/Out) 스폰 모션
+    let scaleX = 1;
+    let scaleY = 1;
+    let spawnOffsetY = 0;
+    let spawnAlpha = 1;
+
+    if (c.elemSpawnTimer > 0) {
+      c.elemSpawnTimer = Math.max(0, c.elemSpawnTimer - dt);
+      const prog = 1 - c.elemSpawnTimer / 0.55; // 0 -> 1 (0.55초간 스폰 모션)
+      if (prog < 0.35) {
+        // 1단계: 마법진에서 솟구치며 수직 스트레치 (Stretch)
+        const t = prog / 0.35;
+        scaleX = 0.35 + t * 0.45;
+        scaleY = 0.5 + t * 1.1;
+        spawnOffsetY = (1 - t) * 32;
+        spawnAlpha = Math.min(1, t * 1.8);
+      } else if (prog < 0.65) {
+        // 2단계: 착지하며 쿵 하고 눌리는 스쿼시 (Squash)
+        const t = (prog - 0.35) / 0.3;
+        scaleX = 1.3 - t * 0.15;
+        scaleY = 0.7 + t * 0.2;
+        spawnOffsetY = 0;
+      } else if (prog < 0.85) {
+        // 3단계: 젤리 반동 솟구침 (Follow-through & Overshoot)
+        const t = (prog - 0.65) / 0.2;
+        scaleX = 0.92 + t * 0.08;
+        scaleY = 1.14 - t * 0.1;
+        spawnOffsetY = -Math.sin(t * Math.PI) * 4;
+      } else {
+        // 4단계: 안착
+        scaleX = 1;
+        scaleY = 1;
+        spawnOffsetY = 0;
+      }
+    }
+
+    ctx.save();
+    ctx.translate(ex, ey + spawnOffsetY);
+    ctx.scale(scaleX, scaleY);
+    ctx.globalAlpha = spawnAlpha;
+
+    const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, 28);
     grad.addColorStop(0, '#fef08a');
     grad.addColorStop(0.45, '#f97316');
     grad.addColorStop(0.8, 'rgba(239, 68, 68, 0.35)');
     grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(ex, ey, 28, 0, Math.PI * 2);
+    ctx.arc(0, 0, 28, 0, Math.PI * 2);
     ctx.fill();
 
     for (let i = 0; i < elemLv + 1; i++) {
       const ang = c.animTime * 4 + (i * Math.PI * 2) / (elemLv + 1);
-      const ox = ex + Math.cos(ang) * 22;
-      const oy = ey + Math.sin(ang) * 12;
+      const ox = Math.cos(ang) * 22;
+      const oy = Math.sin(ang) * 12;
       ctx.fillStyle = '#fde047';
       ctx.beginPath();
       ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
@@ -1542,11 +1588,13 @@ function drawSummonsAndAuras(dt) {
     ctx.font = '26px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🔥', ex, ey);
+    ctx.fillText('🔥', 0, 0);
 
     ctx.font = 'bold 10px Pretendard, sans-serif';
     ctx.fillStyle = '#fed7aa';
-    ctx.fillText(`불의 정령 Lv.${elemLv}`, ex, ey + 24);
+    ctx.fillText(`불의 정령 Lv.${elemLv}`, 0, 24);
+
+    ctx.restore();
   }
 
   // 3. 비전 불사조
@@ -2930,8 +2978,18 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
 }
 
 // ==========================================
-// 11. 소환수 공격 로직
+// 11. 소환수 공격 및 스폰 연출 로직
 // ==========================================
+function triggerFireSpiritSpawn() {
+  state.combat.elemSpawnTimer = 0.55;
+  const casterCenter = getCasterCenter();
+  const ex = casterCenter.x + 58;
+  const ey = casterCenter.y - 68;
+  // 소환 폭발 파티클 방출 & 소환 효과음 재생
+  spawnParticles(ex, ey, 24, '#fef08a', '#ea580c', 1.35);
+  playSound('summon_spirit');
+}
+
 function fireElementalAttack() {
   const lv = state.skillTree.fire_elem || 0;
   if (lv <= 0) return;
@@ -4778,7 +4836,11 @@ function initEvents() {
     }
 
     state.skillTree[id] = lv + 1;
-    playSound('item_select');
+    if (id === 'fire_elem') {
+      triggerFireSpiritSpawn();
+    } else {
+      playSound('item_select');
+    }
     spawnFloatingText(`🌟 ${node.name} Lv.${lv + 1}!`, 'fct-proc', -42, { anchor: 'caster' });
     updateSkillActionBarVisibility();
     if (id === 'flame_patch' && lv === 0) {
@@ -4795,6 +4857,7 @@ function initEvents() {
     }
     state.combat.flamePatchRem = 0;
     state.combat.flamePatchCdRem = 0;
+    state.combat.elemSpawnTimer = 0;
     playSound('item_select');
     updateSkillActionBarVisibility();
     saveGame();
