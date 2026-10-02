@@ -1,0 +1,64 @@
+/* UI의 장식 이모지를 이미지 아이콘으로 바꾸되 버튼의 텍스트와 동작은 유지합니다. */
+const comicIconMap = {
+ '🪄':0,'💍':1,'🧤':2,'🔮':3,'🔱':4,'⏳':5,'👑':6,'🏆':7,'📜':8,'📖':8,'🤖':8,'💰':9,'🪙':9,'💎':10,'👁️':11,'✨':11,'🦅':12,'🗿':13,'⚡':14,'☄️':15,
+ '🔥':'s0','💥':'s1','🌋':'s2','☀️':'s3','🩸':'s0','🟠':'s0','🔵':10
+};
+const comicVectorMap = {
+ '🛒':'M5 8h14l-1 12H6z M8 8V5h8v3',
+ '🌳':'M12 4v16 M5 9h14 M5 9V5 M19 9V5 M5 17h14 M5 17v3 M19 17v3',
+ '🛠️':'M5 4l15 15 M4 20L20 4 M3 3l5 1-4 4z',
+ '🔒':'M6 10h12v11H6z M8 10V6a4 4 0 018 0v4',
+ '🔓':'M6 10h12v11H6z M9 10V6a4 4 0 018 0',
+ '🗑️':'M5 7h14 M8 7V4h8v3 M6 7l1 14h10l1-14 M10 10v8 M14 10v8',
+ '🔊':'M4 9h4l5-4v14l-5-4H4z M17 8q5 4 0 8',
+ '🔇':'M4 9h4l5-4v14l-5-4H4z M17 9l5 6 M22 9l-5 6',
+ '⚔️':'M4 3l17 18 M20 3L3 20 M3 3h4 M20 3h-4 M3 16l5 5 M16 17l5-5',
+ '🎯':'M12 3a9 9 0 100 18a9 9 0 000-18 M12 7a5 5 0 100 10a5 5 0 000-10 M12 10v4',
+ '🔔':'M6 17V9a6 6 0 0112 0v8 M4 17h16 M10 21h4',
+ '🌟':'M12 2l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1z',
+ '🧙':'M3 18l9-15 7 15 M3 18h18 M7 20h10'
+};
+const comicTokens = Object.keys({...comicIconMap,...comicVectorMap}).sort((a,b)=>b.length-a.length);
+const comicTokenPattern = new RegExp(comicTokens.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'gu');
+function comicIconHTML(token) {
+ if(comicVectorMap[token]) return `<svg class="comic-vector" viewBox="0 0 24 24" aria-hidden="true"><path d="${comicVectorMap[token]}"/></svg>`;
+ const key=comicIconMap[token];if(key===undefined)return token;
+ const spell=typeof key==='string';const index=spell?Number(key.slice(1)):key;const cols=spell?2:4;
+ return `<span class="comic-icon" aria-hidden="true" data-sheet="${spell?'spell':'equipment'}" style="background-position:${index%cols/(cols-1)*100}% ${Math.floor(index/cols)/(cols-1)*100}%"></span>`;
+}
+function decorateComicUI(root) {
+ if(!root || (root.nodeType!==1 && root.nodeType!==3))return;
+ if(root.nodeType===1 && root.closest('script,style,canvas,.dummy-emoji,.material-death,.comic-icon,.comic-vector,.skill-icon'))return;
+ const nodes=[];if(root.nodeType===3)nodes.push(root);else{const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);while(w.nextNode())nodes.push(w.currentNode);}
+ for(const node of nodes){if(!node.parentElement || node.parentElement.closest('script,style,canvas,.dummy-emoji,.material-death,.comic-icon,.comic-vector,.skill-icon'))continue;
+  const text=node.nodeValue;comicTokenPattern.lastIndex=0;if(!comicTokenPattern.test(text))continue;
+  comicTokenPattern.lastIndex=0;const fragment=document.createDocumentFragment();let cursor=0;
+  for(const match of text.matchAll(comicTokenPattern)){fragment.append(text.slice(cursor,match.index));const host=document.createElement('span');host.innerHTML=comicIconHTML(match[0]);fragment.append(...host.childNodes);cursor=match.index+match[0].length;}fragment.append(text.slice(cursor));node.replaceWith(fragment);
+ }
+}
+const comicEquipment = typeof Image!=='undefined'?new Image():null;
+if(comicEquipment)comicEquipment.src='assets/art/comic-equipment-atlas.png';
+function drawComicSummon(painter,index,x,y,size){
+ if(!comicEquipment || !comicEquipment.complete || !comicEquipment.naturalWidth)return;
+ const cell=comicEquipment.naturalWidth/4;
+ painter.drawImage(comicEquipment,index%4*cell,Math.floor(index/4)*cell,cell,cell,x-size/2,y-size/2,size,size);
+}
+function configureComicMonster(stage){
+ const el=document.getElementById('dummy-emoji');if(!el)return;el.dataset.monsterStage=String(stage);if(stage<=2){el.style.cssText='';el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';return;}
+ const frame=COMIC_MONSTER_FRAMES[Math.min(stage-3,stage%5===0?19:18)];if(!frame)return;
+ el.textContent='';el.dataset.art='monster';el.dataset.variant='';
+ const avatar=document.getElementById('dummy-avatar');const height=avatar?avatar.clientHeight:126;
+ const scale=height/frame.h;
+ el.style.clipPath=frame.clip;el.style.width=`${frame.w*scale}px`;el.style.height=`${height}px`;
+ el.style.backgroundImage="url('assets/art/comic-monsters-clean.png')";
+ el.style.backgroundSize=`${COMIC_MONSTER_SIZE[0]*scale}px ${COMIC_MONSTER_SIZE[1]*scale}px`;
+ el.style.backgroundPosition=`${-frame.x*scale}px ${-frame.y*scale}px`;
+}
+if(typeof window!=='undefined')window.addEventListener('resize',()=>{const el=document.getElementById('dummy-emoji');if(el && el.dataset.monsterStage)configureComicMonster(Number(el.dataset.monsterStage));});
+if(typeof document!=='undefined'){
+ document.addEventListener('DOMContentLoaded',()=>{
+ decorateComicUI(document.body);
+ const observer=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')decorateComicUI(record.target);else for(const node of record.addedNodes)decorateComicUI(node);}});
+ observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+ });
+}

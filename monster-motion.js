@@ -20,6 +20,7 @@ function configureMonsterMotion(stage) {
   if (!actor) return;
   const p = getMonsterMotionProfile(stage);
   actor.dataset.motion = p.kind;
+  if(typeof configureComicMonster === 'function') configureComicMonster(stage);
   actor.style.setProperty('--material-squash', p.squash);
   actor.style.setProperty('--idle-period', `${p.period}s`);
   actor.style.setProperty('--idle-phase', `${-(stage % 5) * .47}s`);

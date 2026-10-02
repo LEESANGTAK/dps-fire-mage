@@ -224,3 +224,48 @@
   .material-death { animation:death-reduced .2s ease-out forwards!important; }
 }
 @keyframes death-reduced {from{opacity:1}to{opacity:0}}
+
+/* 잉크 만화 UI: 읽는 영역은 차분한 종이색, 조작 영역은 가죽·황동색입니다. */
+@font-face { font-family:'ComicJua';src:url('assets/fonts/Jua-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
+@font-face { font-family:'ComicRead';src:url('assets/fonts/NanumGothic-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
+:root { --bg-slot:#282127; --bg-panel-header:#34292c; --border-color:#695345; --text-main:#f1e2c9; --text-muted:#bbae9b; --mage-blue:#bea0d8; }
+body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
+.game-title,.stat-pill .value,.panel-title-row,.right-tab-btn,.skill-name,.skill-hotkey,.shop-title,.shop-buy-btn,.stage-nav-btn,.btn-top,.caster-label,.monster-name-label,.castbar-text,h1,h2,h3,.fct-crit {
+  font-family:'ComicJua','Malgun Gothic',sans-serif;font-weight:400;letter-spacing:.01em;
+}
+.game-title { color:#ffe0a0;text-shadow:2px 2px #120e12; }
+.top-bar { background:#211b22;border-bottom:3px solid #0e0b10;box-shadow:0 2px 0 #78553e; }
+.stat-pill { background:#30272c;border:2px solid #120e14;border-radius:4px 8px 5px 7px;box-shadow:inset 0 1px #806348,2px 3px #0e0a10; }
+.stat-pill .label { font-size:.65rem;color:#c3b198;white-space:nowrap; }
+.shop-section,.equipped-panel,.infusion-header-box { border:2px solid #110d12;border-radius:6px 10px 7px 5px;background:#211b22;box-shadow:0 0 0 1px #73513c; }
+.panel-title-row { background:#3e3031;color:#edd5af;border-bottom:2px solid #151015; }
+.shop-card { background:#e1cfad;border:2px solid #251a21;border-radius:5px 8px 6px 4px;color:#392b2c;box-shadow:2px 3px #100c1280; }
+.shop-title { font-size:.9rem;color:#35232a; }
+.shop-desc { color:#635044;font-size:.68rem;line-height:1.4; }
+.shop-card.affordable { background:#ecd8b0;border-color:#806038; }
+.shop-card.purchased-grimoire { opacity:.65;background:#a99a85;border-color:#282027; }
+.shop-icon { background:#30232b;border:2px solid #604330;border-radius:5px;box-shadow:inset 0 0 0 1px #cfa86755; }
+.shop-buy-btn,.stage-nav-btn,.right-tab-btn.active { color:#fff0cd;background:#9c4930;border:2px solid #28151d;box-shadow:inset 0 1px #e0a265,2px 3px #100b11;text-shadow:1px 1px #482327; }
+.shop-buy-btn.done-btn { background:#435345;color:#d5dec2; }
+.btn-top,.right-tab-btn,.auto-cast-btn { border:2px solid #100c12;border-radius:4px 7px 5px 6px;background:#4a3433;color:#e8cfab;box-shadow:inset 0 1px #997651,2px 3px #100b12; }
+.right-tab-btn.active { background:#98472e;color:#ffe5b3; }
+.action-bar { border:3px solid #140f16;border-radius:7px 11px 6px 9px;box-shadow:0 0 0 1px #946441,3px 5px #0c0911;background:#3c292d; }
+.castbar-wrapper,.monster-hp-wrap { border:2px solid #171018;border-radius:5px;box-shadow:0 0 0 1px #986d49; }
+.hp-bar-fill { background:#b54539; }
+.shop-buy-btn:active,.btn-top:active,.right-tab-btn:active { transform:translateY(2px);box-shadow:inset 0 1px #997651; }
+.modal-content,.victory-modal-content,.wow-tooltip { background:#2d222b;border-color:#977047;color:#f2e1c4; }
+.comic-icon { display:inline-block;width:1.15em;height:1.15em;vertical-align:-.18em;background-repeat:no-repeat;background-size:400% 400%;background-image:url('assets/art/comic-equipment-atlas.png');flex-shrink:0; }
+.shop-icon .comic-icon,.inf-icon .comic-icon,.wow-node-icon .comic-icon,.caster-eq-icon .comic-icon { width:100%;height:100%;vertical-align:0; }
+.comic-icon[data-sheet='spell'] { background-image:url('assets/art/comic-skill-atlas.png');background-size:200% 200%; }
+.dummy-emoji[data-art='monster'] { position:absolute;bottom:0;font-size:0;flex-shrink:0;filter:drop-shadow(0 6px 4px #0007);background-repeat:no-repeat; }
+.dummy-avatar:has([data-art='monster']) { background:transparent;border-color:transparent;box-shadow:none; }
+.dummy-avatar:has([data-art='monster'])::before { content:'';position:absolute;bottom:-4px;left:0;width:100%;height:10px;background:radial-gradient(ellipse,#08060baa,transparent 70%); }
+
+.comic-vector { display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0; }
+.dummy-avatar:has([data-art='monster']):is(.crit-hit,.crit-left,.crit-right,.hit-fireblast,.knockback-pyro,.knockback-meteor) { box-shadow:none; }
+@media(max-width:768px) { .shop-title{font-size:.85rem}.shop-desc{font-size:.66rem}.stat-pill .label{font-size:.6rem} }
+
+.shop-card .shop-desc,.shop-card .shop-desc * { color:#635044 !important; }
+[data-skill='meteor'] .skill-icon,[data-skill='flame_patch'] .skill-icon {font-size:0;background-image:url('assets/art/comic-equipment-atlas.png');background-size:400% 400%;}
+[data-skill='meteor'] .skill-icon {background-position:100% 100%;}
+[data-skill='flame_patch'] .skill-icon {background-image:url('assets/art/comic-skill-atlas.png');background-size:200% 200%;background-position:0 0;}

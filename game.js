@@ -1692,7 +1692,7 @@ function drawSummonsAndAuras(dt) {
     ctx.font = '26px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🔥', 0, 0);
+    drawComicSummon(ctx, 15, 0, 0, 34);
 
     ctx.font = 'bold 10px Pretendard, sans-serif';
     ctx.fillStyle = '#fed7aa';
@@ -1723,7 +1723,7 @@ function drawSummonsAndAuras(dt) {
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🦅', px, py);
+    drawComicSummon(ctx, 12, px, py, 42);
 
     ctx.font = 'bold 10px Pretendard, sans-serif';
     ctx.fillStyle = '#fef08a';
@@ -1749,7 +1749,7 @@ function drawSummonsAndAuras(dt) {
     ctx.font = '32px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🗿', gx, gy);
+    drawComicSummon(ctx, 13, gx, gy, 44);
 
     ctx.font = 'bold 10px Pretendard, sans-serif';
     ctx.fillStyle = '#fca5a5';
