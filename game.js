@@ -3518,60 +3518,42 @@ function finishCast(skillKey) {
 }
 
 function isSkillAutoActive(skillKey) {
-  if (!state.grimoires.autocast || !state.autoCast) return false;
-  if (!state.skillAuto) return true;
-  return state.skillAuto[skillKey] !== false;
+  return Boolean(state.grimoires.autocast && state.autoCast);
 }
 
 function runSmartAutoCast() {
   if (!state.grimoires.autocast || !state.autoCast) return;
   const c = state.combat;
 
-  if (isSkillAutoActive('combustion') && state.grimoires.combustion && c.combustionCdRem <= 0) {
+  if (state.grimoires.combustion && c.combustionCdRem <= 0) {
     triggerSkill('combustion');
   }
-  if (isSkillAutoActive('flame_patch') && (state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0) {
+  if ((state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0) {
     triggerSkill('flame_patch');
   }
-  if (isSkillAutoActive('meteor') && state.grimoires.meteor && c.meteorCdRem <= 0) {
+  if (state.grimoires.meteor && c.meteorCdRem <= 0) {
     triggerSkill('meteor');
   }
 
   // 1. 몰아치는 열기 (즉시 시전 거대 화염구): 몰열 2스택 상태라면 지체 없이 최우선 발사!
-  if (
-    isSkillAutoActive('pyroblast') &&
-    state.grimoires.pyroblast &&
-    c.critStreak === 2
-  ) {
+  if (state.grimoires.pyroblast && c.critStreak === 2) {
     if (!c.castingSkill || c.castRemaining <= 0.12) {
       triggerSkill('pyroblast');
     }
   }
 
   // 2. 불꽃 작렬 (확정 치명타): 1스택일 때 즉시 2스택 완성 유도 또는 완충 시 즉시 소모
-  if (isSkillAutoActive('fireblast') && state.grimoires.fireblast && c.fbCharges > 0) {
+  if (state.grimoires.fireblast && c.fbCharges > 0) {
     if (!state.grimoires.pyroblast || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
       triggerSkill('fireblast');
     }
   }
 
-  // 3. 거대 화염구 단독 자동 시전 (화염구 AUTO가 꺼져 있고 거대 화염구 AUTO만 켜진 경우 하드 캐스팅)
+  // 3. 일반 화염구 기본 시전 (몰열 2스택 대기 중이 아닐 때)
   if (
-    isSkillAutoActive('pyroblast') &&
-    !isSkillAutoActive('fireball') &&
-    state.grimoires.pyroblast &&
-    !c.castingSkill &&
-    c.gcdRemaining <= 0
-  ) {
-    triggerSkill('pyroblast');
-  }
-
-  // 4. 일반 화염구 기본 시전 (몰열 2스택 대기 중이 아닐 때)
-  if (
-    isSkillAutoActive('fireball') &&
     !c.castingSkill &&
     c.gcdRemaining <= 0 &&
-    !(state.grimoires.pyroblast && c.critStreak === 2 && isSkillAutoActive('pyroblast'))
+    !(state.grimoires.pyroblast && c.critStreak === 2)
   ) {
     triggerSkill('fireball');
   }
@@ -4389,49 +4371,6 @@ function updateSkillActionBarVisibility() {
     autoBtn.className = 'auto-cast-btn has-badge-anchor';
     autoBtnText.textContent = '🤖 자동: OFF';
   }
-
-  updateSkillAutoUI();
-}
-
-function updateSkillAutoUI() {
-  const isAutocastUnlocked = !!state.grimoires.autocast;
-  const isGlobalAutoOn = !!state.autoCast;
-
-  const skillKeys = ['fireball', 'fireblast', 'pyroblast', 'combustion', 'meteor', 'flame_patch'];
-  const skillNames = {
-    fireball: '화염구',
-    fireblast: '불꽃 작렬',
-    pyroblast: '거대 화염구',
-    combustion: '마력 폭주',
-    meteor: '메테오',
-    flame_patch: '불장판'
-  };
-
-  skillKeys.forEach((key) => {
-    const el = document.getElementById(`auto-toggle-${key}`);
-    if (!el) return;
-
-    if (!isAutocastUnlocked) {
-      el.classList.add('unfold-hidden');
-      return;
-    }
-    el.classList.remove('unfold-hidden');
-
-    const isEnabled = state.skillAuto && state.skillAuto[key] !== false;
-    el.classList.toggle('active', isEnabled);
-    el.classList.toggle('disabled', !isEnabled);
-    el.classList.toggle('paused', isEnabled && !isGlobalAutoOn);
-
-    if (isEnabled) {
-      el.textContent = 'AUTO';
-      el.title = isGlobalAutoOn
-        ? `[${skillNames[key]}] 자동 시전: 활성 (클릭 시 수동 전환)`
-        : `[${skillNames[key]}] 자동 시전: 활성 (전체 자동 시전 꺼짐 상태)`;
-    } else {
-      el.textContent = 'OFF';
-      el.title = `[${skillNames[key]}] 자동 시전: 비활성/수동 전용 (클릭 시 자동 전환)`;
-    }
-  });
 }
 
 function updateStageUI() {
@@ -5204,28 +5143,6 @@ function initEvents() {
     updateSkillActionBarVisibility();
     updateNotificationBadges();
     saveGame();
-  });
-
-  document.querySelectorAll('.skill-auto-toggle').forEach((toggleEl) => {
-    toggleEl.addEventListener('click', (e) => {
-      e.stopPropagation(); // 스킬 수동 시전 방지
-      const skillKey = toggleEl.getAttribute('data-auto-skill');
-      if (!skillKey) return;
-      if (!state.skillAuto) {
-        state.skillAuto = {
-          fireball: true,
-          fireblast: true,
-          pyroblast: true,
-          combustion: true,
-          meteor: true,
-          flame_patch: true
-        };
-      }
-      state.skillAuto[skillKey] = !state.skillAuto[skillKey];
-      playSound('item_select');
-      updateSkillAutoUI();
-      saveGame();
-    });
   });
 
   document.getElementById('tab-btn-shop').addEventListener('click', () => switchRightTab('shop'));
