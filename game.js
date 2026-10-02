@@ -1971,39 +1971,8 @@ function updateAndDrawVfx(dt) {
     const x = p.startX + (p.targetX - p.startX) * easeT;
     const y = p.startY + (p.targetY - p.startY) * easeT + arcOffset;
 
-    if (isPyro) {
-      const trailCount = p.evoTier >= 3 ? 2 : 1;
-      for (let tr = 0; tr < trailCount; tr++) {
-        if (Math.random() < 0.9) {
-          particles.push({
-            x: x + (Math.random() * 8 - 4),
-            y: y + (Math.random() * 8 - 4),
-            vx: -65 + Math.random() * 25,
-            vy: -18 + Math.random() * 36,
-            radius: p.radius * (0.42 + p.evoTier * 0.04),
-            life: 0,
-            maxLife: 0.16 + p.evoTier * 0.02,
-            colorCore: p.colorCore,
-            colorEdge: p.colorMid
-          });
-        }
-      }
-    } else {
-      // 일반 화염구: 잔상 파티클을 작고 절제되게 표현
-      if (Math.random() < 0.4) {
-        particles.push({
-          x: x + (Math.random() * 3 - 1.5),
-          y: y + (Math.random() * 3 - 1.5),
-          vx: -35 + Math.random() * 12,
-          vy: -6 + Math.random() * 12,
-          radius: p.radius * 0.28,
-          life: 0,
-          maxLife: 0.1,
-          colorCore: p.colorCore,
-          colorEdge: p.colorMid
-        });
-      }
-    }
+    emitComicTrail(p, x, y, dt, particles,
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
     drawComicProjectile(ctx, p, x, y, rawP);
   }
@@ -2258,7 +2227,18 @@ function updateAndDrawVfx(dt) {
     ctx.fillStyle = pt.life < pt.maxLife * 0.4 ? pt.colorCore : pt.colorEdge;
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, pt.radius * alpha, 0, Math.PI * 2);
+    if (pt.comicTrail) {
+      // 둥근 광점 대신 만화 원화와 같은 각진 불씨가 작아지며 사라집니다.
+      const r = pt.radius * alpha;
+      ctx.moveTo(pt.x + r * 1.8, pt.y);
+      ctx.lineTo(pt.x - r, pt.y - r * 0.7);
+      ctx.lineTo(pt.x - r * 0.4, pt.y);
+      ctx.lineTo(pt.x - r * 1.4, pt.y + r * 0.6);
+      pt.vx *= Math.exp(-5 * dt);
+      pt.vy += 65 * dt;
+    } else {
+      ctx.arc(pt.x, pt.y, pt.radius * alpha, 0, Math.PI * 2);
+    }
     ctx.fill();
     ctx.globalAlpha = 1;
   }

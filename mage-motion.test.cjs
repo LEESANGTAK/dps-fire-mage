@@ -62,3 +62,11 @@ vm.runInContext(fs.readFileSync('./combat-art.js', 'utf8'), projectileContext);
 projectileContext.painter = { save(){}, restore(){}, translate(){}, rotate(){}, scale(){}, drawImage(){ imageCalls++; } };
 vm.runInContext("drawComicProjectile(painter, {type:'fireball', radius:10, startX:0, startY:0, targetX:100, targetY:0}, 50, 0, 0.5)", projectileContext);
 assert.equal(imageCalls, 3);
+
+const trailPool = [];
+projectileContext.trailPool = trailPool;
+vm.runInContext("const trailShot = {type:'fireball', radius:10}; for(let i=0;i<500;i++) emitComicTrail(trailShot, i, 50, 1/60, trailPool, false)", projectileContext);
+assert.equal(trailPool.length, 96, '고속 연사의 불씨 수를 제한해야 합니다.');
+assert.ok(trailPool.every(p => p.maxLife <= 0.24));
+vm.runInContext("emitComicTrail(trailShot, 0, 0, 1, trailPool, true)", projectileContext);
+assert.equal(trailPool.length, 96);
