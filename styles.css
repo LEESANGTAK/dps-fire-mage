@@ -1078,15 +1078,51 @@ body {
   border-color: #94a3b8;
 }
 
-.dummy-avatar.hit {
-  animation: monsterHitJolt 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+.dummy-avatar.hit,
+.dummy-avatar.hit-right {
+  animation: monsterHitRight 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.2);
   border-color: var(--fire-orange);
+  box-shadow: 0 0 22px rgba(251, 146, 60, 0.75);
 }
 
-.dummy-avatar.crit-hit {
-  animation: monsterCritJolt 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+.dummy-avatar.hit-left {
+  animation: monsterHitLeft 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  border-color: var(--fire-orange);
+  box-shadow: 0 0 22px rgba(251, 146, 60, 0.75);
+}
+
+.dummy-avatar.crit-hit,
+.dummy-avatar.crit-right {
+  animation: monsterCritRight 0.26s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   border-color: var(--fire-gold);
-  box-shadow: 0 0 35px rgba(251, 191, 36, 0.65);
+  box-shadow: 0 0 42px rgba(251, 191, 36, 0.9), 0 0 18px #f97316;
+}
+
+.dummy-avatar.crit-left {
+  animation: monsterCritLeft 0.26s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  border-color: var(--fire-gold);
+  box-shadow: 0 0 42px rgba(251, 191, 36, 0.9), 0 0 18px #f97316;
+}
+
+.dummy-avatar.hit-fireblast {
+  animation: monsterHitFireblast 0.22s cubic-bezier(0.2, 1.1, 0.3, 1);
+  border-color: #ef4444;
+  box-shadow: 0 0 42px rgba(239, 68, 68, 0.95), 0 0 20px #ffffff;
+}
+
+.dummy-avatar.hit-golem {
+  animation: monsterHitGolem 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  border-color: #ea580c;
+  box-shadow: 0 0 34px rgba(234, 88, 12, 0.9);
+}
+
+.dummy-avatar.burn-shiver {
+  animation: monsterBurnShiver 0.15s ease-in-out;
+}
+
+.dummy-avatar.is-burning {
+  box-shadow: 0 0 32px rgba(249, 115, 22, 0.7), inset 0 0 22px rgba(239, 68, 68, 0.5);
+  border-color: #f97316 !important;
 }
 
 .dummy-avatar.knockback-pyro {
@@ -1105,25 +1141,150 @@ body {
   animation: monsterRespawnPop 0.26s cubic-bezier(0.22, 1.28, 0.36, 1);
 }
 
-@keyframes monsterHitJolt {
+.dummy-emoji {
+  transition: transform 0.08s ease;
+  will-change: transform;
+}
+.dummy-emoji.emoji-hit {
+  animation: emojiHitAnim 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.dummy-emoji.emoji-crit {
+  animation: emojiCritAnim 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes emojiHitAnim {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.32, 0.72) rotate(-8deg); }
+  60% { transform: scale(0.88, 1.16) rotate(4deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes emojiCritAnim {
+  0% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(1.48, 0.6) rotate(-14deg); filter: brightness(2); }
+  55% { transform: scale(0.8, 1.3) rotate(8deg); }
+  80% { transform: scale(1.08, 0.95) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.monster-hit-mark {
+  position: absolute;
+  top: -15px;
+  right: -10px;
+  font-size: 1.6rem;
+  pointer-events: none;
+  z-index: 10;
+  animation: monsterHitMarkPop 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes monsterHitMarkPop {
+  0% {
+    transform: translate3d(0, 10px, 0) scale(0.4) rotate(-15deg);
+    opacity: 0;
+  }
+  20% {
+    transform: translate3d(0, -6px, 0) scale(1.35) rotate(10deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate3d(4px, -18px, 0) scale(1.05) rotate(-5deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(8px, -28px, 0) scale(0.7) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+@keyframes monsterHitLeft {
   0% {
     transform: translate3d(0, 0, 0) scale(1, 1);
-    filter: brightness(1);
+    filter: brightness(3.0) contrast(1.3);
   }
-  18% {
-    /* 1. 스쿼시 (충격 압축) */
-    transform: translate3d(8px, -2px, 0) scale(1.14, 0.86) rotate(3deg);
-    filter: brightness(1.45);
+  20% {
+    transform: translate3d(-14px, -3px, 0) scale(1.18, 0.84) rotate(-6deg);
+    filter: brightness(1.7) saturate(1.4);
   }
-  48% {
-    /* 2. 스트레치 (밀려남) */
-    transform: translate3d(11px, -3px, 0) scale(0.94, 1.06) rotate(4deg);
+  50% {
+    transform: translate3d(6px, 2px, 0) scale(0.92, 1.08) rotate(3deg);
     filter: brightness(1.2);
   }
   78% {
-    /* 3. 팔로스루 (오버슈트 반동) */
-    transform: translate3d(-3px, 1px, 0) scale(1.03, 0.97) rotate(-1.5deg);
+    transform: translate3d(-2px, 0, 0) scale(1.02, 0.98);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
+  }
+}
+
+@keyframes monsterHitRight {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+    filter: brightness(3.0) contrast(1.3);
+  }
+  20% {
+    transform: translate3d(14px, -3px, 0) scale(1.18, 0.84) rotate(6deg);
+    filter: brightness(1.7) saturate(1.4);
+  }
+  50% {
+    transform: translate3d(-6px, 2px, 0) scale(0.92, 1.08) rotate(-3deg);
+    filter: brightness(1.2);
+  }
+  78% {
+    transform: translate3d(2px, 0, 0) scale(1.02, 0.98);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterHitJolt {
+  0% { transform: translate3d(0, 0, 0) scale(1, 1); filter: brightness(3.0); }
+  20% { transform: translate3d(12px, -3px, 0) scale(1.18, 0.84) rotate(5deg); filter: brightness(1.6); }
+  50% { transform: translate3d(-5px, 2px, 0) scale(0.94, 1.06) rotate(-2deg); filter: brightness(1.2); }
+  78% { transform: translate3d(2px, 0, 0) scale(1.02, 0.98); }
+  100% { transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg); filter: brightness(1); }
+}
+
+@keyframes monsterCritLeft {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+    filter: brightness(4.0) contrast(1.5);
+  }
+  18% {
+    transform: translate3d(-22px, -6px, 0) scale(1.32, 0.7) rotate(-11deg);
+    filter: brightness(2.2) saturate(1.6);
+  }
+  48% {
+    transform: translate3d(10px, 3px, 0) scale(0.85, 1.2) rotate(6deg);
+    filter: brightness(1.4);
+  }
+  75% {
+    transform: translate3d(-4px, 1px, 0) scale(1.05, 0.96) rotate(-2deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterCritRight {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+    filter: brightness(4.0) contrast(1.5);
+  }
+  18% {
+    transform: translate3d(22px, -6px, 0) scale(1.32, 0.7) rotate(11deg);
+    filter: brightness(2.2) saturate(1.6);
+  }
+  48% {
+    transform: translate3d(-10px, 3px, 0) scale(0.85, 1.2) rotate(-6deg);
+    filter: brightness(1.4);
+  }
+  75% {
+    transform: translate3d(4px, 1px, 0) scale(1.05, 0.96) rotate(2deg);
   }
   100% {
     transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
@@ -1132,31 +1293,74 @@ body {
 }
 
 @keyframes monsterCritJolt {
+  0% { transform: translate3d(0, 0, 0) scale(1, 1); filter: brightness(4.0); }
+  18% { transform: translate3d(22px, -6px, 0) scale(1.3, 0.72) rotate(9deg); filter: brightness(2.0); }
+  48% { transform: translate3d(-9px, 3px, 0) scale(0.86, 1.18) rotate(-4deg); }
+  75% { transform: translate3d(3px, 1px, 0) scale(1.04, 0.96); }
+  100% { transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg); filter: brightness(1); }
+}
+
+@keyframes monsterHitFireblast {
   0% {
-    transform: translate3d(0, 0, 0) scale(1, 1);
-    filter: brightness(1);
+    transform: scale(1, 1);
+    filter: brightness(4.5) contrast(1.8);
   }
-  16% {
-    /* 1. 폭발적 스쿼시 (극단적 충격 압축) */
-    transform: translate3d(18px, -5px, 0) scale(1.28, 0.74) rotate(8deg);
-    filter: brightness(1.85) saturate(1.4);
+  15% {
+    transform: translate3d(10px, -4px, 0) scale(1.3, 0.74) rotate(7deg);
+    filter: brightness(2.6) saturate(1.8);
   }
-  44% {
-    /* 2. 공중 스트레치 (비행 늘어남) */
-    transform: translate3d(24px, -7px, 0) scale(0.86, 1.18) rotate(11deg);
-    filter: brightness(1.4);
+  32% {
+    transform: translate3d(-9px, 3px, 0) scale(0.86, 1.18) rotate(-6deg);
+  }
+  50% {
+    transform: translate3d(6px, -2px, 0) scale(1.12, 0.92) rotate(4deg);
   }
   72% {
-    /* 3. 팔로스루 오버슈트 (반대편으로 튕김) */
-    transform: translate3d(-5px, 2px, 0) scale(1.06, 0.95) rotate(-3deg);
-    filter: brightness(1.1);
-  }
-  88% {
-    /* 4. 2차 감쇠 진동 */
-    transform: translate3d(2px, -1px, 0) scale(0.98, 1.02) rotate(1deg);
+    transform: translate3d(-3px, 1px, 0) scale(0.96, 1.04) rotate(-2deg);
   }
   100% {
     transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterHitGolem {
+  0% {
+    transform: scale(1, 1);
+    filter: brightness(2.8);
+  }
+  20% {
+    transform: translate3d(0, 18px, 0) scale(1.34, 0.65);
+    filter: brightness(1.8) saturate(1.4);
+  }
+  55% {
+    transform: translate3d(0, -8px, 0) scale(0.88, 1.18);
+  }
+  80% {
+    transform: translate3d(0, 2px, 0) scale(1.04, 0.98);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes monsterBurnShiver {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-3px, 1px, 0) scale(0.98, 1.02);
+    filter: brightness(1.4) sepia(0.5) saturate(2);
+  }
+  50% {
+    transform: translate3d(3px, -1px, 0) scale(1.02, 0.98);
+  }
+  75% {
+    transform: translate3d(-2px, -1px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
     filter: brightness(1);
   }
 }

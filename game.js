@@ -87,7 +87,7 @@ const SKILL_TREE_NODES = [
     shortName: '불의 정령',
     icon: '🔥',
     desc: (lv) =>
-      `불의 정령 상시 소환 (1.3초마다 공격력의 ${lv === 0 ? 45 : lv * 45}% 화염탄 발사 및 화상 연장)`
+      `불의 정령 상시 소환 (1.3초마다 주문 공격력의 ${lv === 0 ? 45 : lv * 45}% 화염탄 발사 및 화상 연장)`
   },
   {
     id: 'flame_patch',
@@ -101,7 +101,7 @@ const SKILL_TREE_NODES = [
     shortName: '불장판',
     icon: '🔥',
     desc: (lv) =>
-      `[6] 불장판 스킬 사용 가능: 몬스터 아래쪽 바닥에 7초간 불장판을 깔아 0.5초마다 공격력의 ${lv === 0 ? 40 : lv * 40}% 도트 피해 (쿨타임 10초)`
+      `[6] 불장판 스킬 사용 가능: 몬스터 아래쪽 바닥에 7초간 불장판을 깔아 0.5초마다 주문 공격력의 ${lv === 0 ? 40 : lv * 40}% 도트 피해 (쿨타임 10초)`
   },
   {
     id: 'phoenix',
@@ -272,7 +272,7 @@ const EQUIPMENT_LIST = [
     slot: 'ring',
     baseCost: 22,
     costScale: 1.38,
-    desc: '치명타 확률 +1.5% · 공격력 +2',
+    desc: '치명타 확률 +1.5% · 주문 공격력 +2',
     effect: (lv) => ({ crit: lv * 1.5, sp: lv * 2 })
   },
   {
@@ -282,7 +282,7 @@ const EQUIPMENT_LIST = [
     slot: 'gloves',
     baseCost: 60,
     costScale: 1.4,
-    desc: '시전 속도 +3% · 공격력 +4',
+    desc: '시전 속도 +3% · 주문 공격력 +4',
     effect: (lv) => ({ haste: lv * 3, sp: lv * 4 })
   },
   {
@@ -292,7 +292,7 @@ const EQUIPMENT_LIST = [
     slot: 'orb',
     baseCost: 160,
     costScale: 1.42,
-    desc: '치명타 피해 +8% · 공격력 +9',
+    desc: '치명타 피해 +8% · 주문 공격력 +9',
     effect: (lv) => ({ critDmg: lv * 0.08, sp: lv * 9 })
   },
   {
@@ -302,7 +302,7 @@ const EQUIPMENT_LIST = [
     slot: 'weapon',
     baseCost: 450,
     costScale: 1.45,
-    desc: '공격력 +22 · 치명타 확률 +1.5%',
+    desc: '주문 공격력 +22 · 치명타 확률 +1.5%',
     effect: (lv) => ({ sp: lv * 22, crit: lv * 1.5 })
   },
   {
@@ -312,7 +312,7 @@ const EQUIPMENT_LIST = [
     slot: 'trinket',
     baseCost: 1250,
     costScale: 1.48,
-    desc: '쿨타임 감소 +3% · 시전 속도 +3% · 공격력 +55',
+    desc: '쿨타임 감소 +3% · 시전 속도 +3% · 주문 공격력 +55',
     effect: (lv) => ({ cdr: lv * 0.03, haste: lv * 3, sp: lv * 55 })
   },
   {
@@ -322,7 +322,7 @@ const EQUIPMENT_LIST = [
     slot: 'helm',
     baseCost: 3600,
     costScale: 1.5,
-    desc: '공격력 +140 · 치명타 피해 +12%',
+    desc: '주문 공격력 +140 · 치명타 피해 +12%',
     effect: (lv) => ({ sp: lv * 140, critDmg: lv * 0.12 })
   },
   {
@@ -332,7 +332,7 @@ const EQUIPMENT_LIST = [
     slot: 'relic',
     baseCost: 11000,
     costScale: 1.55,
-    desc: '공격력 +380 · 모든 마법 피해 +6%',
+    desc: '주문 공격력 +380 · 모든 마법 피해 +6%',
     effect: (lv) => ({ sp: lv * 380, bonusPct: lv * 0.06 })
   }
 ];
@@ -1151,6 +1151,50 @@ function spawnParticles(x, y, count, colorCore, colorEdge, speedScale = 1) {
   }
 }
 
+function spawnHitSparkVfx(x, y, isCrit, skillKey) {
+  const isHeavy = skillKey === 'pyroblast' || skillKey === 'meteor';
+  const count = isCrit ? (isHeavy ? 24 : 16) : 8;
+  const speedScale = isCrit ? 1.45 : 0.85;
+  const coreColor = isCrit ? '#fef08a' : '#fed7aa';
+  const edgeColor = isCrit ? '#f59e0b' : '#ea580c';
+  spawnParticles(x, y, count, coreColor, edgeColor, speedScale);
+
+  if (isCrit || isHeavy) {
+    shockwaves.push({
+      x,
+      y,
+      radius: 12,
+      maxRadius: isHeavy ? 75 : 45,
+      rgb: skillKey === 'meteor' ? '253, 224, 71' : '249, 115, 22',
+      lineWidth: isHeavy ? 4.5 : 3.0,
+      life: 0,
+      maxLife: 0.28
+    });
+  }
+}
+
+let lastHitMarkTime = 0;
+function spawnHitMark(markChar) {
+  const now = performance.now();
+  if (now - lastHitMarkTime < 100) return;
+  lastHitMarkTime = now;
+
+  const dummyEl = document.getElementById('dummy-avatar');
+  if (!dummyEl) return;
+
+  const markEl = document.createElement('div');
+  markEl.className = 'monster-hit-mark';
+  markEl.textContent = markChar;
+  const offsetX = (Math.random() - 0.5) * 36;
+  const offsetY = (Math.random() - 0.5) * 20;
+  markEl.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+
+  dummyEl.appendChild(markEl);
+  setTimeout(() => {
+    if (markEl.parentNode) markEl.parentNode.removeChild(markEl);
+  }, 400);
+}
+
 // ==========================================
 // 7-B. 2단계: 화염구의 시각적 진화 (5단계 외형·크기·위성·탄막 진화)
 // ==========================================
@@ -1270,7 +1314,7 @@ function updateFlameEvolutionUI(silent = false) {
     const isPreview = state.previewFlameTier > 0;
     const nextTierObj = FLAME_EVOLUTION_TIERS[evo.tier];
     const nextHint = nextTierObj
-      ? `다음 진화(${nextTierObj.name}): 공격력 ${fmt(nextTierObj.reqSp)} 또는 총 장비 +${nextTierObj.reqEquipLv}강`
+      ? `다음 진화(${nextTierObj.name}): 주문 공격력 ${fmt(nextTierObj.reqSp)} 또는 총 장비 +${nextTierObj.reqEquipLv}강`
       : '최고 단계 화염 진화 달성!';
     badgeEl.className = `flame-evo-badge evo-tier-${evo.tier}`;
     badgeEl.textContent = isPreview ? `${evo.badgeText} (미리보기)` : evo.badgeText;
@@ -2979,9 +3023,11 @@ function onMonsterKilled() {
   }
   const dummyEl = document.getElementById('dummy-avatar');
   if (dummyEl) {
-    dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+    dummyEl.className = 'dummy-avatar';
     void dummyEl.offsetWidth;
     dummyEl.classList.add('respawn-pop');
+    const dummyEmoji = document.getElementById('dummy-emoji');
+    if (dummyEmoji) dummyEmoji.className = 'dummy-emoji';
   }
 
   saveGame();
@@ -2995,6 +3041,8 @@ function onMonsterKilled() {
 // 10. 데미지 적용 & 연쇄 치명타 / 유성우 판정
 // ==========================================
 let lastHeavyKnockbackTime = 0;
+let hitDirectionCounter = 0;
+let lastDotShiverTime = 0;
 
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false) {
   const masteryMult = getSkillMasteryMult(skillKey);
@@ -3025,24 +3073,88 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   checkAndRecordDpsClear();
 
   const isBigSkill = skillKey === 'pyroblast' || skillKey === 'meteor';
-  if (!isDotTick && !willKill) {
-    const dummyEl = document.getElementById('dummy-avatar');
-    if (dummyEl) {
+  const dummyEl = document.getElementById('dummy-avatar');
+  const dummyEmoji = document.getElementById('dummy-emoji');
+  const targetPos = getTargetPos();
+
+  if (dummyEl && !willKill) {
+    const hitClasses = [
+      'hit', 'hit-left', 'hit-right', 'crit-hit', 'crit-left', 'crit-right',
+      'hit-fireblast', 'hit-golem', 'knockback-pyro', 'knockback-meteor', 'burn-shiver', 'respawn-pop'
+    ];
+
+    if (isDotTick) {
+      // 도트 틱 적중 시 미세 연소 진동 (0.18초 쿨타임)
+      if (now - lastDotShiverTime > 0.18) {
+        lastDotShiverTime = now;
+        dummyEl.classList.remove(...hitClasses);
+        void dummyEl.offsetWidth;
+        dummyEl.classList.add('burn-shiver');
+      }
+    } else {
+      const hitDir = (hitDirectionCounter++ % 2 === 0) ? 'left' : 'right';
+
       if (skillKey === 'meteor') {
         lastHeavyKnockbackTime = now;
-        dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+        dummyEl.classList.remove(...hitClasses);
         void dummyEl.offsetWidth;
         dummyEl.classList.add('knockback-meteor');
+        spawnHitMark('💫');
+        if (dummyEmoji) {
+          dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
+          void dummyEmoji.offsetWidth;
+          dummyEmoji.classList.add('emoji-crit');
+        }
       } else if (skillKey === 'pyroblast') {
         lastHeavyKnockbackTime = now;
-        dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+        dummyEl.classList.remove(...hitClasses);
         void dummyEl.offsetWidth;
         dummyEl.classList.add('knockback-pyro');
-      } else if (now - lastHeavyKnockbackTime > 0.34) {
-        dummyEl.classList.remove('hit', 'crit-hit', 'knockback-pyro', 'knockback-meteor', 'respawn-pop');
+        spawnHitMark('💥');
+        if (dummyEmoji) {
+          dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
+          void dummyEmoji.offsetWidth;
+          dummyEmoji.classList.add('emoji-crit');
+        }
+      } else if (skillKey === 'fireblast') {
+        lastHeavyKnockbackTime = now;
+        dummyEl.classList.remove(...hitClasses);
         void dummyEl.offsetWidth;
-        dummyEl.classList.add(isCrit ? 'crit-hit' : 'hit');
+        dummyEl.classList.add('hit-fireblast');
+        spawnHitMark('⚡');
+        if (dummyEmoji) {
+          dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
+          void dummyEmoji.offsetWidth;
+          dummyEmoji.classList.add('emoji-crit');
+        }
+      } else if (skillKey === 'summon_golem') {
+        dummyEl.classList.remove(...hitClasses);
+        void dummyEl.offsetWidth;
+        dummyEl.classList.add('hit-golem');
+        spawnHitMark('💥');
+      } else if (now - lastHeavyKnockbackTime > 0.28) {
+        dummyEl.classList.remove(...hitClasses);
+        void dummyEl.offsetWidth;
+        if (isCrit) {
+          dummyEl.classList.add(`crit-${hitDir}`);
+          spawnHitMark(Math.random() > 0.4 ? '💥' : '💢');
+          if (dummyEmoji) {
+            dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
+            void dummyEmoji.offsetWidth;
+            dummyEmoji.classList.add('emoji-crit');
+          }
+        } else {
+          dummyEl.classList.add(`hit-${hitDir}`);
+          if (dummyEmoji) {
+            dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
+            void dummyEmoji.offsetWidth;
+            dummyEmoji.classList.add('emoji-hit');
+          }
+        }
       }
+
+      // 캔버스 타격 스파크 및 충격파 방사
+      spawnHitSparkVfx(targetPos.x, targetPos.y, isCrit, skillKey);
     }
   }
 
@@ -4781,7 +4893,7 @@ function updateLiveHUD() {
   document.getElementById('ui-sp').textContent = fmt(stats.sp);
   document.getElementById('ui-crit').textContent = `${stats.crit.toFixed(1)}%`;
   document.getElementById('ui-haste').textContent = `+${stats.haste.toFixed(0)}%`;
-  document.getElementById('ui-power-summary').textContent = `공격력 ${fmt(stats.sp)}`;
+  document.getElementById('ui-power-summary').textContent = `주문 공격력 ${fmt(stats.sp)}`;
 
   const hpPct = Math.max(0, Math.min(100, (state.monster.hp / state.monster.maxHp) * 100));
   document.getElementById('target-hp-fill').style.width = `${hpPct}%`;
@@ -4848,6 +4960,12 @@ function updateLiveHUD() {
     debuffHtml += `<div class="debuff-chip">☄️ 연소 (${c.meteorBurnRem.toFixed(1)}s)</div>`;
   }
   debuffRow.innerHTML = debuffHtml;
+
+  const dummyAvatar = document.getElementById('dummy-avatar');
+  if (dummyAvatar) {
+    const isBurning = (c.igniteRem > 0 && c.ignitePool >= 5) || c.flamePatchRem > 0 || c.meteorBurnRem > 0;
+    dummyAvatar.classList.toggle('is-burning', isBurning);
+  }
 
   setRadialSweep(document.getElementById('gcd-1'), c.gcdRemaining, c.gcdTotal, false);
 
