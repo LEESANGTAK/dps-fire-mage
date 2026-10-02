@@ -4,13 +4,13 @@ const combat = { castingSkill: null, castRemaining: 0, castTotal: 1.5, critStrea
 const rest = { kind: '', remaining: 0, total: 0 };
 assert.equal(selectMagePose(combat, rest), 'idle');
 for (const duration of [0.4, 1.5, 2.5]) {
-  assert.equal(selectMagePose({ ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * 0.9 }, rest), 'anticipation');
+  assert.equal(selectMagePose({ ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * 0.9 }, rest), 'idle');
   assert.equal(selectMagePose({ ...combat, castingSkill: 'pyroblast', castTotal: duration, castRemaining: duration * 0.2 }, rest), 'charge');
 }
-assert.equal(selectMagePose({ ...combat, critStreak: 2 }, rest), 'hot');
+assert.equal(selectMagePose({ ...combat, critStreak: 2 }, rest), 'idle');
 assert.equal(selectMagePose({ ...combat, combustionRem: 1 }, rest), 'hot');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.3, total: 0.3 }), 'release');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'recoil');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.3, total: 0.3 }), 'idle');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'idle');
 assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.01, total: 0.3 }), 'idle');
 assert.equal(selectMagePose({ ...combat, critStreak: 2 }, { kind: 'pyroblast', remaining: 0.38, total: 0.38 }), 'release');
 assert.equal(selectMagePose(combat, { kind: 'combustion', remaining: 0.5, total: 0.5 }), 'hot');
@@ -44,3 +44,21 @@ for (const frame of Object.values(mageFrames)) {
   assert.ok(frame.foot[0] >= x && frame.foot[0] <= x + width && frame.foot[1] >= y && frame.foot[1] <= y + height);
 }
 console.log('시전속도·몰열·발사·반동·발화 포즈 검증 통과');
+
+// 초고속 반복 시전에서도 몸은 고정되고 팔 회전은 작은 범위에 머뭅니다.
+const { armTarget } = require('./mage-motion.js');
+for (const duration of [0.02, 0.05, 0.1, 1.5]) {
+  for (let i = 0; i <= 10; i++) {
+    const fast = { ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * i / 10 };
+    assert.equal(selectMagePose(fast, rest), 'idle');
+    assert.ok(Math.abs(armTarget(fast, rest)) <= 0.18);
+  }
+}
+// 픽셀 읽기가 금지된 파일 실행 환경에서도 이미지 원본을 사용해야 합니다.
+let imageCalls = 0;
+class TestImage { complete = true; naturalWidth = 1536; }
+const projectileContext = vm.createContext({ Image: TestImage, console, document: { createElement() { throw Error('픽셀 읽기 금지'); } } });
+vm.runInContext(fs.readFileSync('./combat-art.js', 'utf8'), projectileContext);
+projectileContext.painter = { save(){}, restore(){}, translate(){}, rotate(){}, scale(){}, drawImage(){ imageCalls++; } };
+vm.runInContext("drawComicProjectile(painter, {type:'fireball', radius:10, startX:0, startY:0, targetX:100, targetY:0}, 50, 0, 0.5)", projectileContext);
+assert.equal(imageCalls, 3);

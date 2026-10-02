@@ -1,6 +1,6 @@
 /* 전투 시간에 맞춘 포즈 제어. 저장 데이터와 별개로 관리합니다. */
 const mageGesture = { kind: '', remaining: 0, total: 0, hitStop: 0 };
-const mageSpring = { x: 0, vx: 0, squash: 0, vs: 0, cloth: 0, vc: 0, time: 0, pose: 'idle', weights: { idle: 1 } };
+const mageSpring = { x: 0, vx: 0, squash: 0, vs: 0, cloth: 0, vc: 0, time: 0, arm: 0, armVelocity: 0, pose: 'idle', weights: { idle: 1 } };
 const mageSheet = typeof Image !== 'undefined' ? new Image() : null;
 if (mageSheet) mageSheet.src = 'assets/art/comic-mage-poses.png';
 // 원본의 칸 크기 대신 실제 발 위치와 지팡이 끝을 기준으로 정렬합니다.
@@ -27,11 +27,65 @@ function advanceSpring(spring, dt, targetX, targetSquash) {
   }
 }
 
+// 반복 입력은 관절의 목표만 바꿉니다. 각도를 누적하거나 자세를 순간 이동시키지 않습니다.
+function armTarget(combat, gesture) {
+  if (gesture.remaining > 0 && ['fireball', 'fireblast'].includes(gesture.kind)) {
+    const p = 1 - gesture.remaining / gesture.total;
+    return p < 0.22 ? 0.18 : p < 0.55 ? -0.045 : 0;
+  }
+  if (combat.castingSkill === 'fireball') {
+    const p = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
+    return -0.065 * Math.sin(Math.min(1, p) * Math.PI / 2);
+  }
+  return 0;
+}
+
+function renderStandingMage(context, art, dt, reduced) {
+  const spring = mageSpring;
+  const target = reduced ? 0 : armTarget(state.combat, mageGesture);
+  const steps = Math.max(1, Math.ceil(dt * 120));
+  for (let i = 0; i < steps; i++) {
+    const h = dt / steps;
+    spring.armVelocity += ((target - spring.arm) * 650 - spring.armVelocity * 34) * h;
+    spring.arm += spring.armVelocity * h;
+  }
+  if (reduced) { spring.arm = 0; spring.armVelocity = 0; }
+  const frame = mageFrames.idle;
+  const [sx, sy, w, h] = frame.box;
+  const ox = 294 - frame.foot[0], oy = 638 - frame.foot[1];
+  const pivot = [300, 318];
+  // 소매·손·지팡이만 분리합니다. 관절 안쪽은 겹쳐 회전할 때 빈틈을 막습니다.
+  const outline = [[296,310],[326,300],[356,308],[397,252],[413,194],[452,161],[500,191],[502,239],[427,271],[366,343],[337,400],[301,384]];
+  function armPath() {
+    context.moveTo(outline[0][0], outline[0][1]);
+    for (const point of outline.slice(1)) context.lineTo(...point);
+    context.closePath();
+  }
+  context.clearRect(0, 0, 640, 640);
+  context.save(); context.translate(ox, oy);
+  context.save(); context.beginPath(); context.rect(sx, sy, w, h); armPath(); context.clip('evenodd');
+  context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore();
+  context.save(); context.translate(...pivot); context.rotate(spring.arm); context.translate(-pivot[0], -pivot[1]);
+  context.beginPath(); armPath(); context.clip();
+  context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore(); context.restore();
+  const dx = frame.tip[0] - pivot[0], dy = frame.tip[1] - pivot[1];
+  const x = ox + pivot[0] + dx * Math.cos(spring.arm) - dy * Math.sin(spring.arm);
+  const y = oy + pivot[1] + dx * Math.sin(spring.arm) + dy * Math.cos(spring.arm);
+  art.style.setProperty('--muzzle-x', `${x / 640 * 100}%`);
+  art.style.setProperty('--muzzle-y', `${y / 640 * 100}%`);
+}
+
 function renderMage(art, pose, dt, reduced) {
   const surface = document.getElementById('mage-pose-canvas');
   if (!surface || !surface.getContext || !mageSheet || !mageSheet.complete || !mageSheet.naturalWidth) return;
   const context = surface.getContext('2d');
   const spring = mageSpring;
+  if (pose === 'idle') {
+    renderStandingMage(context, art, dt, reduced);
+    spring.weights = { idle: 1 }; spring.pose = 'idle';
+    spring.x = spring.vx = spring.squash = spring.vs = spring.cloth = spring.vc = 0;
+    return;
+  }
   const strength = mageGesture.kind === 'pyroblast' ? 1.45 : 1;
   let lean = 0, squash = 0;
   if (pose === 'anticipation') { lean = -16; squash = 0.07; }
@@ -87,13 +141,16 @@ function selectMagePose(combat, gesture) {
   if (gesture.remaining > 0) {
     const progress = 1 - gesture.remaining / gesture.total;
     if (gesture.kind === 'combustion') return 'hot';
+    if (gesture.kind !== 'pyroblast') return 'idle';
     return progress < 0.28 ? 'release' : progress < 0.72 ? 'recoil' : 'idle';
   }
+  if (combat.castingSkill === 'fireball') return 'idle';
   if (combat.castingSkill) {
     const progress = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
     return progress < 0.32 ? 'anticipation' : 'charge';
   }
-  if (combat.critStreak === 2 || combat.combustionRem > 0) return 'hot';
+  // 몰열 준비는 기존 UI 광채로 읽습니다. 매 치명타마다 몸 자세를 바꾸지 않습니다.
+  if (combat.combustionRem > 0) return 'hot';
   return 'idle';
 }
 
@@ -130,4 +187,4 @@ function updateMageMotion(dt, paused) {
 }
 
 // 포즈 전환 경계는 브라우저 없이도 검증할 수 있습니다.
-if (typeof module !== 'undefined') module.exports = { selectMagePose, advanceSpring, mageFrames };
+if (typeof module !== 'undefined') module.exports = { selectMagePose, advanceSpring, mageFrames, armTarget };
