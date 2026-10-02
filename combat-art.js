@@ -15,7 +15,7 @@ function drawComicProjectile(painter, projectile, x, y, progress) {
   painter.translate(x, y);
   painter.rotate(tangent);
   // 추진으로 늘어나는 본체와 뒤늦게 사라지는 잔상을 분리합니다.
-  painter.scale(1 + progress * 0.18, 1 - progress * 0.1);
+  // 발사 순간부터 동일한 크기를 유지합니다.
   if (comicFireball.complete && comicFireball.naturalWidth > 0) {
     for (let echo = 2; echo >= 0; echo--) {
       painter.globalAlpha = echo === 0 ? 1 : 0.12 / echo;

@@ -29,13 +29,17 @@ function advanceSpring(spring, dt, targetX, targetSquash) {
 
 // 반복 입력은 관절의 목표만 바꿉니다. 각도를 누적하거나 자세를 순간 이동시키지 않습니다.
 function armTarget(combat, gesture) {
+  const ease = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
   if (gesture.remaining > 0 && ['fireball', 'fireblast'].includes(gesture.kind)) {
     const p = 1 - gesture.remaining / gesture.total;
-    return p < 0.22 ? 0.18 : p < 0.55 ? -0.045 : 0;
+    // 발사 순간에 이미 겨냥하며, 작은 오버슈트 후 느리게 복귀합니다.
+    if (p < 0.12) return 0.24 + 0.035 * Math.sin(p / 0.12 * Math.PI / 2);
+    if (p < 0.72) return 0.275 * (1 - ease((p - 0.12) / 0.6));
+    return -0.012 * Math.sin((p - 0.72) / 0.28 * Math.PI);
   }
   if (combat.castingSkill === 'fireball') {
-    const p = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
-    return -0.065 * Math.sin(Math.min(1, p) * Math.PI / 2);
+    // 긴 시전 내내 흔들지 않고 마지막 0.18초에만 손목을 조금 젖힙니다.
+    return -0.09 * ease(1 - combat.castRemaining / Math.min(0.18, Math.max(0.001, combat.castTotal)));
   }
   return 0;
 }
@@ -43,17 +47,16 @@ function armTarget(combat, gesture) {
 function renderStandingMage(context, art, dt, reduced) {
   const spring = mageSpring;
   const target = reduced ? 0 : armTarget(state.combat, mageGesture);
-  const steps = Math.max(1, Math.ceil(dt * 120));
-  for (let i = 0; i < steps; i++) {
-    const h = dt / steps;
-    spring.armVelocity += ((target - spring.arm) * 650 - spring.armVelocity * 34) * h;
-    spring.arm += spring.armVelocity * h;
-  }
-  if (reduced) { spring.arm = 0; spring.armVelocity = 0; }
+  // 발사 자세는 피해·투사체 생성과 같은 프레임에 맞춥니다.
+  spring.arm = target;
+  spring.armVelocity = 0;
   const frame = mageFrames.idle;
   const [sx, sy, w, h] = frame.box;
   const ox = 294 - frame.foot[0], oy = 638 - frame.foot[1];
-  const pivot = [300, 318];
+  const pivot = [302, 329];
+  const wrist = [345, 329];
+  const elbowAngle = spring.arm * 0.18;
+  const wristAngle = spring.arm * 0.82;
   // 소매·손·지팡이만 분리합니다. 관절 안쪽은 겹쳐 회전할 때 빈틈을 막습니다.
   const outline = [[296,310],[326,300],[356,308],[397,252],[413,194],[452,161],[500,191],[502,239],[427,271],[366,343],[337,400],[301,384]];
   function armPath() {
@@ -65,12 +68,23 @@ function renderStandingMage(context, art, dt, reduced) {
   context.save(); context.translate(ox, oy);
   context.save(); context.beginPath(); context.rect(sx, sy, w, h); armPath(); context.clip('evenodd');
   context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore();
-  context.save(); context.translate(...pivot); context.rotate(spring.arm); context.translate(-pivot[0], -pivot[1]);
-  context.beginPath(); armPath(); context.clip();
+  context.save(); context.translate(...pivot); context.rotate(elbowAngle); context.translate(-pivot[0], -pivot[1]);
+  function handPath() {
+    context.moveTo(333, 310); context.lineTo(355, 304); context.lineTo(397, 252);
+    context.lineTo(413, 194); context.lineTo(452, 161); context.lineTo(500, 191);
+    context.lineTo(502, 239); context.lineTo(427, 271); context.lineTo(369, 344);
+    context.lineTo(334, 348); context.closePath();
+  }
+  context.save(); context.beginPath(); armPath(); handPath(); context.clip('evenodd');
+  context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore();
+  context.translate(...wrist); context.rotate(wristAngle); context.translate(-wrist[0], -wrist[1]);
+  context.beginPath(); handPath(); context.clip();
   context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore(); context.restore();
-  const dx = frame.tip[0] - pivot[0], dy = frame.tip[1] - pivot[1];
-  const x = ox + pivot[0] + dx * Math.cos(spring.arm) - dy * Math.sin(spring.arm);
-  const y = oy + pivot[1] + dx * Math.sin(spring.arm) + dy * Math.cos(spring.arm);
+  const dx = frame.tip[0] - wrist[0], dy = frame.tip[1] - wrist[1];
+  const localX = wrist[0] - pivot[0] + dx * Math.cos(wristAngle) - dy * Math.sin(wristAngle);
+  const localY = wrist[1] - pivot[1] + dx * Math.sin(wristAngle) + dy * Math.cos(wristAngle);
+  const x = ox + pivot[0] + localX * Math.cos(elbowAngle) - localY * Math.sin(elbowAngle);
+  const y = oy + pivot[1] + localX * Math.sin(elbowAngle) + localY * Math.cos(elbowAngle);
   art.style.setProperty('--muzzle-x', `${x / 640 * 100}%`);
   art.style.setProperty('--muzzle-y', `${y / 640 * 100}%`);
 }

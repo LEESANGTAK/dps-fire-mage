@@ -70,3 +70,13 @@ assert.equal(trailPool.length, 96, '고속 연사의 불씨 수를 제한해야 
 assert.ok(trailPool.every(p => p.maxLife <= 0.24));
 vm.runInContext("emitComicTrail(trailShot, 0, 0, 1, trailPool, true)", projectileContext);
 assert.equal(trailPool.length, 96);
+
+assert.ok(Math.abs(armTarget({ ...combat, castingSkill:'fireball', castRemaining:1 }, rest)) < 0.0001);
+assert.equal(armTarget(combat, {kind:'fireball', remaining:0.3, total:0.3}), 0.24);
+let previousAngle = 0.24;
+for(let i=1;i<=300;i++) {
+  const angle = armTarget(combat, {kind:'fireball', remaining:0.3*(1-i/300), total:0.3});
+  assert.ok(Math.abs(angle - previousAngle) < 0.01, '손목 복귀가 연속이어야 합니다.');
+  previousAngle = angle;
+}
+

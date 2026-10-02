@@ -1619,16 +1619,7 @@ function drawSummonsAndAuras(dt) {
     gCtx.restore();
   }
 
-  // 시전 준비도 투사체와 같은 만화풍 이미지로 통일합니다.
-  const isPyroReady = c.castingSkill === 'pyroblast' || (state.grimoires.pyroblast && c.critStreak === 2);
-  if (c.castingSkill || isPyroReady) {
-    const tip = getCasterPos();
-    const charge = c.castingSkill ? Math.max(0, 1 - c.castRemaining / c.castTotal) : 1;
-    drawComicProjectile(ctx, {
-      type: isPyroReady ? 'pyroblast' : 'fireball', radius: (isPyroReady ? 8 : 4) * (0.5 + charge * 0.5),
-      startX: tip.x - 1, startY: tip.y, targetX: tip.x + 1, targetY: tip.y
-    }, tip.x, tip.y, 0.5);
-  }
+  // 화염구는 발사 시에만 생성합니다. 시전 중에는 준비 탄환을 그리지 않습니다.
   // 2. 불의 정령
   const elemLv = state.skillTree.fire_elem || 0;
   if (elemLv > 0) {
