@@ -2887,9 +2887,6 @@ function onMonsterKilled() {
       gainedEssence = getFirstClearEssenceBonus(state.currentStage);
       spawnFloatingText(`👑 보스 격파! 🔥 +${gainedEssence} 정수!`, 'fct-proc', -60);
       playSound('proc');
-      if (data.phase === 1) {
-        switchRightTab('infusion');
-      }
     }
   } else {
     // 반복 처치 시: 보스만 100% 확정 정수 지급, 일반 몬스터는 정수 지급 없음!
