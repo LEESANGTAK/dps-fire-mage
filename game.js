@@ -338,7 +338,75 @@ const EQUIPMENT_LIST = [
 ];
 
 // ==========================================
-// 3-B. 3단계: 제2 자원 '불꽃의 정수' & 고대 마법 부여(Infusion) 데이터
+// 3-B. 스킬 마스터리(숙련도) 무한 연마 데이터 (골드 소모)
+// ==========================================
+const SKILL_MASTERY_LIST = [
+  {
+    id: 'fireball',
+    name: '화염구 숙련',
+    icon: '🔥',
+    baseCost: 10,
+    costScale: 1.15,
+    bonusPerLv: 0.06,
+    desc: '화염구 피해량 +6%'
+  },
+  {
+    id: 'fireblast',
+    name: '불꽃 작렬 숙련',
+    icon: '💥',
+    baseCost: 35,
+    costScale: 1.17,
+    bonusPerLv: 0.08,
+    desc: '불꽃 작렬 피해량 +8%'
+  },
+  {
+    id: 'pyroblast',
+    name: '거대 화염구 숙련',
+    icon: '🌋',
+    baseCost: 120,
+    costScale: 1.19,
+    bonusPerLv: 0.1,
+    desc: '거대 화염구 피해량 +10%'
+  },
+  {
+    id: 'flame_patch',
+    name: '불장판 숙련',
+    icon: '🔥',
+    baseCost: 75,
+    costScale: 1.16,
+    bonusPerLv: 0.07,
+    desc: '불장판 피해량 +7%'
+  },
+  {
+    id: 'meteor',
+    name: '메테오 숙련',
+    icon: '☄️',
+    baseCost: 350,
+    costScale: 1.22,
+    bonusPerLv: 0.12,
+    desc: '메테오 피해량 +12%'
+  }
+];
+
+function getSkillMasteryCost(mastery) {
+  const lv = (state.skillMastery && state.skillMastery[mastery.id]) || 0;
+  return Math.round(mastery.baseCost * Math.pow(mastery.costScale, lv));
+}
+
+function getSkillMasteryMult(skillKey) {
+  const mastery = SKILL_MASTERY_LIST.find((m) => m.id === skillKey);
+  if (!mastery || !state.skillMastery) return 1.0;
+  const lv = state.skillMastery[skillKey] || 0;
+  return 1.0 + lv * mastery.bonusPerLv;
+}
+
+function getAscensionDamageMult() {
+  const count = state.ascensionCount || 0;
+  return Math.pow(2.5, count);
+}
+
+// ==========================================
+// 3-C. 3단계: 제2 자원 '불꽃의 정수' & 고대 마법 부여(Infusion) 데이터
 // ==========================================
 const INFUSION_LIST = [
   {
@@ -475,6 +543,16 @@ const state = {
     primordial_ignition: 0
   },
 
+  ascensionCount: 0,
+  canAscend: false,
+  skillMastery: {
+    fireball: 0,
+    fireblast: 0,
+    pyroblast: 0,
+    flame_patch: 0,
+    meteor: 0
+  },
+
   monster: {
     hp: 120,
     maxHp: 120
@@ -541,7 +619,8 @@ const state = {
 // 5. 스킬 포인트, 스탯 & 요구 DPS 달성 판정
 // ==========================================
 function getEarnedPhaseBossSp() {
-  return Math.floor(state.highestClearedStage / 5);
+  // 이제 보스는 스킬 포인트 대신 정수를 지급하며, 스킬 포인트는 승천을 통해 영구 획득합니다.
+  return 0;
 }
 
 function getSpentSkillPoints() {
@@ -554,7 +633,7 @@ function getSpentSkillPoints() {
 }
 
 function getAvailableSkillPoints() {
-  const total = getEarnedPhaseBossSp() + (state.bonusSkillPoints || 0);
+  const total = (state.ascensionCount || 0) * 1 + (state.bonusSkillPoints || 0);
   return Math.max(0, total - getSpentSkillPoints());
 }
 
@@ -623,6 +702,7 @@ function getPlayerStats() {
   const abyssSpMult = isAbyssUnlocked ? 1.35 : 1.0;
   const abyssEssenceMult = isAbyssUnlocked ? 2.0 : 1.0;
 
+  const ascMult = getAscensionDamageMult();
   const summonMult = 1 + (state.skillTree.legion_sync || 0) * 0.5;
   const infusionSpMult = (1 + azureLv * 0.15) * (1 + totalInfLv * 0.02) * abyssSpMult;
   const goldMult = 1 + alchemyLv * 0.22;
@@ -631,7 +711,7 @@ function getPlayerStats() {
   const siphonChance = ignitionLv * 0.03;
 
   return {
-    sp: Math.round(sp * (1 + bonusPct) * infusionSpMult),
+    sp: Math.round(sp * (1 + bonusPct) * infusionSpMult * ascMult),
     crit,
     haste,
     critDmg,
@@ -641,7 +721,8 @@ function getPlayerStats() {
     goldMult,
     essenceMult,
     igniteMult,
-    siphonChance
+    siphonChance,
+    ascMult
   };
 }
 
@@ -2764,12 +2845,10 @@ function switchRightTab(tabName) {
 }
 
 function getFirstClearEssenceBonus(stageNum) {
-  if (stageNum < 2) return 0;
   const data = getStageData(stageNum);
+  if (!data.isPhaseBoss) return 0; // 일반 몬스터는 정수를 주지 않음!
   const stats = getPlayerStats();
-  const base = data.isPhaseBoss
-    ? Math.max(8, stageNum * 2)
-    : Math.max(2, Math.floor(stageNum * 0.85));
+  const base = Math.max(30, Math.round(stageNum * 6));
   return Math.max(1, Math.round(base * (stats.essenceMult || 1)));
 }
 
@@ -2777,7 +2856,7 @@ function onMonsterKilled() {
   const data = getStageData(state.currentStage);
   const stats = getPlayerStats();
   const isFirstClear = state.currentStage > state.highestClearedStage;
-  const isFirstRagnarosKill = state.currentStage === 20 && !state.campaignCleared;
+  const isRagnarosKill = state.currentStage === 20;
   let totalGold = Math.max(1, Math.round(data.gold * (stats.goldMult || 1)));
   let gainedEssence = 0;
 
@@ -2786,25 +2865,22 @@ function onMonsterKilled() {
   if (isFirstClear) {
     state.highestClearedStage = state.currentStage;
     totalGold += Math.round(data.firstBonus * (stats.goldMult || 1));
-    gainedEssence = getFirstClearEssenceBonus(state.currentStage);
 
     if (data.isPhaseBoss) {
-      spawnFloatingText(`👑 보스 격파! 🌟 +1 SP!`, 'fct-proc', -60);
+      gainedEssence = getFirstClearEssenceBonus(state.currentStage);
+      spawnFloatingText(`👑 보스 격파! 🔥 +${gainedEssence} 정수!`, 'fct-proc', -60);
       playSound('proc');
       if (data.phase === 1) {
-        switchRightTab('tree');
+        switchRightTab('infusion');
       }
     }
   } else {
-    // Stage 2 이상 반복 처치 시: 보스는 100% 확정 드롭, 일반 몬스터는 38% 확률로 불꽃의 정수 드롭
-    if (state.currentStage >= 2) {
-      const dropChance = data.isPhaseBoss ? 1.0 : 0.38;
-      if (Math.random() < dropChance) {
-        const baseDrop = data.isPhaseBoss
-          ? Math.max(2, Math.floor(state.currentStage * 0.5))
-          : Math.max(1, Math.floor(state.currentStage * 0.28));
-        gainedEssence = Math.max(1, Math.round(baseDrop * (stats.essenceMult || 1)));
-      }
+    // 반복 처치 시: 보스만 100% 확정 정수 지급, 일반 몬스터는 정수 지급 없음!
+    if (data.isPhaseBoss) {
+      const baseDrop = Math.max(5, Math.floor(state.currentStage * 0.9));
+      gainedEssence = Math.max(1, Math.round(baseDrop * (stats.essenceMult || 1)));
+    } else {
+      gainedEssence = 0;
     }
   }
 
@@ -2813,8 +2889,9 @@ function onMonsterKilled() {
     state.essence = (state.essence || 0) + gainedEssence;
   }
 
-  if (isFirstRagnarosKill || state.highestClearedStage >= 20) {
+  if (isRagnarosKill || state.highestClearedStage >= 20) {
     state.campaignCleared = true;
+    state.canAscend = true;
     state.unfolded.hallOfFame = true;
   }
 
@@ -2872,6 +2949,9 @@ function onMonsterKilled() {
 let lastHeavyKnockbackTime = 0;
 
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false) {
+  const masteryMult = getSkillMasteryMult(skillKey);
+  rawDamage *= masteryMult;
+
   if (state.cheats && state.cheats.alwaysCrit) {
     if (!isCrit) {
       rawDamage *= getPlayerStats().critDmg;
@@ -3455,7 +3535,29 @@ function updateNotificationBadges() {
     if (badge) badge.classList.toggle('hidden', !canBuy);
   });
 
+  document.querySelectorAll('[data-mastery]').forEach((btn) => {
+    const id = btn.getAttribute('data-mastery');
+    const m = SKILL_MASTERY_LIST.find((x) => x.id === id);
+    if (!m) return;
+    const cost = getSkillMasteryCost(m);
+    const canBuy = state.gold >= cost;
+    if (canBuy) anyShopAffordable = true;
+    btn.disabled = !canBuy;
+    const card = btn.closest('.shop-card');
+    if (card) card.classList.toggle('affordable', canBuy);
+    const badge = btn.querySelector('.noti-badge');
+    if (badge) badge.classList.toggle('hidden', !canBuy);
+  });
+
   setBadge('badge-tab-shop', anyShopAffordable);
+
+  // 4-A. 승천 버튼 노출 및 (!) 배지
+  const canAscendNow = Boolean(state.campaignCleared || state.highestClearedStage >= 20);
+  const ascendBtn = document.getElementById('btn-ascend');
+  if (ascendBtn) {
+    ascendBtn.classList.toggle('unfold-hidden', !canAscendNow);
+  }
+  setBadge('badge-ascend', canAscendNow);
 
   // 4-B. 마법 부여 탭 (!) 배지: 구매 가능한 마법 부여가 있을 때 표시
   let anyInfusionAffordable = false;
@@ -3854,6 +3956,39 @@ function renderShopUI() {
     })
     .join('');
 
+  const masteryContainer = document.getElementById('mastery-shop-list');
+  if (masteryContainer) {
+    masteryContainer.innerHTML = SKILL_MASTERY_LIST.map((m) => {
+      const lv = (state.skillMastery && state.skillMastery[m.id]) || 0;
+      const cost = getSkillMasteryCost(m);
+      const canBuy = state.gold >= cost;
+      const curBonus = (lv * m.bonusPerLv * 100).toFixed(0);
+      const nextBonus = ((lv + 1) * m.bonusPerLv * 100).toFixed(0);
+      const descText = lv === 0
+        ? `${m.desc} (다음: +${nextBonus}%)`
+        : `현재: +${curBonus}% ➔ 다음: +${nextBonus}%`;
+
+      return `
+        <div class="shop-card mastery-card ${canBuy ? 'affordable' : ''}">
+          <div class="shop-card-left">
+            <div class="shop-icon">${m.icon}</div>
+            <div class="shop-info">
+              <div class="shop-title">
+                <span>${m.name}</span>
+                <span class="shop-lv-tag ${lv > 0 ? 'is-max' : ''}">Lv.${lv}</span>
+              </div>
+              <div class="shop-desc">${descText}</div>
+            </div>
+          </div>
+          <button class="shop-buy-btn has-badge-anchor" data-mastery="${m.id}" ${!canBuy ? 'disabled' : ''}>
+            <span>연마 💰 ${fmt(cost)} G</span>
+            <span class="noti-badge ${canBuy ? '' : 'hidden'}">!</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
   updateSkillActionBarVisibility();
   updateNotificationBadges();
 }
@@ -4239,29 +4374,46 @@ function openVictoryModal(isFirstVictory = false) {
   const grid = document.getElementById('victory-stats-grid');
   const titleEl = document.getElementById('victory-modal-title');
   const subEl = document.getElementById('victory-modal-subtitle');
-  const jump20Btn = document.getElementById('btn-victory-jump-20');
+  const bannerTitle = document.getElementById('victory-ascend-title');
+  const bannerDesc = document.getElementById('victory-ascend-desc');
+  const doAscendBtn = document.getElementById('btn-do-ascend');
   if (!modal || !grid) return;
 
   const stats = getPlayerStats();
   const evo = getCurrentFlameEvolution();
   const cleared20 = state.campaignCleared || state.highestClearedStage >= 20;
+  const currentAsc = state.ascensionCount || 0;
+  const nextAscMult = Math.pow(2.5, currentAsc + 1);
 
   if (isFirstVictory) {
     titleEl.textContent = '👑 화염군주 라그나로스 최초 토벌 완료!';
-    subEl.textContent = '불타는 심연의 지배자를 물리치고 아제로스 최고의 대마법사 반열에 올랐습니다!';
+    subEl.textContent = '불타는 심연의 지배자를 물리치고 불사조의 영구 승천 자격을 획득했습니다!';
   } else if (cleared20) {
-    titleEl.textContent = '🏆 대마법사 명예의 전당 & 무한 심연 기록';
-    subEl.textContent = 'Stage 20 라그나로스를 정복하고 끝없는 심연 균열(Stage 21+)을 탐사 중입니다.';
+    titleEl.textContent = `🔥 불사조 승천실 (현재: 제${currentAsc}회차 환생)`;
+    subEl.textContent = 'Stage 20 정복 완료! 언제든 불사조로 승천하여 영구 보너스를 획득하고 다시 질주할 수 있습니다.';
   } else {
     titleEl.textContent = '🏆 대마법사 원정 기록실 (목표: Stage 20)';
-    subEl.textContent = 'Phase 4 최종 보스 [화염군주 라그나로스 (Stage 4-5)]를 토벌하면 무한 심연 축복이 개방됩니다!';
+    subEl.textContent = 'Stage 20 최종 보스 [화염군주 라그나로스]를 토벌하면 불사조 승천 및 특성 포인트가 개방됩니다!';
   }
 
-  if (jump20Btn) {
-    jump20Btn.style.display = state.currentStage === 20 ? 'none' : '';
+  if (bannerTitle && bannerDesc) {
+    bannerTitle.textContent = cleared20
+      ? `🔥 불사조 승천 가능! (제${currentAsc + 1}회차 환생)`
+      : `🔒 불사조 승천 (Stage 20 클리어 시 해금)`;
+    bannerDesc.innerHTML = cleared20
+      ? `지금 승천하면 <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(1)}배 (누적 +150%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
+      : `Phase 4 최종 보스 라그나로스를 처치하면 승천을 통해 스킬 포인트를 얻고 특성을 해금할 수 있습니다!`;
+  }
+
+  if (doAscendBtn) {
+    doAscendBtn.style.display = cleared20 ? '' : 'none';
   }
 
   grid.innerHTML = `
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">현재 승천 회차</span>
+      <span class="victory-stat-val gold">제 ${currentAsc} 회차 (피해량 x${getAscensionDamageMult().toFixed(1)}배)</span>
+    </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">최고 돌파 스테이지</span>
       <span class="victory-stat-val gold">STAGE ${state.highestClearedStage} ${cleared20 ? '👑' : ''}</span>
@@ -4276,7 +4428,7 @@ function openVictoryModal(isFirstVictory = false) {
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">마법 부여 & 특성 투자</span>
-      <span class="victory-stat-val cyan">주입 ${getTotalInfusionLevels()} Lv · 특성 ${getSpentSkillPoints()} SP</span>
+      <span class="victory-stat-val cyan">주입 ${getTotalInfusionLevels()} Lv · 특성 ${getSpentSkillPoints()} SP (보유 ${getAvailableSkillPoints()} SP)</span>
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">누적 토벌 몬스터</span>
@@ -4294,6 +4446,61 @@ function openVictoryModal(isFirstVictory = false) {
 function closeVictoryModal() {
   const modal = document.getElementById('victory-modal');
   if (modal) modal.classList.add('hidden');
+}
+
+function doAscend() {
+  if (!state.campaignCleared && state.highestClearedStage < 20) {
+    spawnFloatingText('🔒 Stage 20을 클리어해야 승천할 수 있습니다!', 'fct-normal', -40);
+    return;
+  }
+
+  closeVictoryModal();
+
+  // 1. 승천 횟수 증가 (영구 +1 SP 및 피해량 x2.5배 배수 누적)
+  state.ascensionCount = (state.ascensionCount || 0) + 1;
+  const ascMult = getAscensionDamageMult();
+
+  // 2. 초기화 진행:
+  state.currentStage = 1;
+  state.gold = 10;
+  // 일반 장비 레벨 초기화
+  for (const k of Object.keys(state.items)) {
+    state.items[k] = 0;
+  }
+  // 스킬 마스터리 초기화
+  if (state.skillMastery) {
+    for (const k of Object.keys(state.skillMastery)) {
+      state.skillMastery[k] = 0;
+    }
+  }
+
+  // 전투 상태 초기화
+  state.combat.castingSkill = null;
+  state.combat.castRemaining = 0;
+  state.combat.gcdRemaining = 0;
+  state.combat.critStreak = 0;
+  state.combat.igniteRem = 0;
+  state.combat.meteorBurnRem = 0;
+  state.combat.flamePatchRem = 0;
+
+  // 3. 연출: 화면 전체 불사조 황금빛 폭발 파티클 및 사운드
+  playSound('proc');
+  playSound('summon_spirit');
+  const casterCenter = getCasterCenter();
+  spawnParticles(casterCenter.x, casterCenter.y, 42, '#fef08a', '#ea580c', 2.0);
+  triggerArenaShake('lg');
+
+  spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(1)}배)`, 'fct-proc', -55, { isBig: true });
+
+  loadStage(1);
+  saveGame();
+  renderShopUI();
+  renderSkillTreeUI();
+  updateLiveHUD();
+  updateNotificationBadges();
+
+  // 특성 트리 탭으로 자동 전환하여 새로 얻은 스킬 포인트를 찍도록 유도!
+  switchRightTab('tree');
 }
 
 // ==========================================
@@ -4680,7 +4887,10 @@ function saveGame() {
       skillTree: state.skillTree,
       grimoires: state.grimoires,
       items: state.items,
-      infusions: state.infusions
+      infusions: state.infusions,
+      ascensionCount: state.ascensionCount,
+      canAscend: state.canAscend,
+      skillMastery: state.skillMastery
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   } catch (e) {}
@@ -4714,6 +4924,9 @@ function loadGame() {
     if (data.grimoires) Object.assign(state.grimoires, data.grimoires);
     if (data.items) Object.assign(state.items, data.items);
     if (data.infusions) Object.assign(state.infusions, data.infusions);
+    if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
+    if (typeof data.canAscend === 'boolean') state.canAscend = data.canAscend;
+    if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
   } catch (e) {}
 }
 
@@ -4935,6 +5148,27 @@ function initEvents() {
     renderShopUI();
   });
 
+  const masteryShopList = document.getElementById('mastery-shop-list');
+  if (masteryShopList) {
+    masteryShopList.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-mastery]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-mastery');
+      const m = SKILL_MASTERY_LIST.find((x) => x.id === id);
+      if (!m) return;
+      const cost = getSkillMasteryCost(m);
+      if (state.gold < cost) return;
+
+      state.gold -= cost;
+      if (!state.skillMastery) state.skillMastery = {};
+      state.skillMastery[id] = (state.skillMastery[id] || 0) + 1;
+      playSound('item_select');
+      spawnFloatingText(`✨ ${m.name} Lv.${state.skillMastery[id]}!`, 'fct-proc', -35, { anchor: 'caster' });
+      saveGame();
+      renderShopUI();
+    });
+  }
+
   const flameBadgeBtn = document.getElementById('flame-evo-badge');
   if (flameBadgeBtn) {
     flameBadgeBtn.addEventListener('click', () => {
@@ -4948,6 +5182,21 @@ function initEvents() {
       }
       playSound('item_select');
       updateFlameEvolutionUI(true);
+    });
+  }
+
+  const ascendBtn = document.getElementById('btn-ascend');
+  if (ascendBtn) {
+    ascendBtn.addEventListener('click', () => {
+      playSound('item_select');
+      openVictoryModal(false);
+    });
+  }
+
+  const doAscendBtn = document.getElementById('btn-do-ascend');
+  if (doAscendBtn) {
+    doAscendBtn.addEventListener('click', () => {
+      doAscend();
     });
   }
 

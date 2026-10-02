@@ -37,6 +37,10 @@
     </div>
 
     <div class="top-controls">
+      <button class="btn-top btn-ascend unfold-hidden has-badge-anchor" id="btn-ascend" title="마지막 몬스터 처치 후 불사조로 승천하여 스킬 포인트와 영구 피해 배수를 획득합니다">
+        <span>🔥 불사조 승천</span>
+        <span class="noti-badge hidden" id="badge-ascend">!</span>
+      </button>
       <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
       <button class="btn-top btn-dev-mode" id="btn-dev-mode" title="개발용 치트 UI를 활성화하거나 닫습니다">🛠️ 개발자 모드</button>
       <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
@@ -336,6 +340,14 @@
           <div class="shop-list" id="grimoire-shop-list"></div>
         </div>
 
+        <div class="shop-section mastery-section" id="mastery-section">
+          <div class="panel-title-row">
+            <span>🔥 스킬 숙련도 연마</span>
+            <span class="section-sub" id="ui-mastery-summary">스킬별 공격력 강화</span>
+          </div>
+          <div class="shop-list" id="mastery-shop-list"></div>
+        </div>
+
         <div class="shop-section item-section" id="item-section">
           <div class="panel-title-row">
             <span>⚔️ 장비 강화</span>
@@ -383,10 +395,10 @@
   <!-- 골드 동전 곡선 비행 흡수 연출 전용 전체화면 오버레이 -->
   <div class="coin-fx-layer" id="coin-fx-layer"></div>
 
-  <!-- 4단계: Stage 20(화염군주 라그나로스) 토벌 시 명예의 전당 엔딩 & 무한 심연 모드 모달 -->
+  <!-- 4단계: Stage 20(화염군주 라그나로스) 토벌 시 승천 & 명예의 전당 모달 -->
   <div class="victory-modal-backdrop hidden" id="victory-modal">
     <div class="victory-modal-card">
-      <div class="victory-crown-badge">👑 VICTORY · HALL OF FAME</div>
+      <div class="victory-crown-badge" id="victory-crown-badge">👑 VICTORY · PHOENIX ASCENSION</div>
       <h2 class="victory-title" id="victory-modal-title">화염군주 라그나로스 토벌 완료!</h2>
       <p class="victory-subtitle" id="victory-modal-subtitle">
         불타는 심연의 지배자를 물리치고 아제로스 최고의 대마법사 반열에 올랐습니다!
@@ -394,19 +406,19 @@
 
       <div class="victory-stats-grid" id="victory-stats-grid"></div>
 
-      <div class="victory-abyss-banner">
-        <div class="abyss-banner-title">🌌 무한 심연 모드 (STAGE 21+) 개방 효과</div>
-        <div class="abyss-banner-desc">
-          Stage 20 클리어 특전으로 <b>최종 주문 공격력 +35%</b> 및 <b>🔥 불꽃의 정수 획득량 2배</b> 축복이 영구 부여됩니다!
+      <div class="victory-abyss-banner ascension-highlight">
+        <div class="abyss-banner-title" id="victory-ascend-title">🔥 불사조 승천 (Phoenix Ascension)</div>
+        <div class="abyss-banner-desc" id="victory-ascend-desc">
+          지금 승천하면 <b>🌟 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 2.5배 영구 증폭</b> 축복을 획득하고 Stage 1로 환생합니다!
         </div>
       </div>
 
       <div class="victory-actions">
-        <button class="victory-btn primary" id="btn-victory-continue">
-          🌌 무한 심연(Stage 21+) 계속 도전하기
+        <button class="victory-btn primary" id="btn-do-ascend">
+          🔥 불사조 승천 진행 (+1 SP & 피해량 x2.5배)
         </button>
-        <button class="victory-btn secondary" id="btn-victory-jump-20" title="Stage 20 최종 보스 라그나로스에게 즉시 이동합니다">
-          🔥 Stage 20 라그나로스 결전장으로 이동
+        <button class="victory-btn secondary" id="btn-victory-continue">
+          🌌 무한 심연 계속 도전하기
         </button>
       </div>
     </div>
