@@ -3603,3 +3603,266 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* ==========================================
+   모바일 & 태블릿 전용 반응형 레이아웃 (@media)
+   ========================================== */
+
+/* 터치 조작 최적화 (더블탭 확대 방지 및 탭 하이라이트 제거) */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  button,
+  .skill-btn,
+  .shop-buy-btn,
+  .wow-talent-node,
+  .right-tab-btn,
+  .btn-top {
+    touch-action: manipulation;
+  }
+}
+
+/* 1024px 이하: 태블릿 및 스마트폰 세로 모드 대응 */
+@media screen and (max-width: 1024px) {
+  body {
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    padding: 8px;
+    gap: 12px;
+    height: auto;
+    min-height: 0;
+  }
+
+  .combat-column {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .combat-arena {
+    min-height: 270px;
+    height: 38vh;
+    max-height: 340px;
+    padding-bottom: 10px;
+  }
+
+  .arena-top-stage-header {
+    top: 48px;
+  }
+
+  .arena-stage-reward-banner {
+    padding: 4px 10px;
+    gap: 8px;
+  }
+
+  .monster-emoji-mini {
+    font-size: 1.3rem;
+  }
+
+  .monster-stage-mini {
+    font-size: 0.82rem;
+  }
+
+  .monster-reward {
+    font-size: 0.82rem;
+  }
+
+  .caster-avatar {
+    bottom: 16px;
+    left: 14px;
+  }
+
+  .dummy-avatar {
+    bottom: 20px;
+    right: 18px;
+  }
+
+  /* 액션바 모바일 터치 최적화 */
+  .action-bar-wrap {
+    width: 100%;
+  }
+
+  .action-bar {
+    width: 100%;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .skill-btn {
+    width: calc((100% - 30px) / 6);
+    max-width: 58px;
+    min-width: 44px;
+    height: 58px;
+  }
+
+  .skill-icon {
+    font-size: 1.3rem;
+  }
+
+  .skill-name {
+    font-size: 0.58rem;
+  }
+
+  .skill-hotkey {
+    font-size: 0.54rem;
+    padding: 1px 3px;
+  }
+
+  .skill-auto-toggle {
+    font-size: 0.52rem;
+    padding: 1px 3px;
+  }
+
+  /* 우측 패널 모바일 전체 너비화 */
+  .shop-column {
+    width: 100%;
+    min-height: 420px;
+    padding-bottom: 30px;
+  }
+
+  .right-tab-pane {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* 768px 이하: 스마트폰 최적화 */
+@media screen and (max-width: 768px) {
+  .top-bar {
+    height: auto;
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .game-title {
+    font-size: 0.96rem;
+  }
+
+  .stats-summary {
+    order: 3;
+    width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stat-pill {
+    padding: 3px 8px;
+    font-size: 0.74rem;
+    flex-shrink: 0;
+  }
+
+  .top-controls {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .btn-top {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+
+  /* 모바일 DPS 미터기 */
+  .dps-meter-container {
+    padding: 4px 8px;
+    gap: 8px;
+  }
+
+  .dps-label {
+    font-size: 0.68rem;
+  }
+
+  .dps-val {
+    font-size: 0.88rem;
+  }
+
+  /* 모달 팝업 모바일 최적화 */
+  .victory-modal-card {
+    max-width: 95vw;
+    padding: 20px 14px;
+    border-radius: 12px;
+  }
+
+  .victory-title {
+    font-size: 1.2rem;
+  }
+
+  .victory-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .victory-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .victory-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .victory-btn {
+    width: 100%;
+    padding: 10px;
+  }
+}
+
+/* 480px 이하: 초소형 스마트폰 (iPhone SE 등 375px 이하 화면) */
+@media screen and (max-width: 480px) {
+  .combat-arena {
+    min-height: 240px;
+    height: 35vh;
+  }
+
+  .dummy-avatar-box {
+    font-size: 3.2rem;
+  }
+
+  .caster-sprite {
+    font-size: 2.7rem;
+  }
+
+  .skill-btn {
+    height: 52px;
+  }
+
+  .skill-icon {
+    font-size: 1.15rem;
+  }
+
+  .skill-name {
+    display: none; /* 초소형 화면에서는 텍스트를 숨기고 아이콘 중심(Visual Over Text)으로 직관화 */
+  }
+
+  .right-tab-btn {
+    padding: 8px 6px;
+    font-size: 0.76rem;
+  }
+
+  .wow-tree-container {
+    min-width: 100%;
+  }
+
+  .wow-node-frame {
+    width: 46px;
+    height: 46px;
+  }
+
+  .wow-node-icon {
+    font-size: 1.45rem;
+  }
+}
+
