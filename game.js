@@ -1117,10 +1117,10 @@ function getCasterCenter() {
 
 function getCasterPos() {
   const arena = document.getElementById('combat-arena').getBoundingClientRect();
-  const caster = document.getElementById('caster-avatar').getBoundingClientRect();
+  const muzzle = document.getElementById('mage-muzzle').getBoundingClientRect();
   return {
-    x: caster.left - arena.left + caster.width * 0.85,
-    y: caster.top - arena.top + caster.height * 0.5
+    x: muzzle.left - arena.left,
+    y: muzzle.top - arena.top
   };
 }
 
@@ -1493,14 +1493,13 @@ function launchCustomProjectile(opts) {
 }
 
 function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
+  // 주 탄환은 발사 자세로 바꾼 손끝에서 출발합니다.
+  if (scaleMult >= 0.9) beginMageGesture(type === 'pyroblast' ? 'pyroblast' : 'fireball');
   const start = getCasterPos();
   const end = getTargetPos();
   const isPyro = type === 'pyroblast';
   const evo = getCurrentFlameEvolution();
 
-  const avatar = document.getElementById('caster-avatar');
-  avatar.classList.add('cast-recoil');
-  setTimeout(() => avatar.classList.remove('cast-recoil'), 120);
 
   if (scaleMult >= 0.9) {
     playFireballSfx('fly', isPyro ? 0.82 : 0.52);
@@ -3405,6 +3404,7 @@ function triggerSkill(skillKey) {
     spawnParticles(pos.x, pos.y, 20, '#fef08a', '#f97316', 1.15);
     const dmg = stats.sp * 0.85 * stats.critDmg;
     dealDamage('fireblast', dmg, true, true);
+    beginMageGesture('fireblast');
     return true;
   }
 
@@ -3442,6 +3442,7 @@ function triggerSkill(skillKey) {
     if (c.combustionCdRem > 0) return false;
 
     c.combustionRem = getCombustionDuration();
+    beginMageGesture('combustion');
     c.combustionCdTotal = Math.max(14, 30 * (1 - stats.cdr));
     c.combustionCdRem = c.combustionCdTotal;
     spawnFloatingText('☀️ 마력 폭주!', 'fct-proc', -45, { anchor: 'caster' });
@@ -4646,6 +4647,7 @@ function gameLoop(nowMs) {
   lastTime = nowMs;
 
   if (state.isPaused) {
+    updateMageMotion(0, true);
     // 팝업/모달 표시 중: 전투 로직(캐스팅, 쿨다운, 도트 틱) 올스톱!
     // 단, 캔버스 파티클/VFX는 부드럽게 유지하여 시각적 생동감 보존
     try {
@@ -4798,6 +4800,7 @@ function gameLoop(nowMs) {
     updateBurningLoopSound();
     runSmartAutoCast();
     updateAndDrawVfx(dt);
+    updateMageMotion(dt, false);
     updateLiveHUD();
   } catch (loopErr) {
     console.error('gameLoop internal error:', loopErr);
