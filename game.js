@@ -2214,6 +2214,15 @@ function updateAndDrawVfx(dt) {
     }
     pt.x += pt.vx * dt;
     pt.y += pt.vy * dt;
+    if (pt.materialChip) {
+      pt.vy += 540 * dt;
+      pt.vx *= Math.exp(-2 * dt);
+      ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(pt.life * 5);
+      ctx.globalAlpha = Math.min(1, (pt.maxLife - pt.life) / .15);
+      ctx.fillStyle = pt.colorCore; ctx.fillRect(-pt.radius, -pt.radius/2, pt.radius*2, pt.radius);
+      ctx.strokeStyle = pt.colorEdge; ctx.lineWidth = 1; ctx.strokeRect(-pt.radius, -pt.radius/2, pt.radius*2, pt.radius);
+      ctx.restore(); continue;
+    }
     if (pt.slimeDrop) {
       drawSlimeDrop(ctx, pt, dt);
       continue;
@@ -2873,11 +2882,9 @@ function onMonsterKilled() {
   }
 
   const pos = getTargetPos();
-  // 하스스톤 영웅 초상화 박살 연출: 이전 몬스터가 9개 다각형 조각으로 갈라져 사방으로 폭발!
-  playSound('monster_destroy');
-  spawnMonsterShatterVfx(pos.x, pos.y, data.emoji, data.isPhaseBoss);
-  spawnParticles(pos.x, pos.y, 28, '#fef08a', '#f97316', 1.45);
-  triggerArenaShake(data.isPhaseBoss ? 'lg' : 'sm');
+  // 재질에 맞는 사망 여운. 생물까지 유리처럼 조각내지 않습니다.
+  spawnMaterialDeath(state.currentStage, data.isPhaseBoss);
+  if (data.isPhaseBoss) triggerArenaShake('lg');
 
   updateDpsMeterUI();
 
@@ -2977,6 +2984,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       { x: slimeBounds.left - arenaBounds.left, y: slimeBounds.top - arenaBounds.top, width: slimeBounds.width });
   }
 
+  prepareMonsterHit(state.currentStage, isCrit || isBigSkill, hitDirectionCounter % 2, isDotTick);
   if (dummyEl && !willKill) {
     const hitClasses = [
       'hit', 'hit-left', 'hit-right', 'crit-hit', 'crit-left', 'crit-right',
@@ -4320,6 +4328,7 @@ function updateStageUI() {
   const monsterArt = document.getElementById('dummy-emoji');
   monsterArt.textContent = data.emoji;
   monsterArt.dataset.art = data.stage <= 2 ? 'slime' : '';
+  configureMonsterMotion(data.stage);
   monsterArt.dataset.variant = data.stage === 2 ? 'blue' : '';
   monsterArt.setAttribute('aria-label', data.name);
   const monsterNameLabel = document.getElementById('monster-name-label');
