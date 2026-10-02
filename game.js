@@ -4189,83 +4189,49 @@ function updateSkillActionBarVisibility() {
   const btn2 = document.getElementById('skill-2');
   const icon2 = document.getElementById('icon-2');
   const charges2 = document.getElementById('charges-2');
-  // 2번 스킬 슬롯도 자동 시전 마법진 해금(또는 불꽃 작렬 습득) 전에는 숨겨서 초반 [1] 화염구에 집중!
-  if (state.grimoires.autocast || state.grimoires.fireblast || state.unfolded.equipShop) {
-    btn2.classList.remove('hidden-slot');
-  } else {
-    btn2.classList.add('hidden-slot');
-  }
-  if (state.grimoires.fireblast) {
-    btn2.classList.remove('locked-skill');
-    icon2.textContent = '💥';
-    charges2.style.display = 'block';
-  } else {
-    btn2.classList.add('locked-skill');
-    icon2.textContent = '🔒';
-    charges2.style.display = 'none';
+  const hasFireblast = Boolean(state.grimoires.fireblast);
+  if (btn2) {
+    btn2.classList.toggle('hidden-slot', !hasFireblast);
+    btn2.classList.toggle('locked-skill', !hasFireblast);
+    if (icon2) icon2.textContent = '💥';
+    if (charges2) charges2.style.display = hasFireblast ? 'block' : 'none';
   }
 
   const btn3 = document.getElementById('skill-3');
   const icon3 = document.getElementById('icon-3');
-  if (state.grimoires.fireblast || state.grimoires.pyroblast) {
-    btn3.classList.remove('hidden-slot');
-  } else {
-    btn3.classList.add('hidden-slot');
-  }
-  if (state.grimoires.pyroblast) {
-    btn3.classList.remove('locked-skill');
-    icon3.textContent = '🌋';
-  } else {
-    btn3.classList.add('locked-skill');
-    icon3.textContent = '🔒';
+  const hasPyroblast = Boolean(state.grimoires.pyroblast);
+  if (btn3) {
+    btn3.classList.toggle('hidden-slot', !hasPyroblast);
+    btn3.classList.toggle('locked-skill', !hasPyroblast);
+    if (icon3) icon3.textContent = '🌋';
+    if (!hasPyroblast) btn3.classList.remove('proc-glow');
   }
 
   const btn4 = document.getElementById('skill-4');
   const icon4 = document.getElementById('icon-4');
-  if (state.grimoires.pyroblast || state.grimoires.combustion) {
-    btn4.classList.remove('hidden-slot');
-  } else {
-    btn4.classList.add('hidden-slot');
-  }
-  if (state.grimoires.combustion) {
-    btn4.classList.remove('locked-skill');
-    icon4.textContent = '☀️';
-  } else {
-    btn4.classList.add('locked-skill');
-    icon4.textContent = '🔒';
+  const hasCombustion = Boolean(state.grimoires.combustion);
+  if (btn4) {
+    btn4.classList.toggle('hidden-slot', !hasCombustion);
+    btn4.classList.toggle('locked-skill', !hasCombustion);
+    if (icon4) icon4.textContent = '☀️';
   }
 
   const btn5 = document.getElementById('skill-5');
   const icon5 = document.getElementById('icon-5');
-  if (state.grimoires.combustion || state.grimoires.meteor) {
-    btn5.classList.remove('hidden-slot');
-  } else {
-    btn5.classList.add('hidden-slot');
-  }
-  if (state.grimoires.meteor) {
-    btn5.classList.remove('locked-skill');
-    icon5.textContent = '☄️';
-  } else {
-    btn5.classList.add('locked-skill');
-    icon5.textContent = '🔒';
+  const hasMeteor = Boolean(state.grimoires.meteor);
+  if (btn5) {
+    btn5.classList.toggle('hidden-slot', !hasMeteor);
+    btn5.classList.toggle('locked-skill', !hasMeteor);
+    if (icon5) icon5.textContent = '☄️';
   }
 
   const btn6 = document.getElementById('skill-6');
   const icon6 = document.getElementById('icon-6');
-  if (btn6 && icon6) {
-    const hasFlamePatch = (state.skillTree.flame_patch || 0) > 0;
-    if (hasFlamePatch || state.unfolded.skillTree) {
-      btn6.classList.remove('hidden-slot');
-    } else {
-      btn6.classList.add('hidden-slot');
-    }
-    if (hasFlamePatch) {
-      btn6.classList.remove('locked-skill');
-      icon6.textContent = '🔥';
-    } else {
-      btn6.classList.add('locked-skill');
-      icon6.textContent = '🔒';
-    }
+  const hasFlamePatch = Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0);
+  if (btn6) {
+    btn6.classList.toggle('hidden-slot', !hasFlamePatch);
+    btn6.classList.toggle('locked-skill', !hasFlamePatch);
+    if (icon6) icon6.textContent = '🔥';
   }
 
   const autoBtn = document.getElementById('btn-auto-cast');
@@ -4557,9 +4523,13 @@ function doAscend() {
   state.combat.castRemaining = 0;
   state.combat.gcdRemaining = 0;
   state.combat.critStreak = 0;
+  state.combat.streakTimer = 0;
   state.combat.igniteRem = 0;
   state.combat.meteorBurnRem = 0;
   state.combat.flamePatchRem = 0;
+
+  const s3 = document.getElementById('skill-3');
+  if (s3) s3.classList.remove('proc-glow');
 
   // 3. 연출: 화면 전체 불사조 황금빛 폭발 파티클 및 웅장한 승천 사운드
   playSound('proc');
@@ -4864,10 +4834,13 @@ function updateLiveHUD() {
     document.getElementById('skill-2').classList.remove('proc-glow');
   }
 
-  if (state.grimoires.pyroblast) {
-    setRadialSweep(document.getElementById('gcd-3'), c.critStreak === 2 ? 0 : c.gcdRemaining, c.gcdTotal, false);
-    // 원래 시전시간이 있는 [3] 거대 화염구가 연쇄 폭발 시너지로 즉시 시전 가능할 때 테두리의 얇은 선을 따라 빛나는 와우 프록 효과 활성화
-    document.getElementById('skill-3').classList.toggle('proc-glow', c.critStreak === 2);
+  const btn3 = document.getElementById('skill-3');
+  if (btn3) {
+    const isPyroProc = Boolean(state.grimoires.pyroblast && c.critStreak === 2);
+    btn3.classList.toggle('proc-glow', isPyroProc);
+    if (state.grimoires.pyroblast) {
+      setRadialSweep(document.getElementById('gcd-3'), c.critStreak === 2 ? 0 : c.gcdRemaining, c.gcdTotal, false);
+    }
   }
 
   if (state.grimoires.combustion) {
