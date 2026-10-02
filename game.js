@@ -483,6 +483,7 @@ const state = {
   campaignCleared: false,
   autoCast: false,
   autoAdvance: true,
+  isPaused: false,
   skillAuto: {
     fireball: true,
     fireblast: true,
@@ -2930,8 +2931,22 @@ function onMonsterKilled() {
   updateDpsMeterUI();
 
   if (isFirstRagnarosKill) {
-    openVictoryModal(true);
-    loadStage(state.currentStage);
+    // 하스스톤 스타일 라그나로스 대폭발 & 드라마틱 여운 (Breathing Room)
+    state.isPaused = true;
+    playSound('proc');
+    spawnFloatingText('👑 화염군주 라그나로스 최초 토벌!', 'fct-crit', -60, { isBig: true });
+
+    // 1.3초간 보스 파괴 연출과 진동 여운을 감상할 충분한 호흡을 둔 뒤 웅장하게 승천 모달 개방!
+    setTimeout(() => {
+      openVictoryModal(true);
+    }, 1300);
+
+    saveGame();
+    renderShopUI();
+    renderInfusionUI();
+    renderSkillTreeUI();
+    updateNotificationBadges();
+    return;
   } else if (state.autoAdvance !== false && canAdvanceToNextStage()) {
     // 목표 DPS 달성 및 몬스터 1회 이상 처치 완료 시 다음 도전으로 자동 진입!
     loadStage(state.currentStage + 1);
@@ -4473,11 +4488,26 @@ function openVictoryModal(isFirstVictory = false) {
   `;
 
   modal.classList.remove('hidden');
+  state.isPaused = true;
+  playSound('proc');
+
+  const card = modal.querySelector('.victory-modal-card');
+  if (card) {
+    card.classList.remove('hs-victory-pop');
+    void card.offsetWidth;
+    card.classList.add('hs-victory-pop');
+  }
 }
 
 function closeVictoryModal() {
   const modal = document.getElementById('victory-modal');
   if (modal) modal.classList.add('hidden');
+  state.isPaused = false;
+
+  // 보스 토벌 후 몬스터가 없는 상태라면 정상 소환
+  if (state.monster.hp <= 0) {
+    loadStage(state.currentStage);
+  }
 }
 
 function doAscend() {
@@ -4487,6 +4517,7 @@ function doAscend() {
   }
 
   closeVictoryModal();
+  state.isPaused = false;
 
   // 1. 최고 도달 기록 영구 보존 및 승천 횟수 증가 (영구 +1 SP 및 피해량 배수 누적)
   state.recordHighestStage = Math.max(state.recordHighestStage || 0, state.highestClearedStage);
@@ -4561,6 +4592,16 @@ let uiRefreshAccum = 0;
 function gameLoop(nowMs) {
   const dt = Math.min(0.1, (nowMs - lastTime) / 1000);
   lastTime = nowMs;
+
+  if (state.isPaused) {
+    // 팝업/모달 표시 중: 전투 로직(캐스팅, 쿨다운, 도트 틱) 올스톱!
+    // 단, 캔버스 파티클/VFX는 부드럽게 유지하여 시각적 생동감 보존
+    try {
+      updateAndDrawVfx(dt);
+    } catch (e) {}
+    requestAnimationFrame(gameLoop);
+    return;
+  }
 
   state.playTimeSec = (state.playTimeSec || 0) + dt;
 
