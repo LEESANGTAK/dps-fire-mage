@@ -1799,10 +1799,16 @@ function updateAndDrawVfx(dt) {
       continue;
     }
 
-    // 곡선 없이 완전한 직선(Linear) 보간으로 비행
-    const t = p.progress;
-    const x = p.startX + (p.targetX - p.startX) * t;
-    const y = p.startY + (p.targetY - p.startY) * t;
+    // 12대 애니메이션 원칙(호 Arcs & 추진 가속 Ease-In) 적용:
+    // 1) 가속도: 출발 시 마력이 방출되어 살짝 가속하며 타격 지점에 내리꽂힘
+    // 2) 호(Arc): 기계적 1자 직선 대신 자연스러운 상향 호를 그리며 비행
+    const rawP = Math.min(1, Math.max(0, p.progress));
+    const easeT = isPyro ? Math.pow(rawP, 1.25) : Math.pow(rawP, 1.12);
+    const arcHeight = isPyro ? -15 : -8;
+    const arcOffset = Math.sin(rawP * Math.PI) * arcHeight;
+
+    const x = p.startX + (p.targetX - p.startX) * easeT;
+    const y = p.startY + (p.targetY - p.startY) * easeT + arcOffset;
 
     if (isPyro) {
       const trailCount = p.evoTier >= 3 ? 2 : 1;

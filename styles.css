@@ -428,12 +428,33 @@ body {
   border-color: #fde047;
   color: #fff;
   box-shadow: 0 0 14px rgba(251, 191, 36, 0.55);
-  animation: pulseNextStage 0.8s infinite alternate;
+  animation: pulseNextStage 1.4s infinite cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes pulseNextStage {
-  from { transform: scale(1); box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
-  to { transform: scale(1.04); box-shadow: 0 0 20px rgba(255, 107, 43, 0.85); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+  }
+  14% {
+    /* 1차 쿵! (빠른 팽창 및 탄력 오버슈트) */
+    transform: scale(1.08) translateY(-1px);
+    box-shadow: 0 0 24px rgba(255, 107, 43, 0.95), 0 0 12px #fde047;
+  }
+  28% {
+    transform: scale(1.02);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.6);
+  }
+  42% {
+    /* 2차 쾅! */
+    transform: scale(1.06) translateY(-0.5px);
+    box-shadow: 0 0 20px rgba(255, 107, 43, 0.85);
+  }
+  60%, 100% {
+    /* 여운 감속 */
+    transform: scale(1) translateY(0);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+  }
 }
 
 .stage-center-info {
@@ -630,7 +651,7 @@ body {
   height: 100%;
   width: 100%;
   background: linear-gradient(90deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
-  transition: width 0.08s linear;
+  transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hp-bar-text {
@@ -874,8 +895,8 @@ body {
 }
 
 .casting-orb.active {
-  opacity: 0.9;
-  animation: orbChargePulse 0.28s infinite alternate;
+  opacity: 0.95;
+  animation: orbChargePulse 0.38s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 .casting-orb.pyro-ready {
@@ -886,17 +907,37 @@ body {
   height: 36px;
   background: radial-gradient(circle, #ffffff 0%, #fef08a 32%, #f97316 64%, #dc2626 88%, transparent 100%) !important;
   box-shadow: 0 0 24px #fde047, 0 0 42px #ef4444 !important;
-  animation: pyroOrbChargePulse 0.18s infinite alternate;
+  animation: pyroOrbChargePulse 0.26s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 @keyframes orbChargePulse {
-  from { transform: scale(0.78); }
-  to { transform: scale(1.08); }
+  0% {
+    transform: scale(0.72) rotate(0deg);
+    filter: brightness(1.1);
+  }
+  50% {
+    transform: scale(1.15) rotate(180deg);
+    filter: brightness(1.5) drop-shadow(0 0 14px #f97316);
+  }
+  100% {
+    transform: scale(0.72) rotate(360deg);
+    filter: brightness(1.1);
+  }
 }
 
 @keyframes pyroOrbChargePulse {
-  from { transform: scale(1.05); }
-  to { transform: scale(1.42); }
+  0% {
+    transform: scale(0.95) rotate(0deg);
+    filter: brightness(1.2);
+  }
+  50% {
+    transform: scale(1.38) rotate(180deg);
+    filter: brightness(1.8) drop-shadow(0 0 26px #fde047);
+  }
+  100% {
+    transform: scale(0.95) rotate(360deg);
+    filter: brightness(1.2);
+  }
 }
 
 .caster-label {
@@ -1066,94 +1107,143 @@ body {
 
 @keyframes monsterHitJolt {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1, 1);
     filter: brightness(1);
   }
-  30% {
-    transform: translate3d(9px, -2px, 0) scale(0.93) rotate(4deg);
-    filter: brightness(1.35);
+  18% {
+    /* 1. 스쿼시 (충격 압축) */
+    transform: translate3d(8px, -2px, 0) scale(1.14, 0.86) rotate(3deg);
+    filter: brightness(1.45);
+  }
+  48% {
+    /* 2. 스트레치 (밀려남) */
+    transform: translate3d(11px, -3px, 0) scale(0.94, 1.06) rotate(4deg);
+    filter: brightness(1.2);
+  }
+  78% {
+    /* 3. 팔로스루 (오버슈트 반동) */
+    transform: translate3d(-3px, 1px, 0) scale(1.03, 0.97) rotate(-1.5deg);
+    filter: brightness(1);
   }
   100% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
   }
 }
 
 @keyframes monsterCritJolt {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1, 1);
     filter: brightness(1);
   }
-  28% {
-    transform: translate3d(16px, -4px, 0) scale(0.9, 1.08) rotate(7deg);
-    filter: brightness(1.65);
+  16% {
+    /* 1. 폭발적 스쿼시 (극단적 충격 압축) */
+    transform: translate3d(18px, -5px, 0) scale(1.28, 0.74) rotate(8deg);
+    filter: brightness(1.85) saturate(1.4);
   }
-  65% {
-    transform: translate3d(-3px, 1px, 0) scale(1.03) rotate(-2deg);
+  44% {
+    /* 2. 공중 스트레치 (비행 늘어남) */
+    transform: translate3d(24px, -7px, 0) scale(0.86, 1.18) rotate(11deg);
+    filter: brightness(1.4);
+  }
+  72% {
+    /* 3. 팔로스루 오버슈트 (반대편으로 튕김) */
+    transform: translate3d(-5px, 2px, 0) scale(1.06, 0.95) rotate(-3deg);
+    filter: brightness(1.1);
+  }
+  88% {
+    /* 4. 2차 감쇠 진동 */
+    transform: translate3d(2px, -1px, 0) scale(0.98, 1.02) rotate(1deg);
   }
   100% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
   }
 }
 
 @keyframes monsterKnockbackPyro {
   0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
   }
-  22% {
-    transform: translate3d(38px, -8px, 0) scale(0.84, 1.14) rotate(16deg);
-    filter: brightness(2) saturate(1.4);
+  14% {
+    /* 폭발 충격 강타 스쿼시 */
+    transform: translate3d(28px, -4px, 0) scale(1.34, 0.7) rotate(12deg);
+    filter: brightness(2.1) saturate(1.5);
   }
-  52% {
-    transform: translate3d(26px, -3px, 0) scale(0.94, 1.05) rotate(10deg);
-    filter: brightness(1.35);
+  38% {
+    /* 고속 비행 스트레치 */
+    transform: translate3d(46px, -10px, 0) scale(0.8, 1.25) rotate(18deg);
+    filter: brightness(1.6);
   }
-  78% {
-    transform: translate3d(-6px, 2px, 0) scale(1.04, 0.97) rotate(-3deg);
+  64% {
+    /* 착지 충격 2차 압축 */
+    transform: translate3d(16px, 1px, 0) scale(1.12, 0.9) rotate(6deg);
+    filter: brightness(1.25);
+  }
+  82% {
+    /* 탄력 리바운드 오버슈트 */
+    transform: translate3d(-6px, 2px, 0) scale(0.96, 1.04) rotate(-3.5deg);
   }
   100% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
   }
 }
 
 @keyframes monsterKnockbackMeteor {
   0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
   }
-  20% {
-    transform: translate3d(32px, 16px, 0) scale(1.22, 0.76) rotate(14deg);
-    filter: brightness(2.2) contrast(1.2);
+  14% {
+    /* 지면 강타 극단적 수직 압축 */
+    transform: translate3d(16px, 24px, 0) scale(1.45, 0.6) rotate(12deg);
+    filter: brightness(2.4) contrast(1.3);
   }
-  48% {
-    transform: translate3d(20px, -10px, 0) scale(0.9, 1.1) rotate(8deg);
-    filter: brightness(1.4);
+  36% {
+    /* 지면 반동으로 공중 솟구침 스트레치 */
+    transform: translate3d(32px, -14px, 0) scale(0.82, 1.28) rotate(16deg);
+    filter: brightness(1.5);
   }
-  76% {
-    transform: translate3d(-5px, 3px, 0) scale(1.04, 0.96) rotate(-3deg);
+  62% {
+    /* 재착지 충격 흡수 */
+    transform: translate3d(10px, 6px, 0) scale(1.15, 0.88) rotate(5deg);
+    filter: brightness(1.2);
+  }
+  82% {
+    /* 지진 여운 팔로스루 오버슈트 */
+    transform: translate3d(-6px, 1px, 0) scale(0.97, 1.03) rotate(-3deg);
   }
   100% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
     filter: brightness(1);
   }
 }
 
 @keyframes monsterRespawnPop {
   0% {
-    transform: scale(0.28);
-    opacity: 0.25;
-    filter: brightness(1.9);
+    /* 1. 바닥에서 솟구치며 수직 스트레치 */
+    transform: translateY(32px) scale(0.3, 1.7);
+    opacity: 0;
+    filter: brightness(2.2);
   }
-  62% {
-    transform: scale(1.09);
+  38% {
+    /* 2. 착지하며 쿵 하고 눌리는 스쿼시 */
+    transform: translateY(-4px) scale(1.28, 0.76);
     opacity: 1;
-    filter: brightness(1.25);
+    filter: brightness(1.4);
+  }
+  65% {
+    /* 3. 젤리처럼 공중 반동 */
+    transform: translateY(3px) scale(0.9, 1.14);
+  }
+  84% {
+    /* 4. 미세 출렁임 */
+    transform: translateY(-1px) scale(1.04, 0.97);
   }
   100% {
-    transform: scale(1);
+    transform: translateY(0) scale(1, 1);
     opacity: 1;
     filter: brightness(1);
   }
@@ -1462,17 +1552,20 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: transform 0.08s, border-color 0.15s;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease, box-shadow 0.15s ease;
   overflow: hidden;
 }
 
 .skill-btn:hover:not(.locked-skill) {
-  border-color: #94a3b8;
+  border-color: #fbbf24;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55), 0 0 12px rgba(251, 191, 36, 0.35);
 }
 
 .skill-btn:active:not(.locked-skill),
 .skill-btn.pressed {
-  transform: scale(0.92);
+  transform: scale(0.9) translateY(2px);
+  transition-duration: 0.05s;
 }
 
 .skill-btn.locked-skill {
@@ -1976,12 +2069,18 @@ body {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: all 0.12s;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease, box-shadow 0.15s ease;
 }
 
 .shop-buy-btn:hover:not(:disabled) {
-  filter: brightness(1.12);
-  transform: translateY(-1px);
+  filter: brightness(1.16);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.45);
+}
+
+.shop-buy-btn:active:not(:disabled) {
+  transform: scale(0.92) translateY(1px);
+  transition-duration: 0.04s;
 }
 
 .shop-buy-btn:disabled {
@@ -2682,7 +2781,7 @@ body {
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.85);
   z-index: 30;
   pointer-events: none;
-  animation: notiPopBounce 0.65s infinite alternate cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: notiPopBounce 0.72s infinite ease-in-out;
 }
 
 .noti-badge.hidden {
@@ -2690,11 +2789,17 @@ body {
 }
 
 @keyframes notiPopBounce {
-  from {
-    transform: scale(0.95) translateY(0);
+  0%, 100% {
+    /* 바닥 접촉 시 순간적인 수평 스쿼시(Squash) */
+    transform: translateY(0) scale(1.18, 0.84);
   }
-  to {
-    transform: scale(1.14) translateY(-2px);
+  45% {
+    /* 공중 상승 시 수직 스트레치(Stretch) */
+    transform: translateY(-6px) scale(0.88, 1.18);
+  }
+  75% {
+    /* 하강 시 복원 */
+    transform: translateY(-2px) scale(1.02, 0.98);
   }
 }
 
@@ -2999,12 +3104,18 @@ body {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: all 0.12s;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease, box-shadow 0.15s ease;
 }
 
 .inf-buy-btn:hover:not(:disabled) {
-  filter: brightness(1.14);
-  transform: translateY(-1px);
+  filter: brightness(1.16);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.45);
+}
+
+.inf-buy-btn:active:not(:disabled) {
+  transform: scale(0.92) translateY(1px);
+  transition-duration: 0.04s;
 }
 
 .inf-buy-btn:disabled {
@@ -3087,21 +3198,30 @@ body {
 }
 
 .gold-pill.gold-absorb-pulse {
-  animation: goldPillAbsorb 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: goldPillAbsorb 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes goldPillAbsorb {
   0% {
-    transform: scale(1);
+    transform: scale(1, 1);
   }
-  45% {
-    transform: scale(1.14);
+  24% {
+    /* 동전 충격 수직 스쿼시 (Squash) */
+    transform: scale(1.22, 0.82);
     border-color: #fef08a;
-    background: rgba(251, 191, 36, 0.36);
-    box-shadow: 0 0 18px rgba(251, 191, 36, 0.85);
+    background: rgba(251, 191, 36, 0.42);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.95);
+  }
+  62% {
+    /* 반동 수직 스트레치 (Stretch) */
+    transform: scale(0.95, 1.12);
+  }
+  82% {
+    /* 미세 출렁임 */
+    transform: scale(1.03, 0.98);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1, 1);
   }
 }
 
@@ -3335,21 +3455,30 @@ body {
 }
 
 .essence-pill.essence-absorb-pulse {
-  animation: essencePillAbsorb 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: essencePillAbsorb 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes essencePillAbsorb {
   0% {
-    transform: scale(1);
+    transform: scale(1, 1);
   }
-  45% {
-    transform: scale(1.16);
+  24% {
+    /* 마력 정수 흡수 수직 압축 (Squash) */
+    transform: scale(1.24, 0.8);
     border-color: #e0f2fe;
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.48) 0%, rgba(147, 51, 234, 0.48) 100%);
-    box-shadow: 0 0 22px rgba(56, 189, 248, 0.95);
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.58) 0%, rgba(147, 51, 234, 0.58) 100%);
+    box-shadow: 0 0 26px rgba(56, 189, 248, 0.95), 0 0 14px rgba(168, 85, 247, 0.85);
+  }
+  62% {
+    /* 마력 반동 수직 스트레치 (Stretch) */
+    transform: scale(0.94, 1.14);
+  }
+  82% {
+    /* 미세 출렁임 */
+    transform: scale(1.03, 0.98);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1, 1);
   }
 }
 
