@@ -402,7 +402,7 @@ function getSkillMasteryMult(skillKey) {
 
 function getAscensionDamageMult() {
   const count = state.ascensionCount || 0;
-  return Math.pow(2.5, count);
+  return Math.pow(1.5, count);
 }
 
 function isSkillUnlocked(skillId) {
@@ -475,6 +475,7 @@ const state = {
   pendingEssence: 0,
   currentStage: 1,
   highestClearedStage: 0,
+  recordHighestStage: 0,
   dpsClearedStage: 0,
   maxDps: 0,
   playTimeSec: 0,
@@ -4412,7 +4413,7 @@ function openVictoryModal(isFirstVictory = false) {
   const evo = getCurrentFlameEvolution();
   const cleared20 = state.campaignCleared || state.highestClearedStage >= 20;
   const currentAsc = state.ascensionCount || 0;
-  const nextAscMult = Math.pow(2.5, currentAsc + 1);
+  const nextAscMult = Math.pow(1.5, currentAsc + 1);
 
   if (isFirstVictory) {
     titleEl.textContent = '👑 화염군주 라그나로스 최초 토벌 완료!';
@@ -4430,7 +4431,7 @@ function openVictoryModal(isFirstVictory = false) {
       ? `🔥 불사조 승천 가능! (제${currentAsc + 1}회차 환생)`
       : `🔒 불사조 승천 (Stage 20 클리어 시 해금)`;
     bannerDesc.innerHTML = cleared20
-      ? `지금 승천하면 <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(1)}배 (누적 +150%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
+      ? `지금 승천하면 <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(2)}배 (누적 +50%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
       : `Phase 4 최종 보스 라그나로스를 처치하면 승천을 통해 스킬 포인트를 얻고 특성을 해금할 수 있습니다!`;
   }
 
@@ -4438,14 +4439,16 @@ function openVictoryModal(isFirstVictory = false) {
     doAscendBtn.style.display = cleared20 ? '' : 'none';
   }
 
+  const maxStageRecord = Math.max(state.highestClearedStage, state.recordHighestStage || 0);
+
   grid.innerHTML = `
     <div class="victory-stat-item">
       <span class="victory-stat-label">현재 승천 회차</span>
-      <span class="victory-stat-val gold">제 ${currentAsc} 회차 (피해량 x${getAscensionDamageMult().toFixed(1)}배)</span>
+      <span class="victory-stat-val gold">제 ${currentAsc} 회차 (피해량 x${getAscensionDamageMult().toFixed(2)}배)</span>
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">최고 돌파 스테이지</span>
-      <span class="victory-stat-val gold">STAGE ${state.highestClearedStage} ${cleared20 ? '👑' : ''}</span>
+      <span class="victory-stat-val gold">STAGE ${maxStageRecord} ${cleared20 ? '👑' : ''}</span>
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">최고 달성 DPS</span>
@@ -4485,23 +4488,38 @@ function doAscend() {
 
   closeVictoryModal();
 
-  // 1. 승천 횟수 증가 (영구 +1 SP 및 피해량 x2.5배 배수 누적)
+  // 1. 최고 도달 기록 영구 보존 및 승천 횟수 증가 (영구 +1 SP 및 피해량 배수 누적)
+  state.recordHighestStage = Math.max(state.recordHighestStage || 0, state.highestClearedStage);
   state.ascensionCount = (state.ascensionCount || 0) + 1;
   const ascMult = getAscensionDamageMult();
 
-  // 2. 초기화 진행:
+  // 2. 초기화 진행 (방안 A: 단기 진행도, 마도서 스킬, 초반 언폴딩 리셋)
   state.currentStage = 1;
+  state.highestClearedStage = 0;
   state.gold = 10;
+
   // 일반 장비 레벨 초기화
   for (const k of Object.keys(state.items)) {
     state.items[k] = 0;
   }
+
   // 스킬 마스터리 초기화
   if (state.skillMastery) {
     for (const k of Object.keys(state.skillMastery)) {
       state.skillMastery[k] = 0;
     }
   }
+
+  // 마도서(스킬) 초기화: 화염구 단독 상태로 리셋하여 2회차 초고속 재해금 스피드런 쾌감 제공!
+  for (const k of Object.keys(state.grimoires)) {
+    state.grimoires[k] = false;
+  }
+  state.autoCast = false;
+
+  // 초반 언폴딩 상태 초기화 (마법부여, 특성트리, 명예의전당은 영구 유지)
+  state.unfolded.grimoireShop = false;
+  state.unfolded.stageNav = false;
+  state.unfolded.equipShop = false;
 
   // 전투 상태 초기화
   state.combat.castingSkill = null;
@@ -4519,9 +4537,11 @@ function doAscend() {
   spawnParticles(casterCenter.x, casterCenter.y, 42, '#fef08a', '#ea580c', 2.0);
   triggerArenaShake('lg');
 
-  spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(1)}배)`, 'fct-proc', -55, { isBig: true });
+  spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(2)}배)`, 'fct-proc', -55, { isBig: true });
 
   loadStage(1);
+  checkAndTriggerUnfolds(true);
+  updateSkillActionBarVisibility();
   saveGame();
   renderShopUI();
   renderSkillTreeUI();
@@ -4898,6 +4918,7 @@ function saveGame() {
       essence: state.essence,
       currentStage: state.currentStage,
       highestClearedStage: state.highestClearedStage,
+      recordHighestStage: state.recordHighestStage || 0,
       dpsClearedStage: state.dpsClearedStage,
       maxDps: state.maxDps,
       playTimeSec: state.playTimeSec,
@@ -4934,6 +4955,7 @@ function loadGame() {
     if (typeof data.essence === 'number') state.essence = data.essence;
     if (typeof data.currentStage === 'number') state.currentStage = data.currentStage;
     if (typeof data.highestClearedStage === 'number') state.highestClearedStage = data.highestClearedStage;
+    if (typeof data.recordHighestStage === 'number') state.recordHighestStage = data.recordHighestStage;
     if (typeof data.dpsClearedStage === 'number') state.dpsClearedStage = data.dpsClearedStage;
     if (typeof data.maxDps === 'number') state.maxDps = data.maxDps;
     if (typeof data.playTimeSec === 'number') state.playTimeSec = data.playTimeSec;
