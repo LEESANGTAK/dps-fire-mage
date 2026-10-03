@@ -281,3 +281,19 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .infusion-card.maxed-infusion { background:#29232b; }
 .inf-sub-hint { color:#cfc5b8; }
 .inf-buy-btn:disabled { color:#b8c4d3; }
+
+.comic-icon[data-sheet='essence'] { background:url('assets/art/comic-essence.png') center / contain no-repeat; }
+.flying-essence-orb { background:url('assets/art/comic-essence.png') center / contain no-repeat;border:0;box-shadow:none;border-radius:0;filter:drop-shadow(0 0 5px #4fc9ff80); }
+.flying-essence-orb::after { content:none; }
+.skill-charges { background:#140e16e6;border:1px solid #ad8150;border-radius:4px;padding:0 3px;bottom:16px; }
+.skill-tooltip { position:fixed;z-index:10000;width:min(300px,calc(100vw - 16px));padding:12px 14px;border:1px solid #b18a59;border-radius:8px;background:#211b25;color:#f0e5d2;box-shadow:0 6px 20px #0009;line-height:1.5;font-size:.78rem;animation:skill-tooltip-enter .14s cubic-bezier(.16,1,.3,1); }
+.skill-tooltip[hidden] { display:none; }
+.skill-tooltip-name { color:#ffe1a0;font-size:.92rem; }
+.skill-tooltip dl { margin:8px 0;border-top:1px solid #554338;padding-top:7px; }
+.skill-tooltip dl div { display:flex;gap:12px;justify-content:space-between;margin:3px 0; }
+.skill-tooltip dt { color:#bdb2a7;white-space:nowrap; }
+.skill-tooltip dd { margin:0;text-align:right;font-variant-numeric:tabular-nums; }
+.skill-tooltip p { margin:8px 0; }
+.skill-tooltip small { display:block;color:#bdb2a7;font-size:.65rem; }
+@keyframes skill-tooltip-enter { from { opacity:0;transform:translateY(4px) scale(.98); } to { opacity:1;transform:translateY(0) scale(1); } }
+@media(prefers-reduced-motion:reduce) { .skill-tooltip { animation:none; } }

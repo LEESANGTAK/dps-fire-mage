@@ -3,6 +3,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const actor={dataset:{},style:{},textContent:'🐀'};
 const context=vm.createContext({document:{getElementById:id=>id==='dummy-emoji'?actor:{clientHeight:126},addEventListener(){}},console});
 vm.runInContext(fs.readFileSync('comic-monster-frames.js','utf8')+fs.readFileSync('comic-assets.js','utf8'),context);
+assert.match(vm.runInContext("comicIconHTML('🔹')",context),/data-sheet="essence"/,'정수는 화염 스킬 아틀라스와 다른 이미지로 표시해야 합니다');
 for(let stage=3;stage<=30;stage++){
  vm.runInContext(`configureComicMonster(${stage})`,context);
  assert.equal(actor.dataset.art,'monster');assert.equal(actor.textContent,'');

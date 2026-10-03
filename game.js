@@ -480,7 +480,7 @@ const INFUSION_LIST = [
     maxLv: 10,
     baseCost: 5,
     costScale: 1.55,
-    desc: (lv) => `화상(도트) 피해량 +${lv * 25}% · 치명타 시 ${lv * 3}% 확률로 🔥정수 +1 추출`
+    desc: (lv) => `화상(도트) 피해량 +${lv * 25}% · 치명타 시 ${lv * 3}% 확률로 🔹정수 +1 추출`
   }
 ];
 
@@ -2638,7 +2638,7 @@ function spawnEssenceFlight(totalEssence) {
 
     const el = document.createElement('div');
     el.className = 'flying-essence-orb';
-    el.textContent = '🔥';
+    el.textContent = '';
     el.style.opacity = '0';
     layer.appendChild(el);
 
@@ -2848,7 +2848,7 @@ function onMonsterKilled() {
 
     if (data.isPhaseBoss) {
       gainedEssence = getFirstClearEssenceBonus(state.currentStage);
-      spawnFloatingText(`👑 보스 격파! 🔥 +${gainedEssence} 정수!`, 'fct-proc', -60);
+      spawnFloatingText(`👑 보스 격파! 🔹 +${gainedEssence} 정수!`, 'fct-proc', -60);
       playSound('proc');
     }
   } else {
@@ -3861,10 +3861,10 @@ function renderInfusionUI() {
   const totalLv = getTotalInfusionLevels();
 
   const tabBadge = document.getElementById('ui-tab-essence-badge');
-  if (tabBadge) tabBadge.textContent = `${fmt(ess)} 🔥`;
+  if (tabBadge) tabBadge.textContent = `${fmt(ess)} 🔹`;
 
   const headerBox = document.getElementById('ui-infusion-essence-box');
-  if (headerBox) headerBox.textContent = `🔥 ${fmt(ess)} 정수`;
+  if (headerBox) headerBox.textContent = `🔹 ${fmt(ess)} 정수`;
 
   const resBar = document.getElementById('ui-infusion-resonance');
   if (resBar) {
@@ -3906,7 +3906,7 @@ function renderInfusionUI() {
           </div>
         </div>
         <button class="inf-buy-btn has-badge-anchor ${isMax ? 'done-btn' : ''}" data-infusion="${inf.id}" ${isMax || !canBuy ? 'disabled' : ''}>
-          <span>${isMax ? '✔ 마스터' : `주입 🔥 ${fmt(cost)}`}</span>
+          <span>${isMax ? '✔ 마스터' : `주입 🔹 ${fmt(cost)}`}</span>
           <span class="noti-badge ${canBuy ? '' : 'hidden'}">!</span>
         </button>
       </div>
@@ -4136,7 +4136,7 @@ function checkAndTriggerUnfolds(silent = false) {
     if (!silent) {
       showUnfoldToast(
         '🔓 새로운 시스템 해금: 불꽃의 정수 & 마법 부여!',
-        '우측 상단 [🔮 마법 부여] 탭에서 🔥 정수를 주입해 고대 유물 패시브를 각성하세요!'
+        '우측 상단 [🔮 마법 부여] 탭에서 🔹 정수를 주입해 고대 유물 패시브를 각성하세요!'
       );
       triggerUnfoldPop('pill-essence');
       triggerUnfoldPop('right-mode-tabs');
@@ -4247,7 +4247,7 @@ function updateSkillActionBarVisibility() {
     btn4.classList.toggle('hidden-slot', !hasCombustion);
     btn4.classList.toggle('locked-skill', !hasCombustion);
     if (icon4) icon4.textContent = '☀️';
-    btn4.title = `[4] 마력 폭주 (${getCombustionDuration().toFixed(1)}초간 모든 마법 100% 치명타 & 가속)`;
+    btn4.setAttribute('aria-label', '마력 폭주');
   }
 
   const btn5 = document.getElementById('skill-5');
@@ -4343,7 +4343,7 @@ function updateStageUI() {
   if (!isCleared && state.currentStage >= 2) {
     const firstEss = getFirstClearEssenceBonus(state.currentStage);
     if (firstEss > 0) {
-      rewardText += ` · 🔥 ${fmt(firstEss)}`;
+      rewardText += ` · 🔹 ${fmt(firstEss)}`;
     }
   }
   document.getElementById('target-reward').textContent = rewardText;
@@ -5008,6 +5008,7 @@ function loadGame() {
 }
 
 function initEvents() {
+  initSkillTooltips();
   document.getElementById('dummy-avatar').addEventListener('click', () => {
     if (state.grimoires.pyroblast && state.combat.critStreak === 2) {
       triggerSkill('pyroblast');
@@ -5322,7 +5323,7 @@ function initEvents() {
       playSound('item_select');
       checkAndTriggerUnfolds(false);
       triggerEssencePillPulse();
-      spawnFloatingText('🔥 +10,000 정수!', 'fct-essence', -42, { anchor: 'caster' });
+      spawnFloatingText('🔹 +10,000 정수!', 'fct-essence', -42, { anchor: 'caster' });
       updateLiveHUD();
       renderInfusionUI();
       updateNotificationBadges();
