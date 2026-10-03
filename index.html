@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0b0e14" />
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="styles.css?v=meteor-art-5" />
-  <link rel="stylesheet" href="art.css?v=meteor-art-5" />
+  <link rel="stylesheet" href="art.css?v=phase-scene-1" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -85,6 +85,7 @@
     <section class="combat-column">
       <!-- 중앙 전투 아레나 (상단 DPS 미터기 + 상단 중앙 페이즈/스테이지 배너 + 좌우 이동 버튼 & 중앙 대결 + 하단 스킬바) -->
       <div class="combat-arena" id="combat-arena">
+        <canvas class="arena-environment-canvas" id="arena-environment-canvas" aria-hidden="true"></canvas>
         <div class="combustion-aura-bg" id="combustion-bg"></div>
 
         <!-- 언폴딩(시스템 해금) 축하 토스트 배너 -->
@@ -421,6 +422,7 @@
   <script src="comic-assets.js?v=meteor-art-5"></script>
   <script src="monster-motion.js?v=comic-ui-2"></script>
   <script src="skill-tooltips.js?v=2"></script>
-  <script src="game.js?v=meteor-art-5"></script>
+  <script src="arena-environment.js?v=phase-scene-1"></script>
+  <script src="game.js?v=phase-scene-1"></script>
 </body>
 </html>

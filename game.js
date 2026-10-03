@@ -2674,6 +2674,7 @@ function updateFloatingTexts(dt) {
 function loadStage(stageNum) {
   state.currentStage = Math.max(1, stageNum);
   const data = getStageData(state.currentStage);
+  if (arenaEnvironment) arenaEnvironment.setStage(state.currentStage);
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
   state.monster.isDying = false;
@@ -4396,6 +4397,10 @@ let uiRefreshAccum = 0;
 function gameLoop(nowMs) {
   const dt = Math.min(0.1, (nowMs - lastTime) / 1000);
   lastTime = nowMs;
+  if (arenaEnvironment) {
+    const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    arenaEnvironment.update(dt, state.isPaused || document.hidden, reduced);
+  }
 
   if (state.isPaused) {
     updateMageMotion(0, true);
@@ -5326,6 +5331,17 @@ function initEvents() {
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
   loadGame();
+  const environmentCanvas = document.getElementById('arena-environment-canvas');
+  const arena = document.getElementById('combat-arena');
+  if (environmentCanvas) {
+    arenaEnvironment = createArenaEnvironment(environmentCanvas, arena);
+    arena.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('button, input, .caster-avatar, .dummy-avatar')) return;
+      const rect = arena.getBoundingClientRect();
+      const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      arenaEnvironment.react(event.clientX - rect.left, event.clientY - rect.top, state.isPaused, reduced);
+    });
+  }
   checkAndTriggerUnfolds(true);
   updateFlameEvolutionUI(true);
   updateDevCheatUI();

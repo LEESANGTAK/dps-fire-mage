@@ -302,3 +302,12 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .comic-icon[data-sheet='fire-elemental'] { background:url('assets/art/comic-fire-elemental.png') center / contain no-repeat; }
 .comic-icon[data-sheet='flame-patch'],[data-skill='flame_patch'] .skill-icon { background:url('assets/art/comic-flame-patch.png') center / contain no-repeat; }
 .comic-icon[data-sheet='combustion'],[data-skill='combustion'] .skill-icon { background:url('assets/art/comic-combustion.png') center / contain no-repeat; }
+
+/* 전투·정보보다 아래에 독립 배경을 둡니다. 입력은 기존 아레나가 처리합니다. */
+.arena-environment-canvas { position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0; }
+.combat-arena > .dps-meter-panel { position:relative;z-index:1; }
+.combat-arena[data-environment='meadow'] { border-color:#6e8261; }
+.combat-arena[data-environment='mine'] { border-color:#756e87; }
+.combat-arena[data-environment='ruins'] { border-color:#8a5948; }
+.combat-arena[data-environment='citadel'] { border-color:#9b7144; }
+.combat-arena[data-environment='void'] { border-color:#766292; }
