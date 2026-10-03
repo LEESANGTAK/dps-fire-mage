@@ -1,7 +1,7 @@
 /* UI의 장식 이모지를 이미지 아이콘으로 바꾸되 버튼의 텍스트와 동작은 유지합니다. */
 const comicIconMap = {
  '🪄':0,'💍':1,'🧤':2,'🔮':3,'🔱':4,'⏳':5,'👑':6,'🏆':7,'📜':8,'📖':8,'🤖':8,'💰':9,'🪙':9,'💎':10,'👁️':11,'✨':11,'🦅':12,'🗿':13,'⚡':14,'☄️':15,
- '🔥':'s0','💥':'s1','🌋':'s2','☀️':'s3','🩸':'s0','🟠':'s0','🔵':10,'🔹':'essence'
+ '🔥':'s0','💥':'s1','🌋':'s2','☀️':'combustion','🩸':'s0','🟠':'s0','🔵':10,'🔹':'essence','🧞':'fire-elemental','♨️':'flame-patch'
 };
 const comicVectorMap = {
  '🛒':'M5 8h14l-1 12H6z M8 8V5h8v3',
@@ -21,7 +21,8 @@ const comicVectorMap = {
 const comicTokens = Object.keys({...comicIconMap,...comicVectorMap}).sort((a,b)=>b.length-a.length);
 const comicTokenPattern = new RegExp(comicTokens.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'gu');
 function comicIconHTML(token) {
- if(token==='🔹') return '<span class="comic-icon" data-sheet="essence" aria-hidden="true"></span>';
+ const dedicated = comicIconMap[token];
+ if(['essence','fire-elemental','flame-patch','combustion'].includes(dedicated)) return `<span class="comic-icon" data-sheet="${dedicated}" aria-hidden="true"></span>`;
  if(comicVectorMap[token]) return `<svg class="comic-vector" viewBox="0 0 24 24" aria-hidden="true"><path d="${comicVectorMap[token]}"/></svg>`;
  const key=comicIconMap[token];if(key===undefined)return token;
  const spell=typeof key==='string';const index=spell?Number(key.slice(1)):key;const cols=spell?2:4;
@@ -68,4 +69,17 @@ if(typeof document!=='undefined'){
  const observer=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')decorateComicUI(record.target);else for(const node of record.addedNodes)decorateComicUI(node);}});
  observer.observe(document.body,{childList:true,subtree:true,characterData:true});
  });
+}
+
+const comicAbilityImages = {};
+for (const key of ['fire-elemental','flame-patch','combustion']) {
+  if (typeof Image === 'undefined') continue;
+  const image = new Image();
+  image.src = `assets/art/comic-${key}.png`;
+  comicAbilityImages[key] = image;
+}
+function drawComicAbility(painter,key,x,y,width,height=width) {
+  const image = comicAbilityImages[key];
+  if (!image || !image.complete || !image.naturalWidth) return;
+  painter.drawImage(image,x-width/2,y-height/2,width,height);
 }

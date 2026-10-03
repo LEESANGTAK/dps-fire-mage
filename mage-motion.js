@@ -149,7 +149,7 @@ function renderMage(art, pose, dt, reduced) {
     spring.weights = { idle: 1 }; spring.pose = 'idle';
     return;
   }
-  const strength = mageGesture.kind === 'pyroblast' ? 1.45 : 1;
+  const strength = mageGesture.kind === 'meteor' ? 1.45 : 1;
   let lean = 0, squash = 0;
   if (pose === 'anticipation') { lean = -16; squash = 0.07; }
   if (pose === 'charge') { lean = -9; squash = 0.035; }
@@ -203,7 +203,7 @@ function selectMagePose(combat, gesture) {
   if (gesture.remaining > 0) {
     const progress = 1 - gesture.remaining / gesture.total;
     if (gesture.kind === 'combustion') return 'hot';
-    if (gesture.kind !== 'pyroblast') return 'idle';
+    if (gesture.kind !== 'meteor') return 'idle';
     return progress < 0.28 ? 'release' : progress < 0.72 ? 'recoil' : 'idle';
   }
   if (combat.castingSkill === 'fireball') return 'idle';
@@ -218,7 +218,7 @@ function selectMagePose(combat, gesture) {
 
 function beginMageGesture(kind) {
   mageGesture.kind = kind;
-  mageGesture.total = kind === 'pyroblast' ? 0.38 : kind === 'combustion' ? 0.5 : 0.3;
+  mageGesture.total = kind === 'meteor' ? 0.38 : kind === 'combustion' ? 0.5 : 0.3;
   mageGesture.remaining = mageGesture.total;
   // 발사 함수 안에서 즉시 자세를 바꿔 투사체와 한 프레임에 맞춥니다.
   updateMageMotion(0, false);
@@ -241,7 +241,7 @@ function updateMageMotion(dt, paused) {
   mageGesture.remaining = Math.max(0, mageGesture.remaining - dt);
   const pose = selectMagePose(state.combat, mageGesture);
   if (art.dataset.pose !== pose) art.dataset.pose = pose;
-  art.dataset.heavy = mageGesture.remaining > 0 && mageGesture.kind === 'pyroblast' ? 'true' : 'false';
+  art.dataset.heavy = mageGesture.remaining > 0 && mageGesture.kind === 'meteor' ? 'true' : 'false';
   const combat = state.combat;
   const progress = combat.castingSkill ? Math.min(1, Math.max(0, 1 - combat.castRemaining / combat.castTotal)) : 0;
   art.style.setProperty('--charge', String(progress * progress));

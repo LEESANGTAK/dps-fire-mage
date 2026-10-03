@@ -2,24 +2,25 @@
 const assert=require('node:assert/strict'), fs=require('node:fs'), vm=require('node:vm');
 const {buildSkillDetails}=require('./skill-tooltips.js');
 const source=fs.readFileSync('game.js','utf8');
-const trigger=source.slice(source.indexOf('function triggerSkill('),source.indexOf('function finishCast('));
+const trigger=source.slice(source.indexOf('function triggerSkill('),source.indexOf('function runSmartAutoCast('));
 for(const stats of [{sp:100,speedMult:1,critDmg:1.5,cdr:0,igniteMult:1},{sp:317,speedMult:5,critDmg:2.4,cdr:.6,igniteMult:1.75}]) {
- for(const skill of ['fireball','fireblast','pyroblast','combustion','meteor','flame_patch']) {
+ for(const skill of ['fireball','fireblast','combustion','meteor','flame_patch']) {
   const combat={castingSkill:null,gcdRemaining:0,fbCharges:2,fbMaxCharges:2,fbRechargeRem:0,critStreak:0,combustionCdRem:0,meteorCdRem:0,flamePatchCdRem:0};
   const tree={flame_patch:3,magma_golem:2};let rawDamage=null;
-  const context=vm.createContext({state:{combat,skillTree:tree,grimoires:{fireblast:true,pyroblast:true,combustion:true,meteor:true}},getPlayerStats:()=>stats,getCombustionDuration:()=>3.4,getTargetPos:()=>({x:0,y:0}),spawnParticles(){},dealDamage:(key,value)=>{rawDamage=value;},beginMageGesture(){},updateCastingLoopSound(){},updateBurningLoopSound(){},spawnFloatingText(){},playSound(){},playFireballSfx(){},shockwaves:[],launchMeteorVfx:callback=>callback()});
+  const context=vm.createContext({state:{combat,skillTree:tree,grimoires:{fireblast:true,combustion:true,meteor:true}},getPlayerStats:()=>stats,getCombustionDuration:()=>3.4,getTargetPos:()=>({x:0,y:0}),spawnParticles(){},dealDamage:(key,value)=>{rawDamage=value;},beginMageGesture(){},triggerAllSummonsSyncAttack(){},fireWithMultishot(){},updateCastingLoopSound(){},updateBurningLoopSound(){},spawnFloatingText(){},playSound(){},playFireballSfx(){},shockwaves:[],launchMeteorVfx:callback=>callback()});
   vm.runInContext(trigger,context);
   const detail=buildSkillDetails(skill,stats,combat,tree,1.3,3.4);
   assert.ok(vm.runInContext(`triggerSkill('${skill}')`,context));
   const sec=value=>`${Number(value.toFixed(2))}초`;
-  if(skill==='fireball'||skill==='pyroblast') assert.ok(detail.cast.includes(sec(combat.castTotal)));
+  if(skill==='fireball'||skill==='meteor') assert.ok(detail.cast.includes(sec(combat.castTotal)));
+  if(skill==='meteor') vm.runInContext("finishCast('meteor')",context);
   const cdKey={fireblast:'fbRechargeTotal',combustion:'combustionCdTotal',meteor:'meteorCdTotal',flame_patch:'flamePatchCdTotal'}[skill];
   if(cdKey) assert.ok(detail.cooldown.includes(sec(combat[cdKey])));
   if(rawDamage!==null) assert.ok(detail.damage.includes(Math.round(rawDamage*1.3).toLocaleString('ko-KR')),'설명 피해량은 실제 피해와 숙련을 반영해야 합니다.');
  }
 }
 const stats={sp:10,speedMult:1,critDmg:1.5,cdr:0};
-assert.ok(buildSkillDetails('pyroblast',stats,{critStreak:2},{},1).cast.startsWith('즉시'));
+assert.ok(buildSkillDetails('meteor',stats,{critStreak:2},{},1).cast.startsWith('즉시'));
 assert.match(buildSkillDetails('fireblast',stats,{fbCharges:1,fbMaxCharges:2},{},1).feature,/1\/2/);
 assert.match(buildSkillDetails('combustion',stats,{},{}).damage,/없음/);
 // 브라우저 접근 없이 호버·포커스·종료 및 가장자리 위치 제어를 검사합니다.
@@ -39,4 +40,4 @@ events.pointerenter({pointerType:'touch'});flush();assert.ok(popup.hidden);
 documentStub.activeElement=button;events.focus();events.pointerleave();flush();assert.equal(popup.hidden,false);
 documentStub.activeElement=null;events.blur();flush();assert.ok(popup.hidden);
 assert.equal(button.attrs['aria-describedby'],undefined);
-console.log('6종 스킬 설명·실제 시전·쿨타임·피해량·충전 검증 통과');
+console.log('5종 스킬 설명·실제 시전·쿨타임·피해량·충전 검증 통과');

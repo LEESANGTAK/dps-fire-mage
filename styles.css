@@ -4020,3 +4020,8 @@ body {
   }
 }
 
+
+/* 주문서·연마·장비에 같은 높이를 배분하고 목록만 스크롤합니다. */
+#pane-shop > .shop-section { flex:1 1 0;min-height:0;max-height:none; }
+#pane-shop .panel-title-row { flex-shrink:0; }
+#pane-shop .shop-list { flex:1;min-height:0;overflow-y:auto; }

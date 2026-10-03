@@ -80,19 +80,19 @@
 }
 .dummy-emoji[data-variant='blue'] { filter: hue-rotate(85deg) drop-shadow(0 12px 5px #0007); }
 .action-bar { padding: 10px 14px; border: 2px solid #735238; border-radius: 12px; background: linear-gradient(180deg, #35262aea, #17131cec); box-shadow: inset 0 2px #cba86d30, 0 8px 18px #0007; }
-.skill-btn[data-skill='fireball'], .skill-btn[data-skill='fireblast'], .skill-btn[data-skill='pyroblast'], .skill-btn[data-skill='combustion'] {
+.skill-btn[data-skill='fireball'], .skill-btn[data-skill='fireblast'], .skill-btn[data-skill='combustion'] {
   border: 2px solid #ad8150; background-color: #21151a;
   box-shadow: inset 0 0 0 1px #ffdda44a, 0 3px 5px #0009;
 }
-.skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='pyroblast'],[data-skill='combustion']) .skill-icon {
+.skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='combustion']) .skill-icon {
   position: absolute; inset: 0; font-size: 0;
   background-image: url('assets/art/comic-skill-atlas.png'); background-size: 200% 200%; border-radius: 5px;
 }
 [data-skill='fireball'] .skill-icon { background-position: left top; }
 [data-skill='fireblast'] .skill-icon { background-position: right top; }
-[data-skill='pyroblast'] .skill-icon { background-position: left bottom; }
+
 [data-skill='combustion'] .skill-icon { background-position: right bottom; }
-.skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='pyroblast'],[data-skill='combustion']) .skill-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 3px 0; background: #140e16ce; text-shadow: 0 1px 2px #000; }
+.skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='combustion']) .skill-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 3px 0; background: #140e16ce; text-shadow: 0 1px 2px #000; }
 .skill-hotkey { padding: 1px 4px; border-radius: 3px; background: #160f17bc; color: #ffdfaa; }
 .art-followup { border-color: #fff1bb !important; animation: followup-breathe .8s cubic-bezier(.45,0,.2,1) infinite alternate; }
 .art-active { border-color: #fff0b2 !important; box-shadow: 0 0 18px #ff8a24b0 !important; }
@@ -297,3 +297,8 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .skill-tooltip small { display:block;color:#bdb2a7;font-size:.65rem; }
 @keyframes skill-tooltip-enter { from { opacity:0;transform:translateY(4px) scale(.98); } to { opacity:1;transform:translateY(0) scale(1); } }
 @media(prefers-reduced-motion:reduce) { .skill-tooltip { animation:none; } }
+
+/* 전용 원화는 공용 화염구·불사조 아틀라스와 분리합니다. */
+.comic-icon[data-sheet='fire-elemental'] { background:url('assets/art/comic-fire-elemental.png') center / contain no-repeat; }
+.comic-icon[data-sheet='flame-patch'],[data-skill='flame_patch'] .skill-icon { background:url('assets/art/comic-flame-patch.png') center / contain no-repeat; }
+.comic-icon[data-sheet='combustion'],[data-skill='combustion'] .skill-icon { background:url('assets/art/comic-combustion.png') center / contain no-repeat; }

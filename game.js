@@ -85,7 +85,7 @@ const SKILL_TREE_NODES = [
     maxLv: 3,
     name: '불의 정령 소환',
     shortName: '불의 정령',
-    icon: '🔥',
+    icon: '🧞',
     desc: (lv) =>
       `불의 정령 상시 소환 (1.3초마다 주문 공격력의 ${lv === 0 ? 45 : lv * 45}% 화염탄 발사 및 화상 연장)`
   },
@@ -99,7 +99,7 @@ const SKILL_TREE_NODES = [
     maxLv: 3,
     name: '불장판',
     shortName: '불장판',
-    icon: '🔥',
+    icon: '♨️',
     desc: (lv) =>
       `[6] 불장판 스킬 사용 가능: 몬스터 아래쪽 바닥에 7초간 불장판을 깔아 0.5초마다 주문 공격력의 ${lv === 0 ? 40 : lv * 40}% 도트 피해 (쿨타임 10초)`
   },
@@ -111,8 +111,8 @@ const SKILL_TREE_NODES = [
     reqTotalSp: 0,
     cost: 1,
     maxLv: 3,
-    name: '비전 불사조 소환',
-    shortName: '비전 불사조',
+    name: '불사조 소환',
+    shortName: '불사조',
     icon: '🦅',
     desc: (lv) =>
       `불사조 상시 소환 (2.4초마다 100% 치명타 섬광 ${lv === 0 ? 65 : lv * 65}% & 연쇄 폭발 유도)`
@@ -145,7 +145,7 @@ const SKILL_TREE_NODES = [
     shortName: '갈래 화염구',
     icon: '✨',
     desc: (lv) =>
-      `화염구·거대 화염구 시전 시 탄환이 ${lv === 0 ? 2 : lv + 1}발로 갈라져 직선 발사`
+      `화염구 시전 시 탄환이 ${lv === 0 ? 2 : lv + 1}발로 갈라져 직선 발사`
   },
   {
     id: 'rune_aura',
@@ -175,7 +175,7 @@ const SKILL_TREE_NODES = [
     shortName: '군단 일제사격',
     icon: '👑',
     desc: (lv) =>
-      `거대 화염구 발사 시 모든 소환수 즉시 일제 공격 & 소환수 피해 +${lv === 0 ? 50 : lv * 50}%`
+      `몰열 메테오 발사 시 모든 소환수 즉시 일제 공격 & 소환수 피해 +${lv === 0 ? 50 : lv * 50}%`
   },
   {
     id: 'meteor_rain',
@@ -225,9 +225,9 @@ const GRIMOIRE_LIST = [
     desc: '시전 중 즉시 발사 가능한 100% 확정 치명타 보조 마법'
   },
   {
-    id: 'pyroblast',
-    name: '마법서: 거대 화염구 [3]',
-    icon: '🌋',
+    id: 'meteor',
+    name: '마법서: 메테오 [3]',
+    icon: '☄️',
     cost: 160,
     desc: '치명타 2연속 적중 시 대기시간 0초 즉시 발사'
   },
@@ -244,13 +244,6 @@ const GRIMOIRE_LIST = [
     icon: '☀️',
     cost: 1800,
     desc: '기본 2초간 모든 마법 100% 치명타 & 시전 가속 (연마로 지속시간 연장)'
-  },
-  {
-    id: 'meteor',
-    name: '금서: 메테오 [5]',
-    icon: '☄️',
-    cost: 6500,
-    desc: '하늘에서 거대 운석 소환 폭발 및 6초 대지 연소'
   }
 ];
 
@@ -360,18 +353,9 @@ const SKILL_MASTERY_LIST = [
     desc: '불꽃 작렬 피해량 +8%'
   },
   {
-    id: 'pyroblast',
-    name: '거대 화염구 숙련',
-    icon: '🌋',
-    baseCost: 120,
-    costScale: 1.19,
-    bonusPerLv: 0.1,
-    desc: '거대 화염구 피해량 +10%'
-  },
-  {
     id: 'flame_patch',
     name: '불장판 숙련',
-    icon: '🔥',
+    icon: '♨️',
     baseCost: 75,
     costScale: 1.16,
     bonusPerLv: 0.07,
@@ -381,7 +365,7 @@ const SKILL_MASTERY_LIST = [
     id: 'meteor',
     name: '메테오 숙련',
     icon: '☄️',
-    baseCost: 350,
+    baseCost: 120,
     costScale: 1.22,
     bonusPerLv: 0.12,
     desc: '메테오 피해량 +12%'
@@ -426,7 +410,6 @@ function getAscensionDamageMult() {
 function isSkillUnlocked(skillId) {
   if (skillId === 'fireball') return true;
   if (skillId === 'fireblast') return Boolean(state.grimoires && state.grimoires.fireblast);
-  if (skillId === 'pyroblast') return Boolean(state.grimoires && state.grimoires.pyroblast);
   if (skillId === 'combustion') return Boolean(state.grimoires && state.grimoires.combustion);
   if (skillId === 'meteor') return Boolean(state.grimoires && state.grimoires.meteor);
   if (skillId === 'flame_patch') return Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0);
@@ -506,7 +489,6 @@ const state = {
   skillAuto: {
     fireball: true,
     fireblast: true,
-    pyroblast: true,
     combustion: true,
     meteor: true,
     flame_patch: true
@@ -548,7 +530,6 @@ const state = {
   grimoires: {
     autocast: false,
     fireblast: false,
-    pyroblast: false,
     ignite: false,
     combustion: false,
     meteor: false
@@ -578,7 +559,6 @@ const state = {
   skillMastery: {
     fireball: 0,
     fireblast: 0,
-    pyroblast: 0,
     combustion: 0,
     flame_patch: 0,
     meteor: 0
@@ -630,19 +610,18 @@ const state = {
     golemLunge: 0,
     animTime: 0,
 
-    wasOnCd: { 2: false, 4: false, 5: false, 6: false }
+    wasOnCd: { 2: false, 3: false, 4: false, 6: false }
   },
 
   dpsHistory: [],
   skillDamage: {
     fireball: { name: '🔥 화염구', dmg: 0, color: '#f97316' },
     fireblast: { name: '💥 불꽃 작렬', dmg: 0, color: '#fbbf24' },
-    pyroblast: { name: '🌋 거대 화염구', dmg: 0, color: '#ef4444' },
     ignite: { name: '🩸 화상 (도트)', dmg: 0, color: '#ff8000' },
     meteor: { name: '☄️ 메테오', dmg: 0, color: '#a855f7' },
     flame_patch: { name: '🔥 불장판', dmg: 0, color: '#fb923c' },
     summon_elem: { name: '🔥 불의 정령', dmg: 0, color: '#fb7185' },
-    summon_phoenix: { name: '🦅 비전 불사조', dmg: 0, color: '#facc15' },
+    summon_phoenix: { name: '🦅 불사조', dmg: 0, color: '#facc15' },
     summon_golem: { name: '🗿 용암 골렘', dmg: 0, color: '#c084fc' }
   }
 };
@@ -1158,7 +1137,7 @@ function spawnParticles(x, y, count, colorCore, colorEdge, speedScale = 1) {
 }
 
 function spawnHitSparkVfx(x, y, isCrit, skillKey) {
-  const isHeavy = skillKey === 'pyroblast' || skillKey === 'meteor';
+  const isHeavy = skillKey === 'meteor';
   const count = isCrit ? (isHeavy ? 24 : 16) : 8;
   const speedScale = isCrit ? 1.45 : 0.85;
   const coreColor = isCrit ? '#fef08a' : '#fed7aa';
@@ -1500,20 +1479,19 @@ function launchCustomProjectile(opts) {
 
 function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   // 주 탄환은 발사 자세로 바꾼 손끝에서 출발합니다.
-  if (scaleMult >= 0.9) beginMageGesture(type === 'pyroblast' ? 'pyroblast' : 'fireball');
+  if (scaleMult >= 0.9) beginMageGesture('fireball');
   const start = getCasterPos();
   const end = getTargetPos();
-  const isPyro = type === 'pyroblast';
   const evo = getCurrentFlameEvolution();
 
 
   if (scaleMult >= 0.9) {
-    playFireballSfx('fly', isPyro ? 0.82 : 0.52);
+    playFireballSfx('fly', 0.52);
   }
 
-  // 일반 화염구 반지름을 기존(6.2)의 2배인 12.4로 확대하고, 거대 화염구(pyroblast)는 더 큰 반지름(24)과 코로나 광선/위성으로 차별화!
-  const baseRadius = isPyro ? 24 : 12.4;
-  const effectiveEvoScale = isPyro ? evo.scale : 1 + (evo.scale - 1) * 0.38;
+  // 화염구 크기와 진화 배율은 기존 손맛을 유지합니다.
+  const baseRadius = 12.4;
+  const effectiveEvoScale = 1 + (evo.scale - 1) * 0.38;
 
   launchCustomProjectile({
     type,
@@ -1521,14 +1499,14 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
     startY: start.y + offsetY,
     targetX: end.x,
     targetY: end.y + offsetY,
-    duration: isPyro ? 0.31 : 0.24,
+    duration: 0.24,
     radius: baseRadius * effectiveEvoScale * scaleMult,
     colorCore: evo.colorCore,
     colorMid: evo.colorMid,
     colorEdge: evo.colorEdge,
     ringRgb: evo.ringRgb,
     evoTier: evo.tier,
-    orbiters: isPyro && scaleMult >= 0.9 ? Math.max(2, evo.orbiters + 1) : 0,
+    orbiters: 0,
     onHit: onHitCallback
   });
 }
@@ -1692,7 +1670,7 @@ function drawSummonsAndAuras(dt) {
     ctx.font = '26px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    drawComicSummon(ctx, 15, 0, 0, 34);
+    drawComicAbility(ctx, 'fire-elemental', 0, 0, 48);
 
     ctx.font = 'bold 10px Pretendard, sans-serif';
     ctx.fillStyle = '#fed7aa';
@@ -1701,7 +1679,7 @@ function drawSummonsAndAuras(dt) {
     ctx.restore();
   }
 
-  // 3. 비전 불사조
+  // 3. 불사조
   const phxLv = state.skillTree.phoenix || 0;
   if (phxLv > 0) {
     if (c.phoenixRecoil > 0) c.phoenixRecoil = Math.max(0, c.phoenixRecoil - dt * 5);
@@ -1761,99 +1739,16 @@ function drawSummonsAndAuras(dt) {
     const fx = targetCenter.x;
     const fy = getActorGroundPos('dummy-avatar').y; // 실제 접지 위치
     const fadeAlpha = Math.min(1, c.flamePatchRem / 0.6);
-    const pulse = 1 + Math.sin(c.animTime * 9) * 0.06;
-    const patchRadius = 111 * pulse; // 기존 74 대비 1.5배 넓어진 반경!
-
-    // 바닥 타원형 용암/화염 장판 베이스 (몬스터 이미지 아래쪽 바닥에 깔림)
+    const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pulse = reduced ? 1 : 1 + Math.sin(c.animTime * 4) * 0.025;
     gCtx.save();
     gCtx.globalAlpha = fadeAlpha;
-    gCtx.translate(fx, fy);
-    gCtx.scale(1, 0.42);
-
-    const floorGrad = gCtx.createRadialGradient(0, 0, 8, 0, 0, patchRadius);
-    floorGrad.addColorStop(0, 'rgba(254, 240, 138, 0.94)');
-    floorGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.82)');
-    floorGrad.addColorStop(0.75, 'rgba(220, 38, 38, 0.52)');
-    floorGrad.addColorStop(1, 'rgba(153, 27, 27, 0)');
-    gCtx.fillStyle = floorGrad;
-    gCtx.beginPath();
-    gCtx.arc(0, 0, patchRadius, 0, Math.PI * 2);
-    gCtx.fill();
-
-    // 회전하는 화염 테두리 균열 링 (1.5배 확장: 87 / 60)
-    gCtx.rotate(c.animTime * 1.8);
-    gCtx.beginPath();
-    gCtx.arc(0, 0, 87, 0, Math.PI * 2);
-    gCtx.setLineDash([18, 11]);
-    gCtx.strokeStyle = 'rgba(253, 224, 71, 0.88)';
-    gCtx.lineWidth = 3.2;
-    gCtx.stroke();
-
-    gCtx.rotate(-c.animTime * 3.2);
-    gCtx.beginPath();
-    gCtx.arc(0, 0, 60, 0, Math.PI * 2);
-    gCtx.setLineDash([11, 9]);
-    gCtx.strokeStyle = 'rgba(251, 146, 60, 0.82)';
-    gCtx.lineWidth = 2.5;
-    gCtx.stroke();
+    // 원화의 타원형 바닥을 접지하고, 몬스터 뒤 레이어에만 표시합니다.
+    drawComicAbility(gCtx, 'flame-patch', fx, fy - 35, 230 * pulse, 150);
     gCtx.restore();
-
-    // 바닥 영역에서 일렁이며 솟아오르는 불길 기둥(Flame Tongues) 연출 (바닥 캔버스에 그려 몬스터 이미지를 가리지 않음)
-    gCtx.save();
-    gCtx.globalAlpha = fadeAlpha;
-    const flameOffsets = [
-      { dx: -72, dy: 2, h: 28, phase: 0.0 },
-      { dx: -54, dy: 9, h: 34, phase: 1.1 },
-      { dx: -36, dy: -5, h: 32, phase: 2.3 },
-      { dx: -18, dy: 11, h: 38, phase: 3.5 },
-      { dx: 0, dy: 14, h: 42, phase: 0.7 },
-      { dx: 19, dy: 10, h: 37, phase: 2.9 },
-      { dx: 37, dy: -4, h: 33, phase: 4.1 },
-      { dx: 55, dy: 8, h: 35, phase: 1.8 },
-      { dx: 72, dy: 1, h: 27, phase: 4.9 }
-    ];
-    for (const fl of flameOffsets) {
-      const bx = fx + fl.dx;
-      const by = fy + fl.dy;
-      const waveX = Math.sin(c.animTime * 11 + fl.phase) * 6.5;
-      const stretchH = fl.h * (0.78 + 0.32 * Math.sin(c.animTime * 14 + fl.phase * 1.7));
-      const w = 11.5;
-
-      // 외곽 붉은 오렌지 불길
-      gCtx.beginPath();
-      gCtx.moveTo(bx - w, by);
-      gCtx.quadraticCurveTo(bx - w * 0.5 + waveX * 0.4, by - stretchH * 0.55, bx + waveX, by - stretchH);
-      gCtx.quadraticCurveTo(bx + w * 0.5 + waveX * 0.4, by - stretchH * 0.55, bx + w, by);
-      gCtx.closePath();
-      gCtx.fillStyle = 'rgba(249, 115, 22, 0.8)';
-      gCtx.fill();
-
-      // 내부 밝은 노란 불꽃 코어
-      gCtx.beginPath();
-      gCtx.moveTo(bx - w * 0.52, by);
-      gCtx.quadraticCurveTo(bx + waveX * 0.3, by - stretchH * 0.4, bx + waveX * 0.7, by - stretchH * 0.68);
-      gCtx.quadraticCurveTo(bx + waveX * 0.3, by - stretchH * 0.4, bx + w * 0.52, by);
-      gCtx.closePath();
-      gCtx.fillStyle = 'rgba(254, 240, 138, 0.92)';
-      gCtx.fill();
-    }
-    gCtx.restore();
-
-    // 1.5배 넓어진 바닥 장판에서 위로 피어오르는 불티 파티클
-    if (Math.random() < 0.75) {
-      const ang = Math.random() * Math.PI * 2;
-      const dist = Math.random() * 84;
-      particles.push({
-        x: fx + Math.cos(ang) * dist,
-        y: fy + Math.sin(ang) * dist * 0.38,
-        vx: (Math.random() - 0.5) * 32,
-        vy: -(52 + Math.random() * 60),
-        radius: 2.8 + Math.random() * 3.8,
-        life: 0,
-        maxLife: 0.3 + Math.random() * 0.24,
-        colorCore: '#fef08a',
-        colorEdge: '#ea580c'
-      });
+    if (!reduced && dt > 0 && particles.length < 180 && Math.random() < Math.min(1, dt * 12)) {
+      particles.push({x:fx+(Math.random()-.5)*140,y:fy,vx:(Math.random()-.5)*18,vy:-45,
+        radius:2,life:0,maxLife:.4,colorCore:'#fef08a',colorEdge:'#ea580c'});
     }
   }
 
@@ -1920,32 +1815,17 @@ function updateAndDrawVfx(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.progress += dt / p.duration;
-    const isPyro = p.type === 'pyroblast';
 
     if (p.progress >= 1) {
-      const tierScale = 1 + (p.evoTier - 1) * (isPyro ? 0.18 : 0.08);
-      // 일반 화염구는 타격 파티클도 가볍고 작게, 거대 화염구는 화려하고 묵직하게!
+      // 일반 화염구의 타격 파티클은 작고 짧게 유지합니다.
       spawnParticles(
         p.targetX,
         p.targetY,
-        isPyro ? Math.round(32 * tierScale) : 7,
+        7,
         p.colorCore,
         p.colorMid,
-        isPyro ? 1.45 * tierScale : 0.62
+        0.62
       );
-      if (isPyro) {
-        shockwaves.push({
-          x: p.targetX,
-          y: p.targetY,
-          life: 0,
-          maxLife: 0.32 + p.evoTier * 0.03,
-          maxRadius: 62 + p.evoTier * 10,
-          rgb: p.ringRgb,
-          flat: false,
-          lineWidth: 4.5
-        });
-        triggerArenaShake('sm');
-      }
       if (p.onHit) p.onHit();
       projectiles.splice(i, 1);
       continue;
@@ -1955,8 +1835,8 @@ function updateAndDrawVfx(dt) {
     // 1) 가속도: 출발 시 마력이 방출되어 살짝 가속하며 타격 지점에 내리꽂힘
     // 2) 호(Arc): 기계적 1자 직선 대신 자연스러운 상향 호를 그리며 비행
     const rawP = Math.min(1, Math.max(0, p.progress));
-    const easeT = isPyro ? Math.pow(rawP, 1.5) : Math.pow(rawP, 1.35);
-    const arcHeight = isPyro ? -35 : -20;
+    const easeT = Math.pow(rawP, 1.35);
+    const arcHeight = -20;
     const arcOffset = Math.sin(rawP * Math.PI) * arcHeight;
 
     const x = p.startX + (p.targetX - p.startX) * easeT;
@@ -2970,7 +2850,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   state.currentDps = Math.round(sumDmg / windowSec);
   checkAndRecordDpsClear();
 
-  const isBigSkill = skillKey === 'pyroblast' || skillKey === 'meteor';
+  const isBigSkill = skillKey === 'meteor';
   const dummyEl = document.getElementById('dummy-avatar');
   const dummyEmoji = document.getElementById('dummy-emoji');
   const targetPos = getTargetPos();
@@ -3008,17 +2888,6 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         void dummyEl.offsetWidth;
         dummyEl.classList.add('knockback-meteor');
         spawnHitMark('💫');
-        if (dummyEmoji) {
-          dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
-          void dummyEmoji.offsetWidth;
-          dummyEmoji.classList.add('emoji-crit');
-        }
-      } else if (skillKey === 'pyroblast') {
-        lastHeavyKnockbackTime = now;
-        dummyEl.classList.remove(...hitClasses);
-        void dummyEl.offsetWidth;
-        dummyEl.classList.add('knockback-pyro');
-        spawnHitMark('💥');
         if (dummyEmoji) {
           dummyEmoji.classList.remove('emoji-hit', 'emoji-crit');
           void dummyEmoji.offsetWidth;
@@ -3102,7 +2971,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     }
   }
 
-  if (canTriggerStreak && state.grimoires.pyroblast) {
+  if (canTriggerStreak && state.grimoires.meteor) {
     if (isCrit) {
       if (state.combat.critStreak === 0) {
         state.combat.critStreak = 1;
@@ -3317,35 +3186,6 @@ function triggerSkill(skillKey) {
     return true;
   }
 
-  if (skillKey === 'pyroblast') {
-    if (!state.grimoires.pyroblast) {
-      spawnFloatingText('🔒 마법서: 거대 화염구 습득 필요', 'fct-normal', -35, { anchor: 'caster' });
-      return false;
-    }
-
-    // 1. 몰아치는 열기 (치명타 2연속 몰열): 즉시 시전 발사!
-    if (c.critStreak === 2) {
-      c.critStreak = 0;
-      c.streakTimer = 0;
-      fireWithMultishot('pyroblast', 1.75);
-      triggerAllSummonsSyncAttack();
-      return true;
-    }
-
-    // 2. 이미 거대 화염구를 시전 중이라면 중복 시전 방지
-    if (c.castingSkill === 'pyroblast') return false;
-
-    // 3. 일반 화염구 시전 중이거나 대기/GCD 중인 경우 -> 즉시 거대 화염구(2.5초) 하드 캐스팅으로 전환!
-    const castTime = Math.max(0.7, 2.5 / stats.speedMult);
-    c.castingSkill = 'pyroblast';
-    c.castTotal = castTime;
-    c.castRemaining = castTime;
-    c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
-    c.gcdRemaining = c.gcdTotal;
-    updateCastingLoopSound();
-    return true;
-  }
-
   if (skillKey === 'combustion') {
     if (!state.grimoires.combustion) return false;
     if (c.combustionCdRem > 0) return false;
@@ -3361,19 +3201,21 @@ function triggerSkill(skillKey) {
 
   if (skillKey === 'meteor') {
     if (!state.grimoires.meteor) return false;
-    if (c.meteorCdRem > 0) return false;
-
-    c.meteorCdTotal = Math.max(8, 18 * (1 - stats.cdr));
-    c.meteorCdRem = c.meteorCdTotal;
-
-    launchMeteorVfx(() => {
-      const st = getPlayerStats();
-      const isCrit = Math.random() * 100 < st.crit;
-      const base = st.sp * 3.2;
-      const finalDmg = isCrit ? base * st.critDmg : base;
-      dealDamage('meteor', finalDmg, isCrit, true);
-      state.combat.meteorBurnRem = 6.0;
-    }, 1.0);
+    // 몰열은 일반 쿨타임과 화염구 시전을 방해하지 않는 즉시 연계입니다.
+    if (c.critStreak === 2) {
+      c.critStreak = 0;
+      c.streakTimer = 0;
+      releaseMeteor();
+      triggerAllSummonsSyncAttack();
+      return true;
+    }
+    if (c.meteorCdRem > 0 || c.castingSkill || c.gcdRemaining > 0) return false;
+    c.castingSkill = 'meteor';
+    c.castTotal = Math.max(0.7, 2.5 / stats.speedMult);
+    c.castRemaining = c.castTotal;
+    c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
+    c.gcdRemaining = c.gcdTotal;
+    updateCastingLoopSound();
     return true;
   }
 
@@ -3414,16 +3256,30 @@ function triggerSkill(skillKey) {
   return false;
 }
 
+function releaseMeteor() {
+  beginMageGesture('meteor');
+  launchMeteorVfx(() => {
+    const stats = getPlayerStats();
+    const isCrit = Math.random() * 100 < stats.crit;
+    const damage = stats.sp * 3.2 * (isCrit ? stats.critDmg : 1);
+    // 메테오 자체는 소비한 몰열을 다시 충전하지 않습니다.
+    dealDamage('meteor', damage, isCrit, false);
+    state.combat.meteorBurnRem = 6;
+  }, 1);
+}
+
 function finishCast(skillKey) {
   if (skillKey === 'fireball') {
     fireWithMultishot('fireball', 1.0);
-    // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 거대 화염구 즉시 발사 연계!
-    if (state.combat.critStreak === 2 && isSkillAutoActive('pyroblast') && state.grimoires.pyroblast) {
-      triggerSkill('pyroblast');
+    // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 메테오 즉시 발사 연계!
+    if (state.combat.critStreak === 2 && isSkillAutoActive('meteor') && state.grimoires.meteor) {
+      triggerSkill('meteor');
     }
-  } else if (skillKey === 'pyroblast') {
-    fireWithMultishot('pyroblast', 1.55);
-    triggerAllSummonsSyncAttack();
+  } else if (skillKey === 'meteor') {
+    const c = state.combat;
+    c.meteorCdTotal = Math.max(8, 18 * (1 - getPlayerStats().cdr));
+    c.meteorCdRem = c.meteorCdTotal;
+    releaseMeteor();
   }
 }
 
@@ -3441,20 +3297,15 @@ function runSmartAutoCast() {
   if ((state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0) {
     triggerSkill('flame_patch');
   }
-  if (state.grimoires.meteor && c.meteorCdRem <= 0) {
-    triggerSkill('meteor');
-  }
 
-  // 1. 몰아치는 열기 (즉시 시전 거대 화염구): 몰열 2스택 상태라면 지체 없이 최우선 발사!
-  if (state.grimoires.pyroblast && c.critStreak === 2) {
-    if (!c.castingSkill || c.castRemaining <= 0.12) {
-      triggerSkill('pyroblast');
-    }
+  // 1. 몰아치는 열기 (즉시 시전 메테오): 몰열 2스택 상태라면 지체 없이 최우선 발사!
+  if (state.grimoires.meteor && c.critStreak === 2) {
+    triggerSkill('meteor');
   }
 
   // 2. 불꽃 작렬 (확정 치명타): 1스택일 때 즉시 2스택 완성 유도 또는 완충 시 즉시 소모
   if (state.grimoires.fireblast && c.fbCharges > 0) {
-    if (!state.grimoires.pyroblast || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
+    if (!state.grimoires.meteor || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
       triggerSkill('fireblast');
     }
   }
@@ -3463,7 +3314,7 @@ function runSmartAutoCast() {
   if (
     !c.castingSkill &&
     c.gcdRemaining <= 0 &&
-    !(state.grimoires.pyroblast && c.critStreak === 2)
+    !(state.grimoires.meteor && c.critStreak === 2)
   ) {
     triggerSkill('fireball');
   }
@@ -3552,9 +3403,8 @@ function updateNotificationBadges() {
     'badge-skill-2',
     state.grimoires.fireblast && c.fbCharges > 0 && (c.critStreak === 1 || (manualMode && c.fbCharges >= 2))
   );
-  setBadge('badge-skill-3', state.grimoires.pyroblast && c.critStreak === 2);
+  setBadge('badge-skill-3', state.grimoires.meteor && c.critStreak === 2);
   setBadge('badge-skill-4', manualMode && state.grimoires.combustion && c.combustionCdRem <= 0);
-  setBadge('badge-skill-5', manualMode && state.grimoires.meteor && c.meteorCdRem <= 0);
   setBadge('badge-skill-6', manualMode && (state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0);
 
   // 4. 상점 탭 (!) 배지: 구매 가능한 마법서나 장비가 있을 때 표시
@@ -4232,12 +4082,12 @@ function updateSkillActionBarVisibility() {
 
   const btn3 = document.getElementById('skill-3');
   const icon3 = document.getElementById('icon-3');
-  const hasPyroblast = Boolean(state.grimoires.pyroblast);
+  const hasMeteor = Boolean(state.grimoires.meteor);
   if (btn3) {
-    btn3.classList.toggle('hidden-slot', !hasPyroblast);
-    btn3.classList.toggle('locked-skill', !hasPyroblast);
-    if (icon3) icon3.textContent = '🌋';
-    if (!hasPyroblast) btn3.classList.remove('proc-glow');
+    btn3.classList.toggle('hidden-slot', !hasMeteor);
+    btn3.classList.toggle('locked-skill', !hasMeteor);
+    if (icon3) icon3.textContent = '☄️';
+    if (!hasMeteor) btn3.classList.remove('proc-glow');
   }
 
   const btn4 = document.getElementById('skill-4');
@@ -4250,22 +4100,13 @@ function updateSkillActionBarVisibility() {
     btn4.setAttribute('aria-label', '마력 폭주');
   }
 
-  const btn5 = document.getElementById('skill-5');
-  const icon5 = document.getElementById('icon-5');
-  const hasMeteor = Boolean(state.grimoires.meteor);
-  if (btn5) {
-    btn5.classList.toggle('hidden-slot', !hasMeteor);
-    btn5.classList.toggle('locked-skill', !hasMeteor);
-    if (icon5) icon5.textContent = '☄️';
-  }
-
   const btn6 = document.getElementById('skill-6');
   const icon6 = document.getElementById('icon-6');
   const hasFlamePatch = Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0);
   if (btn6) {
     btn6.classList.toggle('hidden-slot', !hasFlamePatch);
     btn6.classList.toggle('locked-skill', !hasFlamePatch);
-    if (icon6) icon6.textContent = '🔥';
+    if (icon6) icon6.textContent = '♨️';
   }
 
   const autoBtn = document.getElementById('btn-auto-cast');
@@ -4647,11 +4488,11 @@ function gameLoop(nowMs) {
   }
   if (c.meteorCdRem > 0) {
     c.meteorCdRem = Math.max(0, c.meteorCdRem - dt);
-    if (c.meteorCdRem === 0 && c.wasOnCd[5]) {
-      triggerReadyFlash('skill-5');
-      c.wasOnCd[5] = false;
+    if (c.meteorCdRem === 0 && c.wasOnCd[3]) {
+      triggerReadyFlash('skill-3');
+      c.wasOnCd[3] = false;
     } else {
-      c.wasOnCd[5] = true;
+      c.wasOnCd[3] = true;
     }
   }
   if (c.flamePatchCdRem > 0) {
@@ -4759,47 +4600,47 @@ function updateLiveHUD() {
   const casterAvatar = document.getElementById('caster-avatar');
   const castingOrb = document.getElementById('casting-orb');
   const combBg = document.getElementById('combustion-bg');
-  const isPyroReady =
-    c.castingSkill === 'pyroblast' || (state.grimoires.pyroblast && c.critStreak === 2);
+  const isMeteorReady =
+    c.castingSkill === 'meteor' || (state.grimoires.meteor && c.critStreak === 2);
 
-  casterAvatar.classList.toggle('casting-active', Boolean(c.castingSkill) && !isPyroReady);
-  casterAvatar.classList.toggle('pyro-ready-mode', isPyroReady);
+  casterAvatar.classList.toggle('casting-active', Boolean(c.castingSkill) && !isMeteorReady);
+  casterAvatar.classList.toggle('pyro-ready-mode', isMeteorReady);
   casterAvatar.classList.toggle('combustion-mode', c.combustionRem > 0);
-  castingOrb.classList.toggle('active', Boolean(c.castingSkill) && !isPyroReady);
-  castingOrb.classList.toggle('pyro-ready', isPyroReady);
+  castingOrb.classList.toggle('active', Boolean(c.castingSkill) && !isMeteorReady);
+  castingOrb.classList.toggle('pyro-ready', isMeteorReady);
   combBg.classList.toggle('active', c.combustionRem > 0);
   // 연계 신호는 실제 치명타와 발화 상태를 그대로 따라갑니다.
   const arenaArt = document.getElementById('combat-arena');
   arenaArt.classList.toggle('art-combustion', c.combustionRem > 0);
-  arenaArt.classList.toggle('art-hot-streak', Boolean(state.grimoires.pyroblast && c.critStreak === 2));
+  arenaArt.classList.toggle('art-hot-streak', Boolean(state.grimoires.meteor && c.critStreak === 2));
   const heatSigils = document.getElementById('heat-sigils');
-  heatSigils.hidden = !state.grimoires.pyroblast;
+  heatSigils.hidden = !state.grimoires.meteor;
   heatSigils.dataset.heat = String(c.critStreak);
   heatSigils.setAttribute('aria-label', `연속 치명타 ${c.critStreak}회`);
-  document.getElementById('skill-2').classList.toggle('art-followup', Boolean(state.grimoires.pyroblast && c.critStreak === 1 && c.fbCharges > 0));
+  document.getElementById('skill-2').classList.toggle('art-followup', Boolean(state.grimoires.meteor && c.critStreak === 1 && c.fbCharges > 0));
   document.getElementById('skill-4').classList.toggle('art-active', c.combustionRem > 0);
 
   const castFill = document.getElementById('castbar-fill');
   const castWrapper = castFill ? castFill.parentElement : null;
   const castName = document.getElementById('castbar-name');
   const castTime = document.getElementById('castbar-time');
-  if (castWrapper) castWrapper.classList.toggle('pyro-cast', isPyroReady);
-  if (castFill) castFill.classList.toggle('pyro-cast', isPyroReady);
+  if (castWrapper) castWrapper.classList.toggle('pyro-cast', isMeteorReady);
+  if (castFill) castFill.classList.toggle('pyro-cast', isMeteorReady);
 
   if (c.castingSkill) {
     const progress = ((c.castTotal - c.castRemaining) / c.castTotal) * 100;
     castFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
-    if (c.castingSkill === 'pyroblast') {
-      castName.textContent = '🌋 거대 화염구 시전 중';
-    } else if (isPyroReady) {
-      castName.textContent = '🔥 화염구 (🌋거대 화염구 장전됨!)';
+    if (c.castingSkill === 'meteor') {
+      castName.textContent = '☄️ 메테오 시전 중';
+    } else if (isMeteorReady) {
+      castName.textContent = '🔥 화염구 (☄️메테오 장전됨!)';
     } else {
       castName.textContent = '🔥 화염구';
     }
     castTime.textContent = `${c.castRemaining.toFixed(1)}s`;
-  } else if (state.grimoires.pyroblast && c.critStreak === 2) {
+  } else if (state.grimoires.meteor && c.critStreak === 2) {
     castFill.style.width = '100%';
-    castName.textContent = '🌋 거대 화염구 준비 완료!';
+    castName.textContent = '☄️ 메테오 준비 완료!';
     castTime.textContent = '즉시 발사!';
   } else {
     castFill.style.width = '0%';
@@ -4848,9 +4689,9 @@ function updateLiveHUD() {
 
   const btn3 = document.getElementById('skill-3');
   if (btn3) {
-    const isPyroProc = Boolean(state.grimoires.pyroblast && c.critStreak === 2);
-    btn3.classList.toggle('proc-glow', isPyroProc);
-    if (state.grimoires.pyroblast) {
+    const isMeteorProc = Boolean(state.grimoires.meteor && c.critStreak === 2);
+    btn3.classList.toggle('proc-glow', isMeteorProc);
+    if (state.grimoires.meteor) {
       setRadialSweep(document.getElementById('gcd-3'), c.critStreak === 2 ? 0 : c.gcdRemaining, c.gcdTotal, false);
     }
   }
@@ -4860,7 +4701,7 @@ function updateLiveHUD() {
   }
 
   if (state.grimoires.meteor) {
-    setRadialSweep(document.getElementById('cd-5'), c.meteorCdRem, c.meteorCdTotal, true);
+    setRadialSweep(document.getElementById('cd-3'), c.critStreak === 2 ? 0 : c.meteorCdRem, c.meteorCdTotal, true);
   }
 
   if ((state.skillTree.flame_patch || 0) > 0) {
@@ -4972,6 +4813,17 @@ function saveGame() {
   } catch (e) {}
 }
 
+// 옛 저장 데이터의 투자 보너스를 손실 없이 한 번만 이전합니다.
+function migrateMeteorSave() {
+  if (state.grimoires.pyroblast) state.grimoires.meteor = true;
+  const oldLevel = Math.max(0, Number(state.skillMastery.pyroblast) || 0);
+  state.skillMastery.meteor += Math.ceil(oldLevel * 0.1 / 0.12);
+  if (Object.hasOwn(state.skillAuto, 'pyroblast')) state.skillAuto.meteor = state.skillAuto.pyroblast;
+  delete state.grimoires.pyroblast;
+  delete state.skillMastery.pyroblast;
+  delete state.skillAuto.pyroblast;
+}
+
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -5004,14 +4856,16 @@ function loadGame() {
     if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
     if (typeof data.canAscend === 'boolean') state.canAscend = data.canAscend;
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
+    migrateMeteorSave();
+    saveGame();
   } catch (e) {}
 }
 
 function initEvents() {
   initSkillTooltips();
   document.getElementById('dummy-avatar').addEventListener('click', () => {
-    if (state.grimoires.pyroblast && state.combat.critStreak === 2) {
-      triggerSkill('pyroblast');
+    if (state.grimoires.meteor && state.combat.critStreak === 2) {
+      triggerSkill('meteor');
     } else {
       triggerSkill('fireball');
     }
@@ -5028,9 +4882,8 @@ function initEvents() {
     const map = {
       Digit1: 'fireball',
       Digit2: 'fireblast',
-      Digit3: 'pyroblast',
+      Digit3: 'meteor',
       Digit4: 'combustion',
-      Digit5: 'meteor',
       Digit6: 'flame_patch'
     };
     const skill = map[e.code] || map[`Digit${e.key}`];
