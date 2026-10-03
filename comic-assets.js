@@ -44,10 +44,16 @@ function drawComicSummon(painter,index,x,y,size){
  painter.drawImage(comicEquipment,index%4*cell,Math.floor(index/4)*cell,cell,cell,x-size/2,y-size/2,size,size);
 }
 function configureComicMonster(stage){
- const el=document.getElementById('dummy-emoji');if(!el)return;el.dataset.monsterStage=String(stage);if(stage<=2){el.style.cssText='';el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';return;}
+ const el=document.getElementById('dummy-emoji');if(!el)return;
+ const avatar=document.getElementById('dummy-avatar');
+ // 공통 접지 틀은 유지하고 원화만 단계와 보스 여부에 맞춰 확대합니다.
+ const baseHeight=avatar?avatar.clientHeight:126;
+ const growth=stage<=2?(stage===1?.62:.72):Math.min(1.62,.76+stage*.035)+(stage%5===0?.18:0);
+ el.dataset.monsterStage=String(stage);
+ if(stage<=2){el.style.cssText='';el.style.width=`${baseHeight*growth*1.55}px`;el.style.height=el.style.width;el.style.bottom=`${-baseHeight*growth*1.55*.1252}px`;el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';return;}
  const frame=COMIC_MONSTER_FRAMES[Math.min(stage-3,stage%5===0?19:18)];if(!frame)return;
- el.textContent='';el.dataset.art='monster';el.dataset.variant='';
- const avatar=document.getElementById('dummy-avatar');const height=avatar?avatar.clientHeight:126;
+ el.textContent='';el.dataset.art='monster';el.dataset.variant='';el.style.bottom='0px';
+ const height=baseHeight*growth;
  const scale=height/frame.h;
  el.style.clipPath=frame.clip;el.style.width=`${frame.w*scale}px`;el.style.height=`${height}px`;
  el.style.backgroundImage="url('assets/art/comic-monsters-clean.png')";

@@ -266,6 +266,18 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 @media(max-width:768px) { .shop-title{font-size:.85rem}.shop-desc{font-size:.66rem}.stat-pill .label{font-size:.6rem} }
 
 .shop-card .shop-desc,.shop-card .shop-desc * { color:#635044 !important; }
-[data-skill='meteor'] .skill-icon,[data-skill='flame_patch'] .skill-icon {font-size:0;background-image:url('assets/art/comic-equipment-atlas.png');background-size:400% 400%;}
+[data-skill='meteor'] .skill-icon,[data-skill='flame_patch'] .skill-icon {position:absolute;inset:0;border-radius:5px;font-size:0;background-image:url('assets/art/comic-equipment-atlas.png');background-size:400% 400%;}
 [data-skill='meteor'] .skill-icon {background-position:100% 100%;}
 [data-skill='flame_patch'] .skill-icon {background-image:url('assets/art/comic-skill-atlas.png');background-size:200% 200%;background-position:0 0;}
+
+/* 이미지로 치환한 특성 아이콘의 부모에도 명시적인 영역을 확보합니다. */
+.wow-node-icon { display:block;width:100%;height:100%; }
+.wow-tt-icon .comic-icon { width:100%;height:100%; }
+[data-skill='meteor'] .skill-name,[data-skill='flame_patch'] .skill-name { position:absolute;bottom:0;left:0;right:0;padding:3px 0;background:#140e16ce;text-shadow:0 1px 2px #000; }
+
+/* 어두운 마법부여 카드에는 양피지 상점의 짙은 글자색을 적용하지 않습니다. */
+.infusion-card .shop-title { color:#fff0d5; }
+.infusion-card .shop-desc { color:#d8d1c5;font-size:.75rem;line-height:1.5; }
+.infusion-card.maxed-infusion { background:#29232b; }
+.inf-sub-hint { color:#cfc5b8; }
+.inf-buy-btn:disabled { color:#b8c4d3; }
