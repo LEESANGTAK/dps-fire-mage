@@ -52,12 +52,21 @@ const repeatedBody = { x:0,vx:0,squash:0,vs:0,cloth:0,vc:0 };
 for (let i=0;i<2400;i++) {
   const p=(i%12)/12;
   const target=standingCastTarget(combat,{kind:'fireball',remaining:.3*(1-p),total:.3});
-  advanceSpring(repeatedBody,1/120,target.lean,target.squash);
+  advanceSpring(repeatedBody,1/120,target.lean,target.squash,2.1);
   assert.ok(Math.abs(repeatedBody.x)<13 && Math.abs(repeatedBody.squash)<.016,'연속 발사로 상체 반응이 누적되면 안 됩니다.');
 }
 for (let i=0;i<240;i++) advanceSpring(repeatedBody,1/120,0,0);
 assert.ok(Math.abs(repeatedBody.x)<.01 && Math.abs(repeatedBody.cloth)<.01,'시전 종료 후 상체와 장식이 복귀해야 합니다.');
 assert.ok(Math.abs(armTarget({...combat,castingSkill:'fireball',castTotal:.05,castRemaining:.001},rest))<.08,'초고속 시전에서는 준비 진폭을 줄여야 합니다.');
+for (const duration of [.4,1.5,2.5]) {
+  const raised=armTarget({...combat,castingSkill:'fireball',castTotal:duration,castRemaining:duration-.05},rest);
+  assert.ok(Math.abs(raised)>=.16*Math.min(1,duration/.6)*.98,'시전 길이와 무관하게 50ms 내에 준비 자세의 98%에 도달해야 합니다.');
+}
+assert.ok(armTarget(combat,{kind:'fireball',remaining:.29,total:.3})>.273,'발사 10ms 내에 끝 자세에 가까워야 합니다.');
+assert.equal(armTarget(combat,{kind:'fireball',remaining:.25,total:.3}),.275,'발사 끝 자세를 짧게 유지해야 합니다.');
+const briskBody={x:0,vx:0,squash:0,vs:0,cloth:0,vc:0};
+for(let i=0;i<6;i++) advanceSpring(briskBody,1/120,10,.01,2.1);
+assert.ok(briskBody.x>6 && briskBody.cloth<briskBody.x*.4,'상체는 빠르게 반응하고 장식은 뒤따라야 합니다.');
 for (const duration of [0.02, 0.05, 0.1, 1.5]) {
   for (let i = 0; i <= 10; i++) {
     const fast = { ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * i / 10 };

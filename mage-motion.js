@@ -13,13 +13,13 @@ const mageFrames = {
   hot: { box: [1065, 520, 445, 435], foot: [1290, 941], tip: [1465, 578] }
 };
 
-function advanceSpring(spring, dt, targetX, targetSquash) {
+function advanceSpring(spring, dt, targetX, targetSquash, response = 1) {
   const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
   const h = dt / steps;
   for (let i = 0; i < steps; i++) {
-    spring.vx += ((targetX - spring.x) * 270 - spring.vx * 23) * h;
+    spring.vx += ((targetX - spring.x) * 270 * response * response - spring.vx * 23 * response) * h;
     spring.x += spring.vx * h;
-    spring.vs += ((targetSquash - spring.squash) * 320 - spring.vs * 25) * h;
+    spring.vs += ((targetSquash - spring.squash) * 320 * response * response - spring.vs * 25 * response) * h;
     spring.squash += spring.vs * h;
     // 옷과 모자는 몸보다 느린 스프링으로 뒤따릅니다.
     spring.vc += ((spring.x - spring.cloth) * 110 - spring.vc * 14) * h;
@@ -30,18 +30,22 @@ function advanceSpring(spring, dt, targetX, targetSquash) {
 // 반복 입력은 관절의 목표만 바꿉니다. 각도를 누적하거나 자세를 순간 이동시키지 않습니다.
 function armTarget(combat, gesture) {
   const ease = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+  const snap = t => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 4);
   if (gesture.remaining > 0 && ['fireball', 'fireblast'].includes(gesture.kind)) {
     const p = 1 - gesture.remaining / gesture.total;
-    // 발사 순간에 이미 겨냥하며, 작은 오버슈트 후 느리게 복귀합니다.
-    if (p < 0.12) return 0.24 + 0.035 * Math.sin(p / 0.12 * Math.PI / 2);
-    if (p < 0.72) return 0.275 * (1 - ease((p - 0.12) / 0.6));
+    // 발사와 동시에 뻗고 18ms 안에 끝 자세에 도달한 뒤 잠깐 유지합니다.
+    if (p < 0.06) return 0.24 + 0.035 * snap(p / 0.06);
+    if (p < 0.2) return 0.275;
+    if (p < 0.72) return 0.275 * (1 - ease((p - 0.2) / 0.52));
     return -0.012 * Math.sin((p - 0.72) / 0.28 * Math.PI);
   }
   if (combat.castingSkill === 'fireball') {
-    // 초반에 팔을 당겨 모으고 유지한 뒤, 끝에서 한 번 더 힘을 줍니다.
+    // 긴 시전에서도 팔 올리기는 70ms 안에 끝내고 모으는 자세를 유지합니다.
     const p = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
     const strength = Math.min(1, Math.max(0.35, combat.castTotal / 0.6));
-    return -(0.16 * ease(p / 0.28) + 0.04 * ease((p - 0.78) / 0.22)) * strength;
+    const raiseTime = Math.min(0.07, combat.castTotal * 0.16);
+    const elapsed = combat.castTotal - combat.castRemaining;
+    return -(0.16 * snap(elapsed / Math.max(0.001, raiseTime)) + 0.04 * snap((p - 0.88) / 0.12)) * strength;
   }
   return 0;
 }
@@ -73,7 +77,8 @@ function renderStandingMage(context, art, dt, reduced) {
   if (reduced) {
     spring.x = spring.vx = spring.squash = spring.vs = spring.cloth = spring.vc = 0;
   } else {
-    advanceSpring(spring, dt, body.lean, body.squash);
+    // 상체는 빠르게 힘을 받아 주고 옷·모자의 느린 관성은 그대로 남깁니다.
+    advanceSpring(spring, dt, body.lean, body.squash, engaged ? 2.1 : 1);
     idle.shear -= spring.x / 320;
     idle.breath *= 1 - spring.squash;
     idle.cloth += (spring.cloth - spring.x) * 0.45;
