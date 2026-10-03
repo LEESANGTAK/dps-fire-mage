@@ -1320,9 +1320,10 @@ function updateFlameEvolutionUI(silent = false) {
 }
 
 const rockDebris = [];
+let lastMeteorShakeTime = -Infinity;
 
 function spawnMeteorRockDebris(x, y, scale = 1.0) {
-  const count = Math.max(8, Math.round(16 * scale));
+  const count = Math.min(Math.max(8, Math.round(12 * scale)), Math.max(0, 48 - rockDebris.length));
   for (let i = 0; i < count; i++) {
     // 좌우 사방으로 퍼져 나가도록 각도 및 속도 설정
     const side = i % 2 === 0 ? 1 : -1;
@@ -1526,15 +1527,7 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
     maxLife: fallDuration
   });
 
-  // 거대 운석 암석 폴리곤 정점 생성 (회전하며 낙하하는 불타는 바위 덩어리 연출)
-  const meteorRadius = 51 * scale; // 기존 34 * scale 대비 정확히 1.5배!
-  const rockVerts = [];
-  const numVerts = 9;
-  for (let i = 0; i < numVerts; i++) {
-    const ang = (i / numVerts) * Math.PI * 2;
-    const r = meteorRadius * (0.68 + ((i * 37) % 10) * 0.026);
-    rockVerts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
-  }
+  const meteorRadius = 51 * scale;
 
   // 첨부 이미지 기준: 상단 중앙 스테이지 배너(#arena-stage-banner)의 'STAGE 1-1' 바로 아래 위치에서 출현!
   const arenaEl = document.getElementById('combat-arena');
@@ -1558,8 +1551,7 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
     progress: 0,
     duration: fallDuration,
     radius: meteorRadius,
-    rockVerts,
-    rot: Math.random() * Math.PI * 2,
+    trailClock: 0,
     scale,
     flyAudio,
     onImpact: onImpactCallback
@@ -1784,9 +1776,11 @@ function updateAndDrawVfx(dt) {
   drawSummonsAndAuras(dt);
 
   const gCtx = groundCtx || ctx;
+  const meteorDt = state.isPaused ? 0 : dt;
+  const reducedMeteor = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   for (let i = groundEffects.length - 1; i >= 0; i--) {
     const g = groundEffects[i];
-    g.life += dt;
+    g.life += meteorDt;
     if (g.life >= g.maxLife) {
       groundEffects.splice(i, 1);
       continue;
@@ -1850,11 +1844,7 @@ function updateAndDrawVfx(dt) {
 
   for (let i = meteors.length - 1; i >= 0; i--) {
     const m = meteors[i];
-    m.progress += dt / m.duration;
-    // 초반에는 천천히 회전하다가 낙하 속도가 붙을수록 회전도 가속
-    const speedFactor = 0.4 + 3.2 * Math.pow(Math.min(1, m.progress), 2.2);
-    m.rot = (m.rot || 0) + dt * 5.5 * speedFactor;
-
+    m.progress += meteorDt / m.duration;
     if (!state.soundOn && m.flyAudio && !m.flyAudio.paused) {
       try {
         m.flyAudio.pause();
@@ -1869,112 +1859,59 @@ function updateAndDrawVfx(dt) {
         } catch (e) {}
       }
       // 메테오 충돌 시 대규모 화염 폭발 + 이중 충격파 + 사방으로 튀어 나가는 바위 파편들!
-      spawnParticles(m.targetX, m.targetY, Math.round(65 * m.scale), '#fef08a', '#dc2626', 2.2 * m.scale);
-      spawnMeteorRockDebris(m.targetX, m.targetY, m.scale);
-      shockwaves.push({
-        x: m.targetX,
-        y: m.targetY + 12,
-        life: 0,
-        maxLife: 0.45,
-        maxRadius: 125 * m.scale,
-        rgb: '251, 146, 60',
-        flat: true,
-        lineWidth: 6 * m.scale
-      });
-      shockwaves.push({
-        x: m.targetX,
-        y: m.targetY,
-        life: 0,
-        maxLife: 0.35,
-        maxRadius: 85 * m.scale,
-        rgb: '254, 240, 138',
-        flat: false,
-        lineWidth: 4.5 * m.scale
-      });
-      triggerArenaShake('lg');
+      const burstCount = Math.min(reducedMeteor ? 6 : Math.round(30 * m.scale), Math.max(0, 220 - particles.length));
+      spawnParticles(m.targetX, m.targetY, burstCount, '#ffe4a0', '#e8592f', 1.8 * m.scale);
+      if (!reducedMeteor) spawnMeteorRockDebris(m.targetX, m.targetY, m.scale);
+      if (!reducedMeteor && shockwaves.length <= 28) {
+        shockwaves.push({
+          x: m.targetX,
+          y: m.targetY + 12,
+          life: 0,
+          maxLife: 0.45,
+          maxRadius: 125 * m.scale,
+          rgb: '251, 146, 60',
+          flat: true,
+          lineWidth: 6 * m.scale
+        });
+        shockwaves.push({
+          x: m.targetX,
+          y: m.targetY,
+          life: 0,
+          maxLife: 0.35,
+          maxRadius: 85 * m.scale,
+          rgb: '254, 240, 138',
+          flat: false,
+          lineWidth: 4.5 * m.scale
+        });
+      }
+      const now = performance.now() / 1000;
+      if (!reducedMeteor && m.scale >= 0.9 && now - lastMeteorShakeTime >= 0.3) {
+        lastMeteorShakeTime = now;
+        triggerArenaShake('lg');
+      }
       playSound('meteor_impact');
       if (m.onImpact) m.onImpact();
       meteors.splice(i, 1);
       continue;
     }
 
-    // 강한 Ease-In 가속 곡선 (p^3.5):
-    // 처음 상공에 나타났을 때는 아주 느리게 내려오다가, 점점 중력 가속도가 붙어 땅에 부딪힐 때 최고 속도로 격돌!
-    const t = Math.pow(m.progress, 3.5);
-    const x = m.startX + (m.targetX - m.startX) * t;
-    const y = m.startY + (m.targetY - m.startY) * t;
-
-    // 먼 곳에서 점점 다가오는 원근감 스케일 연출:
-    // 처음 배너 아래에 나타날 때는 작은 크기(0.42배)로 시작해, 지면으로 다가올수록 점점 거대하게(1.12배) 확대!
-    const popIn = m.progress < 0.08 ? m.progress / 0.08 : 1.0;
-    const appearScale = (0.42 + 0.70 * Math.pow(m.progress, 2.2)) * (0.35 + 0.65 * popIn);
-    const curRadius = m.radius * appearScale;
-
-    // 가속이 붙을수록 더 크고 맹렬해지는 화염 꼬리 파티클
-    const trailCount = m.progress > 0.45 ? 3 : 1;
-    for (let tr = 0; tr < trailCount; tr++) {
-      particles.push({
-        x: x + (Math.random() * 20 - 10) * m.scale * appearScale,
-        y: y + (Math.random() * 20 - 10) * m.scale * appearScale,
-        vx: (-25 - 65 * m.progress) + Math.random() * 20,
-        vy: (-25 - 65 * m.progress) + Math.random() * 20,
-        radius: (10 + Math.random() * 9) * m.scale * appearScale,
-        life: 0,
-        maxLife: 0.22 + m.progress * 0.08,
-        colorCore: '#fde047',
-        colorEdge: '#dc2626'
-      });
-    }
-
-    // 메테오 외곽 화염 코로나 광채 (1.5배 확대된 curRadius 기반)
-    const grad = ctx.createRadialGradient(x, y, 5, x, y, curRadius * 1.35);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.28, '#fde047');
-    grad.addColorStop(0.62, '#ea580c');
-    grad.addColorStop(1, 'rgba(185, 28, 28, 0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(x, y, curRadius * 1.35, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 메테오 중심부의 거대한 불타는 암석(운석) 폴리곤 렌더링
-    if (m.rockVerts && m.rockVerts.length > 0) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(appearScale, appearScale);
-      ctx.rotate(m.rot);
-      ctx.beginPath();
-      ctx.moveTo(m.rockVerts[0].x, m.rockVerts[0].y);
-      for (let v = 1; v < m.rockVerts.length; v++) {
-        ctx.lineTo(m.rockVerts[v].x, m.rockVerts[v].y);
-      }
-      ctx.closePath();
-      const rockGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, m.radius * 0.75);
-      rockGrad.addColorStop(0, '#fef08a');
-      rockGrad.addColorStop(0.45, '#b45309');
-      rockGrad.addColorStop(0.82, '#44403c');
-      rockGrad.addColorStop(1, '#1c1917');
-      ctx.fillStyle = rockGrad;
-      ctx.fill();
-      ctx.strokeStyle = '#fb923c';
-      ctx.lineWidth = 2.5 * m.scale;
-      ctx.stroke();
-      ctx.restore();
-    }
+    const pose = getMeteorPose(m);
+    emitMeteorTrail(m, pose, meteorDt, particles, reducedMeteor);
+    drawComicMeteor(ctx, m, pose);
   }
 
   // 메테오 충돌 시 사방으로 튀어 나가는 바위 파편(Rock Debris) 물리 업데이트 및 렌더링
   for (let i = rockDebris.length - 1; i >= 0; i--) {
     const d = rockDebris[i];
-    d.life += dt;
+    d.life += meteorDt;
     if (d.life >= d.maxLife) {
       rockDebris.splice(i, 1);
       continue;
     }
-    d.x += d.vx * dt;
-    d.y += d.vy * dt;
-    d.vy += d.gravity * dt;
-    d.rot += d.vRot * dt;
+    d.x += d.vx * meteorDt;
+    d.y += d.vy * meteorDt;
+    d.vy += d.gravity * meteorDt;
+    d.rot += d.vRot * meteorDt;
 
     // 지면에 닿으면 한 번 튕겨 오르는 바운스 물리 연출
     if (!d.bounced && d.y >= d.groundY && d.vy > 0) {

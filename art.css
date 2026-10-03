@@ -311,3 +311,7 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .combat-arena[data-environment='ruins'] { border-color:#8a5948; }
 .combat-arena[data-environment='citadel'] { border-color:#9b7144; }
 .combat-arena[data-environment='void'] { border-color:#766292; }
+
+/* 거친 운석 원화를 메테오 액션바와 설명 아이콘에도 적용합니다. */
+.comic-icon[data-sheet='meteor'] { background:url('assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
+[data-skill='meteor'] .skill-icon { background:url('assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
