@@ -45,13 +45,24 @@ for (const frame of Object.values(mageFrames)) {
 }
 console.log('시전속도·몰열·발사·반동·발화 포즈 검증 통과');
 
-// 초고속 반복 시전에서도 몸은 고정되고 팔 회전은 작은 범위에 머뭅니다.
+// 초고속 반복 시전에서도 접지 포즈와 팔 회전 범위는 유지합니다.
 const { armTarget } = require('./mage-motion.js');
+const { standingCastTarget } = require('./mage-motion.js');
+const repeatedBody = { x:0,vx:0,squash:0,vs:0,cloth:0,vc:0 };
+for (let i=0;i<2400;i++) {
+  const p=(i%12)/12;
+  const target=standingCastTarget(combat,{kind:'fireball',remaining:.3*(1-p),total:.3});
+  advanceSpring(repeatedBody,1/120,target.lean,target.squash);
+  assert.ok(Math.abs(repeatedBody.x)<13 && Math.abs(repeatedBody.squash)<.016,'연속 발사로 상체 반응이 누적되면 안 됩니다.');
+}
+for (let i=0;i<240;i++) advanceSpring(repeatedBody,1/120,0,0);
+assert.ok(Math.abs(repeatedBody.x)<.01 && Math.abs(repeatedBody.cloth)<.01,'시전 종료 후 상체와 장식이 복귀해야 합니다.');
+assert.ok(Math.abs(armTarget({...combat,castingSkill:'fireball',castTotal:.05,castRemaining:.001},rest))<.08,'초고속 시전에서는 준비 진폭을 줄여야 합니다.');
 for (const duration of [0.02, 0.05, 0.1, 1.5]) {
   for (let i = 0; i <= 10; i++) {
     const fast = { ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * i / 10 };
     assert.equal(selectMagePose(fast, rest), 'idle');
-    assert.ok(Math.abs(armTarget(fast, rest)) <= 0.18);
+    assert.ok(Math.abs(armTarget(fast, rest)) <= 0.201);
   }
 }
 // 픽셀 읽기가 금지된 파일 실행 환경에서도 이미지 원본을 사용해야 합니다.
@@ -71,7 +82,7 @@ assert.ok(trailPool.every(p => p.maxLife <= 0.24));
 vm.runInContext("emitComicTrail(trailShot, 0, 0, 1, trailPool, true)", projectileContext);
 assert.equal(trailPool.length, 96);
 
-assert.ok(Math.abs(armTarget({ ...combat, castingSkill:'fireball', castRemaining:1 }, rest)) < 0.0001);
+assert.ok(armTarget({ ...combat, castingSkill:'fireball', castRemaining:1 }, rest) < -0.1, '시전 초반부터 팔의 준비 동작이 읽혀야 합니다.');
 assert.equal(armTarget(combat, {kind:'fireball', remaining:0.3, total:0.3}), 0.24);
 let previousAngle = 0.24;
 for(let i=1;i<=300;i++) {

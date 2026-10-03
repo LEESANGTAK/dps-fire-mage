@@ -38,10 +38,18 @@ function armTarget(combat, gesture) {
     return -0.012 * Math.sin((p - 0.72) / 0.28 * Math.PI);
   }
   if (combat.castingSkill === 'fireball') {
-    // 긴 시전 내내 흔들지 않고 마지막 0.18초에만 손목을 조금 젖힙니다.
-    return -0.09 * ease(1 - combat.castRemaining / Math.min(0.18, Math.max(0.001, combat.castTotal)));
+    // 초반에 팔을 당겨 모으고 유지한 뒤, 끝에서 한 번 더 힘을 줍니다.
+    const p = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
+    const strength = Math.min(1, Math.max(0.35, combat.castTotal / 0.6));
+    return -(0.16 * ease(p / 0.28) + 0.04 * ease((p - 0.78) / 0.22)) * strength;
   }
   return 0;
+}
+
+function standingCastTarget(combat, gesture) {
+  const angle = armTarget(combat, gesture);
+  // 손의 추진을 상체에 연결하되 접지점과 최대 진폭은 유지합니다.
+  return { lean: angle * 42, squash: Math.abs(angle) * 0.045 };
 }
 
 // 서로 다른 주기와 시차로 단순한 한 박자 반복을 피합니다.
@@ -61,6 +69,16 @@ function renderStandingMage(context, art, dt, reduced) {
   const spring = mageSpring;
   const engaged = state.combat.castingSkill || mageGesture.remaining > 0;
   const idle = livingMageMotion(spring.time, reduced, engaged);
+  const body = standingCastTarget(state.combat, mageGesture);
+  if (reduced) {
+    spring.x = spring.vx = spring.squash = spring.vs = spring.cloth = spring.vc = 0;
+  } else {
+    advanceSpring(spring, dt, body.lean, body.squash);
+    idle.shear -= spring.x / 320;
+    idle.breath *= 1 - spring.squash;
+    idle.cloth += (spring.cloth - spring.x) * 0.45;
+    idle.hat += (spring.cloth - spring.x) * 0.35;
+  }
   const target = reduced ? 0 : armTarget(state.combat, mageGesture) + idle.wrist;
   // 발사 자세는 피해·투사체 생성과 같은 프레임에 맞춥니다.
   spring.arm = target;
@@ -70,8 +88,9 @@ function renderStandingMage(context, art, dt, reduced) {
   const ox = 294 - frame.foot[0], oy = 638 - frame.foot[1];
   const pivot = [302, 329];
   const wrist = [345, 329];
-  const elbowAngle = spring.arm * 0.18;
-  const wristAngle = spring.arm * 0.82;
+  // 소매와 팔의 회전이 주동작이며 손목·지팡이는 작게 뒤따릅니다.
+  const elbowAngle = spring.arm * 0.72;
+  const wristAngle = spring.arm * 0.28;
   // 소매·손·지팡이만 분리합니다. 관절 안쪽은 겹쳐 회전할 때 빈틈을 막습니다.
   const outline = [[296,310],[326,300],[356,308],[397,252],[413,194],[452,161],[500,191],[502,239],[427,271],[366,343],[337,400],[301,384]];
   function armPath() {
@@ -123,7 +142,6 @@ function renderMage(art, pose, dt, reduced) {
   if (pose === 'idle') {
     renderStandingMage(context, art, dt, reduced);
     spring.weights = { idle: 1 }; spring.pose = 'idle';
-    spring.x = spring.vx = spring.squash = spring.vs = spring.cloth = spring.vc = 0;
     return;
   }
   const strength = mageGesture.kind === 'pyroblast' ? 1.45 : 1;
@@ -228,4 +246,4 @@ function updateMageMotion(dt, paused) {
 }
 
 // 포즈 전환 경계는 브라우저 없이도 검증할 수 있습니다.
-if (typeof module !== 'undefined') module.exports = { selectMagePose, advanceSpring, mageFrames, armTarget, livingMageMotion };
+if (typeof module !== 'undefined') module.exports = { selectMagePose, advanceSpring, mageFrames, armTarget, livingMageMotion, standingCastTarget };
