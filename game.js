@@ -5335,12 +5335,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const arena = document.getElementById('combat-arena');
   if (environmentCanvas) {
     arenaEnvironment = createArenaEnvironment(environmentCanvas, arena);
-    arena.addEventListener('pointerdown', (event) => {
-      if (event.target.closest('button, input, .caster-avatar, .dummy-avatar')) return;
-      const rect = arena.getBoundingClientRect();
-      const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      arenaEnvironment.react(event.clientX - rect.left, event.clientY - rect.top, state.isPaused, reduced);
-    });
   }
   checkAndTriggerUnfolds(true);
   updateFlameEvolutionUI(true);
