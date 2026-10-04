@@ -4332,6 +4332,7 @@ function openDetailsModal() {
   const modal = document.getElementById('details-modal');
   if (!modal) return;
   playSound('item_select');
+  state.isPaused = true;
 
   const stats = state.stats || {
     totalDamage: 0,
@@ -4412,6 +4413,13 @@ function openDetailsModal() {
 function closeDetailsModal() {
   const modal = document.getElementById('details-modal');
   if (modal) modal.classList.add('hidden');
+  playSound('item_select');
+
+  const victoryModal = document.getElementById('victory-modal');
+  const isVictoryOpen = victoryModal && !victoryModal.classList.contains('hidden');
+  if (!isVictoryOpen) {
+    state.isPaused = false;
+  }
 }
 
 function resetDetailsStats() {
@@ -5267,6 +5275,14 @@ function initEvents() {
   });
 
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const detailsModal = document.getElementById('details-modal');
+      if (detailsModal && !detailsModal.classList.contains('hidden')) {
+        closeDetailsModal();
+        return;
+      }
+    }
+
     const map = {
       Digit1: 'fireball',
       Digit2: 'fireblast',
@@ -5715,6 +5731,15 @@ function initEvents() {
     openDetailsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       openDetailsModal();
+    });
+  }
+
+  const detailsModal = document.getElementById('details-modal');
+  if (detailsModal) {
+    detailsModal.addEventListener('click', (e) => {
+      if (e.target === detailsModal) {
+        closeDetailsModal();
+      }
     });
   }
 

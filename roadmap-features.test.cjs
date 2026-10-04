@@ -71,3 +71,43 @@ test('Step 3: 순환형 미니 현상금(Bounty) 퀘스트 시스템 검증', ()
   assert.ok(gameJsContent.includes('generateNextBounty'), '다음 현상금 생성 함수가 구현되어 있어야 합니다.');
   assert.ok(gameJsContent.includes('bounty-prog-fill'), '현상금 게이지 UI가 연동되어 있어야 합니다.');
 });
+
+test('Bugfix: 상세 딜미터기(Details!) 모달 hidden 스타일 우선순위 및 닫기/일시정지 무결성 검증', () => {
+  const stylesCssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+  const indexHtmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  // 1. styles.css에 전역 .hidden 및 .details-modal-backdrop.hidden 이 display: none !important 로 명시되어 있는지 검증
+  assert.ok(
+    /\.details-modal-backdrop\.hidden\s*\{[\s\S]*?display:\s*none\s*!important;/.test(stylesCssContent),
+    '.details-modal-backdrop.hidden 에 display: none !important 가 지정되어 있어야 시작 시 자동 노출되지 않고 닫힙니다.'
+  );
+  assert.ok(
+    /\.hidden\s*\{[\s\S]*?display:\s*none\s*!important;/.test(stylesCssContent),
+    '전역 .hidden 유틸리티 클래스가 display: none !important 로 선언되어 있어야 합니다.'
+  );
+
+  // 2. index.html의 details-modal 초기 상태에 hidden 클래스가 포함되어 있는지 검증
+  assert.ok(
+    indexHtmlContent.includes('id="details-modal"') &&
+    indexHtmlContent.includes('class="details-modal-backdrop hidden"'),
+    'index.html의 details-modal 요소는 초기에 hidden 클래스를 지니고 있어야 합니다.'
+  );
+
+  // 3. game.js에서 openDetailsModal 호출 시 전투 일시정지(state.isPaused = true), closeDetailsModal 호출 시 해제(state.isPaused = false) 검증
+  const openFnRegex = /function openDetailsModal\(\)\s*\{([\s\S]*?)\n\}/;
+  const closeFnRegex = /function closeDetailsModal\(\)\s*\{([\s\S]*?)\n\}/;
+
+  const openMatch = gameJsContent.match(openFnRegex);
+  const closeMatch = gameJsContent.match(closeFnRegex);
+
+  assert.ok(openMatch, 'openDetailsModal 함수가 존재해야 합니다.');
+  assert.ok(closeMatch, 'closeDetailsModal 함수가 존재해야 합니다.');
+
+  assert.ok(openMatch[1].includes('state.isPaused = true'), '상세 리포트 열람 중에는 게임이 일시정지(state.isPaused = true)되어야 합니다.');
+  assert.ok(closeMatch[1].includes('state.isPaused = false'), '상세 리포트 닫기 시에는 게임이 재개(state.isPaused = false)되어야 합니다.');
+
+  // 4. 모달 외부 배경 클릭 및 ESC 키 닫기 이벤트 핸들러가 바인딩되어 있는지 검증
+  assert.ok(gameJsContent.includes("e.target === detailsModal"), '모달 배경 클릭 시 닫기 처리가 있어야 합니다.');
+  assert.ok(gameJsContent.includes("e.key === 'Escape'"), 'ESC 키를 통한 닫기 처리가 있어야 합니다.');
+});
+
