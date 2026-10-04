@@ -4247,6 +4247,16 @@ body {
   font-size: 0.7rem;
 }
 
+.bounty-bar.reward-pop {
+  animation: bountyRewardPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bountyRewardPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); border-color: #fbbf24; box-shadow: 0 0 16px rgba(251, 191, 36, 0.7); }
+  100% { transform: scale(1); }
+}
+
 /* 4. 불사조 승천 오라 */
 .ascension-aura {
   position: relative;
@@ -4477,4 +4487,125 @@ body {
   padding-top: 12px;
   margin-top: 4px;
 }
+
+/* 6. 발 아래 자동 시전 마법진 (Auto-Cast Magic Circle) */
+.autocast-magic-circle {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 170px;
+  height: 60px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+  perspective: 380px;
+}
+
+.autocast-magic-circle.hidden {
+  display: none !important;
+}
+
+.magic-circle-svg {
+  width: 170px;
+  height: 170px;
+  transform: rotateX(68deg);
+  transform-origin: center center;
+  overflow: visible;
+  transition: filter 0.4s ease, opacity 0.4s ease;
+}
+
+.mc-ring {
+  fill: none;
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.mc-outer-ring {
+  stroke-dasharray: 6 3;
+}
+
+.mc-mid-ring {
+  stroke: #fbbf24;
+  stroke-width: 1;
+}
+
+.mc-inner-ring {
+  stroke-dasharray: 4 4;
+  stroke: #f97316;
+}
+
+.mc-poly {
+  fill: rgba(245, 158, 11, 0.06);
+  stroke: #f59e0b;
+  stroke-width: 1.2;
+}
+
+.mc-star-1 {
+  stroke: #fbbf24;
+}
+
+.mc-star-2 {
+  stroke: #ea580c;
+}
+
+.mc-node {
+  fill: #fef08a;
+  stroke: #f59e0b;
+  stroke-width: 1;
+}
+
+/* 활성 상태 (자동 시전 ON): 타오르는 룬 발광 및 황금빛 회전 */
+.autocast-magic-circle.active .magic-circle-svg {
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 22px rgba(239, 68, 68, 0.7));
+  animation: magicCircleSpin 12s linear infinite;
+  opacity: 0.95;
+}
+
+/* 대기 상태 (자동 시전 OFF): 은은한 룬 빛으로 정적 호흡 */
+.autocast-magic-circle.dormant .magic-circle-svg {
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.35));
+  animation: magicCircleSpin 28s linear infinite;
+  opacity: 0.35;
+}
+
+@keyframes magicCircleSpin {
+  0% { transform: rotateX(68deg) rotate(0deg); }
+  100% { transform: rotateX(68deg) rotate(360deg); }
+}
+
+.magic-circle-ambient-glow {
+  position: absolute;
+  width: 140px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.45) 0%, rgba(234, 88, 12, 0.22) 50%, transparent 75%);
+  pointer-events: none;
+  animation: magicCirclePulse 2s ease-in-out infinite alternate;
+}
+
+.autocast-magic-circle.dormant .magic-circle-ambient-glow {
+  opacity: 0.2;
+  animation: none;
+}
+
+@keyframes magicCirclePulse {
+  0% { transform: scale(0.92); opacity: 0.6; }
+  100% { transform: scale(1.08); opacity: 1; filter: brightness(1.25); }
+}
+
+/* 최초 습득 시 극적 확장 언폴드 연출 */
+.autocast-magic-circle.unfold-pop {
+  animation: magicCircleUnfold 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes magicCircleUnfold {
+  0% { transform: translateX(-50%) scale(0.1); opacity: 0; }
+  65% { transform: translateX(-50%) scale(1.18); opacity: 1; filter: brightness(1.8); }
+  100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
+}
+
 

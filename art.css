@@ -53,12 +53,12 @@
 .dummy-avatar { --monster-height: 126px; height: var(--monster-height); margin-top: calc(var(--monster-height) * -1); right: 0; bottom: 0; pointer-events: auto; }
 .dummy-emoji[data-art='slime'] { --slime-size: 220px; position: absolute; width: var(--slime-size); height: var(--slime-size); bottom: calc(var(--slime-size) * -0.1252); }
 .caster-avatar::before, .dummy-avatar:has([data-art='slime'])::before { bottom: -5px; height: 12px; }
-.mage-art[data-pose] { width: var(--mage-width); aspect-ratio: 1; bottom: -1px; background: none; clip-path: none; transform: none; transition: filter .25s ease-out; }
+.mage-art[data-pose] { width: var(--mage-width); aspect-ratio: 1; bottom: -1px; background: none; clip-path: none; transform: none; transition: filter .25s ease-out; z-index: 3; }
 #mage-pose-canvas { width: 100%; height: 100%; display: block; }
 .mage-muzzle { left: var(--muzzle-x, 97%); top: var(--muzzle-y, 66%); }
 .arena-side-nav, .flame-evo-badge { pointer-events: auto; }
 .caster-avatar.combustion-mode, .caster-avatar.cast-recoil { transform: none; }
-.caster-avatar::before { content: ''; position: absolute; bottom: 9%; left: -15%; width: 130%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, #08070cb0, #4a3a5055 55%, transparent 72%); }
+.caster-avatar::before { content: ''; position: absolute; bottom: 9%; left: -15%; width: 130%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, #08070cb0, #4a3a5055 55%, transparent 72%); z-index: 0; }
 .dummy-avatar:has([data-art='slime'])::before { content: ''; position: absolute; bottom: 8%; width: 110%; height: 15%; border-radius: 50%; background: radial-gradient(ellipse, #09080bb0, transparent 72%); }
 .mage-muzzle { position: absolute; left: var(--muzzle-x, 97%); top: var(--muzzle-y, 66%); width: 1px; height: 1px; }
 .mage-art.motion-combustion { filter: drop-shadow(0 0 12px #ffad38aa); }

@@ -111,3 +111,43 @@ test('Bugfix: 상세 딜미터기(Details!) 모달 hidden 스타일 우선순위
   assert.ok(gameJsContent.includes("e.key === 'Escape'"), 'ESC 키를 통한 닫기 처리가 있어야 합니다.');
 });
 
+test('UX 피드백 1: 퀘스트 달성 보상 골드 및 정수 비행 애니메이션 검증', () => {
+  assert.ok(gameJsContent.includes('spawnGoldCoinFlight(rwGold, false, bountyBarEl)'), '퀘스트 완료 시 골드 비행 애니메이션이 발동되어야 합니다.');
+  assert.ok(gameJsContent.includes('spawnEssenceFlight(rwEss, bountyBarEl)'), '퀘스트 완료 시 정수 비행 애니메이션이 발동되어야 합니다.');
+  assert.ok(gameJsContent.includes('customStartEl'), '비행 화폐 함수가 커스텀 출발지 요소를 지원해야 합니다.');
+});
+
+test('UX 피드백 2: 캐릭터 발 아래 자동시전 마법진 전개 및 발광 검증', () => {
+  const indexHtmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const stylesCssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+
+  // 마크업에 autocast-magic-circle 및 룬 SVG가 포함되어 있는지 검증
+  assert.ok(indexHtmlContent.includes('id="autocast-magic-circle"'), '캐릭터 발 아래 autocast-magic-circle 마크업이 존재해야 합니다.');
+  assert.ok(indexHtmlContent.includes('class="magic-circle-svg"'), '마법진 룬 SVG가 렌더링되어 있어야 합니다.');
+
+  // styles.css에 원근 및 회전 애니메이션 스타일 검증
+  assert.ok(stylesCssContent.includes('.autocast-magic-circle'), '마법진 CSS 클래스가 정의되어 있어야 합니다.');
+  assert.ok(stylesCssContent.includes('magicCircleSpin'), '마법진 회전 애니메이션이 정의되어 있어야 합니다.');
+  assert.ok(stylesCssContent.includes('rotateX(68deg)'), '바닥면에 눕혀진 원근감(rotateX)이 적용되어 있어야 합니다.');
+
+  // game.js에 updateAutoCastMagicCircle 함수 검증
+  assert.ok(gameJsContent.includes('function updateAutoCastMagicCircle'), 'updateAutoCastMagicCircle 함수가 구현되어 있어야 합니다.');
+});
+
+test('UX 피드백 3: 퀘스트 해금 조건 연동 및 미해금 스킬 퀘스트 배제 검증', () => {
+  // 템플릿에 req 조건 함수가 포함되어 있는지 검증
+  assert.ok(gameJsContent.includes('isBountyValid'), '퀘스트 유효성 검사 함수가 존재해야 합니다.');
+  assert.ok(gameJsContent.includes('state.grimoires.combustion'), '발화 퀘스트는 발화 스킬 해금 시에만 등장해야 합니다.');
+  assert.ok(gameJsContent.includes('state.grimoires.meteor'), '메테오 퀘스트는 메테오 스킬 해금 시에만 등장해야 합니다.');
+  assert.ok(gameJsContent.includes('state.grimoires.fireblast'), '불꽃작렬 퀘스트는 불꽃작렬 스킬 해금 시에만 등장해야 합니다.');
+  assert.ok(gameJsContent.includes('fireball_cast'), '초반 기본 퀘스트로 화염구 시전이 지원되어야 합니다.');
+});
+
+test('UX 피드백 4: 스킬 마우스 클릭 시 툴팁 즉시 닫힘 검증', () => {
+  const tooltipsJsContent = fs.readFileSync(path.join(__dirname, 'skill-tooltips.js'), 'utf8');
+  assert.ok(tooltipsJsContent.includes('pointerdown'), 'pointerdown 이벤트 리스너가 등록되어 있어야 합니다.');
+  assert.ok(tooltipsJsContent.includes('dismissOnClick'), '클릭/다운 시 즉시 툴팁을 닫는 핸들러가 구현되어 있어야 합니다.');
+  assert.ok(tooltipsJsContent.includes('button.blur()'), '클릭 후 포커스가 해제되어 툴팁이 화면에 고정되지 않아야 합니다.');
+});
+
+

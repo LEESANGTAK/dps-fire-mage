@@ -190,6 +190,25 @@
             <div class="caster-equipped-left" id="caster-equipped-left"></div>
 
             <div class="caster-avatar" id="caster-avatar">
+              <!-- 발 아래 자동 시전 마법진 -->
+              <div class="autocast-magic-circle hidden" id="autocast-magic-circle" aria-hidden="true">
+                <div class="magic-circle-ambient-glow"></div>
+                <svg class="magic-circle-svg" viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="92" class="mc-ring mc-outer-ring" />
+                  <circle cx="100" cy="100" r="78" class="mc-ring mc-mid-ring" />
+                  <circle cx="100" cy="100" r="54" class="mc-ring mc-inner-ring" />
+                  <polygon points="100,8 165,165 8,72 192,72 35,165" class="mc-poly mc-star-1" />
+                  <polygon points="100,192 35,35 192,128 8,128 165,35" class="mc-poly mc-star-2" />
+                  <circle cx="100" cy="14" r="4.5" class="mc-node" />
+                  <circle cx="100" cy="186" r="4.5" class="mc-node" />
+                  <circle cx="14" cy="100" r="4.5" class="mc-node" />
+                  <circle cx="186" cy="100" r="4.5" class="mc-node" />
+                  <circle cx="39" cy="39" r="3.5" class="mc-node" />
+                  <circle cx="161" cy="39" r="3.5" class="mc-node" />
+                  <circle cx="39" cy="161" r="3.5" class="mc-node" />
+                  <circle cx="161" cy="161" r="3.5" class="mc-node" />
+                </svg>
+              </div>
               <div class="mage-art" id="mage-art" role="img" aria-label="화염 마법사" data-pose="idle"><canvas id="mage-pose-canvas" width="640" height="640" aria-hidden="true"></canvas><span class="mage-muzzle" id="mage-muzzle"></span></div>
               <div class="casting-orb" id="casting-orb"></div>
               <div class="heat-sigils" id="heat-sigils" aria-label="연속 치명타"><i></i><i></i></div>

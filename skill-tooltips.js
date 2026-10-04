@@ -50,12 +50,32 @@ function initSkillTooltips() {
   document.querySelectorAll('.skill-btn').forEach(button => {
     const name=button.querySelector('.skill-name').textContent;
     button.removeAttribute('title'); button.setAttribute('aria-label',name);
+    let justClicked = false;
+    const dismissOnClick = () => {
+      justClicked = true;
+      hide();
+      if (document.activeElement === button && typeof button.blur === 'function') {
+        button.blur();
+      }
+    };
+    button.addEventListener('pointerdown', dismissOnClick);
+    button.addEventListener('click', dismissOnClick);
     button.addEventListener('pointerenter',event => {
       if(event.pointerType==='touch') return;
-      clearTimeout(hideTimer); clearTimeout(showTimer); showTimer=setTimeout(()=>show(button),160);
+      justClicked = false;
+      clearTimeout(hideTimer); clearTimeout(showTimer);
+      showTimer=setTimeout(()=>{
+        if (!justClicked) show(button);
+      },240);
     });
-    button.addEventListener('pointerleave',() => { clearTimeout(showTimer); scheduleHide(); });
-    button.addEventListener('focus',()=>show(button));
+    button.addEventListener('pointerleave',() => {
+      justClicked = false;
+      clearTimeout(showTimer);
+      scheduleHide();
+    });
+    button.addEventListener('focus',() => {
+      if (!justClicked) show(button);
+    });
     button.addEventListener('blur',scheduleHide);
   });
   popup.addEventListener('pointerenter',()=>clearTimeout(hideTimer));

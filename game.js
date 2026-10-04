@@ -2392,9 +2392,9 @@ function triggerEssencePillPulse() {
   }, 260);
 }
 
-function spawnGoldCoinFlight(totalGold, isBigReward = false) {
+function spawnGoldCoinFlight(totalGold, isBigReward = false, customStartEl = null) {
   const layer = document.getElementById('coin-fx-layer');
-  const rewardEl = document.getElementById('target-reward');
+  const rewardEl = customStartEl || document.getElementById('target-reward');
   const goldPillEl = document.getElementById('pill-gold') || document.getElementById('ui-gold');
 
   if (!layer || !rewardEl || !goldPillEl) {
@@ -2402,7 +2402,7 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
     return;
   }
 
-  // 출발지(#target-reward) 배지 팝 애니메이션
+  // 출발지 배지 팝 애니메이션
   rewardEl.classList.remove('reward-pop');
   void rewardEl.offsetWidth;
   rewardEl.classList.add('reward-pop');
@@ -2463,16 +2463,22 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
   }
 }
 
-function spawnEssenceFlight(totalEssence) {
+function spawnEssenceFlight(totalEssence, customStartEl = null) {
   if (!totalEssence || totalEssence <= 0) return;
 
   const layer = document.getElementById('coin-fx-layer');
-  const monsterEl = document.getElementById('dummy-avatar') || document.getElementById('target-stage-box');
+  const monsterEl = customStartEl || document.getElementById('dummy-avatar') || document.getElementById('target-stage-box');
   const essencePillEl = document.getElementById('pill-essence') || document.getElementById('ui-essence');
 
   if (!layer || !monsterEl || !essencePillEl) {
     state.pendingEssence = 0;
     return;
+  }
+
+  if (customStartEl) {
+    customStartEl.classList.remove('reward-pop');
+    void customStartEl.offsetWidth;
+    customStartEl.classList.add('reward-pop');
   }
 
   const startRect = monsterEl.getBoundingClientRect();
@@ -3355,6 +3361,7 @@ function releaseMeteor() {
 
 function finishCast(skillKey) {
   if (skillKey === 'fireball') {
+    checkBountyProgress('fireball_cast', 1);
     fireWithMultishot('fireball', 1.0);
     // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 메테오 즉시 발사 연계!
     if (state.combat.critStreak === 2 && isSkillAutoActive('meteor') && state.grimoires.meteor) {
@@ -4207,6 +4214,26 @@ function updateSkillActionBarVisibility() {
     autoBtn.className = 'auto-cast-btn has-badge-anchor';
     autoBtnText.textContent = '🤖 자동: OFF';
   }
+
+  updateAutoCastMagicCircle();
+}
+
+function updateAutoCastMagicCircle() {
+  const circleEl = document.getElementById('autocast-magic-circle');
+  if (!circleEl) return;
+  if (!state.grimoires || !state.grimoires.autocast) {
+    circleEl.classList.add('hidden');
+    circleEl.classList.remove('active', 'dormant');
+    return;
+  }
+  circleEl.classList.remove('hidden');
+  if (state.autoCast) {
+    circleEl.classList.add('active');
+    circleEl.classList.remove('dormant');
+  } else {
+    circleEl.classList.add('dormant');
+    circleEl.classList.remove('active');
+  }
 }
 
 function updateStageUI() {
@@ -4523,15 +4550,77 @@ function updateBossGimmick(dt) {
 }
 
 const BOUNTY_TEMPLATES = [
-  { type: 'crit_count', title: '치명타 {n}회 달성', baseTarget: 15, scaleTarget: 2, baseGold: 30, baseEss: 1 },
-  { type: 'meteor_hit', title: '메테오 {n}회 낙하', baseTarget: 3, scaleTarget: 0.5, baseGold: 45, baseEss: 2 },
-  { type: 'fireblast_hit', title: '불꽃 작렬 {n}회 시전', baseTarget: 5, scaleTarget: 1, baseGold: 35, baseEss: 1 },
-  { type: 'monster_kill', title: '몬스터 {n}마리 토벌', baseTarget: 4, scaleTarget: 0.5, baseGold: 50, baseEss: 2 },
-  { type: 'combustion_dmg', title: '발화 중 {n} 피해 달성', baseTarget: 500, scaleTarget: 200, baseGold: 60, baseEss: 3 }
+  {
+    type: 'crit_count',
+    title: '치명타 {n}회 달성',
+    baseTarget: 12,
+    scaleTarget: 2,
+    baseGold: 30,
+    baseEss: 1,
+    req: () => true
+  },
+  {
+    type: 'monster_kill',
+    title: '몬스터 {n}마리 토벌',
+    baseTarget: 3,
+    scaleTarget: 0.5,
+    baseGold: 50,
+    baseEss: 2,
+    req: () => true
+  },
+  {
+    type: 'fireball_cast',
+    title: '화염구 {n}회 시전',
+    baseTarget: 8,
+    scaleTarget: 1.5,
+    baseGold: 30,
+    baseEss: 1,
+    req: () => true
+  },
+  {
+    type: 'fireblast_hit',
+    title: '불꽃 작렬 {n}회 시전',
+    baseTarget: 4,
+    scaleTarget: 0.8,
+    baseGold: 35,
+    baseEss: 1,
+    req: () => Boolean(state.grimoires && state.grimoires.fireblast)
+  },
+  {
+    type: 'meteor_hit',
+    title: '메테오 {n}회 낙하',
+    baseTarget: 3,
+    scaleTarget: 0.5,
+    baseGold: 45,
+    baseEss: 2,
+    req: () => Boolean(state.grimoires && state.grimoires.meteor)
+  },
+  {
+    type: 'combustion_dmg',
+    title: '발화 중 {n} 피해 달성',
+    baseTarget: 600,
+    scaleTarget: 250,
+    baseGold: 65,
+    baseEss: 3,
+    req: () => Boolean(state.grimoires && state.grimoires.combustion)
+  }
 ];
 
+function isBountyValid(type) {
+  const tpl = BOUNTY_TEMPLATES.find((t) => t.type === type);
+  return tpl && typeof tpl.req === 'function' ? tpl.req() : true;
+}
+
 function generateNextBounty() {
-  const tpl = BOUNTY_TEMPLATES[Math.floor(Math.random() * BOUNTY_TEMPLATES.length)];
+  const available = BOUNTY_TEMPLATES.filter((t) => typeof t.req !== 'function' || t.req());
+  const fallback = BOUNTY_TEMPLATES.filter((t) => t.type === 'crit_count' || t.type === 'monster_kill');
+  const pool = available.length > 0 ? available : fallback;
+
+  const curType = state.bounty ? state.bounty.type : null;
+  const filtered = pool.filter((t) => t.type !== curType);
+  const choicePool = filtered.length > 0 ? filtered : pool;
+  const tpl = choicePool[Math.floor(Math.random() * choicePool.length)];
+
   const stg = Math.max(1, state.currentStage);
   const target = Math.max(1, Math.round(tpl.baseTarget + tpl.scaleTarget * Math.min(20, stg)));
   const title = tpl.title.replace('{n}', fmt(target));
@@ -4551,15 +4640,30 @@ function generateNextBounty() {
 }
 
 function checkBountyProgress(type, amount = 1) {
-  if (!state.bounty || state.bounty.type !== type) return;
+  if (!state.bounty || !isBountyValid(state.bounty.type)) {
+    generateNextBounty();
+    return;
+  }
+  if (state.bounty.type !== type) return;
+
   state.bounty.current = Math.min(state.bounty.target, state.bounty.current + amount);
   if (state.bounty.current >= state.bounty.target) {
-    const rwGold = state.bounty.rewardGold;
-    const rwEss = state.bounty.rewardEssence;
+    const rwGold = state.bounty.rewardGold || 0;
+    const rwEss = state.bounty.rewardEssence || 0;
     state.gold += rwGold;
-    state.essence += rwEss;
+    if (rwEss > 0) state.essence += rwEss;
     playSound('item_select');
-    spawnFloatingText(`🎯 현상금 완료! 💰+${fmt(rwGold)} 🔹+${fmt(rwEss)}`, 'fct-proc', -55, { isBig: true });
+
+    // 퀘스트 완료 보상 골드 & 정수 비행 흡수 애니메이션 발동!
+    const bountyBarEl = document.getElementById('bounty-bar') || document.getElementById('target-reward');
+    if (rwGold > 0) {
+      spawnGoldCoinFlight(rwGold, false, bountyBarEl);
+    }
+    if (rwEss > 0) {
+      spawnEssenceFlight(rwEss, bountyBarEl);
+    }
+
+    spawnFloatingText(`✨ 퀘스트 완료! 🪙+${fmt(rwGold)} 🔮+${fmt(rwEss)}`, 'fct-proc', -55, { isBig: true });
     generateNextBounty();
   } else {
     updateBountyUI();
@@ -4567,8 +4671,11 @@ function checkBountyProgress(type, amount = 1) {
 }
 
 function updateBountyUI() {
+  if (!state.bounty || !isBountyValid(state.bounty.type)) {
+    generateNextBounty();
+    return;
+  }
   const b = state.bounty;
-  if (!b) return;
   const titleEl = document.getElementById('bounty-title');
   const fillEl = document.getElementById('bounty-prog-fill');
   const textEl = document.getElementById('bounty-prog-text');
@@ -4578,7 +4685,7 @@ function updateBountyUI() {
   const pct = Math.min(100, Math.max(0, (b.current / b.target) * 100));
   if (fillEl) fillEl.style.width = `${pct}%`;
   if (textEl) textEl.textContent = `${fmt(b.current)} / ${fmt(b.target)}`;
-  if (rewardEl) rewardEl.textContent = `💰 ${fmt(b.rewardGold)} · 🔹 ${fmt(b.rewardEssence)}`;
+  if (rewardEl) rewardEl.textContent = `🪙 ${fmt(b.rewardGold)} · 🔮 ${fmt(b.rewardEssence)}`;
 }
 
 // ==========================================
@@ -5252,6 +5359,9 @@ function loadGame() {
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
     if (data.stats) Object.assign(state.stats, data.stats);
     if (data.bounty) Object.assign(state.bounty, data.bounty);
+    if (!state.bounty || !isBountyValid(state.bounty.type)) {
+      generateNextBounty();
+    }
     migrateMeteorSave();
     saveGame();
   } catch (e) {}
@@ -5436,6 +5546,13 @@ function initEvents() {
     state.grimoires[id] = true;
     if (id === 'autocast') {
       state.autoCast = true;
+      const circleEl = document.getElementById('autocast-magic-circle');
+      if (circleEl) {
+        circleEl.classList.remove('hidden');
+        circleEl.classList.remove('unfold-pop');
+        void circleEl.offsetWidth;
+        circleEl.classList.add('unfold-pop');
+      }
     }
     playSound('item_select');
     spawnFloatingText(`📜 ${g.name}!`, 'fct-proc', -35, { anchor: 'caster' });

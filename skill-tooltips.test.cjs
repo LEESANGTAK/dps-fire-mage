@@ -25,7 +25,7 @@ assert.match(buildSkillDetails('fireblast',stats,{fbCharges:1,fbMaxCharges:2},{}
 assert.match(buildSkillDetails('combustion',stats,{},{}).damage,/없음/);
 // 브라우저 접근 없이 호버·포커스·종료 및 가장자리 위치 제어를 검사합니다.
 const events={}, timers=new Map(), intervals=new Map();let nextId=0;
-const button={dataset:{skill:'fireblast'},attrs:{},classList:{contains:()=>false},querySelector:()=>({textContent:'불꽃 작렬'}),removeAttribute(key){delete this.attrs[key];},setAttribute(key,value){this.attrs[key]=value;},addEventListener(name,fn){events[name]=fn;},getBoundingClientRect:()=>({left:2,top:600,width:66,bottom:666})};
+const button={dataset:{skill:'fireblast'},attrs:{},classList:{contains:()=>false},querySelector:()=>({textContent:'불꽃 작렬'}),removeAttribute(key){delete this.attrs[key];},setAttribute(key,value){this.attrs[key]=value;},addEventListener(name,fn){events[name]=fn;},blur(){documentStub.activeElement=null;},getBoundingClientRect:()=>({left:2,top:600,width:66,bottom:666})};
 const popupEvents={},windowEvents={};
 const popup={hidden:true,offsetWidth:300,offsetHeight:230,style:{},innerHTML:'',addEventListener(name,fn){popupEvents[name]=fn;}};
 const documentStub={activeElement:null,getElementById:()=>popup,querySelector:()=>null,querySelectorAll:()=>[button]};
@@ -34,10 +34,15 @@ vm.runInContext(fs.readFileSync('skill-tooltips.js','utf8')+'\ninitSkillTooltips
 const flush=()=>{const pending=[...timers.values()];timers.clear();for(const fn of pending)fn();};
 events.pointerenter({pointerType:'mouse'});assert.ok(popup.hidden);flush();
 assert.equal(popup.hidden,false);assert.equal(button.attrs['aria-describedby'],'skill-tooltip');assert.equal(popup.style.left,'8px');assert.equal(popup.style.top,'360px');
+// 마우스 클릭 시 툴팁 즉시 닫힘 검증
+events.pointerdown();assert.ok(popup.hidden,'스킬 마우스 다운 시 툴팁이 즉시 숨겨져야 합니다.');
+events.click();assert.ok(popup.hidden,'스킬 클릭 시 툴팁이 닫혀 있어야 합니다.');
+events.pointerleave();popupEvents.pointerenter();flush();assert.ok(popup.hidden);
+events.pointerenter({pointerType:'mouse'});flush();assert.equal(popup.hidden,false);
 events.pointerleave();popupEvents.pointerenter();flush();assert.equal(popup.hidden,false);
 windowEvents.keydown({key:'Escape'});assert.ok(popup.hidden);assert.equal(intervals.size,0);
 events.pointerenter({pointerType:'touch'});flush();assert.ok(popup.hidden);
 documentStub.activeElement=button;events.focus();events.pointerleave();flush();assert.equal(popup.hidden,false);
 documentStub.activeElement=null;events.blur();flush();assert.ok(popup.hidden);
 assert.equal(button.attrs['aria-describedby'],undefined);
-console.log('5종 스킬 설명·실제 시전·쿨타임·피해량·충전 검증 통과');
+console.log('5종 스킬 설명·실제 시전·쿨타임·피해량·충전 및 클릭 시 툴팁 닫힘 검증 통과');
