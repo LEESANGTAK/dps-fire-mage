@@ -615,14 +615,50 @@ const state = {
 
   dpsHistory: [],
   skillDamage: {
-    fireball: { name: '🔥 화염구', dmg: 0, color: '#f97316' },
-    fireblast: { name: '💥 불꽃 작렬', dmg: 0, color: '#fbbf24' },
-    ignite: { name: '🩸 화상 (도트)', dmg: 0, color: '#ff8000' },
-    meteor: { name: '☄️ 메테오', dmg: 0, color: '#a855f7' },
-    flame_patch: { name: '🔥 불장판', dmg: 0, color: '#fb923c' },
-    summon_elem: { name: '🔥 불의 정령', dmg: 0, color: '#fb7185' },
-    summon_phoenix: { name: '🦅 불사조', dmg: 0, color: '#facc15' },
-    summon_golem: { name: '🗿 용암 골렘', dmg: 0, color: '#c084fc' }
+    fireball: { name: '🔥 화염구', dmg: 0, hits: 0, crits: 0, color: '#f97316' },
+    fireblast: { name: '💥 불꽃 작렬', dmg: 0, hits: 0, crits: 0, color: '#fbbf24' },
+    ignite: { name: '🩸 화상 (도트)', dmg: 0, hits: 0, crits: 0, color: '#ff8000' },
+    meteor: { name: '☄️ 메테오', dmg: 0, hits: 0, crits: 0, color: '#a855f7' },
+    flame_patch: { name: '♨️ 불장판', dmg: 0, hits: 0, crits: 0, color: '#fb923c' },
+    summon_elem: { name: '🔥 불의 정령', dmg: 0, hits: 0, crits: 0, color: '#fb7185' },
+    summon_phoenix: { name: '🦅 불사조', dmg: 0, hits: 0, crits: 0, color: '#facc15' },
+    summon_golem: { name: '🗿 용암 골렘', dmg: 0, hits: 0, crits: 0, color: '#c084fc' }
+  },
+
+  // 1-1. 상세 전투 분석 (Details! 딜로그) 통계
+  stats: {
+    totalDamage: 0,
+    peakDps: 0,
+    biggestCrit: 0,
+    biggestCritSkill: '',
+    totalHits: 0,
+    critHits: 0,
+    combustionHits: 0,
+    combustionDmg: 0
+  },
+
+  // 3-1. 페이즈 보스 전용 기믹 상태
+  bossGimmick: {
+    active: false,
+    type: null,
+    shield: 0,
+    maxShield: 0,
+    shieldTimer: 0,
+    shieldTriggered: false,
+    isAirborne: false,
+    airborneDone: false,
+    groggyTimer: 0
+  },
+
+  // 3-2. 순환형 미니 현상금 퀘스트 상태
+  bounty: {
+    id: 1,
+    type: 'crit_count',
+    title: '치명타 15회 달성',
+    target: 15,
+    current: 0,
+    rewardGold: 25,
+    rewardEssence: 1
   }
 };
 
@@ -973,7 +1009,7 @@ function updateCastingLoopSound() {
   } catch (e) {}
 }
 
-function playFireballSfx(kind, volume = 0.65) {
+function playFireballSfx(kind, volume = 0.65, pitchMult = 1.0) {
   const effVol = getEffectiveSfxVol(volume);
   if (effVol <= 0) return null;
   try {
@@ -981,6 +1017,9 @@ function playFireballSfx(kind, volume = 0.65) {
     if (!base) return null;
     const snd = base.cloneNode();
     snd.volume = effVol;
+    if (pitchMult !== 1.0 && typeof snd.playbackRate === 'number') {
+      snd.playbackRate = Math.min(2.0, Math.max(0.5, pitchMult));
+    }
     snd.play().catch(() => {});
     return snd;
   } catch (e) {
@@ -988,16 +1027,22 @@ function playFireballSfx(kind, volume = 0.65) {
   }
 }
 
-function playSound(type) {
+function playSound(type, pitchMult = 1.0) {
   if (!state.soundOn) return null;
+  const isCombusting = Boolean(state.combat && state.combat.combustionRem > 0);
+  const combPitch = isCombusting
+    ? 1.0 + Math.min(0.45, (state.stats && state.stats.combustionHits ? state.stats.combustionHits : 0) * 0.04)
+    : 1.0;
+  const finalPitch = combPitch * pitchMult;
+
   if (type === 'launch') {
-    return playFireballSfx('fly', 0.8);
+    return playFireballSfx('fly', 0.8, finalPitch);
   }
   if (type === 'hit') {
-    return playFireballSfx('explosion', 0.72);
+    return playFireballSfx('explosion', 0.72, finalPitch);
   }
   if (type === 'crit') {
-    return playFireballSfx('explosion_crit', 1.0);
+    return playFireballSfx('explosion_crit', 1.0, finalPitch);
   }
   if (type === 'item_select') {
     return playFireballSfx('item_select', 0.92);
@@ -2621,6 +2666,21 @@ function loadStage(stageNum) {
   state.combat.meteorBurnRem = 0;
   updateBurningLoopSound();
 
+  // 페이즈 보스 전용 기믹 상태 초기화
+  state.bossGimmick = {
+    active: false,
+    type: null,
+    shield: 0,
+    maxShield: 0,
+    shieldTimer: 0,
+    shieldTriggered: false,
+    isAirborne: false,
+    airborneDone: false,
+    groggyTimer: 0
+  };
+  const dummyEl = document.getElementById('dummy-avatar');
+  if (dummyEl) dummyEl.classList.remove('airborne-flying');
+
   checkAndRecordDpsClear();
   updateStageUI();
 }
@@ -2659,6 +2719,7 @@ function onMonsterKilled() {
   let gainedEssence = 0;
 
   state.totalKills = (state.totalKills || 0) + 1;
+  checkBountyProgress('monster_kill', 1);
 
   if (isFirstClear) {
     state.highestClearedStage = state.currentStage;
@@ -2763,6 +2824,48 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   const masteryMult = getSkillMasteryMult(skillKey);
   rawDamage *= masteryMult;
 
+  // 3-1. 페이즈 보스 전용 기믹 판정
+  const bg = state.bossGimmick;
+  if (state.currentStage === 10) {
+    // Phase 2 오우거: 도트 화상이 묻어있을 때 바위 갑옷 융해(+30%), 아닐 때는 35% 감소
+    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
+    if (isDotted) {
+      rawDamage *= 1.3;
+    } else if (!isDotTick) {
+      rawDamage *= 0.65;
+    }
+  } else if (state.currentStage === 15 && bg) {
+    // Phase 3 비룡: 공중 비행 중 일반 화염구 50% 회피, 즉발기(작렬/메테오) 적중 시 추락 기절
+    if (bg.isAirborne) {
+      if (skillKey === 'fireblast' || skillKey === 'meteor') {
+        bg.isAirborne = false;
+        bg.groggyTimer = 3.5;
+        triggerArenaShake('lg');
+        playSound('meteor_impact');
+        spawnFloatingText('💥 비룡 격추! 3.5초간 기절!', 'fct-crit', -45, { isBig: true });
+        const dEl = document.getElementById('dummy-avatar');
+        if (dEl) dEl.classList.remove('airborne-flying');
+      } else if (skillKey === 'fireball' && Math.random() < 0.5) {
+        spawnFloatingText('💨 빗나감 (공중 회피)', 'fct-normal', 0);
+        return;
+      }
+    } else if (bg.groggyTimer > 0) {
+      isCrit = true; // 기절 중 100% 확정 크리티컬
+      rawDamage *= getPlayerStats().critDmg;
+    }
+  } else if (state.currentStage === 20 && bg && bg.shield > 0) {
+    // Phase 4 라그나로스: 불의 심장 보호막 우선 흡수
+    bg.shield -= Math.round(rawDamage);
+    if (bg.shield <= 0) {
+      bg.shield = 0;
+      bg.shieldTimer = 0;
+      triggerArenaShake('lg');
+      playSound('meteor_impact');
+      spawnFloatingText('💥 불의 심장 파괴! 화염 역류!', 'fct-crit', -50, { isBig: true });
+      rawDamage *= 1.5;
+    }
+  }
+
   if (state.cheats && state.cheats.alwaysCrit) {
     if (!isCrit) {
       rawDamage *= getPlayerStats().critDmg;
@@ -2776,9 +2879,50 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
 
   state.lastCombatTime = now;
   state.dpsHistory.push({ time: now, amount: dmg });
+
+  // 1-1. 상세 전투 분석 (Details! 딜로그) 및 스킬 통계 갱신
+  if (!state.stats) {
+    state.stats = {
+      totalDamage: 0,
+      peakDps: 0,
+      biggestCrit: 0,
+      biggestCritSkill: '',
+      totalHits: 0,
+      critHits: 0,
+      combustionHits: 0,
+      combustionDmg: 0
+    };
+  }
+  state.stats.totalDamage += dmg;
+  state.stats.totalHits += 1;
+  if (isCrit) {
+    state.stats.critHits += 1;
+    if (dmg > (state.stats.biggestCrit || 0)) {
+      state.stats.biggestCrit = dmg;
+      state.stats.biggestCritSkill = skillKey;
+    }
+  }
+  if (state.combat.combustionRem > 0) {
+    state.stats.combustionDmg = (state.stats.combustionDmg || 0) + dmg;
+    state.stats.combustionHits = (state.stats.combustionHits || 0) + 1;
+  }
+  if (state.currentDps > (state.stats.peakDps || 0)) {
+    state.stats.peakDps = state.currentDps;
+  }
+
   if (state.skillDamage[skillKey]) {
     state.skillDamage[skillKey].dmg += dmg;
+    state.skillDamage[skillKey].hits = (state.skillDamage[skillKey].hits || 0) + 1;
+    if (isCrit) {
+      state.skillDamage[skillKey].crits = (state.skillDamage[skillKey].crits || 0) + 1;
+    }
   }
+
+  // 3-2. 순환형 현상금 퀘스트 진척도 체크
+  if (isCrit) checkBountyProgress('crit_count', 1);
+  if (skillKey === 'meteor') checkBountyProgress('meteor_hit', 1);
+  if (skillKey === 'fireblast') checkBountyProgress('fireblast_hit', 1);
+  if (state.combat.combustionRem > 0) checkBountyProgress('combustion_dmg', dmg);
 
   // 타격 즉시 DPS 달성 여부를 체크해 요구 DPS 충족 시 다음 도전 버튼을 즉시 영구 활성화
   const windowSec = 6.0;
@@ -2878,6 +3022,9 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   } else if (isCrit) {
     spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
     if (!isDotTick && skillKey !== 'meteor') playSound('crit');
+    if (state.combat.combustionRem > 0) {
+      spawnParticles(targetPos.x, targetPos.y, 12, '#fef08a', '#ea580c', 1.6);
+    }
   } else {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-normal', 0);
     if (skillKey !== 'meteor') playSound('hit');
@@ -4135,7 +4282,295 @@ function updateStageUI() {
     ? `${fmt(reqDps)} /초 ✔`
     : `${fmt(reqDps)} /초`;
 
+  updateBossGimmick(0);
+  updateBountyUI();
   updateNotificationBadges();
+}
+
+// ==========================================
+// 15-A2. 상세 전투 분석(Details!) 및 보스 기믹, 현상금 퀘스트 시스템
+// ==========================================
+function calculateParseGrade() {
+  const targetReq = getStageReqDps(Math.max(1, state.highestClearedStage || state.currentStage));
+  const peak = state.stats && state.stats.peakDps ? state.stats.peakDps : state.currentDps;
+  const ratio = targetReq > 0 ? peak / targetReq : 1.0;
+
+  if (ratio >= 2.0) {
+    return {
+      tier: 'mythic',
+      cls: 'parse-mythic',
+      label: '🌟 99th Mythic (공대 1등 화법!)'
+    };
+  } else if (ratio >= 1.4) {
+    return {
+      tier: 'heroic',
+      cls: 'parse-heroic',
+      label: '🟣 90th Heroic (숙련된 화염술사)'
+    };
+  } else if (ratio >= 1.0) {
+    return {
+      tier: 'rare',
+      cls: 'parse-rare',
+      label: '🔵 75th Rare (정예 공격대원)'
+    };
+  } else if (ratio >= 0.7) {
+    return {
+      tier: 'common',
+      cls: 'parse-common',
+      label: '🟢 50th Green (준수한 딜러)'
+    };
+  } else {
+    return {
+      tier: 'grey',
+      cls: 'parse-grey',
+      label: '⚪ 25th Grey (마나 부족 수습생)'
+    };
+  }
+}
+
+function openDetailsModal() {
+  const modal = document.getElementById('details-modal');
+  if (!modal) return;
+  playSound('item_select');
+
+  const stats = state.stats || {
+    totalDamage: 0,
+    peakDps: 0,
+    biggestCrit: 0,
+    biggestCritSkill: '',
+    totalHits: 0,
+    critHits: 0,
+    combustionHits: 0,
+    combustionDmg: 0
+  };
+
+  const parse = calculateParseGrade();
+  const badgeEl = document.getElementById('details-parse-badge');
+  if (badgeEl) {
+    badgeEl.className = `details-parse-badge ${parse.cls}`;
+    badgeEl.textContent = parse.label;
+  }
+
+  const peakEl = document.getElementById('details-peak-dps');
+  if (peakEl) peakEl.textContent = `${fmt(stats.peakDps || state.currentDps)} /초`;
+
+  const critEl = document.getElementById('details-biggest-crit');
+  if (critEl) {
+    if (stats.biggestCrit > 0) {
+      const skillName = (state.skillDamage[stats.biggestCritSkill] && state.skillDamage[stats.biggestCritSkill].name) || '마법';
+      critEl.textContent = `${fmt(stats.biggestCrit)} (${skillName})`;
+    } else {
+      critEl.textContent = '-';
+    }
+  }
+
+  const combEl = document.getElementById('details-combustion-dmg');
+  if (combEl) combEl.textContent = fmt(stats.combustionDmg || 0);
+
+  const critRateEl = document.getElementById('details-crit-rate');
+  if (critRateEl) {
+    const rate = stats.totalHits > 0 ? (stats.critHits / stats.totalHits) * 100 : 0;
+    critRateEl.textContent = `${rate.toFixed(1)}%`;
+  }
+
+  const listEl = document.getElementById('details-breakdown-list');
+  if (listEl) {
+    const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
+    const totalDmg = skillsArr.reduce((a, b) => a + b.dmg, 0);
+
+    if (totalDmg > 0) {
+      skillsArr.sort((a, b) => b.dmg - a.dmg);
+      listEl.innerHTML = skillsArr
+        .map((s) => {
+          const pct = ((s.dmg / totalDmg) * 100).toFixed(1);
+          const hits = s.hits || 0;
+          const crits = s.crits || 0;
+          const critPct = hits > 0 ? ((crits / hits) * 100).toFixed(0) : 0;
+          return `
+            <div class="details-row">
+              <div class="details-row-fill" style="width:${pct}%; background:${s.color};"></div>
+              <div class="details-row-left">
+                <span>${s.name}</span>
+                <span class="details-crit-tag">${hits}타 (크리 ${critPct}%)</span>
+              </div>
+              <div class="details-row-right">
+                <span>${fmt(s.dmg)}</span>
+                <span style="color:#94a3b8; font-size:0.75rem;">(${pct}%)</span>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    } else {
+      listEl.innerHTML = '<div style="text-align:center; padding:18px; color:#64748b; font-size:0.85rem;">아직 기록된 전투 데이터가 없습니다. 몬스터를 타격해 보세요!</div>';
+    }
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeDetailsModal() {
+  const modal = document.getElementById('details-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function resetDetailsStats() {
+  state.stats = {
+    totalDamage: 0,
+    peakDps: 0,
+    biggestCrit: 0,
+    biggestCritSkill: '',
+    totalHits: 0,
+    critHits: 0,
+    combustionHits: 0,
+    combustionDmg: 0
+  };
+  for (const k of Object.keys(state.skillDamage)) {
+    state.skillDamage[k].dmg = 0;
+    state.skillDamage[k].hits = 0;
+    state.skillDamage[k].crits = 0;
+  }
+  playSound('item_select');
+  openDetailsModal();
+  updateDpsMeterUI();
+}
+
+function updateBossGimmick(dt) {
+  const bg = state.bossGimmick;
+  if (!bg) return;
+  const stage = state.currentStage;
+  const badge = document.getElementById('boss-gimmick-badge');
+  const dummyEl = document.getElementById('dummy-avatar');
+
+  if (stage === 10) {
+    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
+    if (badge) {
+      badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy', 'gimmick-shield');
+      if (isDotted) {
+        badge.classList.add('gimmick-melted');
+        badge.textContent = '🔥 갑옷 융해! (+30% 피해 증폭)';
+      } else {
+        badge.classList.add('gimmick-armor');
+        badge.textContent = '🪨 바위 갑옷 (피해 35% 감소)';
+      }
+    }
+  } else if (stage === 15) {
+    if (bg.groggyTimer > 0) {
+      bg.groggyTimer -= dt;
+      if (bg.groggyTimer <= 0) {
+        bg.groggyTimer = 0;
+      }
+      if (badge) {
+        badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-shield');
+        badge.classList.add('gimmick-groggy');
+        badge.textContent = `💫 추락 기절! (100% 확정 크리 · ${bg.groggyTimer.toFixed(1)}s)`;
+      }
+    } else if (bg.isAirborne) {
+      if (badge) {
+        badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-groggy', 'gimmick-shield');
+        badge.classList.add('gimmick-airborne');
+        badge.textContent = '🌪️ 비룡 비상! (즉발 마법으로 격추 가능)';
+      }
+    } else {
+      if (state.monster.hp <= state.monster.maxHp * 0.5 && !bg.airborneDone && !state.monster.isDying) {
+        bg.isAirborne = true;
+        bg.airborneDone = true;
+        if (dummyEl) dummyEl.classList.add('airborne-flying');
+        spawnFloatingText('🌪️ 비룡이 공중으로 비상했습니다!', 'fct-crit', -45);
+        playSound('proc');
+      }
+      if (badge && !bg.isAirborne && bg.groggyTimer <= 0) badge.classList.add('hidden');
+    }
+  } else if (stage === 20) {
+    if (bg.shield > 0) {
+      bg.shieldTimer -= dt;
+      if (badge) {
+        badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy');
+        badge.classList.add('gimmick-shield');
+        badge.textContent = `🌋 용암 보호막 (${fmt(bg.shield)} / ${Math.max(0, bg.shieldTimer).toFixed(1)}s)`;
+      }
+      if (bg.shieldTimer <= 0) {
+        bg.shield = 0;
+        bg.shieldTimer = 0;
+        state.monster.hp = Math.min(state.monster.maxHp, state.monster.hp + Math.round(state.monster.maxHp * 0.1));
+        triggerArenaShake('lg');
+        playSound('meteor_impact');
+        spawnFloatingText('⚠️ 보호막 폭발! 라그나로스 체력 회복!', 'fct-normal', -35);
+      }
+    } else {
+      if (state.monster.hp <= state.monster.maxHp * 0.3 && !bg.shieldTriggered && !state.monster.isDying) {
+        bg.shieldTriggered = true;
+        bg.shield = Math.round(state.monster.maxHp * 0.12);
+        bg.maxShield = bg.shield;
+        bg.shieldTimer = 10.0;
+        triggerArenaShake('lg');
+        playSound('proc');
+        spawnFloatingText('🌋 불의 심장 전개! 10초 내 보호막을 파괴하세요!', 'fct-crit', -50, { isBig: true });
+      }
+      if (badge && bg.shield <= 0) badge.classList.add('hidden');
+    }
+  } else {
+    if (badge) badge.classList.add('hidden');
+  }
+}
+
+const BOUNTY_TEMPLATES = [
+  { type: 'crit_count', title: '치명타 {n}회 달성', baseTarget: 15, scaleTarget: 2, baseGold: 30, baseEss: 1 },
+  { type: 'meteor_hit', title: '메테오 {n}회 낙하', baseTarget: 3, scaleTarget: 0.5, baseGold: 45, baseEss: 2 },
+  { type: 'fireblast_hit', title: '불꽃 작렬 {n}회 시전', baseTarget: 5, scaleTarget: 1, baseGold: 35, baseEss: 1 },
+  { type: 'monster_kill', title: '몬스터 {n}마리 토벌', baseTarget: 4, scaleTarget: 0.5, baseGold: 50, baseEss: 2 },
+  { type: 'combustion_dmg', title: '발화 중 {n} 피해 달성', baseTarget: 500, scaleTarget: 200, baseGold: 60, baseEss: 3 }
+];
+
+function generateNextBounty() {
+  const tpl = BOUNTY_TEMPLATES[Math.floor(Math.random() * BOUNTY_TEMPLATES.length)];
+  const stg = Math.max(1, state.currentStage);
+  const target = Math.max(1, Math.round(tpl.baseTarget + tpl.scaleTarget * Math.min(20, stg)));
+  const title = tpl.title.replace('{n}', fmt(target));
+  const gold = Math.round((tpl.baseGold + stg * 8) * (getPlayerStats().goldMult || 1));
+  const essence = Math.max(1, Math.round(tpl.baseEss + Math.floor(stg / 8)));
+
+  state.bounty = {
+    id: (state.bounty && state.bounty.id ? state.bounty.id : 0) + 1,
+    type: tpl.type,
+    title,
+    target,
+    current: 0,
+    rewardGold: gold,
+    rewardEssence: essence
+  };
+  updateBountyUI();
+}
+
+function checkBountyProgress(type, amount = 1) {
+  if (!state.bounty || state.bounty.type !== type) return;
+  state.bounty.current = Math.min(state.bounty.target, state.bounty.current + amount);
+  if (state.bounty.current >= state.bounty.target) {
+    const rwGold = state.bounty.rewardGold;
+    const rwEss = state.bounty.rewardEssence;
+    state.gold += rwGold;
+    state.essence += rwEss;
+    playSound('item_select');
+    spawnFloatingText(`🎯 현상금 완료! 💰+${fmt(rwGold)} 🔹+${fmt(rwEss)}`, 'fct-proc', -55, { isBig: true });
+    generateNextBounty();
+  } else {
+    updateBountyUI();
+  }
+}
+
+function updateBountyUI() {
+  const b = state.bounty;
+  if (!b) return;
+  const titleEl = document.getElementById('bounty-title');
+  const fillEl = document.getElementById('bounty-prog-fill');
+  const textEl = document.getElementById('bounty-prog-text');
+  const rewardEl = document.getElementById('bounty-reward');
+
+  if (titleEl) titleEl.textContent = b.title;
+  const pct = Math.min(100, Math.max(0, (b.current / b.target) * 100));
+  if (fillEl) fillEl.style.width = `${pct}%`;
+  if (textEl) textEl.textContent = `${fmt(b.current)} / ${fmt(b.target)}`;
+  if (rewardEl) rewardEl.textContent = `💰 ${fmt(b.rewardGold)} · 🔹 ${fmt(b.rewardEssence)}`;
 }
 
 // ==========================================
@@ -4279,16 +4714,10 @@ function doAscend() {
     }
   }
 
-  // 마도서(스킬) 초기화: 화염구 단독 상태로 리셋하여 2회차 초고속 재해금 스피드런 쾌감 제공!
-  for (const k of Object.keys(state.grimoires)) {
-    state.grimoires[k] = false;
-  }
-  state.autoCast = false;
-
-  // 초반 언폴딩 상태 초기화 (마법부여, 특성트리, 명예의전당은 영구 유지)
-  state.unfolded.grimoireShop = false;
-  state.unfolded.stageNav = false;
-  state.unfolded.equipShop = false;
+  // ★ 스킬 유지 스피드런: 마도서(스킬)와 자동 시전 및 상점을 영구 보존하여, 승천 즉시 폭발적인 화력으로 스피드런 쾌감 제공!
+  state.unfolded.grimoireShop = true;
+  state.unfolded.stageNav = true;
+  state.unfolded.equipShop = true;
 
   // 전투 상태 초기화
   state.combat.castingSkill = null;
@@ -4310,7 +4739,7 @@ function doAscend() {
   spawnParticles(casterCenter.x, casterCenter.y, 48, '#fef08a', '#ea580c', 2.2);
   triggerArenaShake('lg');
 
-  spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(2)}배)`, 'fct-proc', -55, { isBig: true });
+  spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(2)}배 · 쾌속 스피드런 시작!)`, 'fct-proc', -55, { isBig: true });
 
   loadStage(1);
   checkAndTriggerUnfolds(true);
@@ -4354,6 +4783,8 @@ function gameLoop(nowMs) {
 
   const c = state.combat;
   const stats = getPlayerStats();
+
+  updateBossGimmick(dt);
 
   if (c.gcdRemaining > 0) {
     c.gcdRemaining = Math.max(0, c.gcdRemaining - dt);
@@ -4548,9 +4979,20 @@ function updateLiveHUD() {
   casterAvatar.classList.toggle('casting-active', Boolean(c.castingSkill) && !isMeteorReady);
   casterAvatar.classList.toggle('pyro-ready-mode', isMeteorReady);
   casterAvatar.classList.toggle('combustion-mode', c.combustionRem > 0);
+  casterAvatar.classList.toggle('ascension-aura', (state.ascensionCount || 0) > 0);
   castingOrb.classList.toggle('active', Boolean(c.castingSkill) && !isMeteorReady);
   castingOrb.classList.toggle('pyro-ready', isMeteorReady);
   combBg.classList.toggle('active', c.combustionRem > 0);
+
+  // 1-1. 발화(마력 폭주) 피버 모드 화면/미터기 테두리 활성화
+  const isCombusting = c.combustionRem > 0;
+  const arenaEl = document.getElementById('combat-arena');
+  const meterEl = document.getElementById('dps-meter-panel');
+  const feverTag = document.getElementById('dps-fever-tag');
+  if (arenaEl) arenaEl.classList.toggle('fever-mode', isCombusting);
+  if (meterEl) meterEl.classList.toggle('fever-mode', isCombusting);
+  if (feverTag) feverTag.classList.toggle('hidden', !isCombusting);
+
   // 연계 신호는 실제 치명타와 발화 상태를 그대로 따라갑니다.
   const arenaArt = document.getElementById('combat-arena');
   arenaArt.classList.toggle('art-combustion', c.combustionRem > 0);
@@ -4749,7 +5191,9 @@ function saveGame() {
       infusions: state.infusions,
       ascensionCount: state.ascensionCount,
       canAscend: state.canAscend,
-      skillMastery: state.skillMastery
+      skillMastery: state.skillMastery,
+      stats: state.stats,
+      bounty: state.bounty
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   } catch (e) {}
@@ -4798,6 +5242,8 @@ function loadGame() {
     if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
     if (typeof data.canAscend === 'boolean') state.canAscend = data.canAscend;
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
+    if (data.stats) Object.assign(state.stats, data.stats);
+    if (data.bounty) Object.assign(state.bounty, data.bounty);
     migrateMeteorSave();
     saveGame();
   } catch (e) {}
@@ -5254,6 +5700,38 @@ function initEvents() {
   };
   window.addEventListener('pointerdown', unlockBgmOnInteract);
   window.addEventListener('keydown', unlockBgmOnInteract);
+
+  const meterPanel = document.getElementById('dps-meter-panel');
+  if (meterPanel) {
+    meterPanel.addEventListener('click', (e) => {
+      if (!e.target.closest('button')) {
+        openDetailsModal();
+      }
+    });
+  }
+
+  const openDetailsBtn = document.getElementById('btn-open-details');
+  if (openDetailsBtn) {
+    openDetailsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDetailsModal();
+    });
+  }
+
+  const closeDetailsBtn = document.getElementById('btn-details-close');
+  if (closeDetailsBtn) {
+    closeDetailsBtn.addEventListener('click', closeDetailsModal);
+  }
+
+  const okDetailsBtn = document.getElementById('btn-details-ok');
+  if (okDetailsBtn) {
+    okDetailsBtn.addEventListener('click', closeDetailsModal);
+  }
+
+  const resetDetailsBtn = document.getElementById('btn-details-reset');
+  if (resetDetailsBtn) {
+    resetDetailsBtn.addEventListener('click', resetDetailsStats);
+  }
 
   document.getElementById('btn-reset-save').addEventListener('click', () => {
     if (confirm('처음부터 다시 시작하시겠습니까?')) {

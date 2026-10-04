@@ -101,10 +101,13 @@
         <div class="fct-layer" id="fct-layer"></div>
 
         <!-- 아레나 상단: 컴팩트 DPS 미터기 -->
-        <div class="dps-meter-panel">
+        <div class="dps-meter-panel" id="dps-meter-panel" title="클릭하여 상세 전투 분석(Details!) 열람">
           <div class="dps-meter-left">
             <div class="dps-stat-box">
-              <span class="dps-label">⚡ 현재 DPS</span>
+              <div class="dps-label-row">
+                <span class="dps-label">⚡ 현재 DPS</span>
+                <span class="fever-tag hidden" id="dps-fever-tag">🔥 FEVER</span>
+              </div>
               <span class="dps-current-val" id="ui-current-dps">0 /초</span>
             </div>
             <div class="dps-vs-divider">VS</div>
@@ -117,6 +120,10 @@
           <div class="dps-breakdown-mini" id="skill-breakdown-bars">
             <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
           </div>
+
+          <button type="button" class="btn-meter-details" id="btn-open-details" title="와우 스타일 상세 딜미터기 리포트 열기">
+            📊 상세
+          </button>
         </div>
 
         <!-- 개발자 모드 치트 패널 (개발자 모드 활성화 시 노출) -->
@@ -141,7 +148,7 @@
           </div>
         </div>
 
-        <!-- 화면 상단 가운데: 페이즈 진행도 + 현재 스테이지 및 처치 보상 골드 배너 -->
+        <!-- 화면 상단 가운데: 페이즈 진행도 + 현재 스테이지 및 처치 보상 골드 배너 + 보스 기믹 & 현상금 -->
         <div class="arena-top-stage-header" id="arena-top-stage-header">
           <div class="stage-center-info" id="stage-center-info">
             <div class="phase-badge" id="ui-phase-num">PHASE 1</div>
@@ -153,6 +160,20 @@
             <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
             <span class="banner-sep">|</span>
             <span class="monster-reward" id="target-reward">💰 4 G</span>
+          </div>
+
+          <!-- 페이즈 보스 전용 기믹 상태 뱃지 (기믹 활성 시 노출) -->
+          <div class="boss-gimmick-badge hidden" id="boss-gimmick-badge"></div>
+
+          <!-- 순환형 미니 현상금 퀘스트 바 -->
+          <div class="bounty-bar" id="bounty-bar" title="현상금 목표를 달성하면 추가 골드와 정수를 획득합니다">
+            <span class="bounty-icon">🎯</span>
+            <span class="bounty-title" id="bounty-title">치명타 15회</span>
+            <div class="bounty-prog-wrap">
+              <div class="bounty-prog-fill" id="bounty-prog-fill" style="width: 0%;"></div>
+            </div>
+            <span class="bounty-prog-text" id="bounty-prog-text">0 / 15</span>
+            <span class="bounty-reward-pill" id="bounty-reward">💰 25 G</span>
           </div>
         </div>
 
@@ -411,6 +432,51 @@
         <button class="victory-btn secondary" id="btn-victory-continue">
           🌌 무한 심연 계속 도전하기
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전투 상세 분석 리포트 (Details! Damage Meter) 모달 -->
+  <div class="details-modal-backdrop hidden" id="details-modal">
+    <div class="details-modal-card">
+      <div class="details-modal-header">
+        <div class="details-header-title">
+          <span>📊 전투 상세 분석 (Details!)</span>
+          <span class="details-parse-badge" id="details-parse-badge">🌟 99th Mythic</span>
+        </div>
+        <button type="button" class="details-close-btn" id="btn-details-close">✕</button>
+      </div>
+
+      <!-- 상단 핵심 스펙 지표 4개 그리드 -->
+      <div class="details-summary-grid">
+        <div class="details-summary-box">
+          <span class="details-box-label">⚡ 최고 순간 DPS</span>
+          <span class="details-box-val gold" id="details-peak-dps">0 /초</span>
+        </div>
+        <div class="details-summary-box">
+          <span class="details-box-label">💥 최대 단일 크리티컬</span>
+          <span class="details-box-val fire" id="details-biggest-crit">0</span>
+        </div>
+        <div class="details-summary-box">
+          <span class="details-box-label">🔥 발화 누적 피해량</span>
+          <span class="details-box-val orange" id="details-combustion-dmg">0</span>
+        </div>
+        <div class="details-summary-box">
+          <span class="details-box-label">🎯 전체 치명타율</span>
+          <span class="details-box-val cyan" id="details-crit-rate">0.0%</span>
+        </div>
+      </div>
+
+      <!-- 스킬별 점유율 리스트 -->
+      <div class="details-breakdown-section">
+        <div class="details-section-title">스킬별 피해량 점유율</div>
+        <div class="details-breakdown-list" id="details-breakdown-list"></div>
+      </div>
+
+      <!-- 하단 액션 버튼 -->
+      <div class="details-actions">
+        <button type="button" class="btn-top" id="btn-details-reset">🔄 통계 리셋</button>
+        <button type="button" class="victory-btn primary" id="btn-details-ok">확인</button>
       </div>
     </div>
   </div>
