@@ -26,6 +26,10 @@
         <span class="label">🔹 정수</span>
         <span class="value" id="ui-essence">0</span>
       </div>
+      <div class="stat-pill feather-pill unfold-hidden" id="pill-feathers" title="불사조 승천으로 획득하는 영구 유물 재화입니다">
+        <span class="label">🪶 깃털</span>
+        <span class="value" id="ui-feathers">0</span>
+      </div>
       <div class="stat-pill">
         <span class="label">🔮 주문 공격력</span>
         <span class="value" id="ui-sp">10</span>
@@ -44,6 +48,10 @@
       <button class="btn-top btn-ascend unfold-hidden has-badge-anchor" id="btn-ascend" title="마지막 몬스터 처치 후 불사조로 승천하여 스킬 포인트와 영구 피해 배수를 획득합니다">
         <span>🔥 불사조 승천</span>
         <span class="noti-badge hidden" id="badge-ascend">!</span>
+      </button>
+      <button class="btn-top btn-training unfold-hidden has-badge-anchor" id="btn-training-dummy" title="30초간 무한 체력 훈련용 허수아비에게 딜사이클을 쏟아붓고 최대 DPS를 측정합니다">
+        <span>🎯 허수아비 훈련</span>
+        <span class="noti-badge hidden" id="badge-training-dummy">!</span>
       </button>
       <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
       <button class="btn-top btn-dev-mode" id="btn-dev-mode" title="개발용 치트 UI를 활성화하거나 닫습니다">🛠️ 개발자 모드</button>
@@ -175,6 +183,15 @@
             <span class="bounty-prog-text" id="bounty-prog-text">0 / 15</span>
             <span class="bounty-reward-pill" id="bounty-reward">💰 25 G</span>
           </div>
+
+          <!-- 훈련용 허수아비 30초 벤치마크 상태 배너 -->
+          <div class="training-dummy-banner hidden" id="training-dummy-banner">
+            <span class="training-icon">🎯</span>
+            <span class="training-title">30초 DPS 측정 중:</span>
+            <span class="training-timer-val" id="ui-training-timer">30.0s</span>
+            <button type="button" class="btn-training-finish" id="btn-finish-training" title="측정을 조기 종료하고 결과를 확인합니다">측정 완료</button>
+            <button type="button" class="btn-training-exit" id="btn-exit-training" title="훈련을 중단하고 스테이지로 복귀합니다">전투 복귀</button>
+          </div>
         </div>
 
         <!-- 아레나 중앙: 좌측 [◀ 이전] ➔ 마법사 ➔ 몬스터 ➔ 우측 [다음 도전 ▶] -->
@@ -282,6 +299,7 @@
               <span class="skill-hotkey">1</span>
               <span class="skill-icon">🔥</span>
               <span class="skill-name">화염구</span>
+              <span class="pity-crit-badge hidden" id="badge-pity-crit" title="타오르는 기운: 비치명타 시마다 치명타 확률이 누적 보정됩니다">🔥 +15%</span>
               <span class="noti-badge hidden" id="badge-skill-1">!</span>
               <div class="gcd-Overlay" id="gcd-1"></div>
               <div class="cd-overlay" id="cd-1"></div>
@@ -347,6 +365,11 @@
           <span>🌳 스킬 트리</span>
           <span class="sp-tab-badge" id="ui-tab-sp-badge">0 SP</span>
           <span class="noti-badge hidden" id="badge-tab-tree">!</span>
+        </button>
+        <button class="right-tab-btn unfold-hidden has-badge-anchor" id="tab-btn-artifacts" data-right-tab="artifacts">
+          <span>🪶 유물</span>
+          <span class="feather-tab-badge" id="ui-tab-feather-badge">0 🪶</span>
+          <span class="noti-badge hidden" id="badge-tab-artifacts">!</span>
         </button>
       </div>
 
@@ -418,7 +441,25 @@
           </div>
         </div>
 
+        <!-- 3대 빌드 키스톤 선택 카드 영역 -->
+        <div class="keystone-selector-box" id="keystone-selector-box"></div>
+
         <div class="skill-tree-container" id="skill-tree-container"></div>
+      </div>
+
+      <!-- 탭 4: 불사조 유물 (승천 영구 아티팩트) 뷰 -->
+      <div class="right-tab-pane" id="pane-artifacts">
+        <div class="artifacts-header-box">
+          <div class="art-header-top">
+            <span class="art-title">🪶 불사조 영구 유물</span>
+            <span class="art-feather-box" id="ui-artifacts-feather-box">🪶 0 깃털</span>
+          </div>
+          <div class="art-sub-hint">
+            불사조 승천으로 획득한 🪶 깃털로 화염 마법의 룰과 고유 메커니즘을 영구히 변형합니다.
+          </div>
+        </div>
+
+        <div class="shop-list artifacts-list" id="artifacts-shop-list"></div>
       </div>
     </aside>
   </main>

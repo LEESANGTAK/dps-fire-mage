@@ -4608,4 +4608,352 @@ body {
   100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
 }
 
+/* ==========================================
+   시장 벤치마킹 개선 스타일: 타오르는 기운, 키스톤, 불사조 유물, 훈련장
+   ========================================== */
+
+/* 1. 타오르는 기운 (Heating Up Pity Badge) */
+.pity-crit-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 4px;
+  border: 1px solid #fed7aa;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.7);
+  pointer-events: none;
+  z-index: 5;
+  animation: pityPulse 1.1s infinite ease-in-out;
+}
+
+@keyframes pityPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(249, 115, 22, 0.6); }
+  50% { transform: scale(1.08); box-shadow: 0 0 14px rgba(249, 115, 22, 0.95); }
+}
+
+.skill-btn.heating-pity-active {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.55) !important;
+}
+
+/* 2. 3대 빌드 키스톤 선택 카드 */
+.keystone-selector-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 5px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+}
+
+.keystone-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 6px 7px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  position: relative;
+}
+
+.keystone-card:hover {
+  border-color: #64748b;
+  transform: translateY(-1px);
+}
+
+.keystone-card.active {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #451a03 0%, #2e1065 100%);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
+}
+
+.keystone-title {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.keystone-card.active .keystone-title {
+  color: #fde047;
+}
+
+.keystone-active-badge {
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.25);
+  border: 1px solid #f59e0b;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.keystone-tagline {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.keystone-card.active .keystone-tagline {
+  color: #cbd5e1;
+}
+
+.keystone-desc {
+  font-size: 0.63rem;
+  color: #94a3b8;
+  line-height: 1.25;
+}
+
+.keystone-card.active .keystone-desc {
+  color: #f1f5f9;
+}
+
+/* 3. 불사조 유물 상점 (Phoenix Artifacts) */
+.artifacts-header-box {
+  background: linear-gradient(135deg, rgba(69, 10, 10, 0.45) 0%, rgba(30, 27, 75, 0.45) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.art-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.art-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #fca5a5;
+}
+
+.art-feather-box {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #fef08a;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid #ef4444;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.art-sub-hint {
+  font-size: 0.68rem;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.artifacts-list {
+  flex: 1;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.artifact-card {
+  background: linear-gradient(135deg, #1f131a 0%, #171528 100%);
+  border: 1px solid #4a2835;
+  border-radius: 8px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.15s;
+}
+
+.artifact-card.affordable {
+  border-color: #f87171;
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.28);
+}
+
+.artifact-card.maxed {
+  border-color: rgba(250, 204, 21, 0.55);
+  background: linear-gradient(135deg, rgba(69, 26, 3, 0.26) 0%, rgba(30, 27, 75, 0.35) 100%);
+}
+
+.art-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: radial-gradient(circle, #3b0712 0%, #0f172a 100%);
+  border: 1px solid #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.art-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.art-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.art-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fecaca;
+}
+
+.art-lv-tag {
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.art-lv-tag.is-max {
+  color: #fef08a;
+  background: rgba(234, 179, 8, 0.2);
+  border-color: #eab308;
+}
+
+.art-desc {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.btn-buy-art {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  border: 1px solid #f87171;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-buy-art:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+}
+
+.btn-buy-art:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.feather-pill {
+  border-color: #ef4444 !important;
+}
+
+.feather-pill .label {
+  color: #fca5a5;
+}
+
+.feather-pill .value {
+  color: #fef08a;
+}
+
+.feather-tab-badge {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #fecaca;
+  background: rgba(220, 38, 38, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 3px;
+}
+
+/* 4. 훈련용 허수아비 벤치마크 모드 */
+.btn-training {
+  border-color: #f59e0b !important;
+  color: #fde68a !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+.btn-training:hover {
+  background: rgba(245, 158, 11, 0.3) !important;
+}
+
+.training-dummy-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1px solid #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  padding: 5px 12px;
+  margin-top: 4px;
+}
+
+.training-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.training-timer-val {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fbbf24;
+  min-width: 45px;
+  font-family: monospace;
+}
+
+.btn-training-finish,
+.btn-training-exit {
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-training-finish:hover {
+  background: #b45309;
+}
+
+.btn-training-exit {
+  background: #475569;
+}
+
+.btn-training-exit:hover {
+  background: #334155;
+}
+
 

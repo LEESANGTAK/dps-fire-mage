@@ -387,7 +387,8 @@ function getCombustionDuration() {
   const lv = (state.skillMastery && state.skillMastery.combustion) || 0;
   const mastery = SKILL_MASTERY_LIST.find((m) => m.id === 'combustion');
   const bonus = mastery ? mastery.bonusPerLv : 0.2;
-  return Number((base + lv * bonus).toFixed(1));
+  const artifactBonus = ((state.artifacts && state.artifacts.time_warp) || 0) * 1.5;
+  return Number((base + lv * bonus + artifactBonus).toFixed(1));
 }
 
 function getSkillMasteryCost(mastery) {
@@ -468,6 +469,82 @@ const INFUSION_LIST = [
 ];
 
 // ==========================================
+// 3-D. 시장 벤치마킹 개선: 불사조 영구 유물 (Phoenix Artifacts) 데이터
+// ==========================================
+const PHOENIX_ARTIFACTS = [
+  {
+    id: 'shard_of_sun',
+    name: '태양의 파편',
+    icon: '☀️',
+    maxLv: 3,
+    cost: 1,
+    desc: (lv) => `화염구 시전 시 ${lv === 0 ? 10 : lv * 10}% 확률로 시전 시간 없이 즉시 발사`
+  },
+  {
+    id: 'twin_cataclysm',
+    name: '쌍둥이 운석',
+    icon: '☄️',
+    maxLv: 3,
+    cost: 1,
+    desc: (lv) => `몰열 메테오 발사 시 ${lv === 0 ? 1 : lv}개의 보조 미니 운석이 연속 낙하 (폭발 피해 50%)`
+  },
+  {
+    id: 'ignited_circ',
+    name: '타오르는 마력순환',
+    icon: '🔄',
+    maxLv: 3,
+    cost: 1,
+    desc: (lv) => `모든 치명타 적중 시 ${lv === 0 ? 5 : lv * 5}% 확률로 [불꽃 작렬] 즉시 1회 재충전`
+  },
+  {
+    id: 'time_warp',
+    name: '시공 왜곡의 룬',
+    icon: '⏳',
+    maxLv: 3,
+    cost: 1,
+    desc: (lv) => `발화(마력 폭주) 지속시간 +${lv === 0 ? 1.5 : (lv * 1.5).toFixed(1)}초 · 쿨다운 -${lv === 0 ? 3 : lv * 3}초`
+  },
+  {
+    id: 'phoenix_treasury',
+    name: '불사조 보물창고',
+    icon: '🪶',
+    maxLv: 3,
+    cost: 1,
+    desc: (lv) => `몬스터 토벌 및 스테이지 완료 시 골드 & 정수 획득량 +${lv === 0 ? 30 : lv * 30}%`
+  }
+];
+
+// ==========================================
+// 3-E. 3대 빌드 키스톤(Keystone) 특성 정의 (선형 업그레이드 탈피)
+// ==========================================
+const KEYSTONE_DEFINITIONS = [
+  {
+    id: 'burst',
+    title: '마력 폭주',
+    icon: '🔥',
+    tagline: '발화 극딜 올인',
+    color: '#ef4444',
+    desc: '발화 지속 중 모든 피해 +100% 증폭 및 스킬 쿨타임 회복 속도 2배. (단, 발화 비활성 중 일반 주문 공격력 -15%)'
+  },
+  {
+    id: 'dot',
+    title: '작열 연소',
+    icon: '🌋',
+    tagline: '도트 연소 & 쿨감 순환',
+    color: '#f97316',
+    desc: '불장판 및 화상(도트) 틱 피해 +150% 증폭. 도트 틱마다 25% 확률로 [불꽃 작렬] 충전 시간 0.4초 단축.'
+  },
+  {
+    id: 'summon',
+    title: '태양왕 군단',
+    icon: '👑',
+    tagline: '소환수 치명타 공유',
+    color: '#eab308',
+    desc: '정령·불사조·골렘의 공격 주기 1.5배 가속 및 소환수가 마법사 본체의 치명타 확률을 100% 온전히 공유.'
+  }
+];
+
+// ==========================================
 // 4. 게임 상태 (State)
 // ==========================================
 const state = {
@@ -512,7 +589,9 @@ const state = {
     equipShop: false,
     infusionShop: false,
     skillTree: false,
-    hallOfFame: false
+    hallOfFame: false,
+    artifactShop: false,
+    trainingDummy: false
   },
 
   bonusSkillPoints: 0,
@@ -554,6 +633,25 @@ const state = {
     primordial_ignition: 0
   },
 
+  // 불사조 승천 & 영구 유물 (Phoenix Artifacts)
+  phoenixFeathers: 0,
+  artifacts: {
+    shard_of_sun: 0,
+    twin_cataclysm: 0,
+    ignited_circ: 0,
+    time_warp: 0,
+    phoenix_treasury: 0
+  },
+
+  // 3대 빌드 키스톤 ('burst' | 'dot' | 'summon' | null)
+  activeKeystone: null,
+
+  // 30초 훈련용 허수아비 벤치마크 모드
+  isTrainingDummy: false,
+  trainingTimer: 0,
+  savedStageBeforeTraining: 1,
+  dummyRecordDps: 0,
+
   ascensionCount: 0,
   canAscend: false,
   skillMastery: {
@@ -576,6 +674,9 @@ const state = {
     castingSkill: null,
     castRemaining: 0,
     castTotal: 0,
+
+    // 타오르는 기운 (Heating Up Pity System): 비치명타 시마다 스택 누적 (+15%/스택)
+    pityCritStacks: 0,
 
     critStreak: 0,
     streakTimer: 0,
@@ -750,15 +851,32 @@ function getPlayerStats() {
   const abyssEssenceMult = isAbyssUnlocked ? 2.0 : 1.0;
 
   const ascMult = getAscensionDamageMult();
-  const summonMult = 1 + (state.skillTree.legion_sync || 0) * 0.5;
+  let summonMult = 1 + (state.skillTree.legion_sync || 0) * 0.5;
+  if (state.activeKeystone === 'summon') {
+    summonMult *= 1.5;
+  }
+
+  let keystoneSpMult = 1.0;
+  if (state.activeKeystone === 'burst') {
+    if (state.combat.combustionRem > 0) {
+      keystoneSpMult = 2.0;
+    } else {
+      keystoneSpMult = 0.85;
+    }
+  }
+
   const infusionSpMult = (1 + azureLv * 0.15) * (1 + totalInfLv * 0.02) * abyssSpMult;
-  const goldMult = 1 + alchemyLv * 0.22;
-  const essenceMult = (1 + alchemyLv * 0.08) * abyssEssenceMult;
-  const igniteMult = 1 + ignitionLv * 0.25;
+  const artifactTreasuryBonus = 1 + ((state.artifacts && state.artifacts.phoenix_treasury) || 0) * 0.30;
+  const goldMult = (1 + alchemyLv * 0.22) * artifactTreasuryBonus;
+  const essenceMult = (1 + alchemyLv * 0.08) * abyssEssenceMult * artifactTreasuryBonus;
+  let igniteMult = (1 + ignitionLv * 0.25);
+  if (state.activeKeystone === 'dot') {
+    igniteMult *= 2.5;
+  }
   const siphonChance = ignitionLv * 0.03;
 
   return {
-    sp: Math.round(sp * (1 + bonusPct) * infusionSpMult * ascMult),
+    sp: Math.round(sp * (1 + bonusPct) * infusionSpMult * ascMult * keystoneSpMult),
     crit,
     haste,
     critDmg,
@@ -2660,6 +2778,44 @@ function updateFloatingTexts(dt) {
 // 9. 스테이지 설정 및 몬스터 처치 처리 (제한시간 제거)
 // ==========================================
 function loadStage(stageNum) {
+  if (state.isTrainingDummy) {
+    state.monster.maxHp = 999999999999;
+    state.monster.hp = 999999999999;
+    state.monster.isDying = false;
+    state.combat.ignitePool = 0;
+    state.combat.igniteRem = 0;
+    state.combat.meteorBurnRem = 0;
+    updateBurningLoopSound();
+
+    const nameLabel = document.getElementById('monster-name-label');
+    if (nameLabel) nameLabel.textContent = '🎯 훈련용 허수아비 (무한 체력)';
+    const hpText = document.getElementById('target-hp-text');
+    if (hpText) hpText.textContent = '무한 체력';
+    const hpPct = document.getElementById('target-hp-pct');
+    if (hpPct) hpPct.textContent = '100%';
+    const hpFill = document.getElementById('target-hp-fill');
+    if (hpFill) hpFill.style.width = '100%';
+    const dummyEmoji = document.getElementById('dummy-emoji');
+    if (dummyEmoji) {
+      dummyEmoji.textContent = '🪵';
+      dummyEmoji.dataset.art = 'dummy';
+    }
+    const dummyBanner = document.getElementById('training-dummy-banner');
+    if (dummyBanner) dummyBanner.classList.remove('hidden');
+    const stageBanner = document.getElementById('arena-stage-banner');
+    if (stageBanner) stageBanner.classList.add('hidden');
+    const centerInfo = document.getElementById('stage-center-info');
+    if (centerInfo) centerInfo.classList.add('hidden');
+    return;
+  }
+
+  const dummyBanner = document.getElementById('training-dummy-banner');
+  if (dummyBanner) dummyBanner.classList.add('hidden');
+  const stageBanner = document.getElementById('arena-stage-banner');
+  if (stageBanner) stageBanner.classList.remove('hidden');
+  const centerInfo = document.getElementById('stage-center-info');
+  if (centerInfo) centerInfo.classList.remove('hidden');
+
   state.currentStage = Math.max(1, stageNum);
   const data = getStageData(state.currentStage);
   if (arenaEnvironment) arenaEnvironment.setStage(state.currentStage);
@@ -2696,11 +2852,15 @@ function switchRightTab(tabName) {
   const infBtn = document.getElementById('tab-btn-infusion');
   if (infBtn) infBtn.classList.toggle('active', tabName === 'infusion');
   document.getElementById('tab-btn-tree').classList.toggle('active', tabName === 'tree');
+  const artBtn = document.getElementById('tab-btn-artifacts');
+  if (artBtn) artBtn.classList.toggle('active', tabName === 'artifacts');
 
   document.getElementById('pane-shop').classList.toggle('active', tabName === 'shop');
   const infPane = document.getElementById('pane-infusion');
   if (infPane) infPane.classList.toggle('active', tabName === 'infusion');
   document.getElementById('pane-tree').classList.toggle('active', tabName === 'tree');
+  const artPane = document.getElementById('pane-artifacts');
+  if (artPane) artPane.classList.toggle('active', tabName === 'artifacts');
   updateNotificationBadges();
 }
 
@@ -3060,6 +3220,34 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         dealDamage('meteor', curSt.sp * 1.45 * curSt.critDmg, true, false);
       }, 0.65);
     }
+
+    // 불사조 유물: 타오르는 마력순환 (치명타 시 작렬 즉시 재충전)
+    const circLv = (state.artifacts && state.artifacts.ignited_circ) || 0;
+    if (circLv > 0 && Math.random() < circLv * 0.05) {
+      if (state.combat.fbCharges < state.combat.fbMaxCharges) {
+        state.combat.fbCharges = Math.min(state.combat.fbMaxCharges, state.combat.fbCharges + 1);
+        triggerReadyFlash('skill-2');
+        spawnFloatingText('🔄 작열 즉시 충전!', 'fct-proc', -30);
+        playSound('proc');
+      }
+    }
+  }
+
+  // 3대 빌드 키스톤: 작열 연소 (도트 틱 발생 시 25% 확률로 작렬 쿨타임 0.4초 단축)
+  if (isDotTick && state.activeKeystone === 'dot') {
+    if (Math.random() < 0.25 && state.combat.fbCharges < state.combat.fbMaxCharges) {
+      state.combat.fbRechargeRem = Math.max(0, state.combat.fbRechargeRem - 0.4);
+    }
+  }
+
+  // 타오르는 기운 (Heating Up Pity System): 메인 화염구의 비치명타/치명타 스택 갱신
+  if (skillKey === 'fireball' && canTriggerStreak) {
+    if (isCrit) {
+      state.combat.pityCritStacks = 0;
+    } else {
+      state.combat.pityCritStacks = Math.min(6, (state.combat.pityCritStacks || 0) + 1);
+    }
+    updatePityCritBadgeUI();
   }
 
   if (canTriggerStreak && state.grimoires.meteor) {
@@ -3202,7 +3390,10 @@ function fireWithMultishot(type, baseMult) {
         type,
         () => {
           const st = getPlayerStats();
-          const isCrit = Math.random() * 100 < st.crit;
+          // 타오르는 기운 (Heating Up Pity System): 비치명타 시마다 치명타율 누적 보정 (+15%/스택)
+          const pityBonus = isMain ? (state.combat.pityCritStacks || 0) * 15 : 0;
+          const effectiveCrit = Math.min(100, st.crit + pityBonus);
+          const isCrit = Math.random() * 100 < effectiveCrit;
           const mult = isMain ? baseMult : baseMult * 0.4;
           const base = st.sp * mult;
           const finalDmg = isCrit ? base * st.critDmg : base;
@@ -3249,6 +3440,20 @@ function triggerSkill(skillKey) {
 
   if (skillKey === 'fireball') {
     if (c.castingSkill || c.gcdRemaining > 0) return false;
+
+    // 불사조 유물: 태양의 파편 (즉시 시전 확률)
+    const shardLv = (state.artifacts && state.artifacts.shard_of_sun) || 0;
+    const instantChance = shardLv * 0.10;
+    if (instantChance > 0 && Math.random() < instantChance) {
+      spawnFloatingText('☀️ 파편: 즉시 시전!', 'fct-proc', -35, { anchor: 'caster' });
+      playSound('proc');
+      fireWithMultishot('fireball', 1.0);
+      beginMageGesture('fireball');
+      c.gcdTotal = Math.max(0.35, 0.85 / stats.speedMult);
+      c.gcdRemaining = c.gcdTotal;
+      return true;
+    }
+
     const castTime = Math.max(0.4, 1.5 / stats.speedMult);
     c.castingSkill = 'fireball';
     c.castTotal = castTime;
@@ -3283,7 +3488,8 @@ function triggerSkill(skillKey) {
 
     c.combustionRem = getCombustionDuration();
     beginMageGesture('combustion');
-    c.combustionCdTotal = Math.max(14, 30 * (1 - stats.cdr));
+    const timeWarpCdCut = ((state.artifacts && state.artifacts.time_warp) || 0) * 3;
+    c.combustionCdTotal = Math.max(Math.max(10, 14 - timeWarpCdCut), (30 - timeWarpCdCut) * (1 - stats.cdr));
     c.combustionCdRem = c.combustionCdTotal;
     spawnFloatingText('☀️ 마력 폭주!', 'fct-proc', -45, { anchor: 'caster' });
     playSound('proc');
@@ -3357,6 +3563,21 @@ function releaseMeteor() {
     dealDamage('meteor', damage, isCrit, false);
     state.combat.meteorBurnRem = 6;
   }, 1);
+
+  // 불사조 유물: 쌍둥이 운석 (보조 미니 운석 연속 낙하)
+  const twinLv = (state.artifacts && state.artifacts.twin_cataclysm) || 0;
+  if (twinLv > 0) {
+    for (let tc = 0; tc < twinLv; tc++) {
+      setTimeout(() => {
+        launchMeteorVfx(() => {
+          const stats = getPlayerStats();
+          const isCrit = Math.random() * 100 < stats.crit;
+          const damage = stats.sp * 1.6 * (isCrit ? stats.critDmg : 1);
+          dealDamage('meteor', damage, isCrit, false);
+        }, 0.68);
+      }, (tc + 1) * 220);
+    }
+  }
 }
 
 function finishCast(skillKey) {
@@ -3795,7 +4016,182 @@ function renderSkillTreeUI() {
     </div>
   `;
 
+  renderKeystoneUI();
   updateNotificationBadges();
+}
+
+// ==========================================
+// 15-B. 3대 빌드 키스톤(Keystone) UI & 토글
+// ==========================================
+function toggleKeystone(keystoneId) {
+  if (state.activeKeystone === keystoneId) {
+    state.activeKeystone = null;
+    spawnFloatingText('키스톤 특성 해제됨', 'fct-normal', -30, { anchor: 'caster' });
+  } else {
+    state.activeKeystone = keystoneId;
+    const def = KEYSTONE_DEFINITIONS.find((k) => k.id === keystoneId);
+    playSound('proc');
+    spawnFloatingText(`🌟 키스톤 활성화: [${def.title}]!`, 'fct-proc', -40, { anchor: 'caster' });
+  }
+  saveGame();
+  renderKeystoneUI();
+  updateLiveHUD();
+}
+
+function renderKeystoneUI() {
+  const container = document.getElementById('keystone-selector-box');
+  if (!container) return;
+
+  container.innerHTML = KEYSTONE_DEFINITIONS.map((k) => {
+    const isActive = state.activeKeystone === k.id;
+    return `
+      <div class="keystone-card ${isActive ? 'active' : ''}" data-keystone="${k.id}">
+        <div class="keystone-title">
+          <span>${k.icon} ${k.title}</span>
+          ${isActive ? '<span class="keystone-active-badge">선택됨</span>' : ''}
+        </div>
+        <div class="keystone-tagline">${k.tagline}</div>
+        <div class="keystone-desc">${k.desc}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==========================================
+// 15-C. 불사조 영구 유물 (Phoenix Artifacts) UI
+// ==========================================
+function getArtifactCost(art) {
+  return art.cost || 1;
+}
+
+function buyArtifact(artId) {
+  const art = PHOENIX_ARTIFACTS.find((a) => a.id === artId);
+  if (!art) return;
+  const lv = (state.artifacts && state.artifacts[artId]) || 0;
+  const cost = getArtifactCost(art);
+  if (lv >= art.maxLv || (state.phoenixFeathers || 0) < cost) return;
+
+  state.phoenixFeathers -= cost;
+  if (!state.artifacts) state.artifacts = {};
+  state.artifacts[artId] = lv + 1;
+
+  playSound('item_select');
+  spawnFloatingText(`🪶 ${art.name} Lv.${lv + 1} 각성!`, 'fct-crit', -45, { anchor: 'caster', isBig: true });
+  saveGame();
+  renderArtifactsUI();
+  updateLiveHUD();
+  updateNotificationBadges();
+}
+
+function renderArtifactsUI() {
+  const listEl = document.getElementById('artifacts-shop-list');
+  const featherEl = document.getElementById('ui-artifacts-feather-box');
+  const topFeatherEl = document.getElementById('ui-feathers');
+  const tabBadgeEl = document.getElementById('ui-tab-feather-badge');
+
+  const feathers = state.phoenixFeathers || 0;
+  if (featherEl) featherEl.textContent = `🪶 ${fmt(feathers)} 깃털`;
+  if (topFeatherEl) topFeatherEl.textContent = fmt(feathers);
+  if (tabBadgeEl) tabBadgeEl.textContent = `${fmt(feathers)} 🪶`;
+
+  if (!listEl) return;
+
+  listEl.innerHTML = PHOENIX_ARTIFACTS.map((art) => {
+    const lv = (state.artifacts && state.artifacts[art.id]) || 0;
+    const isMax = lv >= art.maxLv;
+    const cost = getArtifactCost(art);
+    const canBuy = !isMax && feathers >= cost;
+    const descText = art.desc(lv);
+
+    return `
+      <div class="artifact-card ${canBuy ? 'affordable' : ''} ${isMax ? 'maxed' : ''}">
+        <div class="art-icon">${art.icon}</div>
+        <div class="art-info">
+          <div class="art-name-row">
+            <span class="art-name">${art.name}</span>
+            <span class="art-lv-tag ${isMax ? 'is-max' : ''}">${isMax ? 'MAX' : `Lv.${lv} / ${art.maxLv}`}</span>
+          </div>
+          <div class="art-desc">${descText}</div>
+        </div>
+        <button class="btn-buy-art has-badge-anchor" data-artifact="${art.id}" ${!canBuy ? 'disabled' : ''}>
+          <span>${isMax ? '습득 완료' : `🪶 ${cost} 깃털`}</span>
+          <span class="noti-badge ${canBuy ? '' : 'hidden'}">!</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==========================================
+// 15-D. 타오르는 기운 (Heating Up Pity Badge) UI
+// ==========================================
+function updatePityCritBadgeUI() {
+  const badge = document.getElementById('badge-pity-crit');
+  const btn = document.getElementById('skill-1');
+  const stacks = (state.combat && state.combat.pityCritStacks) || 0;
+  if (!badge || !btn) return;
+  if (stacks > 0) {
+    badge.textContent = `🔥 +${stacks * 15}%`;
+    badge.classList.remove('hidden');
+    btn.classList.add('heating-pity-active');
+  } else {
+    badge.classList.add('hidden');
+    btn.classList.remove('heating-pity-active');
+  }
+}
+
+// ==========================================
+// 15-E. 30초 훈련용 허수아비 벤치마크 모드
+// ==========================================
+function startTrainingDummyMode() {
+  if (state.isTrainingDummy) return;
+  state.savedStageBeforeTraining = state.currentStage || 1;
+  state.isTrainingDummy = true;
+  state.trainingTimer = 30.0;
+  state.dpsHistory = [];
+  state.currentDps = 0;
+  if (!state.stats) {
+    state.stats = { totalDamage: 0, peakDps: 0, biggestCrit: 0, biggestCritSkill: '', totalHits: 0, critHits: 0, combustionHits: 0, combustionDmg: 0 };
+  } else {
+    state.stats.peakDps = 0;
+    state.stats.totalDamage = 0;
+  }
+  loadStage(state.currentStage);
+  playSound('proc');
+  spawnFloatingText('🎯 30초 딜사이클 훈련 시작! 전력을 다해 폭딜하세요!', 'fct-proc', -50, { isBig: true });
+}
+
+function finishTrainingDummyMode() {
+  if (!state.isTrainingDummy) return;
+  state.isTrainingDummy = false;
+  const peak = Math.max(state.currentDps, state.stats?.peakDps || 0);
+  const isNewRecord = peak > (state.dummyRecordDps || 0);
+  if (isNewRecord) {
+    state.dummyRecordDps = peak;
+  }
+
+  loadStage(state.savedStageBeforeTraining || 1);
+  saveGame();
+
+  openDetailsModal();
+  const parseEl = document.getElementById('details-parse-badge');
+  if (parseEl) {
+    parseEl.textContent = `🎯 훈련장: ${fmt(peak)} DPS (${isNewRecord ? '🎉 최고기록!' : '측정 완료'})`;
+  }
+  playSound(isNewRecord ? 'proc' : 'hit');
+  spawnFloatingText(
+    isNewRecord ? `🎉 훈련장 최고 기록 갱신: ${fmt(peak)} DPS!` : `🎯 훈련 종료: ${fmt(peak)} DPS`,
+    'fct-crit',
+    -50,
+    { isBig: true }
+  );
+}
+
+function exitTrainingDummyMode() {
+  if (!state.isTrainingDummy) return;
+  state.isTrainingDummy = false;
+  loadStage(state.savedStageBeforeTraining || 1);
+  spawnFloatingText('전투로 복귀했습니다.', 'fct-normal', -30);
 }
 
 function renderInfusionUI() {
@@ -4110,6 +4506,33 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
+  // 5. 불사조 영구 유물 상점 해금 (승천 1회 이상 또는 깃털 보유 또는 20스테이지 도달)
+  const hasArtifactProgress =
+    (state.ascensionCount || 0) > 0 ||
+    (state.phoenixFeathers || 0) > 0 ||
+    state.highestClearedStage >= 20 ||
+    state.campaignCleared ||
+    Object.values(state.artifacts || {}).some((lv) => lv > 0);
+  if (!u.artifactShop && hasArtifactProgress) {
+    u.artifactShop = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast('🔓 새로운 시스템 해금: 불사조 영구 유물!', '우측 상단 [🪶 유물] 탭에서 승천 깃털로 영구 아티팩트를 각성하세요!');
+      triggerUnfoldPop('tab-btn-artifacts');
+      triggerUnfoldPop('pill-feathers');
+    }
+  }
+
+  // 6. 훈련용 허수아비 벤치마크 모드 해금 (Stage 3 클리어 이상)
+  if (!u.trainingDummy && (state.highestClearedStage >= 3 || state.currentStage >= 3 || state.campaignCleared)) {
+    u.trainingDummy = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast('🔓 새로운 모드 해금: 허수아비 훈련장!', '상단 [🎯 허수아비 훈련]에서 30초간 내 빌드의 한계 DPS를 측정하세요!');
+      triggerUnfoldPop('btn-training-dummy');
+    }
+  }
+
   applyUnfoldedVisibility();
   if (changed && !silent) {
     saveGame();
@@ -4119,23 +4542,29 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 정수/치명타/시전속도 알약 & 명예의 전당 버튼
+  // 상단 정수/치명타/시전속도 알약 & 명예의 전당/깃털/훈련장 버튼
   const pillEssence = document.getElementById('pill-essence');
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
+  const pillFeathers = document.getElementById('pill-feathers');
   const hallBtn = document.getElementById('btn-hall-of-fame');
+  const btnTraining = document.getElementById('btn-training-dummy');
   if (pillEssence) pillEssence.classList.toggle('unfold-hidden', !u.infusionShop);
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
+  if (pillFeathers) pillFeathers.classList.toggle('unfold-hidden', !u.artifactShop);
   if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
+  if (btnTraining) btnTraining.classList.toggle('unfold-hidden', !u.trainingDummy);
 
-  // 우측 상단 [상점 / 마법 부여 / 스킬 트리] 탭 전환 바
+  // 우측 상단 [상점 / 마법 부여 / 스킬 트리 / 불사조 유물] 탭 전환 바
   const modeTabs = document.getElementById('right-mode-tabs');
   const tabInfBtn = document.getElementById('tab-btn-infusion');
   const tabTreeBtn = document.getElementById('tab-btn-tree');
-  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.infusionShop && !u.skillTree);
+  const tabArtBtn = document.getElementById('tab-btn-artifacts');
+  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.infusionShop && !u.skillTree && !u.artifactShop);
   if (tabInfBtn) tabInfBtn.classList.toggle('unfold-hidden', !u.infusionShop);
   if (tabTreeBtn) tabTreeBtn.classList.toggle('unfold-hidden', !u.skillTree);
+  if (tabArtBtn) tabArtBtn.classList.toggle('unfold-hidden', !u.artifactShop);
 
   // 우측 상점 내부: 초기 봉인 안내 vs 마법 습득 vs 스킬 연마 vs 장비 강화
   const sealedCard = document.getElementById('unfold-sealed-shop');
@@ -4150,7 +4579,7 @@ function applyUnfoldedVisibility() {
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
-    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame;
+    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame && u.artifactShop && u.trainingDummy;
     unfoldAllBtn.style.display = allDone ? 'none' : '';
   }
 }
@@ -4729,20 +5158,22 @@ function openVictoryModal(isFirstVictory = false) {
     subEl.textContent = 'Stage 20 최종 보스 [화염군주 라그나로스]를 토벌하면 불사조 승천 및 특성 포인트가 개방됩니다!';
   }
 
+  const maxStageRecord = Math.max(state.highestClearedStage, state.recordHighestStage || 0);
+  const feathersGained = 1 + Math.max(0, Math.floor(((maxStageRecord || 20) - 20) / 5));
+
   if (bannerTitle && bannerDesc) {
     bannerTitle.textContent = cleared20
       ? `🔥 불사조 승천 가능! (제${currentAsc + 1}회차 환생)`
       : `🔒 불사조 승천 (Stage 20 클리어 시 해금)`;
     bannerDesc.innerHTML = cleared20
-      ? `지금 승천하면 <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(2)}배 (누적 +50%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
-      : `Phase 4 최종 보스 라그나로스를 처치하면 승천을 통해 스킬 포인트를 얻고 특성을 해금할 수 있습니다!`;
+      ? `지금 승천하면 <b>🪶 불사조 깃털 +${feathersGained}개</b>, <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(2)}배 (누적 +50%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
+      : `Phase 4 최종 보스 라그나로스를 처치하면 승천을 통해 불사조 깃털과 스킬 포인트를 얻고 영구 유물을 해금할 수 있습니다!`;
   }
 
   if (doAscendBtn) {
     doAscendBtn.style.display = cleared20 ? '' : 'none';
+    doAscendBtn.textContent = `🔥 불사조 승천 진행 (+${feathersGained} 깃털 · +1 SP & x${nextAscMult.toFixed(2)}배)`;
   }
-
-  const maxStageRecord = Math.max(state.highestClearedStage, state.recordHighestStage || 0);
 
   grid.innerHTML = `
     <div class="victory-stat-item">
@@ -4810,6 +5241,9 @@ function doAscend() {
   // 1. 최고 도달 기록 영구 보존 및 승천 횟수 증가 (영구 +1 SP 및 피해량 배수 누적)
   state.recordHighestStage = Math.max(state.recordHighestStage || 0, state.highestClearedStage);
   state.ascensionCount = (state.ascensionCount || 0) + 1;
+  const feathersGained = 1 + Math.max(0, Math.floor(((state.recordHighestStage || 20) - 20) / 5));
+  state.phoenixFeathers = (state.phoenixFeathers || 0) + feathersGained;
+  state.unfolded.artifactShop = true;
   const ascMult = getAscensionDamageMult();
 
   // 2. 초기화 진행 (방안 A: 단기 진행도, 마도서 스킬, 초반 언폴딩 리셋)
@@ -4854,7 +5288,7 @@ function doAscend() {
   spawnParticles(casterCenter.x, casterCenter.y, 48, '#fef08a', '#ea580c', 2.2);
   triggerArenaShake('lg');
 
-  spawnFloatingText(`🔥 불사조 승천 완료! 🌟 +1 SP 획득! (피해량 x${ascMult.toFixed(2)}배 · 쾌속 스피드런 시작!)`, 'fct-proc', -55, { isBig: true });
+  spawnFloatingText(`🔥 불사조 승천 완료! 🪶 +${feathersGained} 깃털 & 🌟 +1 SP! (피해량 x${ascMult.toFixed(2)}배 · 쾌속 스피드런 시작!)`, 'fct-proc', -55, { isBig: true });
 
   loadStage(1);
   checkAndTriggerUnfolds(true);
@@ -4862,6 +5296,7 @@ function doAscend() {
   saveGame();
   renderShopUI();
   renderSkillTreeUI();
+  renderArtifactsUI();
   updateLiveHUD();
   updateNotificationBadges();
 
@@ -4919,8 +5354,21 @@ function gameLoop(nowMs) {
     }
   }
 
+  // 훈련용 허수아비 벤치마크 모드 타이머
+  if (state.isTrainingDummy) {
+    state.trainingTimer -= dt;
+    const timerEl = document.getElementById('ui-training-timer');
+    if (timerEl) {
+      timerEl.textContent = `${Math.max(0, state.trainingTimer).toFixed(1)}s`;
+    }
+    if (state.trainingTimer <= 0) {
+      finishTrainingDummyMode();
+    }
+  }
+
+  const summonSpeedBonus = state.activeKeystone === 'summon' ? 1.5 : 1.0;
   if (state.skillTree.fire_elem > 0) {
-    c.elemTimer += dt * stats.speedMult;
+    c.elemTimer += dt * stats.speedMult * summonSpeedBonus;
     if (c.elemTimer >= 1.3) {
       c.elemTimer -= 1.3;
       fireElementalAttack();
@@ -4928,7 +5376,7 @@ function gameLoop(nowMs) {
   }
 
   if (state.skillTree.phoenix > 0) {
-    c.phoenixTimer += dt * stats.speedMult;
+    c.phoenixTimer += dt * stats.speedMult * summonSpeedBonus;
     if (c.phoenixTimer >= 2.4) {
       c.phoenixTimer -= 2.4;
       firePhoenixAttack();
@@ -4936,15 +5384,18 @@ function gameLoop(nowMs) {
   }
 
   if (state.skillTree.magma_golem > 0) {
-    c.golemTimer += dt * stats.speedMult;
+    c.golemTimer += dt * stats.speedMult * summonSpeedBonus;
     if (c.golemTimer >= 2.8) {
       c.golemTimer -= 2.8;
       fireMagmaGolemAttack();
     }
   }
 
+  // 3대 빌드 키스톤: 마력 폭주 활성화 중 쿨다운 회복 속도 2배 가속
+  const cdDt = dt * (state.activeKeystone === 'burst' && c.combustionRem > 0 ? 2.0 : 1.0);
+
   if (state.grimoires.fireblast && c.fbCharges < c.fbMaxCharges) {
-    c.fbRechargeRem -= dt;
+    c.fbRechargeRem -= cdDt;
     if (c.fbRechargeRem <= 0) {
       const prevCharges = c.fbCharges;
       c.fbCharges++;
@@ -4975,7 +5426,7 @@ function gameLoop(nowMs) {
     }
   }
   if (c.meteorCdRem > 0) {
-    c.meteorCdRem = Math.max(0, c.meteorCdRem - dt);
+    c.meteorCdRem = Math.max(0, c.meteorCdRem - cdDt);
     if (c.meteorCdRem === 0 && c.wasOnCd[3]) {
       triggerReadyFlash('skill-3');
       c.wasOnCd[3] = false;
@@ -4984,7 +5435,7 @@ function gameLoop(nowMs) {
     }
   }
   if (c.flamePatchCdRem > 0) {
-    c.flamePatchCdRem = Math.max(0, c.flamePatchCdRem - dt);
+    c.flamePatchCdRem = Math.max(0, c.flamePatchCdRem - cdDt);
     if (c.flamePatchCdRem === 0 && c.wasOnCd[6]) {
       triggerReadyFlash('skill-6');
       c.wasOnCd[6] = false;
@@ -5075,6 +5526,11 @@ function updateLiveHUD() {
     const displayedEssence = Math.max(0, Math.round(curEssence - pendingEss));
     essEl.textContent = fmt(displayedEssence);
   }
+  const featherEl = document.getElementById('ui-feathers');
+  if (featherEl) {
+    featherEl.textContent = fmt(state.phoenixFeathers || 0);
+  }
+  updatePityCritBadgeUI();
   document.getElementById('ui-sp').textContent = fmt(stats.sp);
   document.getElementById('ui-crit').textContent = `${stats.crit.toFixed(1)}%`;
   document.getElementById('ui-haste').textContent = `+${stats.haste.toFixed(0)}%`;
@@ -5306,6 +5762,10 @@ function saveGame() {
       infusions: state.infusions,
       ascensionCount: state.ascensionCount,
       canAscend: state.canAscend,
+      phoenixFeathers: state.phoenixFeathers,
+      artifacts: state.artifacts,
+      activeKeystone: state.activeKeystone,
+      dummyRecordDps: state.dummyRecordDps,
       skillMastery: state.skillMastery,
       stats: state.stats,
       bounty: state.bounty
@@ -5354,6 +5814,10 @@ function loadGame() {
     if (data.grimoires) Object.assign(state.grimoires, data.grimoires);
     if (data.items) Object.assign(state.items, data.items);
     if (data.infusions) Object.assign(state.infusions, data.infusions);
+    if (typeof data.phoenixFeathers === 'number') state.phoenixFeathers = data.phoenixFeathers;
+    if (data.artifacts) Object.assign(state.artifacts, data.artifacts);
+    if (typeof data.activeKeystone === 'string' || data.activeKeystone === null) state.activeKeystone = data.activeKeystone;
+    if (typeof data.dummyRecordDps === 'number') state.dummyRecordDps = data.dummyRecordDps;
     if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
     if (typeof data.canAscend === 'boolean') state.canAscend = data.canAscend;
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
@@ -5444,6 +5908,47 @@ function initEvents() {
   const infTabBtn = document.getElementById('tab-btn-infusion');
   if (infTabBtn) infTabBtn.addEventListener('click', () => switchRightTab('infusion'));
   document.getElementById('tab-btn-tree').addEventListener('click', () => switchRightTab('tree'));
+  const artTabBtn = document.getElementById('tab-btn-artifacts');
+  if (artTabBtn) artTabBtn.addEventListener('click', () => switchRightTab('artifacts'));
+
+  const artListEl = document.getElementById('artifacts-shop-list');
+  if (artListEl) {
+    artListEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-artifact]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-artifact');
+      buyArtifact(id);
+    });
+  }
+
+  const keystoneBox = document.getElementById('keystone-selector-box');
+  if (keystoneBox) {
+    keystoneBox.addEventListener('click', (e) => {
+      const card = e.target.closest('[data-keystone]');
+      if (!card) return;
+      const id = card.getAttribute('data-keystone');
+      toggleKeystone(id);
+    });
+  }
+
+  const btnDummy = document.getElementById('btn-training-dummy');
+  if (btnDummy) {
+    btnDummy.addEventListener('click', () => {
+      if (state.isTrainingDummy) {
+        finishTrainingDummyMode();
+      } else {
+        startTrainingDummyMode();
+      }
+    });
+  }
+  const btnFinishTraining = document.getElementById('btn-finish-training');
+  if (btnFinishTraining) {
+    btnFinishTraining.addEventListener('click', () => finishTrainingDummyMode());
+  }
+  const btnExitTraining = document.getElementById('btn-exit-training');
+  if (btnExitTraining) {
+    btnExitTraining.addEventListener('click', () => exitTrainingDummyMode());
+  }
 
   const infListEl = document.getElementById('infusion-shop-list');
   if (infListEl) {
@@ -5745,11 +6250,14 @@ function initEvents() {
       state.unfolded.infusionShop = true;
       state.unfolded.skillTree = true;
       state.unfolded.hallOfFame = true;
+      state.unfolded.artifactShop = true;
+      state.unfolded.trainingDummy = true;
       playSound('item_select');
-      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 명예의 전당이 모두 펼쳐졌습니다.');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 불사조 유물, 허수아비 훈련장이 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
       updateSkillActionBarVisibility();
       renderInfusionUI();
+      renderArtifactsUI();
       saveGame();
     });
   }
@@ -5905,6 +6413,9 @@ window.addEventListener('DOMContentLoaded', () => {
   renderShopUI();
   renderInfusionUI();
   renderSkillTreeUI();
+  renderArtifactsUI();
+  renderKeystoneUI();
+  updatePityCritBadgeUI();
   updateNotificationBadges();
   requestAnimationFrame(gameLoop);
 });
