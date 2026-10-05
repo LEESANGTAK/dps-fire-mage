@@ -53,6 +53,10 @@
         <span>🎯 허수아비 훈련</span>
         <span class="noti-badge hidden" id="badge-training-dummy">!</span>
       </button>
+      <button class="btn-top btn-heat unfold-hidden has-badge-anchor" id="btn-heat-pacts" title="심연의 열기 규약을 활성화하여 난이도를 올리고 불사조 깃털 보너스를 획득합니다">
+        <span>🔥 심연의 규약</span>
+        <span class="heat-bonus-badge hidden" id="ui-heat-badge">+0%</span>
+      </button>
       <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
       <button class="btn-top btn-dev-mode" id="btn-dev-mode" title="개발용 치트 UI를 활성화하거나 닫습니다">🛠️ 개발자 모드</button>
       <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
@@ -537,6 +541,60 @@
       <div class="details-actions">
         <button type="button" class="btn-top" id="btn-details-reset">🔄 통계 리셋</button>
         <button type="button" class="victory-btn primary" id="btn-details-ok">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 심연의 열기(Heat) 규약 모달 -->
+  <div class="modal-backdrop hidden" id="modal-heat-pacts">
+    <div class="victory-modal-card heat-modal-card">
+      <div class="victory-modal-header">
+        <h2 class="victory-modal-title">🔥 심연의 열기(Heat) 규약</h2>
+        <p class="victory-modal-subtitle">몬스터의 난이도 제약을 걸어 승천 시 획득하는 🪶 깃털 보상을 대폭 증폭합니다!</p>
+      </div>
+
+      <div class="heat-bonus-summary">
+        <span>현재 총 깃털 보너스:</span>
+        <span class="heat-total-val" id="ui-heat-total-bonus">+0%</span>
+      </div>
+
+      <div class="heat-pacts-list">
+        <label class="heat-pact-card" data-pact="fast_tempo">
+          <input type="checkbox" id="chk-heat-fast-tempo">
+          <div class="heat-pact-info">
+            <div class="heat-pact-title-row">
+              <span class="heat-pact-name">⚡ 성난 템포 (Fast Tempo)</span>
+              <span class="heat-pact-badge">+25% 깃털</span>
+            </div>
+            <div class="heat-pact-desc">몬스터의 공격 주기 및 스킬 주기가 25% 가속됩니다.</div>
+          </div>
+        </label>
+
+        <label class="heat-pact-card" data-pact="iron_skin">
+          <input type="checkbox" id="chk-heat-iron-skin">
+          <div class="heat-pact-info">
+            <div class="heat-pact-title-row">
+              <span class="heat-pact-name">🛡️ 강철 살갗 (Iron Skin)</span>
+              <span class="heat-pact-badge">+35% 깃털</span>
+            </div>
+            <div class="heat-pact-desc">모든 몬스터의 최대 체력이 50% 증가합니다.</div>
+          </div>
+        </label>
+
+        <label class="heat-pact-card" data-pact="scorched_endure">
+          <input type="checkbox" id="chk-heat-scorched-endure">
+          <div class="heat-pact-info">
+            <div class="heat-pact-title-row">
+              <span class="heat-pact-name">🌋 화염 내성 (Scorched Endure)</span>
+              <span class="heat-pact-badge">+40% 깃털</span>
+            </div>
+            <div class="heat-pact-desc">화상 및 불장판의 도트 틱 간격이 20% 지연됩니다.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="victory-modal-actions">
+        <button type="button" class="victory-btn primary" id="btn-close-heat">규약 적용 및 닫기</button>
       </div>
     </div>
   </div>

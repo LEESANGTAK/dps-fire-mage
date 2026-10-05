@@ -44,10 +44,13 @@ function getStageData(stageNum) {
   const phase = Math.ceil(stageNum / 5);
   const stepInPhase = ((stageNum - 1) % 5) + 1;
   const isPhaseBoss = stepInPhase === 5;
+  const hpMult = typeof state !== 'undefined' && state.heatPacts && state.heatPacts.iron_skin ? 1.5 : 1.0;
 
   if (stageNum <= STAGE_MONSTERS.length) {
+    const raw = STAGE_MONSTERS[stageNum - 1];
     return {
-      ...STAGE_MONSTERS[stageNum - 1],
+      ...raw,
+      hp: Math.round(raw.hp * hpMult),
       phase,
       stepInPhase,
       isPhaseBoss
@@ -63,7 +66,7 @@ function getStageData(stageNum) {
     isPhaseBoss,
     name: isPhaseBoss ? `공허의 지배자 P.${phase}` : `공허의 정예병 Lv.${extra}`,
     emoji: isPhaseBoss ? '🌌' : '👾',
-    hp: Math.round(base.hp * mult),
+    hp: Math.round(base.hp * mult * hpMult),
     timeLimit: isPhaseBoss ? 32 : 25,
     gold: Math.round(base.gold * Math.pow(1.48, extra)),
     firstBonus: Math.round(base.firstBonus * Math.pow(1.48, extra))
@@ -591,7 +594,14 @@ const state = {
     skillTree: false,
     hallOfFame: false,
     artifactShop: false,
-    trainingDummy: false
+    trainingDummy: false,
+    heatPacts: false
+  },
+
+  heatPacts: {
+    fast_tempo: false,
+    iron_skin: false,
+    scorched_endure: false
   },
 
   bonusSkillPoints: 0,
@@ -767,8 +777,9 @@ const state = {
 // 5. 스킬 포인트, 스탯 & 요구 DPS 달성 판정
 // ==========================================
 function getEarnedPhaseBossSp() {
-  // 이제 보스는 스킬 포인트 대신 정수를 지급하며, 스킬 포인트는 승천을 통해 영구 획득합니다.
-  return 0;
+  // Stage 5, 10, 15, 20 보스 최초 격파 시 각각 영구 1 SP 지급 (첫 엔딩 전 최대 4 SP)
+  const maxStage = Math.max(state.highestClearedStage || 0, state.recordHighestStage || 0);
+  return Math.min(4, Math.floor(maxStage / 5));
 }
 
 function getSpentSkillPoints() {
@@ -781,7 +792,7 @@ function getSpentSkillPoints() {
 }
 
 function getAvailableSkillPoints() {
-  const total = (state.ascensionCount || 0) * 1 + (state.bonusSkillPoints || 0);
+  const total = (state.ascensionCount || 0) * 1 + (state.bonusSkillPoints || 0) + getEarnedPhaseBossSp();
   return Math.max(0, total - getSpentSkillPoints());
 }
 
@@ -2822,6 +2833,11 @@ function loadStage(stageNum) {
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
   state.monster.isDying = false;
+  if (data.isPhaseBoss) {
+    state.currentBossFightStartTime = performance.now() / 1000;
+  } else {
+    state.currentBossFightStartTime = null;
+  }
 
   state.combat.ignitePool = 0;
   state.combat.igniteRem = 0;
@@ -2886,14 +2902,37 @@ function onMonsterKilled() {
 
   state.totalKills = (state.totalKills || 0) + 1;
   checkBountyProgress('monster_kill', 1);
+  if (data.isPhaseBoss && state.currentBossFightStartTime) {
+    const duration = Math.max(0.1, (performance.now() / 1000) - state.currentBossFightStartTime);
+    if (!state.stats) state.stats = {};
+    state.stats.lastBossKillDuration = duration;
+    const prevBest = state.bossClearTimes ? state.bossClearTimes[state.currentStage] : null;
+    if (typeof prevBest === 'number') {
+      const diff = prevBest - duration;
+      state.stats.lastBossKillDiff = diff;
+      if (duration < prevBest) {
+        state.bossClearTimes[state.currentStage] = duration;
+      }
+    } else {
+      if (!state.bossClearTimes) state.bossClearTimes = {};
+      state.bossClearTimes[state.currentStage] = duration;
+      state.stats.lastBossKillDiff = null;
+    }
+  }
 
   if (isFirstClear) {
     state.highestClearedStage = state.currentStage;
+    state.recordHighestStage = Math.max(state.recordHighestStage || 0, state.currentStage);
     totalGold += Math.round(data.firstBonus * (stats.goldMult || 1));
 
     if (data.isPhaseBoss) {
       gainedEssence = getFirstClearEssenceBonus(state.currentStage);
-      spawnFloatingText(`👑 보스 격파! 🔹 +${gainedEssence} 정수!`, 'fct-proc', -60);
+      const isBossSpStage = [5, 10, 15, 20].includes(state.currentStage);
+      if (isBossSpStage) {
+        spawnFloatingText(`👑 보스 격파! 🌟 +1 SP & 🔹 +${gainedEssence} 정수!`, 'fct-proc', -60, { isBig: true });
+      } else {
+        spawnFloatingText(`👑 보스 격파! 🔹 +${gainedEssence} 정수!`, 'fct-proc', -60);
+      }
       playSound('proc');
     }
   } else {
@@ -3029,6 +3068,31 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       playSound('meteor_impact');
       spawnFloatingText('💥 불의 심장 파괴! 화염 역류!', 'fct-crit', -50, { isBig: true });
       rawDamage *= 1.5;
+    }
+  } else if ([3, 7, 12, 17].includes(state.currentStage)) {
+    // 일반 몬스터 기믹 1: 가연성 기름막 (도트가 걸려 있는 동안 치명타 피해 2배)
+    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
+    if (isDotted && isCrit) {
+      rawDamage *= 2.0;
+    }
+  } else if ([4, 8, 14, 18].includes(state.currentStage) && bg) {
+    // 일반 몬스터 기믹 2: 단단한 껍질 (치명타 2회 시 껍질 파괴 & 즉시 몰열 장전)
+    if (!bg.isShellBroken) {
+      if (isCrit) {
+        bg.shellCritHits = (bg.shellCritHits || 0) + 1;
+        if (bg.shellCritHits >= 2) {
+          bg.isShellBroken = true;
+          triggerArenaShake('sm');
+          playSound('meteor_impact');
+          spawnFloatingText('💥 껍질 파괴! 몰아치는 열기 충전!', 'fct-crit', -45, { isBig: true });
+          if (state.grimoires.meteor) {
+            state.combat.critStreak = 2;
+            state.combat.streakTimer = 6.0;
+          }
+        }
+      } else if (!isDotTick) {
+        rawDamage *= 0.6; // 껍질 방어력: 일반 피해 40% 감소
+      }
     }
   }
 
@@ -3555,6 +3619,10 @@ function triggerSkill(skillKey) {
 
 function releaseMeteor() {
   beginMageGesture('meteor');
+  if (state.combat && state.combat.combustionRem > 0) {
+    if (!state.stats) state.stats = {};
+    state.stats.combustionPyros = (state.stats.combustionPyros || 0) + 1;
+  }
   launchMeteorVfx(() => {
     const stats = getPlayerStats();
     const isCrit = Math.random() * 100 < stats.crit;
@@ -3597,27 +3665,29 @@ function finishCast(skillKey) {
 }
 
 function isSkillAutoActive(skillKey) {
-  return Boolean(state.grimoires.autocast && state.autoCast);
+  if (!state.grimoires.autocast || !state.autoCast) return false;
+  if (!state.skillAuto) return true;
+  return state.skillAuto[skillKey] !== false;
 }
 
 function runSmartAutoCast() {
   if (!state.grimoires.autocast || !state.autoCast) return;
   const c = state.combat;
 
-  if (state.grimoires.combustion && c.combustionCdRem <= 0) {
+  if (state.grimoires.combustion && isSkillAutoActive('combustion') && c.combustionCdRem <= 0) {
     triggerSkill('combustion');
   }
-  if ((state.skillTree.flame_patch || 0) > 0 && c.flamePatchCdRem <= 0) {
+  if ((state.skillTree.flame_patch || 0) > 0 && isSkillAutoActive('flame_patch') && c.flamePatchCdRem <= 0) {
     triggerSkill('flame_patch');
   }
 
   // 1. 몰아치는 열기 (즉시 시전 메테오): 몰열 2스택 상태라면 지체 없이 최우선 발사!
-  if (state.grimoires.meteor && c.critStreak === 2) {
+  if (state.grimoires.meteor && isSkillAutoActive('meteor') && c.critStreak === 2) {
     triggerSkill('meteor');
   }
 
   // 2. 불꽃 작렬 (확정 치명타): 1스택일 때 즉시 2스택 완성 유도 또는 완충 시 즉시 소모
-  if (state.grimoires.fireblast && c.fbCharges > 0) {
+  if (state.grimoires.fireblast && isSkillAutoActive('fireblast') && c.fbCharges > 0) {
     if (!state.grimoires.meteor || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
       triggerSkill('fireblast');
     }
@@ -3625,11 +3695,70 @@ function runSmartAutoCast() {
 
   // 3. 일반 화염구 기본 시전 (몰열 2스택 대기 중이 아닐 때)
   if (
+    isSkillAutoActive('fireball') &&
     !c.castingSkill &&
     c.gcdRemaining <= 0 &&
     !(state.grimoires.meteor && c.critStreak === 2)
   ) {
     triggerSkill('fireball');
+  }
+}
+
+function toggleSkillAuto(skillKey) {
+  if (!state.grimoires.autocast) return;
+  if (!state.skillAuto) {
+    state.skillAuto = { fireball: true, fireblast: true, combustion: true, meteor: true, flame_patch: true };
+  }
+  state.skillAuto[skillKey] = !state.skillAuto[skillKey];
+  playSound('item_select');
+  const isAuto = state.skillAuto[skillKey];
+  const nameMap = {
+    fireball: '화염구',
+    fireblast: '불꽃 작렬',
+    meteor: '메테오',
+    combustion: '마력 폭주',
+    flame_patch: '불장판'
+  };
+  const skillName = nameMap[skillKey] || skillKey;
+  spawnFloatingText(`${skillName}: ${isAuto ? '🤖 자동' : '✋ 수동'}`, isAuto ? 'fct-normal' : 'fct-crit', -35, { anchor: 'caster' });
+  updateSkillAutoUI();
+  saveGame();
+}
+
+function updateSkillAutoUI() {
+  const autoMap = {
+    fireball: document.getElementById('skill-1'),
+    fireblast: document.getElementById('skill-2'),
+    meteor: document.getElementById('skill-3'),
+    combustion: document.getElementById('skill-4'),
+    flame_patch: document.getElementById('skill-6')
+  };
+
+  const hasAutocast = Boolean(state.grimoires.autocast);
+
+  for (const [key, btn] of Object.entries(autoMap)) {
+    if (!btn) continue;
+    const isAuto = state.skillAuto ? state.skillAuto[key] !== false : true;
+    let badge = btn.querySelector('.skill-auto-badge');
+    if (!badge && hasAutocast) {
+      badge = document.createElement('span');
+      badge.className = 'skill-auto-badge';
+      badge.setAttribute('title', '자동/수동 전환 (클릭 또는 우클릭)');
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleSkillAuto(key);
+      });
+      btn.appendChild(badge);
+    }
+    if (badge) {
+      badge.classList.toggle('unfold-hidden', !hasAutocast);
+      badge.classList.toggle('is-auto', isAuto);
+      badge.classList.toggle('is-manual', !isAuto);
+      badge.textContent = isAuto ? 'AUTO' : '수동';
+      badge.setAttribute('aria-label', `${isAuto ? '자동' : '수동'} 시전 모드`);
+    }
+    btn.classList.toggle('manual-mode-active', !isAuto);
   }
 }
 
@@ -4194,6 +4323,55 @@ function exitTrainingDummyMode() {
   spawnFloatingText('전투로 복귀했습니다.', 'fct-normal', -30);
 }
 
+// ==========================================
+// 15-F. 심연의 열기(Heat) 챌린지 규약 시스템
+// ==========================================
+function getHeatBonusMult() {
+  let bonus = 0;
+  if (state.heatPacts && state.heatPacts.fast_tempo) bonus += 0.25;
+  if (state.heatPacts && state.heatPacts.iron_skin) bonus += 0.35;
+  if (state.heatPacts && state.heatPacts.scorched_endure) bonus += 0.40;
+  return bonus;
+}
+
+function openHeatModal() {
+  const modal = document.getElementById('modal-heat-pacts');
+  if (!modal) return;
+  renderHeatUI();
+  modal.classList.remove('hidden');
+  state.isPaused = true;
+  playSound('item_select');
+}
+
+function closeHeatModal() {
+  const modal = document.getElementById('modal-heat-pacts');
+  if (modal) modal.classList.add('hidden');
+  state.isPaused = false;
+  saveGame();
+}
+
+function renderHeatUI() {
+  const bonusMult = getHeatBonusMult();
+  const totalValEl = document.getElementById('ui-heat-total-bonus');
+  const badgeEl = document.getElementById('ui-heat-badge');
+  const pctStr = `+${Math.round(bonusMult * 100)}%`;
+
+  if (totalValEl) totalValEl.textContent = pctStr;
+  if (badgeEl) {
+    badgeEl.textContent = pctStr;
+    badgeEl.classList.toggle('hidden', bonusMult <= 0);
+  }
+
+  const pacts = state.heatPacts || {};
+  const chkFast = document.getElementById('chk-heat-fast-tempo');
+  const chkIron = document.getElementById('chk-heat-iron-skin');
+  const chkScorched = document.getElementById('chk-heat-scorched-endure');
+
+  if (chkFast) chkFast.checked = Boolean(pacts.fast_tempo);
+  if (chkIron) chkIron.checked = Boolean(pacts.iron_skin);
+  if (chkScorched) chkScorched.checked = Boolean(pacts.scorched_endure);
+}
+
 function renderInfusionUI() {
   const ess = state.essence || 0;
   const totalLv = getTotalInfusionLevels();
@@ -4533,6 +4711,16 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
+  // 7. 심연의 열기(Heat) 규약 해금 (승천 1회 이상 또는 20스테이지 클리어)
+  if (!u.heatPacts && ((state.ascensionCount || 0) > 0 || state.campaignCleared || state.highestClearedStage >= 20)) {
+    u.heatPacts = true;
+    changed = true;
+    if (!silent) {
+      showUnfoldToast('🔓 새로운 시스템 해금: 심연의 열기(Heat) 규약!', '상단 [🔥 심연의 규약]에서 난이도 제약을 걸고 승천 깃털을 추가 획득하세요!');
+      triggerUnfoldPop('btn-heat-pacts');
+    }
+  }
+
   applyUnfoldedVisibility();
   if (changed && !silent) {
     saveGame();
@@ -4542,19 +4730,21 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 정수/치명타/시전속도 알약 & 명예의 전당/깃털/훈련장 버튼
+  // 상단 정수/치명타/시전속도 알약 & 명예의 전당/깃털/훈련장/규약 버튼
   const pillEssence = document.getElementById('pill-essence');
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
   const pillFeathers = document.getElementById('pill-feathers');
   const hallBtn = document.getElementById('btn-hall-of-fame');
   const btnTraining = document.getElementById('btn-training-dummy');
+  const btnHeat = document.getElementById('btn-heat-pacts');
   if (pillEssence) pillEssence.classList.toggle('unfold-hidden', !u.infusionShop);
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillFeathers) pillFeathers.classList.toggle('unfold-hidden', !u.artifactShop);
   if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
   if (btnTraining) btnTraining.classList.toggle('unfold-hidden', !u.trainingDummy);
+  if (btnHeat) btnHeat.classList.toggle('unfold-hidden', !u.heatPacts);
 
   // 우측 상단 [상점 / 마법 부여 / 스킬 트리 / 불사조 유물] 탭 전환 바
   const modeTabs = document.getElementById('right-mode-tabs');
@@ -4579,7 +4769,7 @@ function applyUnfoldedVisibility() {
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
-    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame && u.artifactShop && u.trainingDummy;
+    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame && u.artifactShop && u.trainingDummy && u.heatPacts;
     unfoldAllBtn.style.display = allDone ? 'none' : '';
   }
 }
@@ -4645,6 +4835,7 @@ function updateSkillActionBarVisibility() {
   }
 
   updateAutoCastMagicCircle();
+  updateSkillAutoUI();
 }
 
 function updateAutoCastMagicCircle() {
@@ -4973,6 +5164,28 @@ function updateBossGimmick(dt) {
       }
       if (badge && bg.shield <= 0) badge.classList.add('hidden');
     }
+  } else if ([3, 7, 12, 17].includes(stage)) {
+    // 일반 몬스터 기믹 1: 가연성 기름막 (화상/불장판 도트 유지 시 치명타 2배 증폭!)
+    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
+    if (badge) {
+      badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy', 'gimmick-shield');
+      badge.classList.add(isDotted ? 'gimmick-melted' : 'gimmick-armor');
+      badge.textContent = isDotted ? '🛢️ 기름 발화! (치명타 피해 +100%)' : '🛢️ 가연성 기름막 (도트 시 크리 2배)';
+    }
+  } else if ([4, 8, 14, 18].includes(stage)) {
+    // 일반 몬스터 기믹 2: 단단한 껍질 (치명타 2회 적중 시 껍질 파괴 & 즉시 몰열 장전!)
+    const hits = bg.shellCritHits || 0;
+    const isBroken = Boolean(bg.isShellBroken);
+    if (badge) {
+      badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy', 'gimmick-shield');
+      if (isBroken) {
+        badge.classList.add('gimmick-groggy');
+        badge.textContent = '💥 껍질 파괴됨! (방어력 0)';
+      } else {
+        badge.classList.add('gimmick-armor');
+        badge.textContent = `💎 단단한 껍질 (${hits}/2 크리 시 파괴)`;
+      }
+    }
   } else {
     if (badge) badge.classList.add('hidden');
   }
@@ -5159,14 +5372,17 @@ function openVictoryModal(isFirstVictory = false) {
   }
 
   const maxStageRecord = Math.max(state.highestClearedStage, state.recordHighestStage || 0);
-  const feathersGained = 1 + Math.max(0, Math.floor(((maxStageRecord || 20) - 20) / 5));
+  const baseFeathers = 1 + Math.max(0, Math.floor(((maxStageRecord || 20) - 20) / 5));
+  const heatMult = 1 + getHeatBonusMult();
+  const feathersGained = Math.round(baseFeathers * heatMult);
+  const heatPctText = heatMult > 1 ? ` (규약 +${Math.round((heatMult - 1) * 100)}%)` : '';
 
   if (bannerTitle && bannerDesc) {
     bannerTitle.textContent = cleared20
       ? `🔥 불사조 승천 가능! (제${currentAsc + 1}회차 환생)`
       : `🔒 불사조 승천 (Stage 20 클리어 시 해금)`;
     bannerDesc.innerHTML = cleared20
-      ? `지금 승천하면 <b>🪶 불사조 깃털 +${feathersGained}개</b>, <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(2)}배 (누적 +50%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
+      ? `지금 승천하면 <b>🪶 불사조 깃털 +${feathersGained}개${heatPctText}</b>, <b>🌟 영구 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 x${nextAscMult.toFixed(2)}배 (누적 +50%씩)</b> 영구 증폭 축복을 받고 Stage 1로 환생합니다!`
       : `Phase 4 최종 보스 라그나로스를 처치하면 승천을 통해 불사조 깃털과 스킬 포인트를 얻고 영구 유물을 해금할 수 있습니다!`;
   }
 
@@ -5175,10 +5391,29 @@ function openVictoryModal(isFirstVictory = false) {
     doAscendBtn.textContent = `🔥 불사조 승천 진행 (+${feathersGained} 깃털 · +1 SP & x${nextAscMult.toFixed(2)}배)`;
   }
 
+  const lastDur = state.stats?.lastBossKillDuration;
+  const lastDiff = state.stats?.lastBossKillDiff;
+  let durStr = '측정 없음';
+  if (typeof lastDur === 'number' && lastDur > 0) {
+    if (typeof lastDiff === 'number' && lastDiff > 0.1) {
+      durStr = `${lastDur.toFixed(1)}초 <span style="color:#4ade80; font-weight:800;">(-${lastDiff.toFixed(1)}초 단축! ⚡)</span>`;
+    } else {
+      durStr = `${lastDur.toFixed(1)}초`;
+    }
+  }
+
   grid.innerHTML = `
     <div class="victory-stat-item">
       <span class="victory-stat-label">현재 승천 회차</span>
       <span class="victory-stat-val gold">제 ${currentAsc} 회차 (피해량 x${getAscensionDamageMult().toFixed(2)}배)</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">보스 처치 시간</span>
+      <span class="victory-stat-val cyan">${durStr}</span>
+    </div>
+    <div class="victory-stat-item">
+      <span class="victory-stat-label">발화 중 몰열 메테오</span>
+      <span class="victory-stat-val gold">☄️ ${state.stats?.combustionPyros || 0}회 폭딜</span>
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">최고 돌파 스테이지</span>
@@ -5241,9 +5476,11 @@ function doAscend() {
   // 1. 최고 도달 기록 영구 보존 및 승천 횟수 증가 (영구 +1 SP 및 피해량 배수 누적)
   state.recordHighestStage = Math.max(state.recordHighestStage || 0, state.highestClearedStage);
   state.ascensionCount = (state.ascensionCount || 0) + 1;
-  const feathersGained = 1 + Math.max(0, Math.floor(((state.recordHighestStage || 20) - 20) / 5));
+  const baseFeathers = 1 + Math.max(0, Math.floor(((state.recordHighestStage || 20) - 20) / 5));
+  const feathersGained = Math.round(baseFeathers * (1 + getHeatBonusMult()));
   state.phoenixFeathers = (state.phoenixFeathers || 0) + feathersGained;
   state.unfolded.artifactShop = true;
+  state.unfolded.heatPacts = true;
   const ascMult = getAscensionDamageMult();
 
   // 2. 초기화 진행 (방안 A: 단기 진행도, 마도서 스킬, 초반 언폴딩 리셋)
@@ -5766,6 +6003,8 @@ function saveGame() {
       artifacts: state.artifacts,
       activeKeystone: state.activeKeystone,
       dummyRecordDps: state.dummyRecordDps,
+      bossClearTimes: state.bossClearTimes,
+      heatPacts: state.heatPacts,
       skillMastery: state.skillMastery,
       stats: state.stats,
       bounty: state.bounty
@@ -5818,6 +6057,8 @@ function loadGame() {
     if (data.artifacts) Object.assign(state.artifacts, data.artifacts);
     if (typeof data.activeKeystone === 'string' || data.activeKeystone === null) state.activeKeystone = data.activeKeystone;
     if (typeof data.dummyRecordDps === 'number') state.dummyRecordDps = data.dummyRecordDps;
+    if (data.bossClearTimes) state.bossClearTimes = Object.assign({}, data.bossClearTimes);
+    if (data.heatPacts) Object.assign(state.heatPacts, data.heatPacts);
     if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
     if (typeof data.canAscend === 'boolean') state.canAscend = data.canAscend;
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
@@ -5845,6 +6086,13 @@ function initEvents() {
     btn.addEventListener('click', () => {
       const skill = btn.getAttribute('data-skill');
       triggerSkill(skill);
+    });
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const skill = btn.getAttribute('data-skill');
+      if (skill && state.grimoires.autocast) {
+        toggleSkillAuto(skill);
+      }
     });
   });
 
@@ -5948,6 +6196,37 @@ function initEvents() {
   const btnExitTraining = document.getElementById('btn-exit-training');
   if (btnExitTraining) {
     btnExitTraining.addEventListener('click', () => exitTrainingDummyMode());
+  }
+
+  const btnHeat = document.getElementById('btn-heat-pacts');
+  if (btnHeat) {
+    btnHeat.addEventListener('click', () => {
+      openHeatModal();
+    });
+  }
+  const btnCloseHeat = document.getElementById('btn-close-heat');
+  if (btnCloseHeat) {
+    btnCloseHeat.addEventListener('click', () => {
+      closeHeatModal();
+    });
+  }
+  const modalHeat = document.getElementById('modal-heat-pacts');
+  if (modalHeat) {
+    modalHeat.addEventListener('click', (e) => {
+      if (e.target === modalHeat) closeHeatModal();
+    });
+    modalHeat.querySelectorAll('input[type="checkbox"]').forEach((chk) => {
+      chk.addEventListener('change', () => {
+        const card = chk.closest('[data-pact]');
+        if (!card) return;
+        const pactKey = card.getAttribute('data-pact');
+        if (!state.heatPacts) state.heatPacts = {};
+        state.heatPacts[pactKey] = chk.checked;
+        playSound('item_select');
+        renderHeatUI();
+        saveGame();
+      });
+    });
   }
 
   const infListEl = document.getElementById('infusion-shop-list');
@@ -6252,6 +6531,7 @@ function initEvents() {
       state.unfolded.hallOfFame = true;
       state.unfolded.artifactShop = true;
       state.unfolded.trainingDummy = true;
+      state.unfolded.heatPacts = true;
       playSound('item_select');
       showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 불사조 유물, 허수아비 훈련장이 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
@@ -6416,6 +6696,8 @@ window.addEventListener('DOMContentLoaded', () => {
   renderArtifactsUI();
   renderKeystoneUI();
   updatePityCritBadgeUI();
+  updateSkillAutoUI();
+  renderHeatUI();
   updateNotificationBadges();
   requestAnimationFrame(gameLoop);
 });
