@@ -4588,20 +4588,21 @@ body {
   margin-top: 4px;
 }
 
-/* 6. 발 아래 자동 시전 마법진 (Auto-Cast Magic Circle) */
+/* 6. 발 아래 자동 시전 마법진 (Auto-Cast Magic Circle - 2.5D 돌바닥 완벽 접지) */
 .autocast-magic-circle {
   position: absolute;
-  bottom: -4px;
+  bottom: 0;
   left: 50%;
-  width: 170px;
-  height: 60px;
-  transform: translateX(-50%);
+  width: 190px;
+  height: 190px;
+  transform: translateX(-50%) scale(1, 0.35);
+  transform-origin: center center;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   z-index: 1;
-  perspective: 380px;
+  mix-blend-mode: screen;
 }
 
 .autocast-magic-circle.hidden {
@@ -4609,10 +4610,8 @@ body {
 }
 
 .magic-circle-svg {
-  width: 170px;
-  height: 170px;
-  transform: rotateX(68deg);
-  transform-origin: center center;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   transition: filter 0.4s ease, opacity 0.4s ease;
 }
@@ -4639,7 +4638,7 @@ body {
 }
 
 .mc-poly {
-  fill: rgba(245, 158, 11, 0.06);
+  fill: rgba(245, 158, 11, 0.08);
   stroke: #f59e0b;
   stroke-width: 1.2;
 }
@@ -4660,29 +4659,29 @@ body {
 
 /* 활성 상태 (자동 시전 ON): 타오르는 룬 발광 및 황금빛 회전 */
 .autocast-magic-circle.active .magic-circle-svg {
-  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 22px rgba(239, 68, 68, 0.7));
-  animation: magicCircleSpin 12s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 18px rgba(239, 68, 68, 0.65));
+  animation: magicCircleSpin 14s linear infinite;
   opacity: 0.95;
 }
 
 /* 대기 상태 (자동 시전 OFF): 은은한 룬 빛으로 정적 호흡 */
 .autocast-magic-circle.dormant .magic-circle-svg {
   filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.35));
-  animation: magicCircleSpin 28s linear infinite;
+  animation: magicCircleSpin 32s linear infinite;
   opacity: 0.35;
 }
 
 @keyframes magicCircleSpin {
-  0% { transform: rotateX(68deg) rotate(0deg); }
-  100% { transform: rotateX(68deg) rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .magic-circle-ambient-glow {
   position: absolute;
-  width: 140px;
-  height: 48px;
+  width: 95%;
+  height: 95%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.45) 0%, rgba(234, 88, 12, 0.22) 50%, transparent 75%);
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.5) 0%, rgba(234, 88, 12, 0.25) 45%, transparent 70%);
   pointer-events: none;
   animation: magicCirclePulse 2s ease-in-out infinite alternate;
 }
@@ -4703,9 +4702,9 @@ body {
 }
 
 @keyframes magicCircleUnfold {
-  0% { transform: translateX(-50%) scale(0.1); opacity: 0; }
-  65% { transform: translateX(-50%) scale(1.18); opacity: 1; filter: brightness(1.8); }
-  100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
+  0% { transform: translateX(-50%) scale(0.1, 0.035); opacity: 0; }
+  65% { transform: translateX(-50%) scale(1.18, 0.41); opacity: 1; filter: brightness(1.8); }
+  100% { transform: translateX(-50%) scale(1, 0.35); opacity: 0.95; }
 }
 
 /* ==========================================

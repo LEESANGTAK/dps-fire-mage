@@ -56,86 +56,39 @@ function standingCastTarget(combat, gesture) {
   return { lean: angle * 42, squash: Math.abs(angle) * 0.045 };
 }
 
-// 서로 다른 주기와 시차로 단순한 한 박자 반복을 피합니다.
+// 서로 다른 주기와 시차로 살아있는 대기 호흡 모션 구현
 function livingMageMotion(time, reduced, engaged) {
-  if (reduced) return { breath: 1, shear: 0, wrist: 0, hat: 0, cloth: 0 };
+  if (reduced) return { breathY: 1, breathX: 1, lean: 0 };
   const quiet = engaged ? 0.35 : 1;
+  const breath = Math.sin(time * 2.2) * 0.015 * quiet;
+  const sway = Math.sin(time * 1.1) * 0.008 * quiet;
   return {
-    breath: 1 + Math.sin(time * 1.8) * 0.012,
-    shear: (Math.sin(time * 1.05) * 0.007 + Math.sin(time * 0.43) * 0.003) * quiet,
-    wrist: Math.sin(time * 1.8 - 0.65) * 0.022 * quiet,
-    hat: Math.sin(time * 1.05 - 0.9) * 4 * quiet,
-    cloth: Math.sin(time * 1.4 - 1.2) * 3 * quiet
+    breathY: 1 + breath,
+    breathX: 1 - breath * 0.5,
+    lean: sway
   };
 }
 
-function renderStandingMage(context, art, dt, reduced) {
-  const spring = mageSpring;
-  const engaged = state.combat.castingSkill || mageGesture.remaining > 0;
-  const idle = livingMageMotion(spring.time, reduced, engaged);
-  const body = standingCastTarget(state.combat, mageGesture);
-  if (reduced) {
-    spring.x = spring.vx = spring.squash = spring.vs = spring.cloth = spring.vc = 0;
-  } else {
-    // 상체는 빠르게 힘을 받아 주고 옷·모자의 느린 관성은 그대로 남깁니다.
-    advanceSpring(spring, dt, body.lean, body.squash, engaged ? 2.1 : 1);
-    idle.shear -= spring.x / 320;
-    idle.breath *= 1 - spring.squash;
-    idle.cloth += (spring.cloth - spring.x) * 0.45;
-    idle.hat += (spring.cloth - spring.x) * 0.35;
+function selectMagePose(combat, gesture) {
+  if (gesture.remaining > 0) {
+    const progress = 1 - gesture.remaining / gesture.total;
+    if (gesture.kind === 'combustion') return 'hot';
+    // fireball, fireblast, meteor 모두 시원하고 호쾌한 발사와 반동 포즈 적용!
+    return progress < 0.38 ? 'release' : progress < 0.82 ? 'recoil' : 'idle';
   }
-  const target = reduced ? 0 : armTarget(state.combat, mageGesture) + idle.wrist;
-  // 발사 자세는 피해·투사체 생성과 같은 프레임에 맞춥니다.
-  spring.arm = target;
-  spring.armVelocity = 0;
-  const frame = mageFrames.idle;
-  const [sx, sy, w, h] = frame.box;
-  const ox = 294 - frame.foot[0], oy = 638 - frame.foot[1];
-  const pivot = [302, 329];
-  const wrist = [345, 329];
-  // 소매와 팔의 회전이 주동작이며 손목·지팡이는 작게 뒤따릅니다.
-  const elbowAngle = spring.arm * 0.72;
-  const wristAngle = spring.arm * 0.28;
-  // 소매·손·지팡이만 분리합니다. 관절 안쪽은 겹쳐 회전할 때 빈틈을 막습니다.
-  const outline = [[296,310],[326,300],[356,308],[397,252],[413,194],[452,161],[500,191],[502,239],[427,271],[366,343],[337,400],[301,384]];
-  function armPath() {
-    context.moveTo(outline[0][0], outline[0][1]);
-    for (const point of outline.slice(1)) context.lineTo(...point);
-    context.closePath();
+  if (combat.castingSkill) {
+    const progress = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
+    return progress < 0.32 ? 'anticipation' : 'charge';
   }
-  context.clearRect(0, 0, 640, 640);
-  context.save(); context.translate(ox, oy);
-  // 발 위치를 중심으로 호흡과 무게 이동을 적용해 접지를 유지합니다.
-  context.transform(1, 0, idle.shear, idle.breath, -idle.shear * 482, 482 * (1 - idle.breath));
-  context.save(); context.beginPath(); context.rect(sx, sy, w, h); armPath(); context.clip('evenodd');
-  for (let row = 0; row < h; row += 6) {
-    const sourceY = sy + row;
-    const influence = Math.max(0, Math.min(1, (482 - sourceY) / 180));
-    const hat = sourceY < 270 ? idle.hat * Math.pow((270 - sourceY) / 205, 2) : 0;
-    const hem = sourceY > 370 && sourceY < 450 ? idle.cloth * Math.sin((sourceY - 370) / 80 * Math.PI) : 0;
-    const strip = Math.min(6, h - row);
-    context.drawImage(mageSheet, sx, sourceY, w, strip, sx + (hat + hem) * influence, sourceY, w, strip + 0.3);
-  }
-  context.restore();
-  context.save(); context.translate(...pivot); context.rotate(elbowAngle); context.translate(-pivot[0], -pivot[1]);
-  function handPath() {
-    context.moveTo(333, 310); context.lineTo(355, 304); context.lineTo(397, 252);
-    context.lineTo(413, 194); context.lineTo(452, 161); context.lineTo(500, 191);
-    context.lineTo(502, 239); context.lineTo(427, 271); context.lineTo(369, 344);
-    context.lineTo(334, 348); context.closePath();
-  }
-  context.save(); context.beginPath(); armPath(); handPath(); context.clip('evenodd');
-  context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore();
-  context.translate(...wrist); context.rotate(wristAngle); context.translate(-wrist[0], -wrist[1]);
-  context.beginPath(); handPath(); context.clip();
-  context.drawImage(mageSheet, sx, sy, w, h, sx, sy, w, h); context.restore(); context.restore();
-  const dx = frame.tip[0] - wrist[0], dy = frame.tip[1] - wrist[1];
-  const localX = wrist[0] - pivot[0] + dx * Math.cos(wristAngle) - dy * Math.sin(wristAngle);
-  const localY = wrist[1] - pivot[1] + dx * Math.sin(wristAngle) + dy * Math.cos(wristAngle);
-  const x = ox + pivot[0] + localX * Math.cos(elbowAngle) - localY * Math.sin(elbowAngle);
-  const y = oy + pivot[1] + localX * Math.sin(elbowAngle) + localY * Math.cos(elbowAngle);
-  art.style.setProperty('--muzzle-x', `${(x + idle.shear * (y - oy - 482)) / 640 * 100}%`);
-  art.style.setProperty('--muzzle-y', `${(oy + 482 + (y - oy - 482) * idle.breath) / 640 * 100}%`);
+  if (combat.combustionRem > 0) return 'hot';
+  return 'idle';
+}
+
+function beginMageGesture(kind) {
+  mageGesture.kind = kind;
+  mageGesture.total = kind === 'meteor' ? 0.42 : kind === 'combustion' ? 0.5 : 0.26;
+  mageGesture.remaining = mageGesture.total;
+  updateMageMotion(0, false);
 }
 
 function renderMage(art, pose, dt, reduced) {
@@ -144,84 +97,61 @@ function renderMage(art, pose, dt, reduced) {
   const context = surface.getContext('2d');
   const spring = mageSpring;
   spring.time += dt;
-  if (pose === 'idle') {
-    renderStandingMage(context, art, dt, reduced);
-    spring.weights = { idle: 1 }; spring.pose = 'idle';
-    return;
+
+  const engaged = Boolean(state.combat.castingSkill || mageGesture.remaining > 0);
+  const idle = livingMageMotion(spring.time, reduced, engaged);
+
+  // 포즈별 동적 스쿼시 & 스트레치 (디즈니 12대 애니메이션 원칙)
+  let targetSquash = 0;
+  let targetLean = 0;
+  if (!reduced) {
+    if (pose === 'anticipation') { targetSquash = 0.07; targetLean = -0.035; }
+    else if (pose === 'charge') { targetSquash = 0.035; targetLean = -0.015; }
+    else if (pose === 'release') { targetSquash = -0.06; targetLean = 0.045; }
+    else if (pose === 'recoil') { targetSquash = 0.05; targetLean = -0.025; }
+    else if (pose === 'hot') { targetSquash = -0.025; targetLean = 0.01; }
   }
-  const strength = mageGesture.kind === 'meteor' ? 1.45 : 1;
-  let lean = 0, squash = 0;
-  if (pose === 'anticipation') { lean = -16; squash = 0.07; }
-  if (pose === 'charge') { lean = -9; squash = 0.035; }
-  if (pose === 'release') { lean = 27 * strength; squash = -0.07 * strength; }
-  if (pose === 'recoil') { lean = -13 * strength; squash = 0.065 * strength; }
-  if (pose === 'hot') { lean = 2; squash = -0.025; }
-  if (reduced) { spring.x = 0; spring.squash = 0; spring.cloth = 0; }
-  else advanceSpring(spring, dt, lean, squash);
-  // 짧은 포즈 연결과 연속 변형을 함께 사용해 딱 끊기는 전환을 완화합니다.
-  const blend = reduced || dt === 0 ? 0 : 1 - Math.exp(-dt / 0.035);
-  for (const key of Object.keys(mageFrames)) {
-    const target = key === pose ? 1 : 0;
-    spring.weights[key] = (spring.weights[key] || 0) + (target - (spring.weights[key] || 0)) * blend;
-  }
-  if (reduced || (pose === 'release' && spring.pose !== pose)) spring.weights = { [pose]: 1 };
-  spring.pose = pose;
+
+  advanceSpring(spring, dt, targetLean * 100, targetSquash, engaged ? 2.2 : 1.2);
+
   context.clearRect(0, 0, 640, 640);
-  const footX = 294, footY = 638;
-  const breath = reduced ? 0 : Math.sin(spring.time * 2.6) * 0.006;
-  const scaleX = 1 + spring.squash;
-  const scaleY = 1 - spring.squash + breath;
+
+  const frame = mageFrames[pose] || mageFrames.idle;
+  const [sx, sy, width, height] = frame.box;
+
+  // 발바닥 접지점 (Foot Ground Anchor)
+  const footX = 294;
+  const footY = 638;
+
+  const finalScaleX = (1 - spring.squash) * idle.breathX;
+  const finalScaleY = (1 + spring.squash) * idle.breathY;
+  const finalAngle = idle.lean + (spring.x / 100);
+
   context.save();
+  // 발바닥을 축으로 변환하여 지면에 견고하게 접지
   context.translate(footX, footY);
-  context.scale(scaleX, scaleY);
-  for (const [key, frame] of Object.entries(mageFrames)) {
-    const weight = spring.weights[key] || 0;
-    if (weight < 0.005) continue;
-    context.globalAlpha = weight;
-    const [sx, sy, width, height] = frame.box;
-    // 수평 띠를 휘게 그려 발은 고정하고 상체와 옷자락에 관성 차이를 줍니다.
-    for (let row = 0; row < height; row += 6) {
-      const sourceY = sy + row;
-      const influence = Math.max(0, Math.min(1, (frame.foot[1] - sourceY) / 270));
-      const overlap = (spring.cloth - spring.x) * Math.sin(influence * Math.PI) * 0.65;
-      const offset = spring.x * influence * influence + overlap;
-      const stripHeight = Math.min(6, height - row);
-      context.drawImage(mageSheet, sx, sourceY, width, stripHeight,
-        sx - frame.foot[0] + offset, sourceY - frame.foot[1], width, stripHeight + 0.4);
-    }
-  }
+  context.scale(finalScaleX, finalScaleY);
+  context.rotate(finalAngle);
+
+  // 온전한 원본 스프라이트 렌더링 (가위질 찌꺼기 및 슬라이스 아티팩트 원천 차단)
+  const drawX = -frame.foot[0] + sx;
+  const drawY = -frame.foot[1] + sy;
+  context.drawImage(mageSheet, sx, sy, width, height, drawX, drawY, width, height);
+
   context.restore();
-  const frame = mageFrames[pose];
-  const influence = Math.max(0, Math.min(1, (frame.foot[1] - frame.tip[1]) / 270));
-  const muzzleX = footX + (frame.tip[0] - frame.foot[0] + spring.x * influence * influence) * scaleX;
-  const muzzleY = footY + (frame.tip[1] - frame.foot[1]) * scaleY;
-  art.style.setProperty('--muzzle-x', `${muzzleX / 640 * 100}%`);
-  art.style.setProperty('--muzzle-y', `${muzzleY / 640 * 100}%`);
-}
 
-function selectMagePose(combat, gesture) {
-  if (gesture.remaining > 0) {
-    const progress = 1 - gesture.remaining / gesture.total;
-    if (gesture.kind === 'combustion') return 'hot';
-    if (gesture.kind !== 'meteor') return 'idle';
-    return progress < 0.28 ? 'release' : progress < 0.72 ? 'recoil' : 'idle';
-  }
-  if (combat.castingSkill === 'fireball') return 'idle';
-  if (combat.castingSkill) {
-    const progress = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
-    return progress < 0.32 ? 'anticipation' : 'charge';
-  }
-  // 몰열 준비는 기존 UI 광채로 읽습니다. 매 치명타마다 몸 자세를 바꾸지 않습니다.
-  if (combat.combustionRem > 0) return 'hot';
-  return 'idle';
-}
+  // 지팡이 끝 발사 위치 갱신
+  const tipRelX = frame.tip[0] - frame.foot[0];
+  const tipRelY = frame.tip[1] - frame.foot[1];
+  const cos = Math.cos(finalAngle);
+  const sin = Math.sin(finalAngle);
+  const rotatedTipX = (tipRelX * cos - tipRelY * sin) * finalScaleX;
+  const rotatedTipY = (tipRelX * sin + tipRelY * cos) * finalScaleY;
+  const muzzleX = footX + rotatedTipX;
+  const muzzleY = footY + rotatedTipY;
 
-function beginMageGesture(kind) {
-  mageGesture.kind = kind;
-  mageGesture.total = kind === 'meteor' ? 0.38 : kind === 'combustion' ? 0.5 : 0.3;
-  mageGesture.remaining = mageGesture.total;
-  // 발사 함수 안에서 즉시 자세를 바꿔 투사체와 한 프레임에 맞춥니다.
-  updateMageMotion(0, false);
+  art.style.setProperty('--muzzle-x', `${(muzzleX / 640) * 100}%`);
+  art.style.setProperty('--muzzle-y', `${(muzzleY / 640) * 100}%`);
 }
 
 function updateMageMotion(dt, paused) {
