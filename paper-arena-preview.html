@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>지역별 페이퍼크래프트 전장</title>
+<style>
+body{margin:0;padding:22px;background:#191b22;color:#eee;font:14px sans-serif}h1{font-size:20px;text-align:center;margin:0 0 20px}main{max-width:1240px;margin:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{border:1px solid #78664d;border-radius:10px;overflow:hidden;background:#302a30}.label{padding:10px 14px;color:#f0dfbd;display:flex;justify-content:space-between}.arena{position:relative;aspect-ratio:3/2;overflow:hidden;background:#201b28 url('assets/art/paper-arena.png') center/100% 100%}.background,.effects{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.mage{position:absolute;width:35%;height:auto;left:8%;bottom:28%;filter:drop-shadow(0 4px 2px #0006)}.monster{position:absolute;left:68%;bottom:28%;transform:translateX(-50%);background-repeat:no-repeat;filter:drop-shadow(0 4px 2px #0006)}.controls{display:flex;justify-content:center;gap:16px;margin:0 0 18px}.caption{text-align:center;color:#ada6af;margin:18px 0}@media(max-width:700px){body{padding:12px}main{grid-template-columns:1fr}}
+</style>
+<h1>지역별 페이퍼크래프트 전장</h1>
+<div class="controls"><label><input id="pause" type="checkbox"> 일시정지</label><label><input id="reduced" type="checkbox"> 모션 감소</label></div>
+<main id="gallery"></main>
+<p class="caption">실제 배경 제어기 · 종이 배우 · 기존 화염구 렌더러 비교</p>
+<script src="paper-art.js"></script><script src="paper-monster-frames.js"></script><script src="combat-art.js"></script><script src="arena-environment.js?v=paper-arenas-1"></script><script src="paper-arena-preview.js"></script>
+</html>

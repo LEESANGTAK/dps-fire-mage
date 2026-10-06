@@ -19,6 +19,7 @@ scene.update(.1,false,true);const still=scene.snapshot();assert.equal(still.fade
 scene.update(.1,false,true);assert.deepEqual(scene.snapshot(),still);
 scene.setStage(21);scene.update(.1);scene.setStage(1);scene.update(.1);assert.equal(scene.snapshot().theme,'meadow');
 for(let i=1;i<200;i++)scene.setStage(i);assert.equal(scene.snapshot().images,5);
+assert.deepEqual(images.map(image=>image.src).sort(),['assets/art/paper-arena.png',... ['mine','ruins','citadel','void'].map(id=>`assets/art/paper-arena-${id}.png`)].sort());
 arena.clientWidth=360;arena.clientHeight=620;scene.update(0,true);assert.equal(canvas.width,360);assert.equal(canvas.height,620);
 class DeferredImage {constructor(){this.complete=false;this.naturalWidth=0;}}
 const delayed=createArenaEnvironment(canvas,arena,DeferredImage);delayed.setStage(1);delayed.update(.1);delayed.setStage(6);delayed.update(.1);assert.equal(delayed.snapshot().fade,0);
