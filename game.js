@@ -678,7 +678,7 @@ const state = {
     castRemaining: 0,
     castTotal: 0,
 
-    // 타오르는 기운 (Heating Up Pity System): 비치명타 시마다 스택 누적 (+15%/스택)
+    // 타오르는 기운 (Soft Bad-Luck Protection): 4타 연속 비치명타부터 가변 보정(+5~15%)
     pityCritStacks: 0,
 
     critStreak: 0,
@@ -3272,7 +3272,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     }
   }
 
-  // 타오르는 기운 (Heating Up Pity System): 메인 화염구의 비치명타/치명타 스택 갱신
+  // 타오르는 기운 (Soft Bad-Luck Protection): 메인 화염구의 연속 비치명타 스택 갱신 및 치명타 시 즉시 리셋
   if (skillKey === 'fireball' && canTriggerStreak) {
     if (isCrit) {
       state.combat.pityCritStacks = 0;
@@ -3425,8 +3425,10 @@ function fireWithMultishot(type, baseMult, isCombustingSnapshot = false) {
         () => {
           const st = getPlayerStats();
           const isCombustEffective = Boolean(isCombustingAtLaunch || (state.combat && state.combat.combustionRem > 0));
-          // 타오르는 기운 (Heating Up Pity System): 비치명타 시마다 치명타율 누적 보정 (+15%/스택)
-          const pityBonus = isMain ? (state.combat.pityCritStacks || 0) * 15 : 0;
+          // 타오르는 기운 (Soft Bad-Luck Protection): 1~3타는 순수 치명타율(0%), 4타 이상 연속 비치명타부터 5~15% 가변 난수 보정
+          const pityBonus = (isMain && (state.combat.pityCritStacks || 0) >= 4)
+            ? (5 + Math.random() * 10)
+            : 0;
           const effectiveCrit = isCombustEffective ? 100 : Math.min(100, st.crit + pityBonus);
           const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
           const mult = isMain ? baseMult : baseMult * 0.4;
@@ -4260,7 +4262,8 @@ function updatePityCritBadgeUI() {
   const btn = document.getElementById('skill-1');
   const stacks = (state.combat && state.combat.pityCritStacks) || 0;
   if (!btn) return;
-  if (stacks > 0) {
+  // 4타 연속 비치명타부터 불운 방지 가변 보정이 작동하므로 이때 버튼 활성 효과 적용
+  if (stacks >= 4) {
     btn.classList.add('heating-pity-active');
   } else {
     btn.classList.remove('heating-pity-active');
