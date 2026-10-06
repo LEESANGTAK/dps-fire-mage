@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DPS: Fire Mage · 종이 무대</title>
+  <link rel="stylesheet" href="paper-preview.css">
+  <script defer src="combat-art.js"></script>
+  <script defer src="paper-preview-core.js"></script>
+  <script defer src="paper-preview.js"></script>
+</head>
+<body>
+  <main>
+    <header><div><p class="eyebrow">DPS: FIRE MAGE · 아트 시범</p><h1>종이 무대</h1></div><a href="index.html">기존 게임 ↗</a></header>
+    <section class="stage" aria-label="페이퍼크래프트 전투 시범 장면">
+      <canvas id="paper-stage" width="1200" height="750" role="img" aria-label="붉은 종이 마법사가 녹색 종이 슬라임에게 화염구를 발사하는 전투"></canvas>
+      <div class="target-info"><span>풀숲 슬라임</span><meter id="target-hp" min="0" max="1000" value="1000" aria-label="슬라임 체력"></meter></div>
+      <div class="cast-track" role="progressbar" aria-label="화염구 시전" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="cast-fill"></i></div>
+      <p id="load-status" role="status">종이 무대를 준비하고 있습니다…</p>
+      <dialog id="result"><p class="eyebrow">전투 종료</p><h2>종이 무대의 여운</h2><p>다시 시작해 다른 속도로 비교해 보세요.</p><button id="restart">다시 시작 ↻</button></dialog>
+    </section>
+    <nav class="controls" aria-label="시범 장면 조작">
+      <div class="speed" role="group" aria-label="시전 속도"><button data-speed="1.5" aria-pressed="true">저속</button><button data-speed="0.35" aria-pressed="false">고속</button></div>
+      <button id="cast">화염구 <kbd>1</kbd></button><button id="strong" class="accent">강화 화염구 <kbd>2</kbd></button>
+      <button id="auto" aria-pressed="true">자동 시전</button><button id="pause" aria-pressed="false" aria-label="일시정지">Ⅱ</button>
+      <button id="defeat">처치</button>
+    </nav>
+    <footer><p>종이 포즈의 리듬 · 즉각적인 발사와 적중</p><label><input type="checkbox" id="reduced"> 모션 줄이기</label></footer>
+    <details><summary>시범 범위와 확인 상태</summary><p>마법사 4포즈 · 슬라임 4포즈 · 종이 배경 · 기존 화염 파티클. 포즈 교체와 발 원점 기준 미세 회전이며, 부위별 관절 리깅은 아직 적용하지 않았습니다. 실제 게임과 저장 데이터에 연결되지 않는 아트 시범입니다.</p><output id="diagnostics">준비 중</output></details>
+  </main>
+</body>
+</html>
