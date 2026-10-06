@@ -9,7 +9,7 @@
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="styles.css?v=magic-circle-ground-2" />
   <link rel="stylesheet" href="art.css?v=paper-monsters-3" />
-  <link rel="stylesheet" href="paper-ui.css?v=paper-ui-minimal-3" />
+  <link rel="stylesheet" href="paper-ui.css?v=paper-ui-header-4" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -119,11 +119,6 @@
               </div>
               <span class="dps-current-val" id="ui-current-dps">0 /초</span>
             </div>
-            <div class="dps-vs-divider">|</div>
-            <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
-              <span class="dps-label">⏱️ 스피드런 시간</span>
-              <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
-            </div>
           </div>
 
           <div class="dps-breakdown-mini" id="skill-breakdown-bars">
@@ -157,13 +152,16 @@
           </div>
         </div>
 
-        <!-- 화면 상단 가운데: 페이즈 진행도 + 현재 스테이지 및 처치 보상 골드 배너 + 보스 기믹 & 현상금 -->
+        <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 / 우측 현상금 -->
         <div class="arena-top-stage-header" id="arena-top-stage-header">
-          <div class="stage-center-info" id="stage-center-info">
-            <div class="phase-badge" id="ui-phase-num">PHASE 1</div>
-            <div class="stage-badge" id="ui-stage-num">1 / 5</div>
-            <div class="phase-dots" id="ui-phase-dots" title="5번째 보스 처치 시 대량 골드 및 불꽃의 정수 획득"></div>
+          <!-- 게임 갱신 대상은 유지하지만 중복 PHASE·진행 도트는 표시하지 않는다. -->
+          <div class="stage-center-info" id="stage-center-info" hidden aria-hidden="true">
+            <div id="ui-phase-num"></div><div id="ui-stage-num"></div><div id="ui-phase-dots"></div>
           </div>
+          <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
+              <span class="dps-label">⏱️ 스피드런 시간</span>
+              <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
+            </div>
 
           <div class="arena-stage-reward-banner" id="arena-stage-banner">
             <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>

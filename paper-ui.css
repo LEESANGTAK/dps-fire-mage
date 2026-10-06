@@ -1,5 +1,28 @@
 /* 전투 UI: 종이 테두리와 그림자만 꾸미고 상태 신호의 레이어는 유지한다. */
 :root { --paper-edge: #a88a64; --paper-ink: #241b22; --paper-label: #efe1c6; }
+/* 전장 상단의 중앙은 시간만 남기고 진행·보상 정보는 좌우로 분산한다. */
+.combat-arena .stage-center-info { display: none !important; }
+.combat-arena .arena-top-stage-header { top: 86px; left: 16px; right: 16px; transform: none; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: start; gap: 8px 12px; }
+.arena-top-stage-header .speedrun-stat-box { grid-column: 2; grid-row: 1; justify-self: center; align-items: center; padding: 5px 10px; border: 1px solid #8b7055; border-radius: 3px; background: #241b22ed; }
+.arena-top-stage-header .speedrun-stat-box .dps-label { font-size: .62rem; }
+.arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 1; justify-self: start; max-width: 100%; padding: 7px 10px; gap: 8px; }
+.arena-top-stage-header .monster-stage-mini { font-size: .88rem; }
+.arena-top-stage-header .monster-reward { font-size: .8rem; padding: 3px 6px; }
+.arena-top-stage-header .boss-gimmick-badge { grid-column: 1; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; }
+.arena-top-stage-header .bounty-bar { grid-column: 3; grid-row: 1 / span 2; justify-self: end; display: grid; grid-template-columns: auto minmax(0,1fr) auto; width: 100%; max-width: 280px; padding: 5px 8px; gap: 4px 6px; white-space: normal; border-radius: 4px; }
+.bounty-bar .bounty-icon { grid-column: 1; grid-row: 1; }
+.bounty-bar .bounty-title { grid-column: 2; grid-row: 1; }
+.bounty-bar .bounty-prog-text { grid-column: 3; grid-row: 1; }
+.bounty-bar .bounty-prog-wrap { grid-column: 1 / span 2; grid-row: 2; width: 100%; }
+.bounty-bar .bounty-reward-pill { grid-column: 3; grid-row: 2; white-space: nowrap; }
+@media (max-width: 640px) {
+  .combat-arena .arena-top-stage-header { left: 10px; right: 10px; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px 10px; }
+  .arena-top-stage-header .speedrun-stat-box { grid-column: 1 / -1; grid-row: 1; }
+  .arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 2; gap: 5px; padding: 6px; flex-wrap: wrap; }
+  .arena-top-stage-header .bounty-bar { grid-column: 2; grid-row: 2; font-size: .62rem; }
+  .arena-top-stage-header .boss-gimmick-badge { grid-column: 1; grid-row: 3; font-size: .6rem; }
+  .arena-top-stage-header .bounty-reward-pill { font-size: .55rem; padding: 2px 3px; }
+}
 .top-bar { background: #30282c; border-bottom: 2px solid #8b7055; box-shadow: 0 3px 0 #17131b; }
 .game-title { color: #f3d391; text-shadow: 0 2px #17131b; }
 .game-title .comic-icon[data-sheet='spell'] { background-image: url('assets/art/paper-ui-skills-v1.png'); background-size: 300% 200%; background-position: 0 0 !important; }

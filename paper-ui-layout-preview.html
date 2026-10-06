@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>전투 보조 UI 위치 검증</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="art.css"><link rel="stylesheet" href="paper-ui.css?v=paper-ui-minimal-3"><style>body{height:auto;overflow:auto;padding:12px;gap:12px}h1{font-size:18px}.combat-arena{flex:none;height:650px;min-height:650px;max-height:none}.controls{display:flex;gap:16px;flex-wrap:wrap}@media(max-width:768px){.combat-arena{height:550px;min-height:550px}}</style><h1>전투 보조 UI 위치 · 저장 데이터 사용 없음</h1><div class="controls"><label>몬스터 <select id="preview-monster"><option value="19">심연 몬스터</option><option value="20">거대 보스</option><option value="4">고블린</option></select></label><label>포즈 <select id="preview-pose"><option value="idle">대기</option><option value="anticipation">준비</option><option value="release">발사</option><option value="recoil">반동</option></select></label></div>      <div class="combat-arena" id="combat-arena">
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>전투 보조 UI 위치 검증</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="art.css"><link rel="stylesheet" href="paper-ui.css?v=paper-ui-header-4"><style>body{height:auto;overflow:auto;padding:12px;gap:12px}h1{font-size:18px}.combat-arena{flex:none;height:650px;min-height:650px;max-height:none}.controls{display:flex;gap:16px;flex-wrap:wrap}@media(max-width:768px){.combat-arena{height:550px;min-height:550px}}</style><h1>전투 보조 UI 위치 · 저장 데이터 사용 없음</h1><div class="controls"><label>몬스터 <select id="preview-monster"><option value="19">심연 몬스터</option><option value="20">거대 보스</option><option value="4">고블린</option></select></label><label>포즈 <select id="preview-pose"><option value="idle">대기</option><option value="anticipation">준비</option><option value="release">발사</option><option value="recoil">반동</option></select></label></div>      <div class="combat-arena" id="combat-arena">
         <canvas class="arena-environment-canvas" id="arena-environment-canvas" aria-hidden="true"></canvas>
         <div class="combustion-aura-bg" id="combustion-bg"></div>
 
@@ -23,11 +23,6 @@
                 <span class="fever-tag hidden" id="dps-fever-tag">🔥 FEVER</span>
               </div>
               <span class="dps-current-val" id="ui-current-dps">0 /초</span>
-            </div>
-            <div class="dps-vs-divider">|</div>
-            <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
-              <span class="dps-label">⏱️ 스피드런 시간</span>
-              <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
             </div>
           </div>
 
@@ -62,13 +57,16 @@
           </div>
         </div>
 
-        <!-- 화면 상단 가운데: 페이즈 진행도 + 현재 스테이지 및 처치 보상 골드 배너 + 보스 기믹 & 현상금 -->
+        <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 / 우측 현상금 -->
         <div class="arena-top-stage-header" id="arena-top-stage-header">
-          <div class="stage-center-info" id="stage-center-info">
-            <div class="phase-badge" id="ui-phase-num">PHASE 1</div>
-            <div class="stage-badge" id="ui-stage-num">1 / 5</div>
-            <div class="phase-dots" id="ui-phase-dots" title="5번째 보스 처치 시 대량 골드 및 불꽃의 정수 획득"></div>
+          <!-- 게임 갱신 대상은 유지하지만 중복 PHASE·진행 도트는 표시하지 않는다. -->
+          <div class="stage-center-info" id="stage-center-info" hidden aria-hidden="true">
+            <div id="ui-phase-num"></div><div id="ui-stage-num"></div><div id="ui-phase-dots"></div>
           </div>
+          <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
+              <span class="dps-label">⏱️ 스피드런 시간</span>
+              <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
+            </div>
 
           <div class="arena-stage-reward-banner" id="arena-stage-banner">
             <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
