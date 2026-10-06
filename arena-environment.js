@@ -17,7 +17,7 @@ function createArenaEnvironment(canvas,arena,ImageType=Image) {
     if(images[id])return images[id];
     const image=new ImageType();images[id]=image;
     image.onload=()=>{dirty=true;};image.onerror=()=>{dirty=true;};
-    image.src=`assets/art/arena-${id}.png`;return image;
+    image.src=id==='meadow'?'assets/art/paper-arena.png':`assets/art/arena-${id}.png`;return image;
   }
   function setStage(stage) {
     const next=getArenaTheme(stage);

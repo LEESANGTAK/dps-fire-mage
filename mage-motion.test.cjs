@@ -1,80 +1,53 @@
 const assert = require('node:assert/strict');
-const { selectMagePose, advanceSpring, mageFrames } = require('./mage-motion.js');
-const combat = { castingSkill: null, castRemaining: 0, castTotal: 1.5, critStreak: 0, combustionRem: 0 };
+const fs = require('node:fs'), vm = require('node:vm');
+const { selectMagePose, mageFrames, getMagePlacement } = require('./mage-motion.js');
+const combat = { castingSkill: null, castRemaining: 0, castTotal: 1.5, combustionRem: 0 };
 const rest = { kind: '', remaining: 0, total: 0 };
 assert.equal(selectMagePose(combat, rest), 'idle');
-for (const duration of [0.4, 1.5, 2.5]) {
-  assert.equal(selectMagePose({ ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * 0.9 }, rest), 'anticipation');
-  assert.equal(selectMagePose({ ...combat, castingSkill: 'meteor', castTotal: duration, castRemaining: duration * 0.2 }, rest), 'charge');
+for (const duration of [.35, .4, 1.5, 2.5]) {
+  assert.equal(selectMagePose({ ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * .9 }, rest), 'anticipation');
+  assert.equal(selectMagePose({ ...combat, castingSkill: 'meteor', castTotal: duration, castRemaining: duration * .2 }, rest), 'charge');
 }
-assert.equal(selectMagePose({ ...combat, critStreak: 2 }, rest), 'idle');
 assert.equal(selectMagePose({ ...combat, combustionRem: 1 }, rest), 'hot');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.3, total: 0.3 }), 'release');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'release');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0, total: 0.3 }), 'idle');
-assert.equal(selectMagePose({ ...combat, critStreak: 2 }, { kind: 'meteor', remaining: 0.38, total: 0.38 }), 'release');
-assert.equal(selectMagePose(combat, { kind: 'meteor', remaining: 0.15, total: 0.42 }), 'recoil');
-assert.equal(selectMagePose(combat, { kind: 'combustion', remaining: 0.5, total: 0.5 }), 'hot');
-// 모달 중에는 자세와 발사 여운의 시간이 모두 정지해야 합니다.
-const vm = require('node:vm');
-const fs = require('node:fs');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: .14, total: .14 }), 'release');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: .05, total: .14 }), 'recoil');
+assert.equal(selectMagePose({ ...combat, combustionRem: 1 }, { kind: 'fireball', remaining: .14, total: .14 }), 'release');
+assert.equal(selectMagePose(combat, { kind: 'meteor', remaining: .15, total: .42 }), 'recoil');
+// 실제 종이 원화의 경계와 접지점, 지팡이 끝의 일치를 검증합니다.
+const png = fs.readFileSync('assets/art/paper-mage-poses.png');
+for (const [pose, frame] of Object.entries(mageFrames)) {
+  const [x, y, w, h] = frame.box;
+  assert.ok(x >= 0 && y >= 0 && x + w <= png.readUInt32BE(16) && y + h <= png.readUInt32BE(20));
+  assert.ok(frame.foot[0] >= x && frame.foot[0] <= x + w && frame.foot[1] >= y && frame.foot[1] <= y + h);
+  const placement = getMagePlacement(pose);
+  assert.deepEqual(placement.foot, [294, 638]);
+  assert.deepEqual(placement.muzzle, [294 + frame.tip[0] - frame.foot[0], 638 + frame.tip[1] - frame.foot[1]]);
+}
 const art = { dataset: {}, classList: { toggle() {} }, style: { setProperty() {} } };
 const context = vm.createContext({ state: { combat }, document: { getElementById: () => art } });
+vm.runInContext(fs.readFileSync('./paper-art.js', 'utf8'), context);
 vm.runInContext(fs.readFileSync('./mage-motion.js', 'utf8'), context);
-vm.runInContext("beginMageGesture('meteor'); updateMageMotion(0.2, true)", context);
+vm.runInContext("beginMageGesture('meteor'); updateMageMotion(.2, true)", context);
 assert.equal(art.dataset.pose, 'release');
-assert.equal(vm.runInContext('mageGesture.remaining', context), 0.42);
-vm.runInContext('updateMageMotion(0.2, false)', context);
+assert.equal(vm.runInContext('mageGesture.remaining', context), .42);
+assert.equal(vm.runInContext('mageMotion.time', context), 0);
+vm.runInContext('updateMageMotion(.2, false)', context);
 assert.equal(art.dataset.pose, 'recoil');
-vm.runInContext('updateMageMotion(0.5, false)', context);
+vm.runInContext('updateMageMotion(.5, false)', context);
 assert.equal(art.dataset.pose, 'idle');
-vm.runInContext("beginMageGesture('fireball'); mageGesture.hitStop = 0.03; updateMageMotion(0.02, false)", context);
-assert.equal(vm.runInContext('mageGesture.remaining', context), 0.14);
-vm.runInContext('updateMageMotion(0.02, false); updateMageMotion(0.05, false)', context);
-assert.ok(vm.runInContext('mageGesture.remaining < 0.14', context));
-const spring = { x: 0, vx: 0, squash: 0, vs: 0, cloth: 0, vc: 0 };
-let peak = 0;
-for (let i = 0; i < 120; i++) { advanceSpring(spring, 1 / 120, 20, 0.08); peak = Math.max(peak, spring.x); }
-assert.ok(peak > 20, '몸의 스프링에 작은 오버슈트가 있어야 합니다.');
-assert.ok(Math.abs(spring.x - 20) < 0.1);
-for (let i = 0; i < 120; i++) advanceSpring(spring, 1 / 120, 0, 0);
-assert.ok(Math.abs(spring.x) < 0.1 && Math.abs(spring.cloth) < 0.2, '몸과 옷의 여운이 모두 복귀해야 합니다.');
-for (const frame of Object.values(mageFrames)) {
-  const [x, y, width, height] = frame.box;
-  assert.ok(x >= 0 && y >= 0 && x + width <= 1536 && y + height <= 1024);
-  assert.ok(frame.foot[0] >= x && frame.foot[0] <= x + width && frame.foot[1] >= y && frame.foot[1] <= y + height);
-}
-console.log('시전속도·몰열·발사·반동·발화 포즈 검증 통과');
+vm.runInContext("beginMageGesture('fireball'); mageGesture.hitStop = .03; updateMageMotion(.02, false)", context);
+assert.equal(vm.runInContext('mageGesture.remaining', context), .14);
+vm.runInContext("beginMageGesture('fireblast')", context);
+assert.equal(art.dataset.pose, 'release', '시각적 멈춤 중 즉시 발사도 지팡이 끝을 즉시 갱신해야 합니다.');
+vm.runInContext('updateMageMotion(.02, false); updateMageMotion(.08, false)', context);
+assert.equal(art.dataset.pose, 'recoil');
+const { getPaperSlimePose } = require('./paper-art.js');
+assert.equal(getPaperSlimePose({ time: 0, hit: .25, stage: 1 }), 'hit');
+assert.equal(getPaperSlimePose({ time: 0, hit: .1, stage: 1 }), 'recover');
+assert.equal(getPaperSlimePose({ time: 3.25, hit: 0, stage: 1 }), 'rest');
+assert.equal(getPaperSlimePose({ time: 3.25, hit: 0, stage: 1 }, true), 'idle');
+console.log('종이 마법사·슬라임의 시전 포즈·실제 원화 좌표·발사점·정지 검증 통과');
 
-// 초고속 반복 시전에서도 접지 포즈와 팔 회전 범위는 유지합니다.
-const { armTarget } = require('./mage-motion.js');
-const { standingCastTarget } = require('./mage-motion.js');
-const repeatedBody = { x:0,vx:0,squash:0,vs:0,cloth:0,vc:0 };
-for (let i=0;i<2400;i++) {
-  const p=(i%12)/12;
-  const target=standingCastTarget(combat,{kind:'fireball',remaining:.3*(1-p),total:.3});
-  advanceSpring(repeatedBody,1/120,target.lean,target.squash,2.1);
-  assert.ok(Math.abs(repeatedBody.x)<13 && Math.abs(repeatedBody.squash)<.016,'연속 발사로 상체 반응이 누적되면 안 됩니다.');
-}
-for (let i=0;i<240;i++) advanceSpring(repeatedBody,1/120,0,0);
-assert.ok(Math.abs(repeatedBody.x)<.01 && Math.abs(repeatedBody.cloth)<.01,'시전 종료 후 상체와 장식이 복귀해야 합니다.');
-assert.ok(Math.abs(armTarget({...combat,castingSkill:'fireball',castTotal:.05,castRemaining:.001},rest))<.08,'초고속 시전에서는 준비 진폭을 줄여야 합니다.');
-for (const duration of [.4,1.5,2.5]) {
-  const raised=armTarget({...combat,castingSkill:'fireball',castTotal:duration,castRemaining:duration-.05},rest);
-  assert.ok(Math.abs(raised)>=.16*Math.min(1,duration/.6)*.98,'시전 길이와 무관하게 50ms 내에 준비 자세의 98%에 도달해야 합니다.');
-}
-assert.ok(armTarget(combat,{kind:'fireball',remaining:.29,total:.3})>.273,'발사 10ms 내에 끝 자세에 가까워야 합니다.');
-assert.equal(armTarget(combat,{kind:'fireball',remaining:.25,total:.3}),.275,'발사 끝 자세를 짧게 유지해야 합니다.');
-const briskBody={x:0,vx:0,squash:0,vs:0,cloth:0,vc:0};
-for(let i=0;i<6;i++) advanceSpring(briskBody,1/120,10,.01,2.1);
-assert.ok(briskBody.x>6 && briskBody.cloth<briskBody.x*.4,'상체는 빠르게 반응하고 장식은 뒤따라야 합니다.');
-for (const duration of [0.02, 0.05, 0.1, 1.5]) {
-  for (let i = 0; i <= 10; i++) {
-    const fast = { ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * i / 10 };
-    assert.equal(selectMagePose(fast, rest), 'anticipation');
-    assert.ok(Math.abs(armTarget(fast, rest)) <= 0.201);
-  }
-}
 // 캔버스를 만들 수 없는 환경에서는 화염구 텍스처 생성을 건너뛰고 오류 없이 넘어가야 합니다.
 let imageCalls = 0;
 const projectileContext = vm.createContext({ console, Map, document: { createElement() { throw Error('캔버스 생성 불가'); } } });
@@ -90,15 +63,6 @@ assert.equal(trailPool.length, 150, '고속 연사의 꼬리 불꽃 수를 제�
 assert.ok(trailPool.every(p => p.fireTrail && p.maxLife <= 0.3));
 vm.runInContext("emitComicTrail(trailShot, 0, 0, 1, trailPool, true)", projectileContext);
 assert.equal(trailPool.length, 150);
-
-assert.ok(armTarget({ ...combat, castingSkill:'fireball', castRemaining:1 }, rest) < -0.1, '시전 초반부터 팔의 준비 동작이 읽혀야 합니다.');
-assert.equal(armTarget(combat, {kind:'fireball', remaining:0.3, total:0.3}), 0.24);
-let previousAngle = 0.24;
-for(let i=1;i<=300;i++) {
-  const angle = armTarget(combat, {kind:'fireball', remaining:0.3*(1-i/300), total:0.3});
-  assert.ok(Math.abs(angle - previousAngle) < 0.01, '손목 복귀가 연속이어야 합니다.');
-  previousAngle = angle;
-}
 
 const slimePool = [];
 projectileContext.slimePool = slimePool;

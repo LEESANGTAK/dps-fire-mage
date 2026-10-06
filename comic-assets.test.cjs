@@ -2,17 +2,17 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const actor={dataset:{},style:{},textContent:'🐀'};
 const context=vm.createContext({document:{getElementById:id=>id==='dummy-emoji'?actor:{clientHeight:126},addEventListener(){}},console});
-vm.runInContext(fs.readFileSync('comic-monster-frames.js','utf8')+fs.readFileSync('comic-assets.js','utf8'),context);
+vm.runInContext(fs.readFileSync('comic-monster-frames.js','utf8')+fs.readFileSync('paper-monster-frames.js','utf8')+fs.readFileSync('comic-assets.js','utf8'),context);
 assert.match(vm.runInContext("comicIconHTML('🔹')",context),/data-sheet="essence"/,'정수는 화염 스킬 아틀라스와 다른 이미지로 표시해야 합니다');
 for(let stage=3;stage<=30;stage++){
  vm.runInContext(`configureComicMonster(${stage})`,context);
- assert.equal(actor.dataset.art,'monster');assert.equal(actor.textContent,'');
+ assert.equal(actor.dataset.art,'monster');assert.equal(actor.dataset.paper,'true');assert.match(actor.style.backgroundImage,/paper-monsters-/);assert.equal(actor.textContent,'');
  assert.ok(actor.style.clipPath.startsWith('polygon('));assert.ok(parseFloat(actor.style.width)>0);
  const growth=Math.min(1.62,.76+stage*.035)+(stage%5===0?.18:0);
  assert.equal(actor.style.height,`${126*growth}px`);
  assert.equal(actor.style.bottom,'0px');
 }
-const abyssNormal=vm.runInContext('COMIC_MONSTER_FRAMES[18]',context);
+const abyssNormal=vm.runInContext('PAPER_MONSTER_FRAMES[18]',context);
 vm.runInContext('configureComicMonster(21)',context);
 const abyssScale=126*Math.min(1.62,.76+21*.035)/abyssNormal.h;
 assert.equal(actor.style.backgroundPosition,`${-abyssNormal.x*abyssScale}px ${-abyssNormal.y*abyssScale}px`);

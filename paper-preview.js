@@ -26,11 +26,7 @@
     return;
   }
   // 생성 원화의 실제 발 위치는 검수한 메타데이터를 사용합니다. 모든 포즈에 같은 축척을 적용합니다.
-  const frames = await fetch('paper-frames.json').then(r => {
-    if (!r.ok) throw new Error('포즈 메타데이터를 읽을 수 없습니다.');
-    return r.json();
-  }).catch(error => { loadStatus.textContent = error.message; return null; });
-  if (!frames) return;
+  const frames = PAPER_ART_FRAMES;
   loadStatus.hidden = true;
   controls.forEach(b => b.disabled = false);
   const floor = 590, mageX = 300, slimeX = 910;

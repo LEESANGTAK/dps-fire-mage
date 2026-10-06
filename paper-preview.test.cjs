@@ -27,7 +27,7 @@ advance(dead, .12); assert.equal(dead.modal, true); const stopped = JSON.stringi
 advance(dead, 3); assert.equal(JSON.stringify(dead), stopped); assert.equal(C.startCast(dead), false);
 // 원화 좌표가 실제 PNG 경계를 벗어나거나 발 원점을 잘라내면 접지와 발사점이 깨집니다.
 const fs = require('node:fs');
-const frames = JSON.parse(fs.readFileSync('paper-frames.json', 'utf8'));
+const frames = require('./paper-art.js');
 for (const actor of ['mage', 'slime']) {
   const png = fs.readFileSync(`assets/art/paper-${actor}-poses.png`);
   const width = png.readUInt32BE(16), height = png.readUInt32BE(20);

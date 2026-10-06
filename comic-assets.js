@@ -52,14 +52,17 @@ function configureComicMonster(stage){
  const baseHeight=avatar?avatar.clientHeight:126;
  const growth=stage<=2?(stage===1?.62:.72):Math.min(1.62,.76+stage*.035)+(stage%5===0?.18:0);
  el.dataset.monsterStage=String(stage);
- if(stage<=2){el.style.cssText='';el.style.width=`${baseHeight*growth*1.55}px`;el.style.height=el.style.width;el.style.bottom=`${-baseHeight*growth*1.55*.1252}px`;el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';return;}
- const frame=COMIC_MONSTER_FRAMES[Math.min(stage-3,stage%5===0?19:18)];if(!frame)return;
+ if(stage<=2){el.style.cssText='';el.style.width=`${baseHeight*growth*1.55}px`;el.style.height=el.style.width;el.style.bottom=`${-baseHeight*growth*1.55*.1252}px`;el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';if(typeof configurePaperSlime==='function')configurePaperSlime(el,baseHeight*growth*1.55,stage);return;}
+ el.dataset.paper='true';if(avatar && avatar.dataset)avatar.dataset.paper='true';
+ if(typeof paperSlimeMotion!=='undefined')paperSlimeMotion.stage=0;
+ if(el.replaceChildren)el.replaceChildren();
+ const frame=typeof getPaperMonsterFrame==='function'?getPaperMonsterFrame(stage):COMIC_MONSTER_FRAMES[Math.min(stage-3,stage%5===0?19:18)];if(!frame)return;
  el.textContent='';el.dataset.art='monster';el.dataset.variant='';el.style.bottom='0px';
  const height=baseHeight*growth;
  const scale=height/frame.h;
  el.style.clipPath=frame.clip;el.style.width=`${frame.w*scale}px`;el.style.height=`${height}px`;
- el.style.backgroundImage="url('assets/art/comic-monsters-clean.png')";
- el.style.backgroundSize=`${COMIC_MONSTER_SIZE[0]*scale}px ${COMIC_MONSTER_SIZE[1]*scale}px`;
+ el.style.backgroundImage=`url('${frame.sheet || 'assets/art/comic-monsters-clean.png'}')`;
+ el.style.backgroundSize=`${(frame.size || COMIC_MONSTER_SIZE)[0]*scale}px ${(frame.size || COMIC_MONSTER_SIZE)[1]*scale}px`;
  el.style.backgroundPosition=`${-frame.x*scale}px ${-frame.y*scale}px`;
 }
 if(typeof window!=='undefined')window.addEventListener('resize',()=>{const el=document.getElementById('dummy-emoji');if(el && el.dataset.monsterStage)configureComicMonster(Number(el.dataset.monsterStage));});

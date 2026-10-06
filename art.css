@@ -1,4 +1,4 @@
-/* 손그림 전장: 정보 영역은 차분하게, 연계 순간만 선명하게 강조합니다. */
+/* 종이 전장: 정보 영역은 차분하게, 연계 순간만 선명하게 강조합니다. */
 :root {
   --bg-dark: #100e13;
   --bg-panel: #1c1820;
@@ -12,7 +12,7 @@
   border-bottom: 2px solid #75543b;
 }
 .combat-arena {
-  background: linear-gradient(180deg, rgba(9,12,21,.4), rgba(9,12,21,.05) 50%, rgba(13,10,16,.7)), url('assets/art/comic-arena.png') center 55% / cover;
+  background: linear-gradient(180deg, rgba(9,12,21,.4), rgba(9,12,21,.05) 50%, rgba(13,10,16,.7)), url('assets/art/paper-arena.png') center 55% / cover;
   border: 3px solid #806044;
   box-shadow: inset 0 0 0 2px #271c18, inset 0 0 65px #090b16, 0 8px 24px #0008;
 }
@@ -35,7 +35,7 @@
 .mage-art {
   --mage-width: 190%;
   position: absolute; width: var(--mage-width); aspect-ratio: 1; left: -45%; bottom: 0;
-  background: url('assets/art/comic-mage-poses.png') 0 0 / 300% 200% no-repeat;
+  background: none;
   pointer-events: none;
   filter: drop-shadow(0 9px 5px #0008);
   transform-origin: 46% 94%;
@@ -320,3 +320,42 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 /* 거친 운석 원화를 메테오 액션바와 설명 아이콘에도 적용합니다. */
 .comic-icon[data-sheet='meteor'] { background:url('assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
 [data-skill='meteor'] .skill-icon { background:url('assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
+/* 종이 배우는 원화 포즈 자체로 호흡·피격을 표현하고 CSS 전신 변형을 중복 적용하지 않습니다. */
+.combat-arena { background-image: linear-gradient(180deg, rgba(9,12,21,.25), rgba(9,12,21,.02) 50%, rgba(13,10,16,.55)), url('assets/art/paper-arena.png'); }
+.mage-art { background-image: none; }
+.monster-idle:has([data-paper='true'][data-art='slime']) { animation: none !important; transform: none; }
+.dummy-avatar[data-paper='true'][data-motion='slime'] { animation: none !important; transform: none; }
+.dummy-emoji[data-paper='true'][data-art='slime'] { background: none; font-size: 0; }
+.paper-slime-canvas { display: block; width: 100%; height: 100%; }
+.material-death[data-death='paper-puddle'] { transform-origin: 50% 100%; animation: paper-slime-fold .7s steps(2,end) forwards; }
+@keyframes paper-slime-fold {
+  0%,18% { transform: none; opacity: 1; }
+  42% { transform: rotate(5deg) scale(1.08,.72); opacity: 1; }
+  70% { transform: rotate(-2deg) scale(1.18,.23); opacity: .7; }
+  100% { transform: scale(1.22,.15); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .material-death[data-death='paper-puddle'] { animation: death-reduced .3s ease-out forwards; }
+}
+
+/* 단단한 종이 배우의 정지 포즈와 반동. 접지점을 유지하고 전신 탄성을 제거합니다. */
+.dummy-avatar[data-paper='true']:not([data-motion='slime']) .monster-idle {
+  transform-origin:50% 100%; animation-name:paper-watch; animation-timing-function:steps(3,end);
+}
+.dummy-avatar[data-paper='true']:is([data-motion='stone'],[data-motion='armor'],[data-motion='bone'],[data-motion='carapace']) .monster-idle {animation-name:paper-rigid-watch;}
+.dummy-avatar[data-paper='true']:is([data-motion='flying'],[data-motion='spirit'],[data-motion='fire']) .monster-idle {animation-name:paper-hover;}
+.dummy-avatar[data-paper='true']:not([data-motion='slime']):is(.hit,.hit-left,.hit-right,.crit-hit,.crit-left,.crit-right,.hit-fireblast,.hit-golem,.knockback-pyro,.knockback-meteor) {animation-timing-function:steps(2,end);}
+@keyframes paper-watch {0%,100%{transform:none} 23%{transform:rotate(-.65deg)} 51%{transform:rotate(.35deg)} 78%{transform:rotate(-.2deg)}}
+@keyframes paper-rigid-watch {0%,100%{transform:none} 31%{transform:rotate(-.25deg)} 69%{transform:rotate(.2deg)}}
+@keyframes paper-hover {0%,100%{transform:none} 35%{transform:translateY(-3px) rotate(.5deg)} 72%{transform:translateY(-1px) rotate(-.4deg)}}
+.material-death[data-paper='true'] {animation-timing-function:steps(3,end);transform-origin:50% 100%;}
+.material-death[data-paper='true'][data-death='dissolve'] {animation-name:paper-dissolve;}
+.material-death[data-paper='true'][data-death='extinguish'] {animation-name:paper-extinguish;}
+.paper-death-sprite {display:block;flex-shrink:0;background-repeat:no-repeat;}
+@keyframes paper-dissolve {0%{opacity:1;transform:none} 28%{opacity:.85;transform:rotate(-3deg)} 62%{opacity:.5;transform:translateY(-8px) rotate(6deg)} 100%{opacity:0;transform:translateY(-16px) rotate(9deg)}}
+@keyframes paper-extinguish {0%{opacity:1;transform:none} 25%{opacity:.9;transform:rotate(-3deg)} 65%{opacity:.45;transform:rotate(12deg) scaleY(.5)} 100%{opacity:0;transform:rotate(15deg) scaleY(.08)}}
+.living-paused .material-death {animation-play-state:paused!important;}
+@media(prefers-reduced-motion:reduce) {
+ .dummy-avatar[data-paper='true'] .monster-idle {animation:none!important;transform:none;}
+ .material-death[data-paper='true'] {animation:death-reduced .2s ease-out forwards!important;}
+}

@@ -10,6 +10,7 @@ class FakeImage {constructor(){this.complete=true;this.naturalWidth=1536;images.
 const arena={clientWidth:640,clientHeight:420,dataset:{}},canvas={width:0,height:0,getContext:()=>context};
 const scene=createArenaEnvironment(canvas,arena,FakeImage);
 scene.setStage(1);scene.update(.016);assert.equal(arena.dataset.environment,'meadow');assert.equal(images.length,2);
+assert.ok(images.some(image=>image.src==='assets/art/paper-arena.png'));
 const first=scene.snapshot();scene.setStage(5);assert.equal(scene.snapshot().theme,first.theme);assert.equal(images.length,2);
 const steadyDraws=drawCount;scene.update(.1);assert.equal(drawCount,steadyDraws);scene.update(.1,true);assert.deepEqual(scene.snapshot(),first);assert.equal(scene.react,undefined);
 scene.setStage(6);scene.update(.1);assert.ok(scene.snapshot().fade>0&&scene.snapshot().fade<1);

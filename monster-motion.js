@@ -29,10 +29,11 @@ function prepareMonsterHit(stage, heavy, direction, dot) {
   const actor = document.getElementById('dummy-avatar');
   if (!actor) return;
   const p = getMonsterMotionProfile(stage);
+  if (stage <= 2 && typeof beginPaperSlimeHit === 'function') beginPaperSlimeHit(heavy, direction, dot);
   actor.style.setProperty('--hit-distance', `${p.recoil * (dot ? .18 : heavy ? 1.6 : 1)}px`);
   actor.style.setProperty('--hit-angle', `${(direction ? -1 : 1) * (p.kind === 'stone' ? .5 : heavy ? 5 : 2)}deg`);
   actor.style.setProperty('--hit-duration', `${heavy ? .32 : .22}s`);
-  actor.style.setProperty('--hit-squash', String(p.kind === 'slime' ? p.squash * (heavy ? 1.25 : 1) : Math.min(.025, p.squash * (heavy ? 1.25 : 1))));
+  actor.style.setProperty('--hit-squash', String(actor.dataset.paper === 'true' ? 0 : p.kind === 'slime' ? p.squash * (heavy ? 1.25 : 1) : Math.min(.025, p.squash * (heavy ? 1.25 : 1))));
 }
 function spawnMaterialDeath(stage, boss) {
   const arena = document.getElementById('combat-arena');
@@ -48,13 +49,41 @@ function spawnMaterialDeath(stage, boss) {
   ghost.className = 'material-death'; ghost.dataset.death = p.death;
   Object.assign(ghost.style, {left:`${rect.left-base.left}px`,top:`${rect.top-base.top}px`,width:`${rect.width}px`,height:`${rect.height}px`,fontSize:getComputedStyle(source).fontSize});
   if (source.dataset.art === 'slime') {
-    ghost.style.backgroundImage = 'url(assets/art/comic-slime.png)';
+    if (source.dataset.paper === 'true') {
+      ghost.textContent = '';
+      const surface = source.querySelector('canvas');
+      if (surface) {
+        const copy = document.createElement('canvas');
+        copy.width = surface.width; copy.height = surface.height; copy.className = 'paper-slime-canvas';
+        copy.getContext('2d').drawImage(surface, 0, 0); ghost.appendChild(copy);
+      }
+      ghost.style.background = 'none'; ghost.dataset.death = 'paper-puddle';
+    } else ghost.style.backgroundImage = 'url(assets/art/comic-slime.png)';
     ghost.style.filter = source.dataset.variant === 'blue' ? 'hue-rotate(85deg)' : 'none';
     ghost.style.fontSize = '0';
   }
+  if (source.dataset.paper === 'true' && source.dataset.art === 'monster') {
+    // 사망용 외곽과 원화 윤곽을 분리해 접힘 중 옆 몬스터가 비치지 않도록 합니다.
+    const sprite = source.cloneNode(false);
+    sprite.removeAttribute('id'); sprite.className = 'paper-death-sprite';
+    Object.assign(sprite.style, {position:'static',bottom:'auto',animation:'none',transform:'none'});
+    ghost.textContent = ''; ghost.appendChild(sprite);
+    ghost.style.background = 'none'; ghost.style.clipPath = 'none';
+    ghost.dataset.paper = 'true';
+  }
   arena.appendChild(ghost);
   ghost.addEventListener('animationend', () => ghost.remove(), {once:true});
-  setTimeout(() => ghost.remove(), 1100);
+  // 안전 정리 시간도 모달 정지를 존중해 사망 여운이 창 뒤에서 사라지지 않도록 합니다.
+  let elapsed = 0, previous = performance.now();
+  function retireGhost() {
+    if (ghost.isConnected === false) return;
+    const now = performance.now();
+    if (!arena.classList || !arena.classList.contains('living-paused')) elapsed += now - previous;
+    previous = now;
+    if (elapsed >= 1100) ghost.remove();
+    else setTimeout(retireGhost, 100);
+  }
+  setTimeout(retireGhost, 100);
   if (p.death === 'puddle') {
     const foot = getActorGroundPos('dummy-avatar');
     spawnSlimeSplash(particles, rect.left-base.left+rect.width/2, rect.top-base.top+rect.height/2,
