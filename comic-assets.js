@@ -45,12 +45,19 @@ function drawComicSummon(painter,index,x,y,size){
  const cell=comicEquipment.naturalWidth/4;
  painter.drawImage(comicEquipment,index%4*cell,Math.floor(index/4)*cell,cell,cell,x-size/2,y-size/2,size,size);
 }
+// 일반 몬스터는 단계별로 성장하고 보스는 별도의 큰 실루엣을 사용한다.
+function getComicMonsterGrowth(stage) {
+ if(stage<=2)return stage===1?.62:.72;
+ return stage%5===0?Math.min(2.8,1.4+stage*.07):Math.min(2.05,.82+stage*.052);
+}
 function configureComicMonster(stage){
  const el=document.getElementById('dummy-emoji');if(!el)return;
  const avatar=document.getElementById('dummy-avatar');
  // 공통 접지 틀은 유지하고 원화만 단계와 보스 여부에 맞춰 확대합니다.
  const baseHeight=avatar?avatar.clientHeight:126;
- const growth=stage<=2?(stage===1?.62:.72):Math.min(1.62,.76+stage*.035)+(stage%5===0?.18:0);
+ const growth=getComicMonsterGrowth(stage);
+ const stageBox=document.getElementById('target-stage-box');
+ if(stageBox && stageBox.dataset)stageBox.dataset.monsterSize=stage>2 && stage%5===0?'boss':'normal';
  el.dataset.monsterStage=String(stage);
  if(stage<=2){el.style.cssText='';el.style.width=`${baseHeight*growth*1.55}px`;el.style.height=el.style.width;el.style.bottom=`${-baseHeight*growth*1.55*.1252}px`;el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';if(typeof configurePaperSlime==='function')configurePaperSlime(el,baseHeight*growth*1.55,stage);return;}
  el.dataset.paper='true';if(avatar && avatar.dataset)avatar.dataset.paper='true';
@@ -58,7 +65,11 @@ function configureComicMonster(stage){
  if(el.replaceChildren)el.replaceChildren();
  const frame=typeof getPaperMonsterFrame==='function'?getPaperMonsterFrame(stage):COMIC_MONSTER_FRAMES[Math.min(stage-3,stage%5===0?19:18)];if(!frame)return;
  el.textContent='';el.dataset.art='monster';el.dataset.variant='';el.style.bottom='0px';
- const height=baseHeight*growth;
+ const arena=document.getElementById('combat-arena');
+ const roomHeight=arena && arena.clientHeight>=300?arena.clientHeight*.52:Infinity;
+ const roomWidth=arena && arena.clientWidth>=300?arena.clientWidth*(arena.clientWidth<=480?.5:.48):Infinity;
+ const height=Math.min(baseHeight*growth,roomHeight,roomWidth*frame.h/frame.w);
+ if(stageBox && stageBox.style && stageBox.style.setProperty)stageBox.style.setProperty('--monster-half-width',`${height*frame.w/frame.h/2}px`);
  const scale=height/frame.h;
  el.style.clipPath=frame.clip;el.style.width=`${frame.w*scale}px`;el.style.height=`${height}px`;
  el.style.backgroundImage=`url('${frame.sheet || 'assets/art/comic-monsters-clean.png'}')`;

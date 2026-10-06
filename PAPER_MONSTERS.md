@@ -63,3 +63,13 @@ Use case: stylized-concept. Asset type: production monster sprite atlas. Exactly
 ### 첫 묶음 여백 수정 — 이전 후보
 
 Edit target is the provided six-monster paper atlas. Preserve EXACTLY all six character designs, colored-paper texture, equipment and 3x2 ordering. Critical production correction: REMOVE THE ENTIRE colored smoky background completely, make EVERY empty pixel genuinely TRANSPARENT alpha. No ground shadows, glow, colored halos, backdrop or gradients. Scale all six complete puppets uniformly DOWN by 22 percent and reposition each centered within its own exact third-column and half-row cell. The rat's entire pink tail, wolf's full tail, gnoll bow, skeleton pickaxe, boar tusks must all fit inside their OWN cell with at least 45 pixels empty TRANSPARENT margins. Keep current layered paper style, not a different style. EXACTLY six complete monsters, 3 columns by 2 rows, 1536x1024. No clipping, no grid, no text.
+
+## 2026-10-07 단계 성장과 보스 크기
+
+기존 일반 몬스터와 보스 공통 확대식(일반 상한 1.62, 보스 추가 0.18)을 폐기했다. 일반은 단계별 성장 상한 2.05, 보스는 별도 성장 상한 2.8을 사용한다. 라그나로스는 기본 높이 126px 기준 최대 352.8px이며 실제 전장 높이의 52%와 폭의 48%에 맞춰 더 제한한다(480px 이하 폭 상한 50%). 원화 비율과 발 원점은 유지한다. 심연에서 무한히 확대하지 않는다.
+
+아트 참고는 앞서 직접 확인한 Nintendo 공식 화면 04의 거대 접이식 보스와 작은 플레이어 간 실루엣 대비를 재사용했다(https://www.nintendo.com/ph/switch/aruu/img/cal_img04.jpg). 신규 원화·관절 동작·피격 판정·피해량은 변경하지 않았다. game.js 변경 없음.
+
+보스 중심을 조금 왼쪽으로 배치해 원화와 디버프의 오른쪽 공간을 확보한다. 디버프는 실제 확대된 원화 폭을 기준으로 배치한다. 390px에서는 더 작은 상한을 사용하므로 데스크톱과 동일한 크기 비율은 아니다.
+
+검증: 실제 HTML/CSS를 사용하는 독립 비교 화면에서 라그나로스·고블린·심연 몬스터의 성장과 접지, 390px 보스 및 디버프 경계 확인. 관련 테스트 4개 통과(성장·라그나로스 대비·무한 상한·모바일 폭 제한·원화 좌표·모션). 실제 저장 데이터를 후반으로 변경하거나 후반 실전 전투를 재현하지는 않았다. 화면: docs/paper-monster-scale.jpg.
