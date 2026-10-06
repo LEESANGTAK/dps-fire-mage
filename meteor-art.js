@@ -33,16 +33,17 @@ function drawComicMeteor(ctx, m, pose, image = comicMeteor) {
   ctx.rotate(pose.angle + pose.progress * 0.45);
 
   if (image && image.complete && image.naturalWidth) {
-    // 1. 대기권 돌입 압축 마그마 림 라이팅 (과도한 백색 타버림 억제 및 부드러운 호박색 마그마 톤)
+    // 1. 대기권 돌입 압축 마그마 림 라이팅 (운석 전면부 고열 연소 압축 광채)
     if (pose.progress > 0.3) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      const flareAlpha = Math.min(0.28, (pose.progress - 0.3) * 0.6);
+      const flareAlpha = Math.min(0.48, (pose.progress - 0.3) * 0.95);
       ctx.globalAlpha = flareAlpha;
-      const glowR = pose.radius * 1.35;
+      const glowR = pose.radius * 1.4;
       const grad = ctx.createRadialGradient(0, 0, glowR * 0.15, 0, 0, glowR);
-      grad.addColorStop(0, 'rgba(254, 215, 170, 0.55)');
-      grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.3)');
+      grad.addColorStop(0, 'rgba(255, 237, 213, 0.7)');
+      grad.addColorStop(0.35, 'rgba(251, 146, 60, 0.45)');
+      grad.addColorStop(0.7, 'rgba(234, 88, 12, 0.2)');
       grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -97,17 +98,18 @@ let meteorTextures = null;
 function initMeteorTextures() {
   if (meteorTextures || typeof document === 'undefined') return meteorTextures;
 
-  // 1. 화염 퍼프 텍스처 (Flame Puff, 128x128) - 진한 오렌지/호박색 및 마그마 레드 결
+  // 1. 화염 퍼프 텍스처 (Flame Puff, 128x128) - 맹렬하게 타오르는 고열 화염 텍스처
   const flameCanvas = document.createElement('canvas');
   flameCanvas.width = 128;
   flameCanvas.height = 128;
   const fCtx = flameCanvas.getContext('2d');
 
   const fGrad = fCtx.createRadialGradient(64, 64, 0, 64, 64, 58);
-  fGrad.addColorStop(0, 'rgba(255, 237, 213, 0.95)'); // 따뜻한 온백색 코어 (순백 플래시 억제)
-  fGrad.addColorStop(0.22, 'rgba(253, 186, 116, 0.9)'); // 호박색
-  fGrad.addColorStop(0.5, 'rgba(249, 115, 22, 0.85)');  // 선명한 주황
-  fGrad.addColorStop(0.78, 'rgba(220, 38, 38, 0.65)'); // 깊은 마그마 레드
+  fGrad.addColorStop(0, 'rgba(255, 247, 237, 1)');      // 고열 백황색 코어
+  fGrad.addColorStop(0.18, 'rgba(254, 215, 170, 0.95)'); // 밝은 호박색
+  fGrad.addColorStop(0.42, 'rgba(249, 115, 22, 0.92)'); // 선명한 고열 주황
+  fGrad.addColorStop(0.72, 'rgba(220, 38, 38, 0.75)'); // 짙은 마그마 레드
+  fGrad.addColorStop(0.92, 'rgba(185, 28, 28, 0.35)'); // 외곽 크림슨
   fGrad.addColorStop(1, 'rgba(153, 27, 27, 0)');
   fCtx.fillStyle = fGrad;
   fCtx.beginPath();
@@ -115,15 +117,15 @@ function initMeteorTextures() {
   fCtx.fill();
 
   const flameLobes = [
-    { x: 54, y: 54, r: 36, alpha: 0.55 },
-    { x: 74, y: 56, r: 34, alpha: 0.5 },
-    { x: 60, y: 74, r: 35, alpha: 0.45 },
-    { x: 70, y: 72, r: 32, alpha: 0.4 }
+    { x: 54, y: 54, r: 38, alpha: 0.65 },
+    { x: 74, y: 56, r: 36, alpha: 0.6 },
+    { x: 60, y: 74, r: 36, alpha: 0.55 },
+    { x: 70, y: 72, r: 34, alpha: 0.5 }
   ];
   for (const l of flameLobes) {
     const lGrad = fCtx.createRadialGradient(l.x, l.y, 2, l.x, l.y, l.r);
-    lGrad.addColorStop(0, `rgba(254, 215, 170, ${l.alpha})`);
-    lGrad.addColorStop(0.55, `rgba(234, 88, 12, ${l.alpha * 0.7})`);
+    lGrad.addColorStop(0, `rgba(255, 237, 213, ${l.alpha})`);
+    lGrad.addColorStop(0.5, `rgba(249, 115, 22, ${l.alpha * 0.8})`);
     lGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
     fCtx.fillStyle = lGrad;
     fCtx.beginPath();
@@ -163,16 +165,16 @@ function initMeteorTextures() {
   const spCtx = sparkCanvas.getContext('2d');
 
   const spGrad = spCtx.createRadialGradient(24, 24, 1, 24, 24, 20);
-  spGrad.addColorStop(0, 'rgba(255, 237, 213, 0.95)');
-  spGrad.addColorStop(0.35, 'rgba(251, 191, 36, 0.8)');
-  spGrad.addColorStop(0.75, 'rgba(234, 88, 12, 0.4)');
+  spGrad.addColorStop(0, 'rgba(255, 247, 237, 1)');
+  spGrad.addColorStop(0.35, 'rgba(251, 191, 36, 0.85)');
+  spGrad.addColorStop(0.75, 'rgba(234, 88, 12, 0.5)');
   spGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
   spCtx.fillStyle = spGrad;
   spCtx.beginPath();
   spCtx.arc(24, 24, 20, 0, Math.PI * 2);
   spCtx.fill();
 
-  spCtx.fillStyle = '#ffedd5';
+  spCtx.fillStyle = '#ffffff';
   spCtx.beginPath();
   spCtx.moveTo(24, 14);
   spCtx.lineTo(26, 24);
@@ -234,14 +236,18 @@ function drawMeteorParticle(ctx, pt, dt) {
       currentSize
     );
   } else if (pt.kind === 'flame') {
-    // 화염: 운석 암석 폭 전체를 감싸며 시작하고, 뒤로 갈수록 유선형 콘으로 수렴
+    // 화염: 운석 암석 폭 전체를 감싸며 활활 타오르는 고열 펄스
     pt.rot = (pt.rot || 0) + (pt.vRot || 0) * dt;
     ctx.rotate(pt.rot);
-    const scale = Math.max(0.2, (1 - progress * 0.65));
+
+    // 고열 연소 난류 플리커 (Flicker & Heat Pulse)
+    const flicker = 1.0 + Math.sin(pt.life * 32 + (pt.seed || 0)) * 0.12;
+    const scale = Math.max(0.2, (1 - progress * 0.65)) * flicker;
     const currentSize = pt.baseSize * scale;
 
-    const alpha = Math.pow(1 - progress, 0.95) * 0.9;
-    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    // 1단계: 깊고 풍성한 오렌지/마그마 레드 베이스 바디 (형태 유지)
+    const baseAlpha = Math.pow(1 - progress, 0.9) * 0.92;
+    ctx.globalAlpha = Math.max(0, Math.min(1, baseAlpha));
     ctx.globalCompositeOperation = 'source-over';
     ctx.drawImage(
       textures.flame,
@@ -251,20 +257,23 @@ function drawMeteorParticle(ctx, pt, dt) {
       currentSize
     );
 
-    // 운석 바로 뒤(progress < 0.25)에서만 은은한 코어 발광 살짝 가미
-    if (progress < 0.25) {
+    // 2단계: 맹렬하게 타오르는 고열 코어 발광 레이어 (Burning Core Emissive Glow)
+    // 수명 전반(progress < 0.75)에 걸쳐 강력하고 따뜻한 고열 발광을 지속 분출!
+    if (progress < 0.75) {
+      const burnAlpha = Math.pow(1 - progress / 0.75, 1.1) * 0.52 * flicker;
       ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = (0.25 - progress) * 0.75;
+      ctx.globalAlpha = Math.max(0, Math.min(1, burnAlpha));
+      const coreSize = currentSize * 0.75;
       ctx.drawImage(
         textures.flame,
-        -currentSize * 0.4,
-        -currentSize * 0.4,
-        currentSize * 0.8,
-        currentSize * 0.8
+        -coreSize * 0.5,
+        -coreSize * 0.5,
+        coreSize,
+        coreSize
       );
     }
   } else if (pt.kind === 'spark') {
-    const alpha = Math.pow(1 - progress, 1.2) * 0.8;
+    const alpha = Math.pow(1 - progress, 1.2) * 0.85;
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
     ctx.globalCompositeOperation = 'lighter';
     const sz = pt.baseSize * Math.max(0.2, 1 - progress * 0.7);
@@ -309,9 +318,8 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   for (let i = 0; i < actualCount; i++) {
     const roll = Math.random();
 
-    if (roll < 0.48) {
-      // 1. 화염 퍼프 (Flame Puff)
-      // 운석 암석의 외곽 전체(너비 2.0 radius)를 감싸안으며 시작하는 웅장한 볼륨감!
+    if (roll < 0.60) {
+      // 1. 화염 퍼프 (Flame Puff) - 60% 비중으로 두텁고 맹렬하게 활활 타오르는 화염
       const dist = pose.radius * (0.1 + Math.random() * 0.8);
       // 유선형 콘 테이퍼: 운석 바로 뒤는 운석 직경 전체(너비 1.9), 뒤로 갈수록 완만하게 좁아짐
       const taper = Math.max(0.3, 1 - dist / (pose.radius * 2.2));
@@ -325,17 +333,17 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
         y: pose.y - dy * dist + perpY * side,
         vx: -dx * speed + perpX * inwardSpeed,
         vy: -dy * speed + perpY * inwardSpeed,
-        // 운석 지름에 필적하는 큼직한 덩어리감 (낱개 구슬 현상 완전 제거)
+        // 운석 지름에 필적하는 큼직한 덩어리감
         baseSize: pose.radius * (1.6 + Math.random() * 0.6) * taper,
         rot: Math.random() * Math.PI * 2,
         vRot: (Math.random() - 0.5) * 3.0,
+        seed: Math.random() * 20,
         life: 0,
-        // 운석 높이의 약 1.5배 구간까지 도달하는 수명
-        maxLife: 0.20 + Math.random() * 0.08
+        // 운석 높이의 약 1.5배 구간까지 도달하며 타오르는 수명
+        maxLife: 0.22 + Math.random() * 0.08
       });
     } else if (roll < 0.88) {
       // 2. 만화풍 연기 퍼프 (Smoke Puff) - 꼬리 끝부분을 웅장하게 장식하는 리얼한 다층 연기 구름!
-      // 화염의 뒤쪽(운석 뒤 0.6 ~ 1.8 radius)에서 집중 생성되어 스케치의 꼬리 끝점(운석 뒤 220~280px)까지 이어짐
       const dist = pose.radius * (0.6 + Math.random() * 1.4);
       const taper = Math.max(0.2, 1 - (dist - pose.radius * 0.6) / (pose.radius * 2.0));
       const side = (Math.random() - 0.5) * (pose.radius * 1.8) * taper;
@@ -352,7 +360,6 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
         rot: Math.random() * Math.PI * 2,
         vRot: (Math.random() - 0.5) * 2.0,
         life: 0,
-        // 파란색 스케치의 상단 꼬리 끝부분까지 도달하고 자연스럽게 흩어지는 수명
         maxLife: 0.38 + Math.random() * 0.14
       });
     } else {
