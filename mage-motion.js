@@ -59,7 +59,7 @@ function standingCastTarget(combat, gesture) {
 // 서로 다른 주기와 시차로 살아있는 대기 호흡 모션 구현
 function livingMageMotion(time, reduced, engaged) {
   if (reduced) return { breathY: 1, breathX: 1, lean: 0 };
-  const quiet = engaged ? 0.35 : 1;
+  const quiet = engaged ? 0.2 : 1;
   const breath = Math.sin(time * 2.2) * 0.015 * quiet;
   const sway = Math.sin(time * 1.1) * 0.008 * quiet;
   return {
@@ -70,17 +70,27 @@ function livingMageMotion(time, reduced, engaged) {
 }
 
 function selectMagePose(combat, gesture) {
-  if (gesture.remaining > 0) {
-    const progress = 1 - gesture.remaining / gesture.total;
-    if (gesture.kind === 'combustion') return 'hot';
-    // fireball, fireblast, meteor 모두 시원하고 호쾌한 발사와 반동 포즈 적용!
-    return progress < 0.38 ? 'release' : progress < 0.82 ? 'recoil' : 'idle';
+  if (gesture.remaining > 0 && gesture.kind === 'combustion') return 'hot';
+  if (combat.combustionRem > 0) return 'hot';
+
+  // 1. 화염구 시전 중: 오직 단일 '준비 동작(anticipation)'만 유지
+  if (combat.castingSkill === 'fireball') {
+    return 'anticipation';
   }
   if (combat.castingSkill) {
     const progress = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
     return progress < 0.32 ? 'anticipation' : 'charge';
   }
-  if (combat.combustionRem > 0) return 'hot';
+
+  // 2. 발사 제스처: 화염구는 오직 단일 '발사 동작(release)'만 유지하여 2포즈 교대 완성
+  if (gesture.remaining > 0) {
+    if (gesture.kind === 'fireball' || gesture.kind === 'fireblast') {
+      return 'release';
+    }
+    const progress = 1 - gesture.remaining / gesture.total;
+    return progress < 0.38 ? 'release' : progress < 0.82 ? 'recoil' : 'idle';
+  }
+
   return 'idle';
 }
 
@@ -101,18 +111,36 @@ function renderMage(art, pose, dt, reduced) {
   const engaged = Boolean(state.combat.castingSkill || mageGesture.remaining > 0);
   const idle = livingMageMotion(spring.time, reduced, engaged);
 
-  // 포즈별 동적 스쿼시 & 스트레치 (디즈니 12대 애니메이션 원칙)
+  // 포즈별 동적 스쿼시 & 스트레치 (화염구 난사 시 정신 사납지 않도록 절제된 수치 적용)
   let targetSquash = 0;
   let targetLean = 0;
   if (!reduced) {
-    if (pose === 'anticipation') { targetSquash = 0.07; targetLean = -0.035; }
-    else if (pose === 'charge') { targetSquash = 0.035; targetLean = -0.015; }
-    else if (pose === 'release') { targetSquash = -0.06; targetLean = 0.045; }
-    else if (pose === 'recoil') { targetSquash = 0.05; targetLean = -0.025; }
-    else if (pose === 'hot') { targetSquash = -0.025; targetLean = 0.01; }
+    if (pose === 'anticipation') {
+      // 화염구 준비 동작: 과도한 쏠림 없이 단정하게 기를 모으는 수축
+      targetSquash = 0.015;
+      targetLean = -0.008;
+    }
+    else if (pose === 'charge') {
+      targetSquash = 0.035;
+      targetLean = -0.015;
+    }
+    else if (pose === 'release') {
+      // 화염구 발사 동작: 난사 시 덜컹거림 없는 안정적 추진력
+      const isHeavy = mageGesture.kind === 'meteor';
+      targetSquash = isHeavy ? -0.06 : -0.015;
+      targetLean = isHeavy ? 0.045 : 0.010;
+    }
+    else if (pose === 'recoil') {
+      targetSquash = 0.03;
+      targetLean = -0.015;
+    }
+    else if (pose === 'hot') {
+      targetSquash = -0.025;
+      targetLean = 0.01;
+    }
   }
 
-  advanceSpring(spring, dt, targetLean * 100, targetSquash, engaged ? 2.2 : 1.2);
+  advanceSpring(spring, dt, targetLean * 100, targetSquash, engaged ? 1.6 : 1.2);
 
   context.clearRect(0, 0, 640, 640);
 

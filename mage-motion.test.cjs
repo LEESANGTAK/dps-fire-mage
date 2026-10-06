@@ -10,9 +10,10 @@ for (const duration of [0.4, 1.5, 2.5]) {
 assert.equal(selectMagePose({ ...combat, critStreak: 2 }, rest), 'idle');
 assert.equal(selectMagePose({ ...combat, combustionRem: 1 }, rest), 'hot');
 assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.3, total: 0.3 }), 'release');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'recoil');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.01, total: 0.3 }), 'idle');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'release');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0, total: 0.3 }), 'idle');
 assert.equal(selectMagePose({ ...combat, critStreak: 2 }, { kind: 'meteor', remaining: 0.38, total: 0.38 }), 'release');
+assert.equal(selectMagePose(combat, { kind: 'meteor', remaining: 0.15, total: 0.42 }), 'recoil');
 assert.equal(selectMagePose(combat, { kind: 'combustion', remaining: 0.5, total: 0.5 }), 'hot');
 // 모달 중에는 자세와 발사 여운의 시간이 모두 정지해야 합니다.
 const vm = require('node:vm');
@@ -70,7 +71,7 @@ assert.ok(briskBody.x>6 && briskBody.cloth<briskBody.x*.4,'상체는 빠르게 �
 for (const duration of [0.02, 0.05, 0.1, 1.5]) {
   for (let i = 0; i <= 10; i++) {
     const fast = { ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * i / 10 };
-    assert.ok(['anticipation', 'charge'].includes(selectMagePose(fast, rest)));
+    assert.equal(selectMagePose(fast, rest), 'anticipation');
     assert.ok(Math.abs(armTarget(fast, rest)) <= 0.201);
   }
 }
