@@ -933,8 +933,8 @@ function isStageDpsMet(stageNum = state.currentStage) {
 }
 
 function canAdvanceToNextStage() {
-  const isMonsterKilledOnce = state.highestClearedStage >= state.currentStage;
-  return isMonsterKilledOnce && isStageDpsMet(state.currentStage);
+  // 스피드런 타임어택 체제: 몬스터 1회 처치 완료 시 즉시 다음 도전 가능!
+  return state.highestClearedStage >= state.currentStage;
 }
 
 function fmt(num) {
@@ -2954,6 +2954,10 @@ function onMonsterKilled() {
     state.campaignCleared = true;
     state.canAscend = true;
     state.unfolded.hallOfFame = true;
+    const curTime = state.playTimeSec || 0;
+    if (!state.bestSpeedrunTime || curTime < state.bestSpeedrunTime) {
+      state.bestSpeedrunTime = curTime;
+    }
   }
 
   // 정수 UI(#pill-essence)가 처음 해금되는 순간에도 도착 좌표를 정확히 계산할 수 있도록 Unfold를 먼저 실행
@@ -3501,7 +3505,7 @@ function fireWithMultishot(type, baseMult) {
   }
 }
 
-function triggerSkill(skillKey) {
+function triggerSkill(skillKey, isManual = false) {
   const stats = getPlayerStats();
   const c = state.combat;
 
@@ -3521,11 +3525,13 @@ function triggerSkill(skillKey) {
       return true;
     }
 
-    const castTime = Math.max(0.4, 1.5 / stats.speedMult);
+    // 수동 조작 시 발화 중 캐스팅 속도 25% 가속
+    const manualSpeedBonus = (isManual && c.combustionRem > 0) ? 1.25 : 1.0;
+    const castTime = Math.max(0.35, 1.5 / (stats.speedMult * manualSpeedBonus));
     c.castingSkill = 'fireball';
     c.castTotal = castTime;
     c.castRemaining = castTime;
-    c.gcdTotal = Math.max(0.5, 1.2 / stats.speedMult);
+    c.gcdTotal = Math.max(0.4, 1.2 / (stats.speedMult * manualSpeedBonus));
     c.gcdRemaining = c.gcdTotal;
     updateCastingLoopSound();
     return true;
@@ -3543,7 +3549,16 @@ function triggerSkill(skillKey) {
 
     const pos = getTargetPos();
     spawnParticles(pos.x, pos.y, 20, '#fef08a', '#f97316', 1.15);
-    const dmg = stats.sp * 0.85 * stats.critDmg;
+    let dmg = stats.sp * 0.85 * stats.critDmg;
+    if (isManual) {
+      dmg *= 1.35; // 수동 작렬 기본 35% 증폭
+      if (c.combustionRem > 0) {
+        dmg *= 1.5; // 발화 중 수동 작렬 콤보 추가 50% 증폭! (총 2배 이상)
+        spawnFloatingText('⚡ 수동 작렬 콤보! (+100%)', 'fct-crit', -35, { isBig: true, anchor: 'caster' });
+      } else {
+        spawnFloatingText('⚡ 수동 작렬! (+35%)', 'fct-crit', -30, { anchor: 'caster' });
+      }
+    }
     dealDamage('fireblast', dmg, true, true);
     beginMageGesture('fireblast');
     return true;
@@ -3558,7 +3573,11 @@ function triggerSkill(skillKey) {
     const timeWarpCdCut = ((state.artifacts && state.artifacts.time_warp) || 0) * 3;
     c.combustionCdTotal = Math.max(Math.max(10, 14 - timeWarpCdCut), (30 - timeWarpCdCut) * (1 - stats.cdr));
     c.combustionCdRem = c.combustionCdTotal;
-    spawnFloatingText('☀️ 마력 폭주!', 'fct-proc', -45, { anchor: 'caster' });
+    if (isManual) {
+      spawnFloatingText('🔥⚡ 수동 마력 폭주! (수동 스킬 2배 폭딜 가속!)', 'fct-proc', -50, { isBig: true, anchor: 'caster' });
+    } else {
+      spawnFloatingText('🤖 자동 마력 폭주', 'fct-proc', -40, { anchor: 'caster' });
+    }
     playSound('proc');
     return true;
   }
@@ -3569,7 +3588,7 @@ function triggerSkill(skillKey) {
     if (c.critStreak === 2) {
       c.critStreak = 0;
       c.streakTimer = 0;
-      releaseMeteor();
+      releaseMeteor(isManual);
       triggerAllSummonsSyncAttack();
       return true;
     }
@@ -3611,7 +3630,7 @@ function triggerSkill(skillKey) {
 
     // 시전 즉시 첫 불장판 도트 틱 피해 적용
     const golemBonus = (state.skillTree.magma_golem || 0) * 0.15;
-    const tickDmg = stats.sp * (0.4 * patchLv) * (1 + golemBonus) * (stats.igniteMult || 1);
+    const tickDmg = stats.sp * (0.4 * patchLv) * (1 + golemBonus) * (stats.igniteMult || 1) * (isManual ? 1.25 : 1.0);
     dealDamage('flame_patch', tickDmg, false, false, true);
     updateBurningLoopSound();
     return true;
@@ -3620,20 +3639,26 @@ function triggerSkill(skillKey) {
   return false;
 }
 
-function releaseMeteor() {
+function releaseMeteor(isManual = false) {
   beginMageGesture('meteor');
   if (state.combat && state.combat.combustionRem > 0) {
     if (!state.stats) state.stats = {};
     state.stats.combustionPyros = (state.stats.combustionPyros || 0) + 1;
   }
+  if (isManual) {
+    spawnFloatingText('☄️ 수동 몰열 메테오! (+60% 폭딜)', 'fct-crit', -45, { isBig: true, anchor: 'caster' });
+  }
   launchMeteorVfx(() => {
     const stats = getPlayerStats();
     const isCrit = Math.random() * 100 < stats.crit;
-    const damage = stats.sp * 3.2 * (isCrit ? stats.critDmg : 1);
+    let damage = stats.sp * 3.2 * (isCrit ? stats.critDmg : 1);
+    if (isManual) {
+      damage *= 1.6; // 수동 몰열 폭딜: 60% 추가 증폭!
+    }
     // 메테오 자체는 소비한 몰열을 다시 충전하지 않습니다.
     dealDamage('meteor', damage, isCrit, false);
     state.combat.meteorBurnRem = 6;
-  }, 1);
+  }, isManual ? 1.2 : 1.0);
 
   // 불사조 유물: 쌍둥이 운석 (보조 미니 운석 연속 낙하)
   const twinLv = (state.artifacts && state.artifacts.twin_cataclysm) || 0;
@@ -3643,9 +3668,10 @@ function releaseMeteor() {
         launchMeteorVfx(() => {
           const stats = getPlayerStats();
           const isCrit = Math.random() * 100 < stats.crit;
-          const damage = stats.sp * 1.6 * (isCrit ? stats.critDmg : 1);
+          let damage = stats.sp * 1.6 * (isCrit ? stats.critDmg : 1);
+          if (isManual) damage *= 1.6;
           dealDamage('meteor', damage, isCrit, false);
-        }, 0.68);
+        }, isManual ? 0.8 : 0.68);
       }, (tc + 1) * 220);
     }
   }
@@ -3678,21 +3704,21 @@ function runSmartAutoCast() {
   const c = state.combat;
 
   if (state.grimoires.combustion && isSkillAutoActive('combustion') && c.combustionCdRem <= 0) {
-    triggerSkill('combustion');
+    triggerSkill('combustion', false);
   }
   if ((state.skillTree.flame_patch || 0) > 0 && isSkillAutoActive('flame_patch') && c.flamePatchCdRem <= 0) {
-    triggerSkill('flame_patch');
+    triggerSkill('flame_patch', false);
   }
 
-  // 1. 몰아치는 열기 (즉시 시전 메테오): 몰열 2스택 상태라면 지체 없이 최우선 발사!
+  // 1. 몰아치는 열기 (즉시 시전 메테오): 몰열 2스택 상태라면 최우선 발사!
   if (state.grimoires.meteor && isSkillAutoActive('meteor') && c.critStreak === 2) {
-    triggerSkill('meteor');
+    triggerSkill('meteor', false);
   }
 
   // 2. 불꽃 작렬 (확정 치명타): 1스택일 때 즉시 2스택 완성 유도 또는 완충 시 즉시 소모
   if (state.grimoires.fireblast && isSkillAutoActive('fireblast') && c.fbCharges > 0) {
     if (!state.grimoires.meteor || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
-      triggerSkill('fireblast');
+      triggerSkill('fireblast', false);
     }
   }
 
@@ -3703,7 +3729,7 @@ function runSmartAutoCast() {
     c.gcdRemaining <= 0 &&
     !(state.grimoires.meteor && c.critStreak === 2)
   ) {
-    triggerSkill('fireball');
+    triggerSkill('fireball', false);
   }
 }
 
@@ -3827,13 +3853,9 @@ function updateNotificationBadges() {
     : '다음 도전 ▶';
 
   if (canGoNext) {
-    nextBtn.title = '조건 달성 완료! 클릭하여 다음 스테이지에 도전하세요.';
-  } else if (!isKilledOnce && !isDpsMet) {
-    nextBtn.title = '현재 스테이지 몬스터 1회 처치 및 목표 DPS 달성 시 활성화됩니다.';
-  } else if (!isKilledOnce) {
-    nextBtn.title = '목표 DPS 달성! 현재 스테이지의 몬스터를 1회 처치하면 다음 도전이 활성화됩니다.';
+    nextBtn.title = '처치 완료! 클릭하여 다음 스테이지로 질주하세요. (스피드런 ⚡)';
   } else {
-    nextBtn.title = '몬스터 처치 완료! 목표 DPS를 달성하면 다음 도전이 활성화됩니다.';
+    nextBtn.title = '현재 몬스터 처치 완료 시 다음 도전이 즉시 활성화됩니다.';
   }
 
   setBadge('badge-next-stage', canGoNext);
@@ -4874,9 +4896,14 @@ function updateStageUI() {
 
   const reqDps = getStageReqDps(state.currentStage);
   const dpsMet = isStageDpsMet(state.currentStage);
-  document.getElementById('ui-req-dps').textContent = dpsMet
-    ? `${fmt(reqDps)} /초 ✔`
-    : `${fmt(reqDps)} /초`;
+  const reqDpsEl = document.getElementById('ui-req-dps');
+  if (reqDpsEl) {
+    reqDpsEl.textContent = dpsMet ? `${fmt(reqDps)} /초 ✔` : `${fmt(reqDps)} /초`;
+  }
+  const timerEl = document.getElementById('ui-speedrun-timer');
+  if (timerEl) {
+    timerEl.textContent = formatSpeedrunTime(state.playTimeSec);
+  }
 
   updateBossGimmick(0);
   updateBountyUI();
@@ -5307,6 +5334,13 @@ function updateBountyUI() {
 // ==========================================
 // 15-B. 4단계: Stage 20(화염군주 라그나로스) 토벌 명예의 전당 엔딩 모달 & 무한 심연 모드
 // ==========================================
+function formatSpeedrunTime(sec) {
+  const total = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function formatPlayTime(sec) {
   const totalSec = Math.max(0, Math.floor(sec || 0));
   const hrs = Math.floor(totalSec / 3600);
@@ -5377,6 +5411,10 @@ function openVictoryModal(isFirstVictory = false) {
   }
 
   grid.innerHTML = `
+    <div class="victory-stat-item speedrun-card">
+      <span class="victory-stat-label">⏱️ 라그나로스 스피드런 공식 기록</span>
+      <span class="victory-stat-val gold">${formatPlayTime(state.bestSpeedrunTime || state.playTimeSec)} ⚡</span>
+    </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">현재 승천 회차</span>
       <span class="victory-stat-val gold">제 ${currentAsc} 회차 (피해량 x${getAscensionDamageMult().toFixed(2)}배)</span>
@@ -5917,8 +5955,14 @@ function updateDpsMeterUI() {
   dpsEl.textContent = `${fmt(state.currentDps)} /초`;
   dpsEl.classList.toggle('enough', state.currentDps >= reqDps || dpsMet);
 
+  const timerEl = document.getElementById('ui-speedrun-timer');
+  if (timerEl) {
+    timerEl.textContent = formatSpeedrunTime(state.playTimeSec);
+  }
   const reqEl = document.getElementById('ui-req-dps');
-  reqEl.textContent = dpsMet ? `${fmt(reqDps)} /초 ✔` : `${fmt(reqDps)} /초`;
+  if (reqEl) {
+    reqEl.textContent = dpsMet ? `${fmt(reqDps)} /초 ✔` : `${fmt(reqDps)} /초`;
+  }
 
   const breakdownContainer = document.getElementById('skill-breakdown-bars');
   const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
@@ -6004,6 +6048,7 @@ function saveGame() {
       dummyRecordDps: state.dummyRecordDps,
       bossClearTimes: state.bossClearTimes,
       heatPacts: state.heatPacts,
+      bestSpeedrunTime: state.bestSpeedrunTime || null,
       skillMastery: state.skillMastery,
       stats: state.stats,
       bounty: state.bounty
@@ -6038,6 +6083,7 @@ function loadGame() {
     if (typeof data.playTimeSec === 'number') state.playTimeSec = data.playTimeSec;
     if (typeof data.totalKills === 'number') state.totalKills = data.totalKills;
     if (typeof data.campaignCleared === 'boolean') state.campaignCleared = data.campaignCleared;
+    if (typeof data.bestSpeedrunTime === 'number') state.bestSpeedrunTime = data.bestSpeedrunTime;
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (typeof data.autoAdvance === 'boolean') state.autoAdvance = data.autoAdvance;
     if (data.skillAuto) Object.assign(state.skillAuto, data.skillAuto);
@@ -6098,16 +6144,16 @@ function initEvents() {
   initSkillTooltips();
   document.getElementById('dummy-avatar').addEventListener('click', () => {
     if (state.grimoires.meteor && state.combat.critStreak === 2) {
-      triggerSkill('meteor');
+      triggerSkill('meteor', true);
     } else {
-      triggerSkill('fireball');
+      triggerSkill('fireball', true);
     }
   });
 
   document.querySelectorAll('.skill-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const skill = btn.getAttribute('data-skill');
-      triggerSkill(skill);
+      triggerSkill(skill, true);
     });
     btn.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -6136,7 +6182,7 @@ function initEvents() {
     };
     const skill = map[e.code] || map[`Digit${e.key}`];
     if (skill) {
-      triggerSkill(skill);
+      triggerSkill(skill, true);
     }
   });
 
