@@ -561,6 +561,7 @@ const state = {
   dpsClearedStage: 0,
   maxDps: 0,
   playTimeSec: 0,
+  totalPlayTimeSec: 0,
   totalKills: 0,
   campaignCleared: false,
   autoCast: false,
@@ -5254,7 +5255,7 @@ function openVictoryModal(isFirstVictory = false) {
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">누적 전투 시간</span>
-      <span class="victory-stat-val">${formatPlayTime(state.playTimeSec)}</span>
+      <span class="victory-stat-val">${formatPlayTime(state.totalPlayTimeSec || state.playTimeSec)}</span>
     </div>
   `;
 
@@ -5329,6 +5330,7 @@ function doAscend() {
   state.currentStage = 1;
   state.highestClearedStage = 0;
   state.gold = 10;
+  state.playTimeSec = 0;
 
   // 일반 장비 레벨 초기화
   for (const k of Object.keys(state.items)) {
@@ -5377,6 +5379,10 @@ function doAscend() {
   renderSkillTreeUI();
   renderArtifactsUI();
   updateLiveHUD();
+  const timerEl = document.getElementById('ui-speedrun-timer');
+  if (timerEl) {
+    timerEl.textContent = formatSpeedrunTime(0);
+  }
   updateNotificationBadges();
 
   // 특성 트리 탭으로 자동 전환하여 새로 얻은 스킬 포인트를 찍도록 유도!
@@ -5409,6 +5415,7 @@ function gameLoop(nowMs) {
   }
 
   state.playTimeSec = (state.playTimeSec || 0) + dt;
+  state.totalPlayTimeSec = (state.totalPlayTimeSec || 0) + dt;
 
   const c = state.combat;
   const stats = getPlayerStats();
@@ -5819,6 +5826,7 @@ function saveGame() {
       dpsClearedStage: state.dpsClearedStage,
       maxDps: state.maxDps,
       playTimeSec: state.playTimeSec,
+      totalPlayTimeSec: state.totalPlayTimeSec || state.playTimeSec,
       totalKills: state.totalKills,
       campaignCleared: state.campaignCleared,
       autoCast: state.autoCast,
@@ -5875,6 +5883,8 @@ function loadGame() {
     if (typeof data.dpsClearedStage === 'number') state.dpsClearedStage = data.dpsClearedStage;
     if (typeof data.maxDps === 'number') state.maxDps = data.maxDps;
     if (typeof data.playTimeSec === 'number') state.playTimeSec = data.playTimeSec;
+    if (typeof data.totalPlayTimeSec === 'number') state.totalPlayTimeSec = data.totalPlayTimeSec;
+    else if (typeof data.playTimeSec === 'number') state.totalPlayTimeSec = data.playTimeSec;
     if (typeof data.totalKills === 'number') state.totalKills = data.totalKills;
     if (typeof data.campaignCleared === 'boolean') state.campaignCleared = data.campaignCleared;
     if (typeof data.bestSpeedrunTime === 'number') state.bestSpeedrunTime = data.bestSpeedrunTime;
