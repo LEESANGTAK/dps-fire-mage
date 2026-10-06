@@ -973,12 +973,8 @@ fireballCastAudio.loop = true;
 fireballCastAudio.volume = 0.58;
 
 const BGM_TRACKS = [
-  { title: '무한 던전 I', src: 'assets/sounds/bgm/Infinite Dungeon Loop_00.mp3' },
-  { title: '무한 던전 II', src: 'assets/sounds/bgm/Infinite Dungeon Loop_01.mp3' },
   { title: '선술집의 변덕 A', src: 'assets/sounds/bgm/Tavern Whimsy.mp3' },
-  { title: '선술집의 변덕 B', src: 'assets/sounds/bgm/Tavern Whimsy (1).mp3' },
-  { title: "요새의 파수병 A", src: "assets/sounds/bgm/The Keep's Watch.mp3" },
-  { title: "요새의 파수병 B", src: "assets/sounds/bgm/The Keep's Watch (1).mp3" }
+  { title: '선술집의 변덕 B', src: 'assets/sounds/bgm/Tavern Whimsy (1).mp3' }
 ];
 const bgmAudios = [];
 let currentBgmIndex = -1;
