@@ -1349,141 +1349,26 @@ function spawnHitMark(markChar) {
 }
 
 // ==========================================
-// 7-B. 2단계: 화염구의 시각적 진화 (5단계 외형·크기·위성·탄막 진화)
+// 7-B. 화염구 기본 비주얼 스타일 (단일 일원화)
 // ==========================================
-const FLAME_EVOLUTION_TIERS = [
-  {
-    tier: 1,
-    name: '견습 불꽃',
-    badgeText: '🟠 Lv.1 견습 불꽃',
-    reqSp: 0,
-    reqEquipLv: 0,
-    colorCore: '#fde047',
-    colorMid: '#f97316',
-    colorEdge: 'rgba(239, 68, 68, 0)',
-    ringRgb: '251, 146, 60',
-    scale: 1.0,
-    orbiters: 0,
-    barrageCount: 0
-  },
-  {
-    tier: 2,
-    name: '홍련의 업화',
-    badgeText: '🔴 Lv.2 홍련의 업화',
-    reqSp: 22,
-    reqEquipLv: 4,
-    colorCore: '#ffffff',
-    colorMid: '#fb7185',
-    colorEdge: 'rgba(225, 29, 72, 0)',
-    ringRgb: '244, 63, 94',
-    scale: 1.18,
-    orbiters: 1,
-    barrageCount: 0
-  },
-  {
-    tier: 3,
-    name: '고열 청염',
-    badgeText: '🔵 Lv.3 고열 청염',
-    reqSp: 75,
-    reqEquipLv: 10,
-    colorCore: '#e0f2fe',
-    colorMid: '#38bdf8',
-    colorEdge: 'rgba(37, 99, 235, 0)',
-    ringRgb: '56, 189, 248',
-    scale: 1.34,
-    orbiters: 2,
-    barrageCount: 1
-  },
-  {
-    tier: 4,
-    name: '작열 극염',
-    badgeText: '🔥 Lv.4 작열 극염',
-    reqSp: 260,
-    reqEquipLv: 18,
-    colorCore: '#ffffff',
-    colorMid: '#f97316',
-    colorEdge: 'rgba(234, 88, 12, 0)',
-    ringRgb: '234, 88, 12',
-    scale: 1.5,
-    orbiters: 3,
-    barrageCount: 1
-  },
-  {
-    tier: 5,
-    name: '태양신화',
-    badgeText: '🌟 Lv.5 태양신화',
-    reqSp: 900,
-    reqEquipLv: 28,
-    colorCore: '#ffffff',
-    colorMid: '#fde047',
-    colorEdge: 'rgba(255, 69, 0, 0)',
-    ringRgb: '250, 204, 21',
-    scale: 1.68,
-    orbiters: 4,
-    barrageCount: 2
-  }
-];
+const DEFAULT_FIREBALL_STYLE = {
+  colorCore: '#fde047',
+  colorMid: '#f97316',
+  colorEdge: 'rgba(239, 68, 68, 0)',
+  ringRgb: '251, 146, 60'
+};
 
-function getTotalEquipmentLevels() {
-  return Object.values(state.items).reduce((acc, lv) => acc + (lv || 0), 0);
-}
-
-function getUnlockedFlameTier() {
-  const sp = getPlayerStats().sp;
-  const eqLv = getTotalEquipmentLevels();
-  let unlocked = 1;
-  for (const t of FLAME_EVOLUTION_TIERS) {
-    if (sp >= t.reqSp || eqLv >= t.reqEquipLv) {
-      unlocked = t.tier;
-    }
-  }
-  return unlocked;
-}
-
-function getCurrentFlameEvolution() {
-  const activeTier = state.previewFlameTier > 0 ? state.previewFlameTier : getUnlockedFlameTier();
-  return FLAME_EVOLUTION_TIERS[Math.min(5, Math.max(1, activeTier)) - 1];
-}
-
-function updateFlameEvolutionUI(silent = false) {
-  const unlockedTier = getUnlockedFlameTier();
-  if (!state.highestFlameTier) state.highestFlameTier = 1;
-
-  if (unlockedTier > state.highestFlameTier) {
-    state.highestFlameTier = unlockedTier;
-    const newEvo = FLAME_EVOLUTION_TIERS[unlockedTier - 1];
-    if (!silent) {
-      showUnfoldToast(
-        `🔥 화염 마법 진화! [${newEvo.badgeText}]`,
-        `화염구의 크기(+${Math.round((newEvo.scale - 1) * 100)}%)와 마력 파장이 한 단계 진화했습니다!`
-      );
-      triggerUnfoldPop('flame-evo-badge');
-    }
-  }
-
-  const evo = getCurrentFlameEvolution();
+function updateFlameEvolutionUI() {
   const badgeEl = document.getElementById('flame-evo-badge');
-  if (badgeEl) {
-    const isPreview = state.previewFlameTier > 0;
-    const nextTierObj = FLAME_EVOLUTION_TIERS[evo.tier];
-    const nextHint = nextTierObj
-      ? `다음 진화(${nextTierObj.name}): 주문 공격력 ${fmt(nextTierObj.reqSp)} 또는 총 장비 +${nextTierObj.reqEquipLv}강`
-      : '최고 단계 화염 진화 달성!';
-    badgeEl.className = `flame-evo-badge evo-tier-${evo.tier}`;
-    badgeEl.textContent = isPreview ? `${evo.badgeText} (미리보기)` : evo.badgeText;
-    badgeEl.title = `${nextHint} (클릭 시 1~5단계 외형 미리보기 전환)`;
-  }
-
+  if (badgeEl) badgeEl.style.display = 'none';
   const avatarEl = document.getElementById('caster-avatar');
   if (avatarEl) {
     for (let i = 1; i <= 5; i++) avatarEl.classList.remove(`evo-${i}`);
-    avatarEl.classList.add(`evo-${evo.tier}`);
   }
-
   const orbEl = document.getElementById('casting-orb');
   if (orbEl) {
-    orbEl.style.background = `radial-gradient(circle, #fff 0%, ${evo.colorCore} 45%, ${evo.colorMid} 85%, transparent 100%)`;
-    orbEl.style.boxShadow = `0 0 ${14 + evo.tier * 3}px ${evo.colorMid}`;
+    orbEl.style.background = 'radial-gradient(circle, #fff 0%, #fde047 45%, #f97316 85%, transparent 100%)';
+    orbEl.style.boxShadow = '0 0 16px #f97316';
   }
 }
 
@@ -1651,16 +1536,13 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   if (scaleMult >= 0.9) beginMageGesture('fireball');
   const start = getCasterPos();
   const end = getTargetPos();
-  const evo = getCurrentFlameEvolution();
-
 
   if (scaleMult >= 0.9) {
     playFireballSfx('fly', 0.52);
   }
 
-  // 화염구 크기와 진화 배율은 기존 손맛을 유지합니다.
-  const baseRadius = 12.4;
-  const effectiveEvoScale = 1 + (evo.scale - 1) * 0.38;
+  // 화염구 기본 크기와 탄속 유지
+  const baseRadius = 13.0;
 
   launchCustomProjectile({
     type,
@@ -1669,12 +1551,12 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
     targetX: end.x,
     targetY: end.y + offsetY,
     duration: 0.24,
-    radius: baseRadius * effectiveEvoScale * scaleMult,
-    colorCore: evo.colorCore,
-    colorMid: evo.colorMid,
-    colorEdge: evo.colorEdge,
-    ringRgb: evo.ringRgb,
-    evoTier: evo.tier,
+    radius: baseRadius * scaleMult,
+    colorCore: DEFAULT_FIREBALL_STYLE.colorCore,
+    colorMid: DEFAULT_FIREBALL_STYLE.colorMid,
+    colorEdge: DEFAULT_FIREBALL_STYLE.colorEdge,
+    ringRgb: DEFAULT_FIREBALL_STYLE.ringRgb,
+    evoTier: 1,
     orbiters: 0,
     onHit: onHitCallback
   });
@@ -3435,11 +3317,10 @@ function triggerAllSummonsSyncAttack() {
 // ==========================================
 function fireWithMultishot(type, baseMult, isCombustingSnapshot = false) {
   const multiLv = state.skillTree.multishot || 0;
-  const evo = getCurrentFlameEvolution();
   const totalShots = 1 + multiLv;
   const isCombustingAtLaunch = Boolean(isCombustingSnapshot || (state.combat && state.combat.combustionRem > 0));
 
-  // 1. 기본 탄환 + 갈래 화염구 특성 탄환
+  // 기본 탄환 + 갈래 화염구 특성 탄환
   for (let i = 0; i < totalShots; i++) {
     const isMain = i === 0;
     const delayMs = i * 85;
@@ -3471,30 +3352,6 @@ function fireWithMultishot(type, baseMult, isCombustingSnapshot = false) {
       doLaunch();
     } else {
       setTimeout(doLaunch, delayMs);
-    }
-  }
-
-  // 2. 화염 진화(Tier 3~5) 탄막 인플레이션: 고열 청염 이상 진화 시 날렵한 보조 마력탄이 상하 궤적으로 추가 발사
-  if (evo.barrageCount > 0) {
-    for (let b = 0; b < evo.barrageCount; b++) {
-      const barrageDelay = 45 + b * 65;
-      const barrageOffsetY = (b % 2 === 0 ? -24 : 24) + (Math.random() * 10 - 5);
-      setTimeout(() => {
-        launchProjectile(
-          type,
-          () => {
-            const st = getPlayerStats();
-            const isCombustEffective = Boolean(isCombustingAtLaunch || (state.combat && state.combat.combustionRem > 0));
-            const effectiveCrit = isCombustEffective ? 100 : st.crit;
-            const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
-            const base = st.sp * (baseMult * 0.22);
-            const finalDmg = isCrit ? base * st.critDmg : base;
-            dealDamage(type, finalDmg, isCrit, false, false, isCombustEffective);
-          },
-          barrageOffsetY,
-          0.62
-        );
-      }, barrageDelay);
     }
   }
 }
@@ -5312,7 +5169,6 @@ function openVictoryModal(isFirstVictory = false) {
   if (!modal || !grid) return;
 
   const stats = getPlayerStats();
-  const evo = getCurrentFlameEvolution();
   const cleared20 = state.campaignCleared || state.highestClearedStage >= 20;
   const currentAsc = state.ascensionCount || 0;
   const nextAscMult = Math.pow(1.5, currentAsc + 1);
@@ -5385,8 +5241,8 @@ function openVictoryModal(isFirstVictory = false) {
       <span class="victory-stat-val gold">${fmt(state.maxDps)} /초</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">최종 주문 공격력 & 화염 단계</span>
-      <span class="victory-stat-val cyan">${fmt(stats.sp)} (${evo.name})</span>
+      <span class="victory-stat-label">최종 주문 공격력</span>
+      <span class="victory-stat-val cyan">${fmt(stats.sp)}</span>
     </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">마법 부여 & 특성 투자</span>
@@ -6356,21 +6212,6 @@ function initEvents() {
   });
 
 
-  const flameBadgeBtn = document.getElementById('flame-evo-badge');
-  if (flameBadgeBtn) {
-    flameBadgeBtn.addEventListener('click', () => {
-      const curPreview = state.previewFlameTier || 0;
-      if (curPreview === 0) {
-        state.previewFlameTier = 1;
-      } else if (curPreview < 5) {
-        state.previewFlameTier = curPreview + 1;
-      } else {
-        state.previewFlameTier = 0;
-      }
-      playSound('item_select');
-      updateFlameEvolutionUI(true);
-    });
-  }
 
   const ascendBtn = document.getElementById('btn-ascend');
   if (ascendBtn) {
