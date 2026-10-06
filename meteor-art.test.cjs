@@ -12,7 +12,7 @@ drawComicMeteor(painter,m,getMeteorPose(m,.5),{complete:true,naturalWidth:1536})
 drawComicMeteor(painter,m,getMeteorPose(m,.5),null);assert.ok(pathCount>0);
 for(const fps of [30,60,144]) {
  const pool=[],meteor={...m};for(let frame=0;frame<fps;frame++)emitMeteorTrail(meteor,getMeteorPose(m,.8),1/fps,pool);
- assert.ok(pool.length<=350);
+ assert.ok(pool.length<=200);
 }
 const pool=[];emitMeteorTrail(m,getMeteorPose(m,.5),.1,pool,true);assert.equal(pool.length,0);
 emitMeteorTrail(m,getMeteorPose(m,.5),0,pool);assert.equal(pool.length,0);

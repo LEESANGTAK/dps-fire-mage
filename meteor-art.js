@@ -33,16 +33,16 @@ function drawComicMeteor(ctx, m, pose, image = comicMeteor) {
   ctx.rotate(pose.angle + pose.progress * 0.45);
 
   if (image && image.complete && image.naturalWidth) {
-    // 1. 대기권 돌입 압축 마그마 림 라이팅 (Atmospheric Heat Compression)
+    // 1. 대기권 돌입 압축 마그마 림 라이팅 (과도한 백색 타버림 억제 및 부드러운 호박색 마그마 톤)
     if (pose.progress > 0.3) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      const flareAlpha = Math.min(0.7, (pose.progress - 0.3) * 1.3);
+      const flareAlpha = Math.min(0.28, (pose.progress - 0.3) * 0.6);
       ctx.globalAlpha = flareAlpha;
-      const glowR = pose.radius * 1.6;
-      const grad = ctx.createRadialGradient(0, 0, glowR * 0.2, 0, 0, glowR);
-      grad.addColorStop(0, 'rgba(255, 240, 180, 0.85)');
-      grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.45)');
+      const glowR = pose.radius * 1.35;
+      const grad = ctx.createRadialGradient(0, 0, glowR * 0.15, 0, 0, glowR);
+      grad.addColorStop(0, 'rgba(254, 215, 170, 0.55)');
+      grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.3)');
       grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -97,91 +97,90 @@ let meteorTextures = null;
 function initMeteorTextures() {
   if (meteorTextures || typeof document === 'undefined') return meteorTextures;
 
-  // 1. 화염 퍼프 텍스처 (Flame Puff, 128x128) - 고열 백황색 코어 및 유기적 화염 볼륨
+  // 1. 화염 퍼프 텍스처 (Flame Puff, 128x128) - 과도한 순백색 떡짐 방지, 농밀한 오렌지/호박색 및 마그마 레드 결 강조
   const flameCanvas = document.createElement('canvas');
   flameCanvas.width = 128;
   flameCanvas.height = 128;
   const fCtx = flameCanvas.getContext('2d');
 
   const fGrad = fCtx.createRadialGradient(64, 64, 0, 64, 64, 58);
-  fGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-  fGrad.addColorStop(0.22, 'rgba(254, 240, 138, 0.95)');
-  fGrad.addColorStop(0.52, 'rgba(249, 115, 22, 0.85)');
-  fGrad.addColorStop(0.8, 'rgba(220, 38, 38, 0.45)');
-  fGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
+  fGrad.addColorStop(0, 'rgba(255, 237, 213, 0.95)'); // 부드러운 온백색 코어 (순백 플래시 억제)
+  fGrad.addColorStop(0.2, 'rgba(253, 186, 116, 0.9)'); // 호박색
+  fGrad.addColorStop(0.45, 'rgba(249, 115, 22, 0.85)'); // 선명한 주황
+  fGrad.addColorStop(0.75, 'rgba(220, 38, 38, 0.6)');  // 깊은 마그마 레드
+  fGrad.addColorStop(1, 'rgba(153, 27, 27, 0)');        // 외곽 투명
   fCtx.fillStyle = fGrad;
   fCtx.beginPath();
   fCtx.arc(64, 64, 58, 0, Math.PI * 2);
   fCtx.fill();
 
-  // 만화풍 화염 덩어리감을 더하는 보조 고열 퍼프
+  // 만화풍 화염 덩어리감을 위한 보조 볼륨 퍼프 (주황/적색 톤)
   const flameLobes = [
-    { x: 55, y: 54, r: 36, alpha: 0.55 },
-    { x: 73, y: 56, r: 34, alpha: 0.5 },
-    { x: 60, y: 74, r: 35, alpha: 0.45 },
-    { x: 70, y: 72, r: 32, alpha: 0.4 }
+    { x: 55, y: 54, r: 35, alpha: 0.5 },
+    { x: 73, y: 56, r: 33, alpha: 0.45 },
+    { x: 60, y: 72, r: 34, alpha: 0.4 },
+    { x: 70, y: 70, r: 30, alpha: 0.35 }
   ];
   for (const l of flameLobes) {
     const lGrad = fCtx.createRadialGradient(l.x, l.y, 2, l.x, l.y, l.r);
-    lGrad.addColorStop(0, `rgba(255, 247, 237, ${l.alpha})`);
-    lGrad.addColorStop(0.55, `rgba(251, 146, 60, ${l.alpha * 0.65})`);
-    lGrad.addColorStop(1, 'rgba(234, 88, 12, 0)');
+    lGrad.addColorStop(0, `rgba(254, 215, 170, ${l.alpha})`);
+    lGrad.addColorStop(0.5, `rgba(234, 88, 12, ${l.alpha * 0.7})`);
+    lGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
     fCtx.fillStyle = lGrad;
     fCtx.beginPath();
     fCtx.arc(l.x, l.y, l.r, 0, Math.PI * 2);
     fCtx.fill();
   }
 
-  // 2. 연기 퍼프 텍스처 (Smoke Puff, 128x128) - 짙은 만화풍 다층 뭉게구름 볼륨
+  // 2. 연기 퍼프 텍스처 (Smoke Puff, 128x128) - 화염 꼬리 외곽을 잡아주는 웜 차콜 톤
   const smokeCanvas = document.createElement('canvas');
   smokeCanvas.width = 128;
   smokeCanvas.height = 128;
   const sCtx = smokeCanvas.getContext('2d');
 
   const smokeLobes = [
-    { x: 64, y: 64, r: 48, col: 'rgba(26, 24, 22, 0.88)' },
-    { x: 48, y: 50, r: 36, col: 'rgba(41, 37, 36, 0.78)' },
-    { x: 80, y: 52, r: 34, col: 'rgba(38, 35, 34, 0.76)' },
-    { x: 52, y: 78, r: 35, col: 'rgba(50, 46, 44, 0.72)' },
-    { x: 76, y: 76, r: 33, col: 'rgba(32, 29, 27, 0.74)' },
-    { x: 64, y: 40, r: 30, col: 'rgba(68, 64, 60, 0.68)' }
+    { x: 64, y: 64, r: 46, col: 'rgba(41, 37, 36, 0.75)' },
+    { x: 50, y: 52, r: 34, col: 'rgba(55, 48, 45, 0.65)' },
+    { x: 78, y: 54, r: 32, col: 'rgba(50, 44, 42, 0.65)' },
+    { x: 54, y: 76, r: 32, col: 'rgba(68, 64, 60, 0.55)' },
+    { x: 74, y: 74, r: 30, col: 'rgba(45, 40, 38, 0.6)' }
   ];
   for (const sl of smokeLobes) {
     const sGrad = sCtx.createRadialGradient(sl.x, sl.y, sl.r * 0.15, sl.x, sl.y, sl.r);
     sGrad.addColorStop(0, sl.col);
-    sGrad.addColorStop(0.7, 'rgba(75, 70, 68, 0.35)');
-    sGrad.addColorStop(1, 'rgba(90, 85, 82, 0)');
+    sGrad.addColorStop(0.7, 'rgba(87, 83, 78, 0.3)');
+    sGrad.addColorStop(1, 'rgba(120, 113, 108, 0)');
     sCtx.fillStyle = sGrad;
     sCtx.beginPath();
     sCtx.arc(sl.x, sl.y, sl.r, 0, Math.PI * 2);
     sCtx.fill();
   }
 
-  // 3. 고열 스파크/불똥 텍스처 (Spark, 48x48) - 십자 섬광 및 고열 마름모 코어
+  // 3. 고열 스파크/불똥 텍스처 (Spark, 48x48) - 십자 섬광
   const sparkCanvas = document.createElement('canvas');
   sparkCanvas.width = 48;
   sparkCanvas.height = 48;
   const spCtx = sparkCanvas.getContext('2d');
 
-  const spGrad = spCtx.createRadialGradient(24, 24, 1, 24, 24, 22);
-  spGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-  spGrad.addColorStop(0.28, 'rgba(254, 240, 138, 0.95)');
-  spGrad.addColorStop(0.65, 'rgba(249, 115, 22, 0.55)');
-  spGrad.addColorStop(1, 'rgba(234, 88, 12, 0)');
+  const spGrad = spCtx.createRadialGradient(24, 24, 1, 24, 24, 20);
+  spGrad.addColorStop(0, 'rgba(255, 237, 213, 0.95)');
+  spGrad.addColorStop(0.35, 'rgba(251, 191, 36, 0.8)');
+  spGrad.addColorStop(0.75, 'rgba(234, 88, 12, 0.4)');
+  spGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
   spCtx.fillStyle = spGrad;
   spCtx.beginPath();
-  spCtx.arc(24, 24, 22, 0, Math.PI * 2);
+  spCtx.arc(24, 24, 20, 0, Math.PI * 2);
   spCtx.fill();
 
-  spCtx.fillStyle = '#ffffff';
+  spCtx.fillStyle = '#ffedd5';
   spCtx.beginPath();
-  spCtx.moveTo(24, 13);
+  spCtx.moveTo(24, 14);
   spCtx.lineTo(26, 24);
-  spCtx.lineTo(35, 24);
+  spCtx.lineTo(34, 24);
   spCtx.lineTo(26, 26);
-  spCtx.lineTo(24, 35);
+  spCtx.lineTo(24, 34);
   spCtx.lineTo(22, 26);
-  spCtx.lineTo(13, 24);
+  spCtx.lineTo(14, 24);
   spCtx.lineTo(22, 24);
   spCtx.closePath();
   spCtx.fill();
@@ -201,28 +200,28 @@ function drawMeteorParticle(ctx, pt, dt) {
   const progress = pt.life / pt.maxLife;
   if (progress >= 1) return;
 
-  // 세부 물리 감속 및 연기 부력
+  // 세부 물리 감속 및 중심축 수렴
   if (pt.kind === 'smoke') {
-    pt.vx *= Math.pow(0.92, dt * 60);
-    pt.vy -= 22 * dt; // 위쪽으로 서서히 피어오르는 열기 부력
+    pt.vx *= Math.pow(0.90, dt * 60);
+    pt.vy *= Math.pow(0.90, dt * 60);
   } else if (pt.kind === 'flame') {
-    pt.vx *= Math.pow(0.88, dt * 60);
-    pt.vy *= Math.pow(0.88, dt * 60);
+    pt.vx *= Math.pow(0.86, dt * 60);
+    pt.vy *= Math.pow(0.86, dt * 60);
   } else if (pt.kind === 'spark') {
-    pt.vy += 140 * dt; // 중력 낙하
-    pt.vx *= Math.pow(0.94, dt * 60);
+    pt.vy += 120 * dt;
+    pt.vx *= Math.pow(0.92, dt * 60);
   }
 
   ctx.save();
   ctx.translate(pt.x, pt.y);
 
   if (pt.kind === 'smoke') {
-    // 연기는 뒤로 갈수록 팽창(1.0 -> 2.65배)하며 뭉게구름 볼륨 형성
+    // 연기는 뒤로 갈수록 수축하며 소멸 (유선형 테이퍼드 실루엣 유지)
     pt.rot = (pt.rot || 0) + (pt.vRot || 0) * dt;
     ctx.rotate(pt.rot);
-    const scale = 1.0 + progress * 1.65;
+    const scale = Math.max(0.18, 0.95 - progress * 0.75);
     const currentSize = pt.baseSize * scale;
-    const alpha = Math.pow(1 - progress, 1.25) * 0.76;
+    const alpha = Math.pow(1 - progress, 1.4) * 0.55;
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
     ctx.globalCompositeOperation = 'source-over';
     ctx.drawImage(
@@ -233,14 +232,16 @@ function drawMeteorParticle(ctx, pt, dt) {
       currentSize
     );
   } else if (pt.kind === 'flame') {
-    // 화염은 코어에서 고열 가산 발광(lighter), 후반부에 식으면서 수축
+    // 화염: 뒤로 갈수록 좁아지는 테이퍼드 콘 형태 (Scale down)
     pt.rot = (pt.rot || 0) + (pt.vRot || 0) * dt;
     ctx.rotate(pt.rot);
-    const scale = progress < 0.25 ? 1.0 + progress * 0.6 : Math.max(0.45, 1.15 - (progress - 0.25) * 0.95);
+    const scale = Math.max(0.15, (1 - progress * 0.82) * (1 - progress * 0.25));
     const currentSize = pt.baseSize * scale;
-    const alpha = progress < 0.65 ? 0.95 : ((1 - progress) / 0.35) * 0.95;
+
+    // 과도하게 하얗게 타지 않도록 source-over 기본 적용 (진한 오렌지/마그마 레드 불꽃 유지)
+    const alpha = Math.pow(1 - progress, 1.1) * 0.85;
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = 'source-over';
     ctx.drawImage(
       textures.flame,
       -currentSize * 0.5,
@@ -248,12 +249,25 @@ function drawMeteorParticle(ctx, pt, dt) {
       currentSize,
       currentSize
     );
+
+    // 초반 생성 순간(progress < 0.25)에만 은은한 호박색 코어 발광 살짝 가미 (화이트 클리핑 방지)
+    if (progress < 0.25) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = (0.25 - progress) * 0.8;
+      ctx.drawImage(
+        textures.flame,
+        -currentSize * 0.35,
+        -currentSize * 0.35,
+        currentSize * 0.7,
+        currentSize * 0.7
+      );
+    }
   } else if (pt.kind === 'spark') {
-    // 날카롭게 튀는 불똥
-    const alpha = Math.pow(1 - progress, 1.1);
+    // 날카로운 불똥
+    const alpha = Math.pow(1 - progress, 1.2) * 0.8;
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
     ctx.globalCompositeOperation = 'lighter';
-    const sz = pt.baseSize * (1 - progress * 0.45);
+    const sz = pt.baseSize * Math.max(0.2, 1 - progress * 0.7);
     ctx.drawImage(
       textures.spark,
       -sz * 0.5,
@@ -270,18 +284,18 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   if (reduced || dt <= 0) return;
   m.trailClock = (m.trailClock || 0) + Math.min(0.08, dt);
   
-  // 60FPS 기준 틱당 약 6~8개 파티클 방출 (기존의 5배 수량 증량)
-  const spawnInterval = 0.0024;
+  // 60FPS 기준 틱당 6~8개 파티클 방출 (밀도 높은 화염 바디 유지)
+  const spawnInterval = 0.0022;
   const count = Math.min(24, Math.floor(m.trailClock / spawnInterval));
   m.trailClock %= spawnInterval;
   if (count <= 0) return;
 
-  // 파티클 풀 상한 검사 (전체 450개, 메테오 트레일 350개)
+  // 파티클 풀 검사
   let meteorCount = 0;
   for (let i = 0; i < pool.length; i++) {
     if (pool[i].meteorTrail) meteorCount++;
   }
-  const maxMeteorParticles = 350;
+  const maxMeteorParticles = 200;
   const maxTotalParticles = 450;
   const available = Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length);
   if (available <= 0) return;
@@ -295,58 +309,64 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   for (let i = 0; i < actualCount; i++) {
     const roll = Math.random();
 
-    if (roll < 0.42) {
-      // 1. 화염 퍼프 (Flame Puff) - 운석 바로 뒤편에 밀집된 초고열 백황색~주황 화염
-      const dist = pose.radius * (0.2 + Math.random() * 0.95);
-      const side = (Math.random() - 0.5) * pose.radius * 0.55;
-      const speed = 70 + Math.random() * 60;
+    if (roll < 0.55) {
+      // 1. 화염 퍼프 (Flame Puff) - 운석 바로 뒤편에 밀착되어 유선형 콘을 형성하는 진한 주황/적색 화염
+      const dist = pose.radius * (0.12 + Math.random() * 0.65);
+      // 테이퍼드 콘: 운석 접촉면(Base)은 넓고, 뒤로 갈수록 중심축으로 좁아짐
+      const taper = Math.max(0.2, 1 - dist / (pose.radius * 1.5));
+      const side = (Math.random() - 0.5) * pose.radius * 0.85 * taper;
+      const speed = 40 + Math.random() * 45;
+      const inwardSpeed = -side * 2.8; // 중심축을 향해 모아지는 수렴 벡터
       pool.push({
         meteorTrail: true,
         kind: 'flame',
         x: pose.x - dx * dist + perpX * side,
         y: pose.y - dy * dist + perpY * side,
-        vx: -dx * speed + perpX * (Math.random() - 0.5) * 40,
-        vy: -dy * speed + perpY * (Math.random() - 0.5) * 40 - 15,
-        baseSize: pose.radius * (1.1 + Math.random() * 0.65),
+        vx: -dx * speed + perpX * inwardSpeed,
+        vy: -dy * speed + perpY * inwardSpeed,
+        baseSize: pose.radius * (0.95 + Math.random() * 0.45) * taper,
         rot: Math.random() * Math.PI * 2,
-        vRot: (Math.random() - 0.5) * 3.5,
+        vRot: (Math.random() - 0.5) * 3.0,
         life: 0,
-        maxLife: 0.32 + Math.random() * 0.18
+        // 사용자 스케치 영역(약 1.5~2.0배 radius)에 맞춘 컴팩트한 수명 (0.11s ~ 0.18s)
+        maxLife: 0.11 + Math.random() * 0.07
       });
-    } else if (roll < 0.86) {
-      // 2. 연기 퍼프 (Smoke Puff) - 화염 뒤로 뿜어져 나와 거대하게 팽창하는 묵직한 궤적 연기
-      const dist = pose.radius * (0.6 + Math.random() * 1.8);
-      const side = (Math.random() - 0.5) * pose.radius * 0.95;
-      const speed = 40 + Math.random() * 50;
+    } else if (roll < 0.85) {
+      // 2. 연기/음영 퍼프 (Smoke Puff) - 화염 꼬리 끝부분의 실루엣을 정돈하는 웜 차콜 톤
+      const dist = pose.radius * (0.35 + Math.random() * 0.85);
+      const taper = Math.max(0.15, 1 - dist / (pose.radius * 1.8));
+      const side = (Math.random() - 0.5) * pose.radius * 0.75 * taper;
+      const speed = 30 + Math.random() * 35;
+      const inwardSpeed = -side * 2.2;
       pool.push({
         meteorTrail: true,
         kind: 'smoke',
         x: pose.x - dx * dist + perpX * side,
         y: pose.y - dy * dist + perpY * side,
-        vx: -dx * speed + perpX * (Math.random() - 0.5) * 30,
-        vy: -dy * speed + perpY * (Math.random() - 0.5) * 30 - 25,
-        baseSize: pose.radius * (0.85 + Math.random() * 0.6),
+        vx: -dx * speed + perpX * inwardSpeed,
+        vy: -dy * speed + perpY * inwardSpeed,
+        baseSize: pose.radius * (0.8 + Math.random() * 0.4) * taper,
         rot: Math.random() * Math.PI * 2,
-        vRot: (Math.random() - 0.5) * 2.2,
+        vRot: (Math.random() - 0.5) * 2.0,
         life: 0,
-        maxLife: 0.65 + Math.random() * 0.4
+        maxLife: 0.16 + Math.random() * 0.08
       });
     } else {
-      // 3. 고열 스파크 (Spark/Ember) - 사방으로 튀어나가는 불똥
-      const dist = pose.radius * (Math.random() * 0.6);
-      const side = (Math.random() - 0.5) * pose.radius * 0.8;
-      const speed = 110 + Math.random() * 140;
-      const spreadAngle = pose.angle + Math.PI + (Math.random() - 0.5) * 1.6;
+      // 3. 고열 스파크 (Spark/Ember) - 미세 불똥
+      const dist = pose.radius * (Math.random() * 0.5);
+      const side = (Math.random() - 0.5) * pose.radius * 0.6;
+      const speed = 90 + Math.random() * 110;
+      const spreadAngle = pose.angle + Math.PI + (Math.random() - 0.5) * 1.2;
       pool.push({
         meteorTrail: true,
         kind: 'spark',
         x: pose.x - dx * dist + perpX * side,
         y: pose.y - dy * dist + perpY * side,
         vx: Math.cos(spreadAngle) * speed,
-        vy: Math.sin(spreadAngle) * speed - 20,
-        baseSize: 8 + Math.random() * 14,
+        vy: Math.sin(spreadAngle) * speed - 15,
+        baseSize: 6 + Math.random() * 10,
         life: 0,
-        maxLife: 0.2 + Math.random() * 0.18
+        maxLife: 0.08 + Math.random() * 0.05
       });
     }
   }
