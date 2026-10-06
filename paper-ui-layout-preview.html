@@ -1,0 +1,247 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>전투 보조 UI 위치 검증</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="art.css"><link rel="stylesheet" href="paper-ui.css?v=paper-ui-layout-2"><style>body{height:auto;overflow:auto;padding:12px;gap:12px}h1{font-size:18px}.combat-arena{flex:none;height:650px;min-height:650px;max-height:none}.controls{display:flex;gap:16px;flex-wrap:wrap}@media(max-width:768px){.combat-arena{height:550px;min-height:550px}}</style><h1>전투 보조 UI 위치 · 저장 데이터 사용 없음</h1><div class="controls"><label>몬스터 <select id="preview-monster"><option value="19">심연 몬스터</option><option value="20">거대 보스</option><option value="4">고블린</option></select></label><label>포즈 <select id="preview-pose"><option value="idle">대기</option><option value="anticipation">준비</option><option value="release">발사</option><option value="recoil">반동</option></select></label></div>      <div class="combat-arena" id="combat-arena">
+        <canvas class="arena-environment-canvas" id="arena-environment-canvas" aria-hidden="true"></canvas>
+        <div class="combustion-aura-bg" id="combustion-bg"></div>
+
+        <!-- 언폴딩(시스템 해금) 축하 토스트 배너 -->
+        <div class="unfold-toast hidden" id="unfold-toast"></div>
+
+        <!-- 바닥 장판 & 마법진 전용 레이어 (몬스터/캐릭터 이미지 아래쪽 바닥에 렌더링) -->
+        <canvas class="ground-vfx-canvas" id="ground-vfx-canvas"></canvas>
+
+        <!-- 2D 투사체 & 소환수 캔버스 -->
+        <canvas class="vfx-canvas" id="vfx-canvas"></canvas>
+
+        <!-- 플로팅 데미지 & 골드 레이어 -->
+        <div class="fct-layer" id="fct-layer"></div>
+
+        <!-- 아레나 상단: 컴팩트 DPS 미터기 -->
+        <div class="dps-meter-panel" id="dps-meter-panel" title="클릭하여 상세 전투 분석(Details!) 열람">
+          <div class="dps-meter-left">
+            <div class="dps-stat-box">
+              <div class="dps-label-row">
+                <span class="dps-label">⚡ 현재 DPS</span>
+                <span class="fever-tag hidden" id="dps-fever-tag">🔥 FEVER</span>
+              </div>
+              <span class="dps-current-val" id="ui-current-dps">0 /초</span>
+            </div>
+            <div class="dps-vs-divider">|</div>
+            <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
+              <span class="dps-label">⏱️ 스피드런 시간</span>
+              <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
+            </div>
+          </div>
+
+          <div class="dps-breakdown-mini" id="skill-breakdown-bars">
+            <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
+          </div>
+
+          <button type="button" class="btn-meter-details" id="btn-open-details" title="와우 스타일 상세 딜미터기 리포트 열기">
+            📊 상세
+          </button>
+        </div>
+
+        <!-- 개발자 모드 치트 패널 (개발자 모드 활성화 시 노출) -->
+        <div class="dev-cheat-panel hidden" id="dev-cheat-panel">
+          <div class="dev-cheat-header">
+            <span class="dev-cheat-title">🛠️ 개발자 치트</span>
+          </div>
+          <div class="dev-cheat-actions">
+            <button type="button" class="dev-cheat-btn" id="btn-cheat-gold">
+              💰 즉시 골드 +10,000
+            </button>
+            <button type="button" class="dev-cheat-btn" id="btn-cheat-essence">
+              🔹 즉시 정수 +10,000
+            </button>
+            <button type="button" class="dev-cheat-btn" id="btn-cheat-sp">
+              🌟 즉시 스킬 포인트 +10,000
+            </button>
+            <button type="button" class="dev-cheat-btn dev-cheat-toggle" id="btn-cheat-always-crit">
+              <span>💥 모든 데미지 치명타</span>
+              <span class="dev-toggle-pill" id="ui-cheat-crit-state">OFF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 화면 상단 가운데: 페이즈 진행도 + 현재 스테이지 및 처치 보상 골드 배너 + 보스 기믹 & 현상금 -->
+        <div class="arena-top-stage-header" id="arena-top-stage-header">
+          <div class="stage-center-info" id="stage-center-info">
+            <div class="phase-badge" id="ui-phase-num">PHASE 1</div>
+            <div class="stage-badge" id="ui-stage-num">1 / 5</div>
+            <div class="phase-dots" id="ui-phase-dots" title="5번째 보스 처치 시 대량 골드 및 불꽃의 정수 획득"></div>
+          </div>
+
+          <div class="arena-stage-reward-banner" id="arena-stage-banner">
+            <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
+            <span class="banner-sep">|</span>
+            <span class="monster-reward" id="target-reward">💰 4 G</span>
+          </div>
+
+          <!-- 페이즈 보스 전용 기믹 상태 뱃지 (기믹 활성 시 노출) -->
+          <div class="boss-gimmick-badge hidden" id="boss-gimmick-badge"></div>
+
+          <!-- 순환형 미니 현상금 퀘스트 바 -->
+          <div class="bounty-bar" id="bounty-bar" title="현상금 목표를 달성하면 추가 골드와 정수를 획득합니다">
+            <span class="bounty-icon">🎯</span>
+            <span class="bounty-title" id="bounty-title">치명타 15회</span>
+            <div class="bounty-prog-wrap">
+              <div class="bounty-prog-fill" id="bounty-prog-fill" style="width: 0%;"></div>
+            </div>
+            <span class="bounty-prog-text" id="bounty-prog-text">0 / 15</span>
+            <span class="bounty-reward-pill" id="bounty-reward">💰 25 G · 🔹 1</span>
+          </div>
+        </div>
+
+        <!-- 아레나 중앙: 좌측 [◀ 이전] ➔ 마법사 ➔ 몬스터 ➔ 우측 [다음 도전 ▶] -->
+        <div class="center-stage">
+          <!-- 좌측 이전 스테이지 버튼 -->
+          <div class="arena-side-nav left">
+            <button class="stage-nav-btn" id="btn-prev-stage" title="이전 몬스터로 이동">◀ 이전</button>
+          </div>
+
+          <!-- 좌측 플레이어 마법사 -->
+          <div class="caster-box" id="caster-box">
+            <!-- 캐릭터 이미지 왼쪽에 표시되는 획득 장비 목록 -->
+            <div class="caster-equipped-left" id="caster-equipped-left"><div class="caster-eq-slot"><span class="caster-eq-icon">🪄</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">💍</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">🧤</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">🔮</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">🔱</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">⏳</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">👑</span><span class="caster-eq-lv">+1</span></div></div>
+
+            <div class="caster-avatar" id="caster-avatar">
+              <!-- 발 아래 자동 시전 마법진 -->
+              <div class="autocast-magic-circle hidden" id="autocast-magic-circle" aria-hidden="true">
+                <div class="magic-circle-ambient-glow"></div>
+                <svg class="magic-circle-svg" viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="92" class="mc-ring mc-outer-ring" />
+                  <circle cx="100" cy="100" r="78" class="mc-ring mc-mid-ring" />
+                  <circle cx="100" cy="100" r="54" class="mc-ring mc-inner-ring" />
+                  <polygon points="100,8 165,165 8,72 192,72 35,165" class="mc-poly mc-star-1" />
+                  <polygon points="100,192 35,35 192,128 8,128 165,35" class="mc-poly mc-star-2" />
+                  <circle cx="100" cy="14" r="4.5" class="mc-node" />
+                  <circle cx="100" cy="186" r="4.5" class="mc-node" />
+                  <circle cx="14" cy="100" r="4.5" class="mc-node" />
+                  <circle cx="186" cy="100" r="4.5" class="mc-node" />
+                  <circle cx="39" cy="39" r="3.5" class="mc-node" />
+                  <circle cx="161" cy="39" r="3.5" class="mc-node" />
+                  <circle cx="39" cy="161" r="3.5" class="mc-node" />
+                  <circle cx="161" cy="161" r="3.5" class="mc-node" />
+                </svg>
+              </div>
+              <div class="mage-art" id="mage-art" role="img" aria-label="화염 마법사" data-pose="idle"><canvas id="mage-pose-canvas" width="640" height="640" aria-hidden="true"></canvas><span class="mage-muzzle" id="mage-muzzle"></span></div>
+              <div class="casting-orb" id="casting-orb"></div>
+              <div class="heat-sigils" id="heat-sigils" data-heat="1" aria-label="연속 치명타"><i></i><i></i></div>
+            </div>
+            <div class="caster-label">화염 마법사</div>
+            <div class="flame-evo-badge evo-tier-1" id="flame-evo-badge" title="주문 공격력과 장비 성장에 따라 화염 마법의 색상·크기·탄막이 5단계로 진화합니다 (클릭 시 진화 정보 확인)">
+              🟠 Lv.1 견습 불꽃
+            </div>
+            <div class="summon-active-badges" id="summon-active-badges"></div>
+          </div>
+
+          <!-- 우측 스테이지 몬스터 -->
+          <div class="weakaura-container" id="target-stage-box">
+            <div class="monster-box">
+              <!-- 몬스터 이미지 우측 상단 디버프 표시 -->
+              <div class="debuff-row" id="target-debuffs"><div class="debuff-chip">🔥 화상 380 (3.7s)</div><div class="debuff-chip">☄️ 연소 (5.7s)</div><div class="debuff-chip">♨️ 불장판 (4.2s)</div></div>
+
+              <div class="dummy-avatar" id="dummy-avatar">
+                <div class="monster-idle"><div class="dummy-emoji" id="dummy-emoji">🟢</div></div>
+              </div>
+              <div class="monster-name-label" id="monster-name-label">초원 풀숲 슬라임</div>
+
+              <!-- 몬스터 이미지 아래쪽 고정 HP 바 (데미지 텍스트에 가려지지 않도록 하단 배치) -->
+              <div class="monster-hp-wrap" id="monster-frame">
+                <div class="hp-bar-outer">
+                  <div class="hp-bar-fill" id="target-hp-fill"></div>
+                  <div class="hp-bar-text">
+                    <span id="target-hp-text">50 / 50</span>
+                    <span id="target-hp-pct">100%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측 다음 도전 버튼 -->
+          <div class="arena-side-nav right">
+            <button class="stage-nav-btn next-challenge has-badge-anchor" id="btn-next-stage" disabled>
+              <span id="btn-next-stage-text">다음 도전 ▶</span>
+              <span class="noti-badge hidden" id="badge-next-stage">!</span>
+            </button>
+            <label class="auto-advance-toggle" title="목표 DPS 달성 및 처치 완료 시 다음 도전으로 자동 진입합니다">
+              <input type="checkbox" id="chk-auto-advance" checked />
+              <span>⚡ 자동 진행</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 아레나 하단: 플레이어 시전바 & 스킬 액션바 -->
+        <div class="player-hud">
+          <div class="player-buff-row" id="player-buffs"></div>
+
+          <div class="castbar-row">
+            <div class="castbar-wrapper">
+              <div class="castbar-fill" id="castbar-fill"></div>
+              <div class="castbar-text">
+                <span id="castbar-name">대기 중</span>
+                <span id="castbar-time"></span>
+              </div>
+            </div>
+
+            <button class="auto-cast-btn locked has-badge-anchor" id="btn-auto-cast">
+              <span id="btn-auto-cast-text">🔒 자동 시전</span>
+              <span class="noti-badge hidden" id="badge-auto-cast">!</span>
+            </button>
+          </div>
+
+          <!-- 스킬 액션바 -->
+          <div class="action-bar" id="action-bar">
+            <button class="skill-btn has-badge-anchor" id="skill-1" data-skill="fireball" title="[1] 화염구">
+              <span class="skill-hotkey">1</span>
+              <span class="skill-icon">🔥</span>
+              <span class="skill-name">화염구</span>
+              <span class="pity-crit-badge hidden" id="badge-pity-crit" aria-hidden="true" style="display:none;"></span>
+              <span class="noti-badge hidden" id="badge-skill-1">!</span>
+              <div class="gcd-Overlay" id="gcd-1"></div>
+              <div class="cd-overlay" id="cd-1"></div>
+            </button>
+
+            <button class="skill-btn locked-skill hidden-slot has-badge-anchor" id="skill-2" data-skill="fireblast" title="[2] 불꽃 작렬 (즉시 시전, 100% 치명타)">
+              <span class="skill-hotkey">2</span>
+              <span class="skill-icon" id="icon-2">🔒</span>
+              <span class="skill-name" id="name-2">불꽃 작렬</span>
+              <span class="skill-charges" id="charges-2" style="display:none;">2</span>
+              <span class="noti-badge hidden" id="badge-skill-2">!</span>
+              <div class="cd-overlay" id="cd-2"></div>
+            </button>
+
+            <button class="skill-btn locked-skill hidden-slot has-badge-anchor" id="skill-3" data-skill="meteor" title="[3] 메테오 (연쇄 치명타 시 즉시 발사)">
+              <span class="skill-hotkey">3</span>
+              <span class="skill-icon" id="icon-3">🔒</span>
+              <span class="skill-name" id="name-3">메테오</span>
+              <span class="noti-badge hidden" id="badge-skill-3">!</span>
+              <div class="gcd-Overlay" id="gcd-3"></div>
+              <div class="cd-overlay" id="cd-3"></div>
+              <svg class="wow-proc-svg" viewBox="0 0 66 66" aria-hidden="true">
+                <rect class="proc-track" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+                <rect class="proc-beam-trail" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+                <rect class="proc-beam-head" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+              </svg>
+            </button>
+
+            <button class="skill-btn locked-skill hidden-slot has-badge-anchor" id="skill-4" data-skill="combustion" title="[4] 마력 폭주 (모든 마법 100% 치명타 & 가속)">
+              <span class="skill-hotkey">4</span>
+              <span class="skill-icon" id="icon-4">🔒</span>
+              <span class="skill-name" id="name-4">마력 폭주</span>
+              <span class="noti-badge hidden" id="badge-skill-4">!</span>
+              <div class="cd-overlay" id="cd-4"></div>
+            </button>
+
+            <button class="skill-btn locked-skill hidden-slot has-badge-anchor" id="skill-6" data-skill="flame_patch" title="[6] 불장판 (몬스터 바닥 화염 지대 생성 및 지속 도트 피해)">
+              <span class="skill-hotkey">6</span>
+              <span class="skill-icon" id="icon-6">🔒</span>
+              <span class="skill-name" id="name-6">불장판</span>
+              <span class="noti-badge hidden" id="badge-skill-6">!</span>
+              <div class="gcd-Overlay" id="gcd-6"></div>
+              <div class="cd-overlay" id="cd-6"></div>
+            </button>
+          </div>
+        </div>
+      </div>
+<script src="paper-art.js"></script><script src="paper-monster-frames.js"></script><script src="comic-assets.js"></script><script src="paper-ui-layout-preview.js"></script></html>

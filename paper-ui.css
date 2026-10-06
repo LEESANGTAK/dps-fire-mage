@@ -51,6 +51,30 @@
 .action-bar .skill-btn.proc-glow { border-color: #fff0ae; box-shadow: 0 0 14px #ff9b436b; }
 .action-bar .skill-btn:focus-visible, .top-bar .btn-top:focus-visible { outline: 2px solid #fff0ae; outline-offset: 3px; }
 .living-paused .wow-proc-svg .proc-beam-trail, .living-paused .wow-proc-svg .proc-beam-head { animation-play-state: paused; }
+/* 종이 배우의 실제 머리 높이와 발 원점을 기준으로 보조 정보를 배치한다. */
+.caster-avatar .heat-sigils { left: 50%; right: auto; top: auto; bottom: calc(100% + var(--actor-height, 150px) * .32 + 12px); transform: translateX(-50%); gap: 10px; }
+.caster-box .caster-equipped-left { top: auto; bottom: calc(100% + 14px); right: calc(100% + 14px); transform: none; pointer-events: auto; }
+/* 인라인 부모의 자동 크기에 100%를 적용하면 아이콘의 폭이 0이 될 수 있다. */
+.caster-eq-slot .caster-eq-icon { display: block; width: 26px; height: 26px; }
+.caster-eq-slot .caster-eq-icon .comic-icon { display: block; width: 100%; height: 100%; }
+.monster-box .debuff-row { top: auto; bottom: calc(100% + 46px); left: calc(100% + 46px); }
+@media (max-width: 768px) {
+  .caster-box .caster-equipped-left { right: calc(100% + 7px); bottom: calc(100% + 10px); gap: 4px; }
+  .caster-equipped-left .caster-eq-slot { width: 26px; height: 26px; }
+  .caster-eq-slot .caster-eq-icon { width: 20px; height: 20px; }
+  .monster-box .debuff-row { left: calc(50% + 42px); width: 68px; max-width: 68px; white-space: normal; gap: 4px; }
+  .debuff-row .debuff-chip { max-width: 68px; padding: 3px 4px; font-size: .6rem; flex-wrap: wrap; gap: 2px; }
+  /* 좁은 화면에서는 이동 조작을 체력 아래 한 줄로 묶어 디버프 옆을 비운다. */
+  .combat-arena .arena-side-nav.right { top: calc(var(--floor-line) + 54px); transform: none; flex-direction: row; right: 8px; gap: 4px; }
+  .arena-side-nav.right .stage-nav-btn { padding: 3px 5px; font-size: .6rem; }
+  .arena-side-nav.right .auto-advance-toggle { padding: 3px 4px; font-size: .6rem; }
+}
+@media (max-width: 480px) {
+  .caster-box .caster-equipped-left { right: calc(100% - 1px); gap: 3px; }
+  .caster-equipped-left .caster-eq-slot { width: 22px; height: 22px; }
+  .caster-eq-slot .caster-eq-icon { width: 18px; height: 18px; }
+  .caster-avatar .heat-sigils { left: 60%; }
+}
 @media (prefers-reduced-motion: reduce) {
   .action-bar .skill-btn, .top-bar .btn-top { transition: none; }
   .action-bar .skill-btn:hover, .action-bar .skill-btn:active, .action-bar .skill-btn.pressed { transform: none; }

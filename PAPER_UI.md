@@ -45,3 +45,14 @@ Production papercraft fantasy game status icon atlas. Exact regular 3 columns x 
 
 검증 화면: `docs/paper-ui-states.jpg`, `docs/paper-ui-game.jpg`.
 
+
+## 2026-10-07 보조 UI 위치 수정
+
+- 사용자 첨부 이미지의 파란 상자·화살표를 최우선 배치 참고로 사용했다. 재질·동작은 새로 제작하지 않아 위에서 직접 확인한 종이 UI 참고자료를 재사용했다.
+- 열기를 캐릭터 머리 위, 장비 목록을 캐릭터 왼쪽 몸 높이, 디버프를 몬스터 오른쪽 몸 높이에 배치했다.
+- 인라인 `.caster-eq-icon`의 자동 크기에 자식 아이콘의 100% 크기가 의존해 폭이 0이 되는 문제를 명시적 아이콘 영역으로 수정했다. 장비 원화 자체는 변경하지 않았다.
+- 390px에서는 장비 칸을 22px로 줄여 왼쪽 잘림을 방지하고 디버프 68px 영역을 확보했다. 디버프 옆에 겹치던 다음 도전·자동 진행 조작은 체력 아래 한 줄로 이동했다.
+- `paper-ui-layout-preview.html`은 실제 게임 HTML·CSS와 장비 7종, 디버프 3종, 마법사 4포즈, 일반·대형 몬스터를 비교한다. 전투 및 저장 로직은 실행하지 않는다. `paper-ui-layout-mobile.html`의 390px iframe으로 좁은 뷰포트를 확인했다.
+- 실제 HTTP 게임에서 완드를 구매한 뒤 장비 아이콘과 왼쪽 배치를 확인했다. 비교 화면에서는 7종 모두 정상 크기이며 준비·발사·대기 포즈와 대형 몬스터의 배치를 확인했다. 콘솔 오류 없음.
+- 관련 기존 테스트 3개(comic-assets, mage-motion, monster-motion) 통과. `game.js` 변경 없음. `file://` 직접 실행 및 모든 기기 조합은 별도로 검증하지 않았다.
+- 검증 화면: `docs/paper-ui-layout.jpg`.
