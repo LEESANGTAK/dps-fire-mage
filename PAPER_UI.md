@@ -56,3 +56,7 @@ Production papercraft fantasy game status icon atlas. Exact regular 3 columns x 
 - 실제 HTTP 게임에서 완드를 구매한 뒤 장비 아이콘과 왼쪽 배치를 확인했다. 비교 화면에서는 7종 모두 정상 크기이며 준비·발사·대기 포즈와 대형 몬스터의 배치를 확인했다. 콘솔 오류 없음.
 - 관련 기존 테스트 3개(comic-assets, mage-motion, monster-motion) 통과. `game.js` 변경 없음. `file://` 직접 실행 및 모든 기기 조합은 별도로 검증하지 않았다.
 - 검증 화면: `docs/paper-ui-layout.jpg`.
+
+## 2026-10-07 중복 정보 정리
+
+사용자 첨부 이미지의 파란 상자에 있던 소환물·불장판·연발 상태 배지는 숨기고 캐릭터 이름표는 HTML에서 제거했다. 소환물 옆 기존 이름·레벨과 캐릭터의 접근성 이름은 유지한다. `game.js`가 갱신하는 `summon-active-badges` 요소는 숨긴 채 남겨 널 참조를 방지한다. 신규 원화나 움직임 제작은 없으며 배치 기준은 사용자 첨부 이미지다.

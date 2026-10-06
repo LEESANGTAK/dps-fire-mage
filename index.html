@@ -9,7 +9,7 @@
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="styles.css?v=magic-circle-ground-2" />
   <link rel="stylesheet" href="art.css?v=paper-monsters-3" />
-  <link rel="stylesheet" href="paper-ui.css?v=paper-ui-layout-2" />
+  <link rel="stylesheet" href="paper-ui.css?v=paper-ui-minimal-3" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -222,11 +222,11 @@
               <div class="casting-orb" id="casting-orb"></div>
               <div class="heat-sigils" id="heat-sigils" aria-label="연속 치명타"><i></i><i></i></div>
             </div>
-            <div class="caster-label">화염 마법사</div>
             <div class="flame-evo-badge evo-tier-1" id="flame-evo-badge" title="주문 공격력과 장비 성장에 따라 화염 마법의 색상·크기·탄막이 5단계로 진화합니다 (클릭 시 진화 정보 확인)">
               🟠 Lv.1 견습 불꽃
             </div>
-            <div class="summon-active-badges" id="summon-active-badges"></div>
+            <!-- 기존 게임 갱신 대상은 유지하되 중복된 소환물 상태 표시는 노출하지 않는다. -->
+            <div class="summon-active-badges hidden" id="summon-active-badges" hidden aria-hidden="true"></div>
           </div>
 
           <!-- 우측 스테이지 몬스터 -->
