@@ -4252,19 +4252,17 @@ function renderArtifactsUI() {
 }
 
 // ==========================================
-// 15-D. 타오르는 기운 (Heating Up Pity Badge) UI
+// 15-D. 타오르는 기운 (Heating Up Pity) 효과 UI
 // ==========================================
 function updatePityCritBadgeUI() {
   const badge = document.getElementById('badge-pity-crit');
+  if (badge) badge.style.display = 'none';
   const btn = document.getElementById('skill-1');
   const stacks = (state.combat && state.combat.pityCritStacks) || 0;
-  if (!badge || !btn) return;
+  if (!btn) return;
   if (stacks > 0) {
-    badge.textContent = `🔥 +${stacks * 15}%`;
-    badge.classList.remove('hidden');
     btn.classList.add('heating-pity-active');
   } else {
-    badge.classList.add('hidden');
     btn.classList.remove('heating-pity-active');
   }
 }
@@ -5217,7 +5215,7 @@ function checkBountyProgress(type, amount = 1) {
       spawnEssenceFlight(rwEss, bountyBarEl);
     }
 
-    spawnFloatingText(`✨ 퀘스트 완료! 💰+${fmt(rwGold)} G · 🔮+${fmt(rwEss)}`, 'fct-proc', -60, { isBig: true });
+    spawnFloatingText(`✨ 퀘스트 완료! 💰+${fmt(rwGold)} G · 🔹+${fmt(rwEss)}`, 'fct-proc', -60, { isBig: true });
     renderShopUI();
     renderInfusionUI();
     generateNextBounty();
@@ -5241,7 +5239,7 @@ function updateBountyUI() {
   const pct = Math.min(100, Math.max(0, (b.current / b.target) * 100));
   if (fillEl) fillEl.style.width = `${pct}%`;
   if (textEl) textEl.textContent = `${fmt(b.current)} / ${fmt(b.target)}`;
-  if (rewardEl) rewardEl.textContent = `🪙 ${fmt(b.rewardGold)} · 🔮 ${fmt(b.rewardEssence)}`;
+  if (rewardEl) rewardEl.textContent = `🪙 ${fmt(b.rewardGold)} · 🔹 ${fmt(b.rewardEssence)}`;
 }
 
 // ==========================================
