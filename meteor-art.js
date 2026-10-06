@@ -1,8 +1,9 @@
 /* 운석은 진행 방향으로 암석을 앞세우고, 화염만 뒤에 남깁니다. */
 const comicMeteor=typeof Image!=='undefined'?new Image():null;
 if(comicMeteor)comicMeteor.src='assets/art/comic-meteor.png';
-// 생성 원화의 투명 여백과 암석 중심은 검토 후 설정합니다.
-const COMIC_METEOR_FRAME={x:0,y:0,w:1536,h:1024,anchor:.78,anchorY:.57};
+// 생성 원화의 투명 여백과 암석 중심은 검토 후 설정합니다. (1024x1024 정중앙 앵커)
+const COMIC_METEOR_FRAME = { x: 0, y: 0, w: 1024, h: 1024, anchor: 0.5, anchorY: 0.5 };
+
 function getMeteorPose(m, progress = m.progress) {
   const p = Math.max(0, Math.min(1, progress));
   // 디즈니 12원칙 가속 낙하 이징: 초반 기모으기 진입 -> 후반 지면 급속 내리꽂힘
@@ -11,7 +12,7 @@ function getMeteorPose(m, progress = m.progress) {
   const dy = m.targetY - m.startY;
   // 원근감(Perspective Depth): 저 멀리 높은 대기권(작음)에서 지면 충돌 순간 거대화(1.4배)
   const appear = Math.min(1, p / 0.08);
-  const scale = (0.36 + 0.92 * Math.pow(p, 1.8)) * appear;
+  const scale = (0.42 + 0.95 * Math.pow(p, 1.8)) * appear;
   const angle = Math.atan2(dy, dx);
   return {
     x: m.startX + dx * travel,
@@ -23,57 +24,46 @@ function getMeteorPose(m, progress = m.progress) {
 }
 
 function drawComicMeteor(ctx, m, pose, image = comicMeteor) {
-  const frame = COMIC_METEOR_FRAME;
-  const width = pose.radius * 5.4;
-  const height = (width * frame.h) / frame.w;
-  const time = performance.now() / 1000;
+  const width = pose.radius * 2.8;
+  const height = width;
 
   ctx.save();
   ctx.translate(pose.x, pose.y);
-  ctx.rotate(pose.angle);
+  // 낙하 각도 + 지면으로 떨어지며 서서히 회전하는 텀블(Tumble) 물리
+  ctx.rotate(pose.angle + pose.progress * 0.45);
 
   if (image && image.complete && image.naturalWidth) {
-    // 1. 화염 꼬리 펄럭임 다이내믹스 (Flapping Sine Waves)
-    // 정지화 꼬리를 고정하지 않고, 대기 마찰에 흩날리는 3겹의 너울거리는 화염 혀 렌더링
-    const tailW = frame.w * 0.55;
-    const tailDrawW = width * 0.55;
-
-    for (let w = 3; w >= 1; w--) {
-      const wavePhase = time * (14 + w * 5) + w * 1.6;
-      const flapY = Math.sin(wavePhase) * (3.5 + w * 2.8) * (pose.radius / 25);
-      const flapScaleY = 1 + Math.cos(wavePhase * 0.8) * 0.09;
-
+    // 1. 대기권 돌입 압축 마그마 림 라이팅 (Atmospheric Heat Compression)
+    if (pose.progress > 0.3) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = 0.26 / w;
-      ctx.translate(-width * frame.anchor, -height * frame.anchorY + flapY);
-      ctx.scale(1 + w * 0.035, flapScaleY);
-      ctx.drawImage(image, frame.x, frame.y, tailW, frame.h, 0, 0, tailDrawW, height);
-      ctx.restore();
-    }
-
-    // 2. 대기권 돌입 압축 마그마 광원 (Re-entry Atmospheric Flare)
-    if (pose.progress > 0.35) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      const flareAlpha = Math.min(0.75, (pose.progress - 0.35) * 1.25);
+      const flareAlpha = Math.min(0.7, (pose.progress - 0.3) * 1.3);
       ctx.globalAlpha = flareAlpha;
-      const glowR = pose.radius * 1.35;
-      const glowX = width * (1 - frame.anchor) * 0.25;
-      const grad = ctx.createRadialGradient(glowX, 0, glowR * 0.15, glowX, 0, glowR);
-      grad.addColorStop(0, 'rgba(255, 240, 180, 0.9)');
-      grad.addColorStop(0.45, 'rgba(249, 115, 22, 0.55)');
+      const glowR = pose.radius * 1.6;
+      const grad = ctx.createRadialGradient(0, 0, glowR * 0.2, 0, 0, glowR);
+      grad.addColorStop(0, 'rgba(255, 240, 180, 0.85)');
+      grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.45)');
       grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(glowX, 0, glowR, 0, Math.PI * 2);
+      ctx.arc(0, 0, glowR, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
-    // 3. 본체 암석 및 화염 텍스처 (Solid Core)
+    // 2. 순수 운석 암석 본체 (불꼬리 스프라이트 없이 파티클을 100% 노출)
     ctx.globalAlpha = 1;
-    ctx.drawImage(image, frame.x, frame.y, frame.w, frame.h, -width * frame.anchor, -height * frame.anchorY, width, height);
+    ctx.drawImage(
+      image,
+      0,
+      0,
+      image.naturalWidth,
+      image.naturalHeight,
+      -width * 0.5,
+      -height * 0.5,
+      width,
+      height
+    );
   } else {
     // 이미지 로딩 중 대체 벡터 렌더링
     ctx.fillStyle = '#35252a';
@@ -105,22 +95,22 @@ function drawComicMeteor(ctx, m, pose, image = comicMeteor) {
 function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   if (reduced || dt <= 0) return;
   m.trailClock = (m.trailClock || 0) + Math.min(0.1, dt);
-  const count = Math.min(3, Math.floor(m.trailClock / 0.02));
-  m.trailClock %= 0.02;
-  const available = Math.min(54 - pool.filter(p => p.meteorTrail).length, 220 - pool.length);
+  const count = Math.min(4, Math.floor(m.trailClock / 0.016));
+  m.trailClock %= 0.016;
+  const available = Math.min(70 - pool.filter(p => p.meteorTrail).length, 240 - pool.length);
   for (let i = 0; i < count && i < available; i++) {
-    const distance = pose.radius * (0.85 + Math.random() * 1.6);
+    const distance = pose.radius * (0.6 + Math.random() * 1.8);
     const dx = Math.cos(pose.angle);
     const dy = Math.sin(pose.angle);
     pool.push({
       meteorTrail: true,
       x: pose.x - dx * distance,
-      y: pose.y - dy * distance + (Math.random() - 0.5) * pose.radius * 0.35,
-      vx: -dx * 55 + (Math.random() - 0.5) * 25,
-      vy: -dy * 55 - 20,
-      radius: 2.0 + Math.random() * 2.8,
+      y: pose.y - dy * distance + (Math.random() - 0.5) * pose.radius * 0.4,
+      vx: -dx * (70 + Math.random() * 40) + (Math.random() - 0.5) * 30,
+      vy: -dy * (70 + Math.random() * 40) - 25,
+      radius: 2.2 + Math.random() * 3.4,
       life: 0,
-      maxLife: 0.22 + Math.random() * 0.1,
+      maxLife: 0.26 + Math.random() * 0.12,
       colorCore: '#fff7ed',
       colorEdge: '#ea580c'
     });
