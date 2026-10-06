@@ -2027,7 +2027,7 @@ function updateAndDrawVfx(dt) {
         } catch (e) {}
       }
       // 메테오 충돌 시 대규모 화염 폭발 + 이중 충격파 + 사방으로 튀어 나가는 바위 파편들!
-      const burstCount = Math.min(reducedMeteor ? 6 : Math.round(30 * m.scale), Math.max(0, 220 - particles.length));
+      const burstCount = Math.min(reducedMeteor ? 6 : Math.round(30 * m.scale), Math.max(0, 450 - particles.length));
       spawnParticles(m.targetX, m.targetY, burstCount, '#ffe4a0', '#e8592f', 1.8 * m.scale);
       if (!reducedMeteor) spawnMeteorRockDebris(m.targetX, m.targetY, m.scale);
       if (!reducedMeteor && shockwaves.length <= 28) {
@@ -2210,6 +2210,12 @@ function updateAndDrawVfx(dt) {
     }
     if (pt.slimeDrop) {
       drawSlimeDrop(ctx, pt, dt);
+      continue;
+    }
+    if (pt.meteorTrail) {
+      if (typeof drawMeteorParticle === 'function') {
+        drawMeteorParticle(ctx, pt, dt);
+      }
       continue;
     }
     const alpha = 1 - pt.life / pt.maxLife;

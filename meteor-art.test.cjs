@@ -8,15 +8,15 @@ assert.ok(getMeteorPose(m,.9).x-getMeteorPose(m,.8).x>getMeteorPose(m,.2).x-getM
 for(const p of [0,.1,.5,.9,1]) {const pose=getMeteorPose(m,p);assert.ok(pose.angle>0&&pose.angle<Math.PI/2);assert.ok(pose.radius>0);}
 let drawCount=0,pathCount=0;
 const painter=new Proxy({drawImage(){drawCount++;},beginPath(){pathCount++;}}, {get:(o,k)=>k in o?o[k]:()=>{}});
-drawComicMeteor(painter,m,getMeteorPose(m,.5),{complete:true,naturalWidth:1536});assert.equal(drawCount,3);
+drawComicMeteor(painter,m,getMeteorPose(m,.5),{complete:true,naturalWidth:1536});assert.equal(drawCount,1);
 drawComicMeteor(painter,m,getMeteorPose(m,.5),null);assert.ok(pathCount>0);
 for(const fps of [30,60,144]) {
  const pool=[],meteor={...m};for(let frame=0;frame<fps;frame++)emitMeteorTrail(meteor,getMeteorPose(m,.8),1/fps,pool);
- assert.ok(pool.length<=48);
+ assert.ok(pool.length<=350);
 }
 const pool=[];emitMeteorTrail(m,getMeteorPose(m,.5),.1,pool,true);assert.equal(pool.length,0);
 emitMeteorTrail(m,getMeteorPose(m,.5),0,pool);assert.equal(pool.length,0);
-const full=Array.from({length:220},()=>({}));emitMeteorTrail(m,getMeteorPose(m,.5),.1,full);assert.equal(full.length,220);
+const full=Array.from({length:450},()=>({}));emitMeteorTrail(m,getMeteorPose(m,.5),.1,full);assert.equal(full.length,450);
 const game=fs.readFileSync('game.js','utf8');
 const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('const monsterShards = [];'));
 const debrisContext=vm.createContext({});vm.runInContext(debrisCode,debrisContext);

@@ -92,28 +92,273 @@ function drawComicMeteor(ctx, m, pose, image = comicMeteor) {
   ctx.restore();
 }
 
+let meteorTextures = null;
+
+function initMeteorTextures() {
+  if (meteorTextures || typeof document === 'undefined') return meteorTextures;
+
+  // 1. 화염 퍼프 텍스처 (Flame Puff, 128x128) - 고열 백황색 코어 및 유기적 화염 볼륨
+  const flameCanvas = document.createElement('canvas');
+  flameCanvas.width = 128;
+  flameCanvas.height = 128;
+  const fCtx = flameCanvas.getContext('2d');
+
+  const fGrad = fCtx.createRadialGradient(64, 64, 0, 64, 64, 58);
+  fGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  fGrad.addColorStop(0.22, 'rgba(254, 240, 138, 0.95)');
+  fGrad.addColorStop(0.52, 'rgba(249, 115, 22, 0.85)');
+  fGrad.addColorStop(0.8, 'rgba(220, 38, 38, 0.45)');
+  fGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
+  fCtx.fillStyle = fGrad;
+  fCtx.beginPath();
+  fCtx.arc(64, 64, 58, 0, Math.PI * 2);
+  fCtx.fill();
+
+  // 만화풍 화염 덩어리감을 더하는 보조 고열 퍼프
+  const flameLobes = [
+    { x: 55, y: 54, r: 36, alpha: 0.55 },
+    { x: 73, y: 56, r: 34, alpha: 0.5 },
+    { x: 60, y: 74, r: 35, alpha: 0.45 },
+    { x: 70, y: 72, r: 32, alpha: 0.4 }
+  ];
+  for (const l of flameLobes) {
+    const lGrad = fCtx.createRadialGradient(l.x, l.y, 2, l.x, l.y, l.r);
+    lGrad.addColorStop(0, `rgba(255, 247, 237, ${l.alpha})`);
+    lGrad.addColorStop(0.55, `rgba(251, 146, 60, ${l.alpha * 0.65})`);
+    lGrad.addColorStop(1, 'rgba(234, 88, 12, 0)');
+    fCtx.fillStyle = lGrad;
+    fCtx.beginPath();
+    fCtx.arc(l.x, l.y, l.r, 0, Math.PI * 2);
+    fCtx.fill();
+  }
+
+  // 2. 연기 퍼프 텍스처 (Smoke Puff, 128x128) - 짙은 만화풍 다층 뭉게구름 볼륨
+  const smokeCanvas = document.createElement('canvas');
+  smokeCanvas.width = 128;
+  smokeCanvas.height = 128;
+  const sCtx = smokeCanvas.getContext('2d');
+
+  const smokeLobes = [
+    { x: 64, y: 64, r: 48, col: 'rgba(26, 24, 22, 0.88)' },
+    { x: 48, y: 50, r: 36, col: 'rgba(41, 37, 36, 0.78)' },
+    { x: 80, y: 52, r: 34, col: 'rgba(38, 35, 34, 0.76)' },
+    { x: 52, y: 78, r: 35, col: 'rgba(50, 46, 44, 0.72)' },
+    { x: 76, y: 76, r: 33, col: 'rgba(32, 29, 27, 0.74)' },
+    { x: 64, y: 40, r: 30, col: 'rgba(68, 64, 60, 0.68)' }
+  ];
+  for (const sl of smokeLobes) {
+    const sGrad = sCtx.createRadialGradient(sl.x, sl.y, sl.r * 0.15, sl.x, sl.y, sl.r);
+    sGrad.addColorStop(0, sl.col);
+    sGrad.addColorStop(0.7, 'rgba(75, 70, 68, 0.35)');
+    sGrad.addColorStop(1, 'rgba(90, 85, 82, 0)');
+    sCtx.fillStyle = sGrad;
+    sCtx.beginPath();
+    sCtx.arc(sl.x, sl.y, sl.r, 0, Math.PI * 2);
+    sCtx.fill();
+  }
+
+  // 3. 고열 스파크/불똥 텍스처 (Spark, 48x48) - 십자 섬광 및 고열 마름모 코어
+  const sparkCanvas = document.createElement('canvas');
+  sparkCanvas.width = 48;
+  sparkCanvas.height = 48;
+  const spCtx = sparkCanvas.getContext('2d');
+
+  const spGrad = spCtx.createRadialGradient(24, 24, 1, 24, 24, 22);
+  spGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  spGrad.addColorStop(0.28, 'rgba(254, 240, 138, 0.95)');
+  spGrad.addColorStop(0.65, 'rgba(249, 115, 22, 0.55)');
+  spGrad.addColorStop(1, 'rgba(234, 88, 12, 0)');
+  spCtx.fillStyle = spGrad;
+  spCtx.beginPath();
+  spCtx.arc(24, 24, 22, 0, Math.PI * 2);
+  spCtx.fill();
+
+  spCtx.fillStyle = '#ffffff';
+  spCtx.beginPath();
+  spCtx.moveTo(24, 13);
+  spCtx.lineTo(26, 24);
+  spCtx.lineTo(35, 24);
+  spCtx.lineTo(26, 26);
+  spCtx.lineTo(24, 35);
+  spCtx.lineTo(22, 26);
+  spCtx.lineTo(13, 24);
+  spCtx.lineTo(22, 24);
+  spCtx.closePath();
+  spCtx.fill();
+
+  meteorTextures = {
+    flame: flameCanvas,
+    smoke: smokeCanvas,
+    spark: sparkCanvas
+  };
+  return meteorTextures;
+}
+
+function drawMeteorParticle(ctx, pt, dt) {
+  const textures = initMeteorTextures();
+  if (!textures) return;
+
+  const progress = pt.life / pt.maxLife;
+  if (progress >= 1) return;
+
+  // 세부 물리 감속 및 연기 부력
+  if (pt.kind === 'smoke') {
+    pt.vx *= Math.pow(0.92, dt * 60);
+    pt.vy -= 22 * dt; // 위쪽으로 서서히 피어오르는 열기 부력
+  } else if (pt.kind === 'flame') {
+    pt.vx *= Math.pow(0.88, dt * 60);
+    pt.vy *= Math.pow(0.88, dt * 60);
+  } else if (pt.kind === 'spark') {
+    pt.vy += 140 * dt; // 중력 낙하
+    pt.vx *= Math.pow(0.94, dt * 60);
+  }
+
+  ctx.save();
+  ctx.translate(pt.x, pt.y);
+
+  if (pt.kind === 'smoke') {
+    // 연기는 뒤로 갈수록 팽창(1.0 -> 2.65배)하며 뭉게구름 볼륨 형성
+    pt.rot = (pt.rot || 0) + (pt.vRot || 0) * dt;
+    ctx.rotate(pt.rot);
+    const scale = 1.0 + progress * 1.65;
+    const currentSize = pt.baseSize * scale;
+    const alpha = Math.pow(1 - progress, 1.25) * 0.76;
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(
+      textures.smoke,
+      -currentSize * 0.5,
+      -currentSize * 0.5,
+      currentSize,
+      currentSize
+    );
+  } else if (pt.kind === 'flame') {
+    // 화염은 코어에서 고열 가산 발광(lighter), 후반부에 식으면서 수축
+    pt.rot = (pt.rot || 0) + (pt.vRot || 0) * dt;
+    ctx.rotate(pt.rot);
+    const scale = progress < 0.25 ? 1.0 + progress * 0.6 : Math.max(0.45, 1.15 - (progress - 0.25) * 0.95);
+    const currentSize = pt.baseSize * scale;
+    const alpha = progress < 0.65 ? 0.95 : ((1 - progress) / 0.35) * 0.95;
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(
+      textures.flame,
+      -currentSize * 0.5,
+      -currentSize * 0.5,
+      currentSize,
+      currentSize
+    );
+  } else if (pt.kind === 'spark') {
+    // 날카롭게 튀는 불똥
+    const alpha = Math.pow(1 - progress, 1.1);
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.globalCompositeOperation = 'lighter';
+    const sz = pt.baseSize * (1 - progress * 0.45);
+    ctx.drawImage(
+      textures.spark,
+      -sz * 0.5,
+      -sz * 0.5,
+      sz,
+      sz
+    );
+  }
+
+  ctx.restore();
+}
+
 function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   if (reduced || dt <= 0) return;
-  m.trailClock = (m.trailClock || 0) + Math.min(0.1, dt);
-  const count = Math.min(4, Math.floor(m.trailClock / 0.016));
-  m.trailClock %= 0.016;
-  const available = Math.min(70 - pool.filter(p => p.meteorTrail).length, 240 - pool.length);
-  for (let i = 0; i < count && i < available; i++) {
-    const distance = pose.radius * (0.6 + Math.random() * 1.8);
-    const dx = Math.cos(pose.angle);
-    const dy = Math.sin(pose.angle);
-    pool.push({
-      meteorTrail: true,
-      x: pose.x - dx * distance,
-      y: pose.y - dy * distance + (Math.random() - 0.5) * pose.radius * 0.4,
-      vx: -dx * (70 + Math.random() * 40) + (Math.random() - 0.5) * 30,
-      vy: -dy * (70 + Math.random() * 40) - 25,
-      radius: 2.2 + Math.random() * 3.4,
-      life: 0,
-      maxLife: 0.26 + Math.random() * 0.12,
-      colorCore: '#fff7ed',
-      colorEdge: '#ea580c'
-    });
+  m.trailClock = (m.trailClock || 0) + Math.min(0.08, dt);
+  
+  // 60FPS 기준 틱당 약 6~8개 파티클 방출 (기존의 5배 수량 증량)
+  const spawnInterval = 0.0024;
+  const count = Math.min(24, Math.floor(m.trailClock / spawnInterval));
+  m.trailClock %= spawnInterval;
+  if (count <= 0) return;
+
+  // 파티클 풀 상한 검사 (전체 450개, 메테오 트레일 350개)
+  let meteorCount = 0;
+  for (let i = 0; i < pool.length; i++) {
+    if (pool[i].meteorTrail) meteorCount++;
+  }
+  const maxMeteorParticles = 350;
+  const maxTotalParticles = 450;
+  const available = Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length);
+  if (available <= 0) return;
+
+  const actualCount = Math.min(count, available);
+  const dx = Math.cos(pose.angle);
+  const dy = Math.sin(pose.angle);
+  const perpX = -dy;
+  const perpY = dx;
+
+  for (let i = 0; i < actualCount; i++) {
+    const roll = Math.random();
+
+    if (roll < 0.42) {
+      // 1. 화염 퍼프 (Flame Puff) - 운석 바로 뒤편에 밀집된 초고열 백황색~주황 화염
+      const dist = pose.radius * (0.2 + Math.random() * 0.95);
+      const side = (Math.random() - 0.5) * pose.radius * 0.55;
+      const speed = 70 + Math.random() * 60;
+      pool.push({
+        meteorTrail: true,
+        kind: 'flame',
+        x: pose.x - dx * dist + perpX * side,
+        y: pose.y - dy * dist + perpY * side,
+        vx: -dx * speed + perpX * (Math.random() - 0.5) * 40,
+        vy: -dy * speed + perpY * (Math.random() - 0.5) * 40 - 15,
+        baseSize: pose.radius * (1.1 + Math.random() * 0.65),
+        rot: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 3.5,
+        life: 0,
+        maxLife: 0.32 + Math.random() * 0.18
+      });
+    } else if (roll < 0.86) {
+      // 2. 연기 퍼프 (Smoke Puff) - 화염 뒤로 뿜어져 나와 거대하게 팽창하는 묵직한 궤적 연기
+      const dist = pose.radius * (0.6 + Math.random() * 1.8);
+      const side = (Math.random() - 0.5) * pose.radius * 0.95;
+      const speed = 40 + Math.random() * 50;
+      pool.push({
+        meteorTrail: true,
+        kind: 'smoke',
+        x: pose.x - dx * dist + perpX * side,
+        y: pose.y - dy * dist + perpY * side,
+        vx: -dx * speed + perpX * (Math.random() - 0.5) * 30,
+        vy: -dy * speed + perpY * (Math.random() - 0.5) * 30 - 25,
+        baseSize: pose.radius * (0.85 + Math.random() * 0.6),
+        rot: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 2.2,
+        life: 0,
+        maxLife: 0.65 + Math.random() * 0.4
+      });
+    } else {
+      // 3. 고열 스파크 (Spark/Ember) - 사방으로 튀어나가는 불똥
+      const dist = pose.radius * (Math.random() * 0.6);
+      const side = (Math.random() - 0.5) * pose.radius * 0.8;
+      const speed = 110 + Math.random() * 140;
+      const spreadAngle = pose.angle + Math.PI + (Math.random() - 0.5) * 1.6;
+      pool.push({
+        meteorTrail: true,
+        kind: 'spark',
+        x: pose.x - dx * dist + perpX * side,
+        y: pose.y - dy * dist + perpY * side,
+        vx: Math.cos(spreadAngle) * speed,
+        vy: Math.sin(spreadAngle) * speed - 20,
+        baseSize: 8 + Math.random() * 14,
+        life: 0,
+        maxLife: 0.2 + Math.random() * 0.18
+      });
+    }
   }
 }
-if(typeof module!=='undefined')module.exports={COMIC_METEOR_FRAME,getMeteorPose,drawComicMeteor,emitMeteorTrail};
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    COMIC_METEOR_FRAME,
+    getMeteorPose,
+    drawComicMeteor,
+    emitMeteorTrail,
+    drawMeteorParticle,
+    initMeteorTextures
+  };
+}
