@@ -2955,7 +2955,7 @@ function onMonsterKilled() {
     updateNotificationBadges();
     return;
   } else if (state.autoAdvance !== false && canAdvanceToNextStage()) {
-    // 목표 DPS 달성 및 몬스터 1회 이상 처치 완료 시 다음 도전으로 자동 진입!
+    // 몬스터 1회 처치 완료 시 다음 도전으로 자동 진입!
     loadStage(state.currentStage + 1);
     const nextData = getStageData(state.currentStage);
     spawnFloatingText(
