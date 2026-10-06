@@ -2218,6 +2218,12 @@ function updateAndDrawVfx(dt) {
       }
       continue;
     }
+    if (pt.fireballTrail || pt.comicTrail) {
+      if (typeof drawFireballParticle === 'function') {
+        drawFireballParticle(ctx, pt, dt);
+        continue;
+      }
+    }
     const alpha = 1 - pt.life / pt.maxLife;
     ctx.fillStyle = pt.life < pt.maxLife * 0.4 ? pt.colorCore : pt.colorEdge;
     ctx.globalAlpha = alpha;
