@@ -6,13 +6,12 @@ const COMIC_METEOR_FRAME = { x: 0, y: 0, w: 1024, h: 1024, anchor: 0.5, anchorY:
 
 function getMeteorPose(m, progress = m.progress) {
   const p = Math.max(0, Math.min(1, progress));
-  // 디즈니 12원칙 가속 낙하 이징: 초반 기모으기 진입 -> 후반 지면 급속 내리꽂힘
-  const travel = p < 0.25 ? p * 0.75 : Math.pow(p, 2.5);
+  // 디즈니 12원칙 가속 낙하 이징: 초반 완만한 진입 -> 중력 가속도로 지면 급속 내리꽂힘 (불연속 점프 없는 매끄러운 단일 이징)
+  const travel = Math.pow(p, 1.85);
   const dx = m.targetX - m.startX;
   const dy = m.targetY - m.startY;
-  // 원근감(Perspective Depth): 저 멀리 높은 대기권(작음)에서 지면 충돌 순간 거대화(1.4배)
-  const appear = Math.min(1, p / 0.08);
-  const scale = (0.42 + 0.95 * Math.pow(p, 1.8)) * appear;
+  // 원근감(Perspective Depth): 저 멀리 높은 대기권(작음 0.52배)에서 지면 충돌 순간 거대화(1.4배) (초기 0 깜빡임 제거)
+  const scale = 0.52 + 0.88 * Math.pow(p, 1.6);
   const angle = Math.atan2(dy, dx);
   return {
     x: m.startX + dx * travel,
