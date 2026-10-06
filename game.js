@@ -594,7 +594,6 @@ const state = {
     skillTree: false,
     hallOfFame: false,
     artifactShop: false,
-    trainingDummy: false,
     heatPacts: false
   },
 
@@ -655,12 +654,6 @@ const state = {
 
   // 3대 빌드 키스톤 ('burst' | 'dot' | 'summon' | null)
   activeKeystone: null,
-
-  // 30초 훈련용 허수아비 벤치마크 모드
-  isTrainingDummy: false,
-  trainingTimer: 0,
-  savedStageBeforeTraining: 1,
-  dummyRecordDps: 0,
 
   ascensionCount: 0,
   canAscend: false,
@@ -2790,39 +2783,6 @@ function updateFloatingTexts(dt) {
 // 9. 스테이지 설정 및 몬스터 처치 처리 (제한시간 제거)
 // ==========================================
 function loadStage(stageNum) {
-  if (state.isTrainingDummy) {
-    state.monster.maxHp = 999999999999;
-    state.monster.hp = 999999999999;
-    state.monster.isDying = false;
-    state.combat.ignitePool = 0;
-    state.combat.igniteRem = 0;
-    state.combat.meteorBurnRem = 0;
-    updateBurningLoopSound();
-
-    const nameLabel = document.getElementById('monster-name-label');
-    if (nameLabel) nameLabel.textContent = '🎯 훈련용 허수아비 (무한 체력)';
-    const hpText = document.getElementById('target-hp-text');
-    if (hpText) hpText.textContent = '무한 체력';
-    const hpPct = document.getElementById('target-hp-pct');
-    if (hpPct) hpPct.textContent = '100%';
-    const hpFill = document.getElementById('target-hp-fill');
-    if (hpFill) hpFill.style.width = '100%';
-    const dummyEmoji = document.getElementById('dummy-emoji');
-    if (dummyEmoji) {
-      dummyEmoji.textContent = '🪵';
-      dummyEmoji.dataset.art = 'dummy';
-    }
-    const dummyBanner = document.getElementById('training-dummy-banner');
-    if (dummyBanner) dummyBanner.classList.remove('hidden');
-    const stageBanner = document.getElementById('arena-stage-banner');
-    if (stageBanner) stageBanner.classList.add('hidden');
-    const centerInfo = document.getElementById('stage-center-info');
-    if (centerInfo) centerInfo.classList.add('hidden');
-    return;
-  }
-
-  const dummyBanner = document.getElementById('training-dummy-banner');
-  if (dummyBanner) dummyBanner.classList.add('hidden');
   const stageBanner = document.getElementById('arena-stage-banner');
   if (stageBanner) stageBanner.classList.remove('hidden');
   const centerInfo = document.getElementById('stage-center-info');
@@ -4310,60 +4270,6 @@ function updatePityCritBadgeUI() {
 }
 
 // ==========================================
-// 15-E. 30초 훈련용 허수아비 벤치마크 모드
-// ==========================================
-function startTrainingDummyMode() {
-  if (state.isTrainingDummy) return;
-  state.savedStageBeforeTraining = state.currentStage || 1;
-  state.isTrainingDummy = true;
-  state.trainingTimer = 30.0;
-  state.dpsHistory = [];
-  state.currentDps = 0;
-  if (!state.stats) {
-    state.stats = { totalDamage: 0, peakDps: 0, biggestCrit: 0, biggestCritSkill: '', totalHits: 0, critHits: 0, combustionHits: 0, combustionDmg: 0 };
-  } else {
-    state.stats.peakDps = 0;
-    state.stats.totalDamage = 0;
-  }
-  loadStage(state.currentStage);
-  playSound('proc');
-  spawnFloatingText('🎯 30초 딜사이클 훈련 시작! 전력을 다해 폭딜하세요!', 'fct-proc', -50, { isBig: true });
-}
-
-function finishTrainingDummyMode() {
-  if (!state.isTrainingDummy) return;
-  state.isTrainingDummy = false;
-  const peak = Math.max(state.currentDps, state.stats?.peakDps || 0);
-  const isNewRecord = peak > (state.dummyRecordDps || 0);
-  if (isNewRecord) {
-    state.dummyRecordDps = peak;
-  }
-
-  loadStage(state.savedStageBeforeTraining || 1);
-  saveGame();
-
-  openDetailsModal();
-  const parseEl = document.getElementById('details-parse-badge');
-  if (parseEl) {
-    parseEl.textContent = `🎯 훈련장: ${fmt(peak)} DPS (${isNewRecord ? '🎉 최고기록!' : '측정 완료'})`;
-  }
-  playSound(isNewRecord ? 'proc' : 'hit');
-  spawnFloatingText(
-    isNewRecord ? `🎉 훈련장 최고 기록 갱신: ${fmt(peak)} DPS!` : `🎯 훈련 종료: ${fmt(peak)} DPS`,
-    'fct-crit',
-    -50,
-    { isBig: true }
-  );
-}
-
-function exitTrainingDummyMode() {
-  if (!state.isTrainingDummy) return;
-  state.isTrainingDummy = false;
-  loadStage(state.savedStageBeforeTraining || 1);
-  spawnFloatingText('전투로 복귀했습니다.', 'fct-normal', -30);
-}
-
-// ==========================================
 // 15-F. 심연의 열기(Heat) 챌린지 규약 시스템
 // ==========================================
 function getHeatBonusMult() {
@@ -4688,17 +4594,7 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
-  // 6. 훈련용 허수아비 벤치마크 모드 해금 (Stage 3 클리어 이상)
-  if (!u.trainingDummy && (state.highestClearedStage >= 3 || state.currentStage >= 3 || state.campaignCleared)) {
-    u.trainingDummy = true;
-    changed = true;
-    if (!silent) {
-      showUnfoldToast('🔓 새로운 모드 해금: 허수아비 훈련장!', '상단 [🎯 허수아비 훈련]에서 30초간 내 빌드의 한계 DPS를 측정하세요!');
-      triggerUnfoldPop('btn-training-dummy');
-    }
-  }
-
-  // 7. 심연의 열기(Heat) 규약 해금 (승천 1회 이상 또는 20스테이지 클리어)
+  // 6. 심연의 열기(Heat) 규약 해금 (승천 1회 이상 또는 20스테이지 클리어)
   if (!u.heatPacts && ((state.ascensionCount || 0) > 0 || state.campaignCleared || state.highestClearedStage >= 20)) {
     u.heatPacts = true;
     changed = true;
@@ -4717,20 +4613,18 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 정수/치명타/시전속도 알약 & 명예의 전당/깃털/훈련장/규약 버튼
+  // 상단 정수/치명타/시전속도 알약 & 명예의 전당/깃털/규약 버튼
   const pillEssence = document.getElementById('pill-essence');
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
   const pillFeathers = document.getElementById('pill-feathers');
   const hallBtn = document.getElementById('btn-hall-of-fame');
-  const btnTraining = document.getElementById('btn-training-dummy');
   const btnHeat = document.getElementById('btn-heat-pacts');
   if (pillEssence) pillEssence.classList.toggle('unfold-hidden', !u.infusionShop);
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillFeathers) pillFeathers.classList.toggle('unfold-hidden', !u.artifactShop);
   if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
-  if (btnTraining) btnTraining.classList.toggle('unfold-hidden', !u.trainingDummy);
   if (btnHeat) btnHeat.classList.toggle('unfold-hidden', !u.heatPacts);
 
   // 우측 상단 [상점 / 마법 부여 / 스킬 트리 / 불사조 유물] 탭 전환 바
@@ -4756,7 +4650,7 @@ function applyUnfoldedVisibility() {
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
-    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame && u.artifactShop && u.trainingDummy && u.heatPacts;
+    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame && u.artifactShop && u.heatPacts;
     unfoldAllBtn.style.display = allDone ? 'none' : '';
   }
 }
@@ -5647,17 +5541,7 @@ function gameLoop(nowMs) {
     }
   }
 
-  // 훈련용 허수아비 벤치마크 모드 타이머
-  if (state.isTrainingDummy) {
-    state.trainingTimer -= dt;
-    const timerEl = document.getElementById('ui-training-timer');
-    if (timerEl) {
-      timerEl.textContent = `${Math.max(0, state.trainingTimer).toFixed(1)}s`;
-    }
-    if (state.trainingTimer <= 0) {
-      finishTrainingDummyMode();
-    }
-  }
+
 
   const summonSpeedBonus = state.activeKeystone === 'summon' ? 1.5 : 1.0;
   if (state.skillTree.fire_elem > 0) {
@@ -6064,7 +5948,6 @@ function saveGame() {
       phoenixFeathers: state.phoenixFeathers,
       artifacts: state.artifacts,
       activeKeystone: state.activeKeystone,
-      dummyRecordDps: state.dummyRecordDps,
       bossClearTimes: state.bossClearTimes,
       heatPacts: state.heatPacts,
       bestSpeedrunTime: state.bestSpeedrunTime || null,
@@ -6120,7 +6003,6 @@ function loadGame() {
     if (typeof data.phoenixFeathers === 'number') state.phoenixFeathers = data.phoenixFeathers;
     if (data.artifacts) Object.assign(state.artifacts, data.artifacts);
     if (typeof data.activeKeystone === 'string' || data.activeKeystone === null) state.activeKeystone = data.activeKeystone;
-    if (typeof data.dummyRecordDps === 'number') state.dummyRecordDps = data.dummyRecordDps;
     if (data.bossClearTimes) state.bossClearTimes = Object.assign({}, data.bossClearTimes);
     if (data.heatPacts) Object.assign(state.heatPacts, data.heatPacts);
     if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
@@ -6269,24 +6151,7 @@ function initEvents() {
     });
   }
 
-  const btnDummy = document.getElementById('btn-training-dummy');
-  if (btnDummy) {
-    btnDummy.addEventListener('click', () => {
-      if (state.isTrainingDummy) {
-        finishTrainingDummyMode();
-      } else {
-        startTrainingDummyMode();
-      }
-    });
-  }
-  const btnFinishTraining = document.getElementById('btn-finish-training');
-  if (btnFinishTraining) {
-    btnFinishTraining.addEventListener('click', () => finishTrainingDummyMode());
-  }
-  const btnExitTraining = document.getElementById('btn-exit-training');
-  if (btnExitTraining) {
-    btnExitTraining.addEventListener('click', () => exitTrainingDummyMode());
-  }
+
 
   const btnHeat = document.getElementById('btn-heat-pacts');
   if (btnHeat) {
@@ -6607,10 +6472,9 @@ function initEvents() {
       state.unfolded.skillTree = true;
       state.unfolded.hallOfFame = true;
       state.unfolded.artifactShop = true;
-      state.unfolded.trainingDummy = true;
       state.unfolded.heatPacts = true;
       playSound('item_select');
-      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 불사조 유물, 허수아비 훈련장이 모두 펼쳐졌습니다.');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 불사조 유물이 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
       updateSkillActionBarVisibility();
       renderInfusionUI();

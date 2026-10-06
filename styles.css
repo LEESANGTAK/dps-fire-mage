@@ -4976,69 +4976,6 @@ body {
   margin-left: 3px;
 }
 
-/* 4. 훈련용 허수아비 벤치마크 모드 */
-.btn-training {
-  border-color: #f59e0b !important;
-  color: #fde68a !important;
-  background: rgba(245, 158, 11, 0.15) !important;
-}
-
-.btn-training:hover {
-  background: rgba(245, 158, 11, 0.3) !important;
-}
-
-.training-dummy-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-  border: 1px solid #f59e0b;
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
-  border-radius: 8px;
-  padding: 5px 12px;
-  margin-top: 4px;
-}
-
-.training-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #f1f5f9;
-}
-
-.training-timer-val {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #fbbf24;
-  min-width: 45px;
-  font-family: monospace;
-}
-
-.btn-training-finish,
-.btn-training-exit {
-  background: #d97706;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-training-finish:hover {
-  background: #b45309;
-}
-
-.btn-training-exit {
-  background: #475569;
-}
-
-.btn-training-exit:hover {
-  background: #334155;
-}
-
 /* 개별 스킬 스마트 세미오토 토글 뱃지 */
 .skill-auto-badge {
   position: absolute;

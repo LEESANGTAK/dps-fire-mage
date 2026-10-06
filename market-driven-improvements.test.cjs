@@ -167,66 +167,11 @@ test('P2: 3대 빌드 키스톤 특성 정의 및 시너지 메커니즘 검증'
 // ==========================================
 // 4. [P3] 30초 훈련용 허수아비 벤치마크 모드 검증
 // ==========================================
-test('P3: 30초 훈련용 허수아비 벤치마크 모드 및 기록 갱신 검증', () => {
-  // 4-1. 마크업 및 스타일 검증
-  assert.ok(indexHtmlContent.includes('id="btn-training-dummy"'), '상단 컨트롤에 #btn-training-dummy가 존재해야 합니다.');
-  assert.ok(indexHtmlContent.includes('id="training-dummy-banner"'), '아레나 상단에 #training-dummy-banner가 존재해야 합니다.');
-  assert.ok(indexHtmlContent.includes('id="ui-training-timer"'), '타이머 엘리먼트 #ui-training-timer가 존재해야 합니다.');
-  assert.ok(stylesCssContent.includes('.training-dummy-banner'), 'CSS에 .training-dummy-banner 스타일이 정의되어 있어야 합니다.');
-  assert.ok(stylesCssContent.includes('.btn-training'), 'CSS에 .btn-training 스타일이 정의되어 있어야 합니다.');
-
-  // 4-2. 함수 구현 검증
-  assert.ok(gameJsContent.includes('startTrainingDummyMode'), 'startTrainingDummyMode 함수가 구현되어 있어야 합니다.');
-  assert.ok(gameJsContent.includes('finishTrainingDummyMode'), 'finishTrainingDummyMode 함수가 구현되어 있어야 합니다.');
-  assert.ok(gameJsContent.includes('exitTrainingDummyMode'), 'exitTrainingDummyMode 함수가 구현되어 있어야 합니다.');
-
-  // 4-3. 훈련 모드 진입 및 최고 DPS 갱신 로직 검증
-  const dummyState = {
-    isTrainingDummy: false,
-    currentStage: 12,
-    savedStageBeforeTraining: 1,
-    trainingTimer: 0,
-    currentDps: 0,
-    dummyRecordDps: 1500,
-    stats: { peakDps: 0, totalDamage: 0 }
-  };
-
-  function startDummy() {
-    dummyState.savedStageBeforeTraining = dummyState.currentStage;
-    dummyState.isTrainingDummy = true;
-    dummyState.trainingTimer = 30.0;
-    dummyState.stats.peakDps = 0;
-  }
-
-  function finishDummy(simulatedPeak) {
-    dummyState.isTrainingDummy = false;
-    const isNewRecord = simulatedPeak > (dummyState.dummyRecordDps || 0);
-    if (isNewRecord) {
-      dummyState.dummyRecordDps = simulatedPeak;
-    }
-    dummyState.currentStage = dummyState.savedStageBeforeTraining;
-    return isNewRecord;
-  }
-
-  startDummy();
-  assert.equal(dummyState.isTrainingDummy, true);
-  assert.equal(dummyState.savedStageBeforeTraining, 12);
-  assert.equal(dummyState.trainingTimer, 30.0);
-
-  // 최고 기록 미달성 케이스 (1500 미만)
-  let newRecord = finishDummy(1200);
-  assert.equal(newRecord, false);
-  assert.equal(dummyState.dummyRecordDps, 1500);
-  assert.equal(dummyState.currentStage, 12, '종료 후 기존 진행 스테이지로 정상 복귀');
-
-  // 최고 기록 경신 케이스 (2800 달성)
-  startDummy();
-  newRecord = finishDummy(2800);
-  assert.equal(newRecord, true);
-  assert.equal(dummyState.dummyRecordDps, 2800, '최고 기록이 2800으로 갱신되어야 함');
-  assert.equal(dummyState.currentStage, 12);
-
-  // 4-4. 언폴딩 및 Details! 연동 검증
-  assert.ok(gameJsContent.includes('u.trainingDummy'), 'trainingDummy 언폴딩 연동 확인');
-  assert.ok(gameJsContent.includes('openDetailsModal'), '종료 시 딜로그(Details!) 모달 자동 연동 확인');
+test('P3: 훈련용 허수아비 시스템 제거 및 미니멀리즘 정합성 검증', () => {
+  assert.ok(!indexHtmlContent.includes('id="btn-training-dummy"'), '상단 컨트롤에 #btn-training-dummy가 제거되어야 합니다.');
+  assert.ok(!indexHtmlContent.includes('id="training-dummy-banner"'), '아레나 상단에 #training-dummy-banner가 제거되어야 합니다.');
+  assert.ok(!stylesCssContent.includes('.training-dummy-banner'), 'CSS에 .training-dummy-banner 스타일이 제거되어야 합니다.');
+  assert.ok(!gameJsContent.includes('startTrainingDummyMode'), 'startTrainingDummyMode 함수가 제거되어야 합니다.');
+  assert.ok(!gameJsContent.includes('finishTrainingDummyMode'), 'finishTrainingDummyMode 함수가 제거되어야 합니다.');
+  assert.ok(!gameJsContent.includes('exitTrainingDummyMode'), 'exitTrainingDummyMode 함수가 제거되어야 합니다.');
 });
