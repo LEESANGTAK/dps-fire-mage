@@ -4616,8 +4616,8 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
-  // 2-B. Stage 2 클리어 또는 불꽃의 정수 획득/투자 시: 불꽃의 정수 & [🔮 마법 부여] 탭 개방
-  if (!u.infusionShop && ((state.essence || 0) > 0 || state.highestClearedStage >= 2 || getTotalInfusionLevels() > 0)) {
+  // 2-B. 불꽃의 정수 최초 획득 또는 주입 레벨 보유 시: 불꽃의 정수 & [🔮 마법 부여] 탭 개방
+  if (!u.infusionShop && ((state.essence || 0) > 0 || getTotalInfusionLevels() > 0)) {
     u.infusionShop = true;
     changed = true;
     if (!silent) {
@@ -4626,6 +4626,7 @@ function checkAndTriggerUnfolds(silent = false) {
         '우측 상단 [🔮 마법 부여] 탭에서 🔹 정수를 주입해 고대 유물 패시브를 각성하세요!'
       );
       triggerUnfoldPop('pill-essence');
+      triggerUnfoldPop('tab-btn-infusion');
       triggerUnfoldPop('right-mode-tabs');
     }
   }
@@ -5292,7 +5293,10 @@ function checkBountyProgress(type, amount = 1) {
     const rwGold = state.bounty.rewardGold || 0;
     const rwEss = state.bounty.rewardEssence || 0;
     state.gold += rwGold;
-    if (rwEss > 0) state.essence += rwEss;
+    if (rwEss > 0) {
+      state.essence += rwEss;
+      checkAndTriggerUnfolds(false);
+    }
     playSound('proc');
 
     // 퀘스트 완료 보상: 대량의 골드 동전 & 푸른 정수 곡선 비행 흡수 애니메이션 발동!
@@ -6113,6 +6117,9 @@ function loadGame() {
     }
     migrateMeteorSave();
     migrateSkillMasteryRefund();
+    if ((state.essence || 0) <= 0 && getTotalInfusionLevels() === 0) {
+      state.unfolded.infusionShop = false;
+    }
     saveGame();
   } catch (e) {}
 }
