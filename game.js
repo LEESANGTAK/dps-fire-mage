@@ -3088,6 +3088,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
           if (state.grimoires.meteor) {
             state.combat.critStreak = 2;
             state.combat.streakTimer = 6.0;
+            checkBountyProgress('hot_streak_trigger', 1);
           }
         }
       } else if (!isDotTick) {
@@ -3152,6 +3153,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   if (isCrit) checkBountyProgress('crit_count', 1);
   if (skillKey === 'meteor') checkBountyProgress('meteor_hit', 1);
   if (skillKey === 'fireblast') checkBountyProgress('fireblast_hit', 1);
+  if (skillKey === 'flame_patch') checkBountyProgress('flame_patch_tick', 1);
   if (state.combat.combustionRem > 0) checkBountyProgress('combustion_dmg', dmg);
 
   // 타격 즉시 DPS 달성 여부를 체크해 요구 DPS 충족 시 다음 도전 버튼을 즉시 영구 활성화
@@ -3324,6 +3326,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         state.combat.streakTimer = 12.0;
         playSound('proc');
         triggerReadyFlash('skill-3');
+        checkBountyProgress('hot_streak_trigger', 1);
       }
     } else if (skillKey === 'fireball') {
       if (state.combat.critStreak === 1) {
@@ -4523,61 +4526,7 @@ function renderShopUI() {
       `;
     })
     .join('');
-
-  const masteryContainer = document.getElementById('mastery-shop-list');
-  const masterySection = document.getElementById('mastery-section');
-  if (masteryContainer) {
-    const unlockedMasteries = SKILL_MASTERY_LIST.filter((m) => isSkillUnlocked(m.id));
-    if (masterySection) {
-      masterySection.style.display = unlockedMasteries.length > 0 ? '' : 'none';
-    }
-
-    const totalMasteryLvs = Object.values(state.skillMastery || {}).reduce((a, b) => a + b, 0);
-    const summaryEl = document.getElementById('ui-mastery-summary');
-    if (summaryEl) {
-      summaryEl.textContent = totalMasteryLvs > 0 ? `누적 ${totalMasteryLvs} Lv` : '';
-    }
-
-    masteryContainer.innerHTML = unlockedMasteries.map((m) => {
-      const lv = (state.skillMastery && state.skillMastery[m.id]) || 0;
-      const cost = getSkillMasteryCost(m);
-      const canBuy = state.gold >= cost;
-      let statDisplay = '';
-      if (m.type === 'duration') {
-        const curDur = (2.0 + lv * m.bonusPerLv).toFixed(1);
-        const nextDur = (2.0 + (lv + 1) * m.bonusPerLv).toFixed(1);
-        statDisplay = lv === 0
-          ? `<span class="mastery-bonus-preview">지속 2.0s ➔ ${nextDur}s (+${m.bonusPerLv}s)</span>`
-          : `<span class="mastery-bonus-val">지속 ${curDur}s</span> <span class="mastery-arrow">➔</span> <span class="mastery-next">${nextDur}s</span> <span class="mastery-bonus-preview">(+${m.bonusPerLv}s)</span>`;
-      } else {
-        const curBonus = (lv * m.bonusPerLv * 100).toFixed(0);
-        const nextBonus = ((lv + 1) * m.bonusPerLv * 100).toFixed(0);
-        statDisplay = lv === 0
-          ? `<span class="mastery-bonus-preview">+${nextBonus}% 강화</span>`
-          : `<span class="mastery-bonus-val">+${curBonus}%</span> <span class="mastery-arrow">➔</span> <span class="mastery-next">+${nextBonus}%</span>`;
-      }
-
-      return `
-        <div class="shop-card mastery-card ${canBuy ? 'affordable' : ''}">
-          <div class="shop-card-left">
-            <div class="shop-icon">${m.icon}</div>
-            <div class="shop-info">
-              <div class="shop-title">
-                <span>${m.name}</span>
-                ${lv > 0 ? `<span class="shop-lv-tag is-max">Lv.${lv}</span>` : ''}
-              </div>
-              <div class="shop-desc">${statDisplay}</div>
-            </div>
-          </div>
-          <button class="shop-buy-btn has-badge-anchor" data-mastery="${m.id}" ${!canBuy ? 'disabled' : ''}>
-            <span>💰 ${fmt(cost)} G</span>
-            <span class="noti-badge ${canBuy ? '' : 'hidden'}">!</span>
-          </button>
-        </div>
-      `;
-    }).join('');
-  }
-
+  // 스킬 연마(Mastery)는 장비 강화 및 스킬 트리로 통합 완료됨
   updateSkillActionBarVisibility();
   updateNotificationBadges();
 }
@@ -5195,56 +5144,74 @@ const BOUNTY_TEMPLATES = [
   {
     type: 'crit_count',
     title: '치명타 {n}회 달성',
-    baseTarget: 12,
-    scaleTarget: 2,
-    baseGold: 30,
-    baseEss: 1,
+    baseTarget: 8,
+    scaleTarget: 1.5,
+    rewardMult: 6.0,
+    baseEss: 3,
     req: () => true
+  },
+  {
+    type: 'hot_streak_trigger',
+    title: '🔥 몰열(2연속 크리) {n}회 발동',
+    baseTarget: 3,
+    scaleTarget: 0.6,
+    rewardMult: 8.5,
+    baseEss: 5,
+    req: () => Boolean(state.grimoires && state.grimoires.fireblast)
   },
   {
     type: 'monster_kill',
     title: '몬스터 {n}마리 토벌',
-    baseTarget: 3,
-    scaleTarget: 0.5,
-    baseGold: 50,
+    baseTarget: 2,
+    scaleTarget: 0.4,
+    rewardMult: 5.0,
     baseEss: 2,
     req: () => true
   },
   {
     type: 'fireball_cast',
     title: '화염구 {n}회 시전',
-    baseTarget: 8,
-    scaleTarget: 1.5,
-    baseGold: 30,
-    baseEss: 1,
+    baseTarget: 6,
+    scaleTarget: 1.2,
+    rewardMult: 5.5,
+    baseEss: 2,
     req: () => true
   },
   {
     type: 'fireblast_hit',
-    title: '불꽃 작렬 {n}회 시전',
-    baseTarget: 4,
-    scaleTarget: 0.8,
-    baseGold: 35,
-    baseEss: 1,
+    title: '불꽃 작렬 {n}회 적중',
+    baseTarget: 3,
+    scaleTarget: 0.6,
+    rewardMult: 7.0,
+    baseEss: 4,
     req: () => Boolean(state.grimoires && state.grimoires.fireblast)
   },
   {
     type: 'meteor_hit',
-    title: '메테오 {n}회 낙하',
-    baseTarget: 3,
+    title: '☄️ 메테오 {n}회 낙하',
+    baseTarget: 2,
     scaleTarget: 0.5,
-    baseGold: 45,
-    baseEss: 2,
+    rewardMult: 9.0,
+    baseEss: 6,
     req: () => Boolean(state.grimoires && state.grimoires.meteor)
   },
   {
     type: 'combustion_dmg',
-    title: '발화 중 {n} 피해 달성',
-    baseTarget: 600,
+    title: '💥 발화 중 {n} 피해 달성',
+    baseTarget: 400,
     scaleTarget: 250,
-    baseGold: 65,
-    baseEss: 3,
+    rewardMult: 10.0,
+    baseEss: 8,
     req: () => Boolean(state.grimoires && state.grimoires.combustion)
+  },
+  {
+    type: 'flame_patch_tick',
+    title: '♨️ 불장판 도트 {n}틱 적중',
+    baseTarget: 10,
+    scaleTarget: 2.0,
+    rewardMult: 6.5,
+    baseEss: 4,
+    req: () => Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0)
   }
 ];
 
@@ -5266,8 +5233,13 @@ function generateNextBounty() {
   const stg = Math.max(1, state.currentStage);
   const target = Math.max(1, Math.round(tpl.baseTarget + tpl.scaleTarget * Math.min(20, stg)));
   const title = tpl.title.replace('{n}', fmt(target));
-  const gold = Math.round((tpl.baseGold + stg * 8) * (getPlayerStats().goldMult || 1));
-  const essence = Math.max(1, Math.round(tpl.baseEss + Math.floor(stg / 8)));
+  
+  // Magic Archery 벤치마크: 퀘스트는 푼돈이 아닌 현재 스테이지 기본 골드의 5~10배 목돈을 공급해 장비 강화를 견인!
+  const stageData = getStageData(stg);
+  const baseStageGold = stageData ? stageData.gold : 10;
+  const mult = tpl.rewardMult || 6.0;
+  const gold = Math.max(25, Math.round(baseStageGold * mult * (getPlayerStats().goldMult || 1)));
+  const essence = Math.max(2, Math.round((tpl.baseEss || 2) + Math.floor(stg / 5) * (getPlayerStats().essenceMult || 1)));
 
   state.bounty = {
     id: (state.bounty && state.bounty.id ? state.bounty.id : 0) + 1,
@@ -5294,18 +5266,20 @@ function checkBountyProgress(type, amount = 1) {
     const rwEss = state.bounty.rewardEssence || 0;
     state.gold += rwGold;
     if (rwEss > 0) state.essence += rwEss;
-    playSound('item_select');
+    playSound('proc');
 
-    // 퀘스트 완료 보상 골드 & 정수 비행 흡수 애니메이션 발동!
+    // 퀘스트 완료 보상: 대량의 골드 동전 & 푸른 정수 곡선 비행 흡수 애니메이션 발동!
     const bountyBarEl = document.getElementById('bounty-bar') || document.getElementById('target-reward');
     if (rwGold > 0) {
-      spawnGoldCoinFlight(rwGold, false, bountyBarEl);
+      spawnGoldCoinFlight(rwGold, true, bountyBarEl);
     }
     if (rwEss > 0) {
       spawnEssenceFlight(rwEss, bountyBarEl);
     }
 
-    spawnFloatingText(`✨ 퀘스트 완료! 🪙+${fmt(rwGold)} 🔮+${fmt(rwEss)}`, 'fct-proc', -55, { isBig: true });
+    spawnFloatingText(`✨ 퀘스트 완료! 💰+${fmt(rwGold)} G · 🔮+${fmt(rwEss)}`, 'fct-proc', -60, { isBig: true });
+    renderShopUI();
+    renderInfusionUI();
     generateNextBounty();
   } else {
     updateBountyUI();
@@ -5440,6 +5414,31 @@ function openVictoryModal(isFirstVictory = false) {
       <span class="victory-stat-val">${formatPlayTime(state.playTimeSec)}</span>
     </div>
   `;
+
+  // WarcraftLogs 스킬별 누적 딜 지분 미니 바 렌더링
+  const logsBarsEl = document.getElementById('victory-logs-bars');
+  if (logsBarsEl) {
+    const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
+    const totalDmg = skillsArr.reduce((a, b) => a + b.dmg, 0);
+    if (totalDmg > 0) {
+      skillsArr.sort((a, b) => b.dmg - a.dmg);
+      logsBarsEl.innerHTML = skillsArr.slice(0, 4).map((s) => {
+        const pct = ((s.dmg / totalDmg) * 100).toFixed(1);
+        const hits = s.hits || 0;
+        const crits = s.crits || 0;
+        const critPct = hits > 0 ? ((crits / hits) * 100).toFixed(0) : 0;
+        return `
+          <div class="victory-log-bar-row">
+            <div class="victory-log-bar-fill" style="width:${pct}%; background:${s.color};"></div>
+            <span>${s.name} (${hits}타 · 크리 ${critPct}%)</span>
+            <span style="color:#fbbf24;">${fmt(s.dmg)} (${pct}%)</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      logsBarsEl.innerHTML = '<div style="color:#64748b; font-size:0.75rem; text-align:center;">전투 기록 집계 중...</div>';
+    }
+  }
 
   modal.classList.remove('hidden');
   state.isPaused = true;
@@ -6060,7 +6059,6 @@ function loadGame() {
     if (data.bossClearTimes) state.bossClearTimes = Object.assign({}, data.bossClearTimes);
     if (data.heatPacts) Object.assign(state.heatPacts, data.heatPacts);
     if (typeof data.ascensionCount === 'number') state.ascensionCount = data.ascensionCount;
-    if (typeof data.canAscend === 'boolean') state.canAscend = data.canAscend;
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
     if (data.stats) Object.assign(state.stats, data.stats);
     if (data.bounty) Object.assign(state.bounty, data.bounty);
@@ -6068,8 +6066,32 @@ function loadGame() {
       generateNextBounty();
     }
     migrateMeteorSave();
+    migrateSkillMasteryRefund();
     saveGame();
   } catch (e) {}
+}
+
+function migrateSkillMasteryRefund() {
+  if (!state.skillMastery) return;
+  let totalRefund = 0;
+  for (const [id, lv] of Object.entries(state.skillMastery)) {
+    if (lv > 0) {
+      const m = SKILL_MASTERY_LIST.find((x) => x.id === id);
+      if (m) {
+        for (let i = 0; i < lv; i++) {
+          totalRefund += Math.floor(m.baseCost * Math.pow(m.costScale, i));
+        }
+      }
+    }
+  }
+  if (totalRefund > 0) {
+    state.gold += totalRefund;
+    state.skillMastery = {};
+    setTimeout(() => {
+      spawnFloatingText(`💰 스킬 연마 통합 환급 +${fmt(totalRefund)} G!`, 'fct-proc', -50, { isBig: true });
+      showUnfoldToast('상점 구조 개편', `스킬 연마가 장비 강화로 통합되었습니다. 투자된 ${fmt(totalRefund)} G가 전액 환급되었습니다!`);
+    }, 1200);
+  }
 }
 
 function initEvents() {
@@ -6364,27 +6386,6 @@ function initEvents() {
     renderShopUI();
   });
 
-  const masteryShopList = document.getElementById('mastery-shop-list');
-  if (masteryShopList) {
-    masteryShopList.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-mastery]');
-      if (!btn) return;
-      const id = btn.getAttribute('data-mastery');
-      const m = SKILL_MASTERY_LIST.find((x) => x.id === id);
-      if (!m) return;
-      const cost = getSkillMasteryCost(m);
-      if (state.gold < cost) return;
-
-      state.gold -= cost;
-      if (!state.skillMastery) state.skillMastery = {};
-      state.skillMastery[id] = (state.skillMastery[id] || 0) + 1;
-      playSound('item_select');
-      spawnFloatingText(`✨ ${m.name} Lv.${state.skillMastery[id]}!`, 'fct-proc', -35, { anchor: 'caster' });
-      updateSkillActionBarVisibility();
-      saveGame();
-      renderShopUI();
-    });
-  }
 
   const flameBadgeBtn = document.getElementById('flame-evo-badge');
   if (flameBadgeBtn) {
@@ -6414,6 +6415,14 @@ function initEvents() {
   if (doAscendBtn) {
     doAscendBtn.addEventListener('click', () => {
       doAscend();
+    });
+  }
+
+  const viewDetailsBtn = document.getElementById('btn-victory-view-details');
+  if (viewDetailsBtn) {
+    viewDetailsBtn.addEventListener('click', () => {
+      playSound('item_select');
+      openDetailsModal();
     });
   }
 
