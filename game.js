@@ -2834,15 +2834,20 @@ function onMonsterKilled() {
 
   updateDpsMeterUI();
 
-  if (isFirstRagnarosKill) {
+  if (isRagnarosKill) {
     // 하스스톤 스타일 라그나로스 대폭발 & 드라마틱 여운 (Breathing Room)
     state.isPaused = true;
     playSound('proc');
-    spawnFloatingText('👑 화염군주 라그나로스 최초 토벌!', 'fct-crit', -60, { isBig: true });
+    spawnFloatingText(
+      isFirstRagnarosKill ? '👑 화염군주 라그나로스 최초 토벌!' : '👑 화염군주 라그나로스 토벌 완료!',
+      'fct-crit',
+      -60,
+      { isBig: true }
+    );
 
     // 1.3초간 보스 파괴 연출과 진동 여운을 감상할 충분한 호흡을 둔 뒤 웅장하게 승천 모달 개방!
     setTimeout(() => {
-      openVictoryModal(true);
+      openVictoryModal(isFirstRagnarosKill);
     }, 1300);
 
     saveGame();
