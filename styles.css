@@ -4591,7 +4591,7 @@ body {
 /* 6. 발 아래 자동 시전 마법진 (Auto-Cast Magic Circle - 2.5D 바닥면 접지) */
 .autocast-magic-circle {
   position: absolute;
-  bottom: 18px;
+  bottom: -12px;
   left: 50%;
   width: 250px;
   height: 250px;
