@@ -1,0 +1,58 @@
+/* 전투 UI: 종이 테두리와 그림자만 꾸미고 상태 신호의 레이어는 유지한다. */
+:root { --paper-edge: #a88a64; --paper-ink: #241b22; --paper-label: #efe1c6; }
+.top-bar { background: #30282c; border-bottom: 2px solid #8b7055; box-shadow: 0 3px 0 #17131b; }
+.game-title { color: #f3d391; text-shadow: 0 2px #17131b; }
+.game-title .comic-icon[data-sheet='spell'] { background-image: url('assets/art/paper-ui-skills-v1.png'); background-size: 300% 200%; background-position: 0 0 !important; }
+/* 몬스터 이름·체력과 하단 시전 UI가 같은 높이를 차지하지 않게 접지선을 조정한다. */
+.combat-arena:has(.player-hud) { --floor-line: min(66%, calc(100% - 190px)); }
+.top-bar .stat-pill { background: #241b22; border-color: #766149; border-radius: 3px; box-shadow: 0 2px 0 #141118; }
+.stat-pill .label { color: #cdbda6; }
+.stat-pill .value { text-shadow: none; }
+.top-bar .gold-pill { border-color: #b4934d; }
+.top-bar .essence-pill { border-color: #5b9caa; }
+.top-bar .feather-pill { border-color: #b26b4d; }
+.top-bar .btn-top { background: #3c3035; border-color: #8a7157; border-radius: 3px; box-shadow: 0 2px 0 #17131b; transition: transform .16s cubic-bezier(.16,1,.3,1), border-color .16s ease-out; }
+.top-bar .btn-top:hover { background: #49373a; border-color: #e8c48a; }
+.top-bar .btn-top:active { transform: translateY(2px); box-shadow: none; }
+.top-bar .btn-top.btn-danger-outline { border-color: #a46254; }
+.top-bar .btn-top.active { border-color: #57ba91; color: #b1f1cb; background: #24443b; }
+.paper-ui-icon { display: inline-block; width: 22px; height: 22px; flex-shrink: 0; vertical-align: middle; background-image: url('assets/art/paper-ui-stats-v1.png'); background-size: 300% 200%; border-radius: 2px; }
+.paper-ui-icon[data-paper-icon='gold'] { background-position: 0 0; }
+.paper-ui-icon[data-paper-icon='essence'] { background-position: 50% 0; }
+.paper-ui-icon[data-paper-icon='feather'] { background-position: 100% 0; }
+.paper-ui-icon[data-paper-icon='power'] { background-position: 0 100%; }
+.paper-ui-icon[data-paper-icon='crit'] { background-position: 50% 100%; }
+.paper-ui-icon[data-paper-icon='haste'] { background-position: 100% 100%; }
+.combat-arena .dps-meter-panel, .combat-arena .action-bar { background: #30262de8; border: 2px solid #a88a64; border-radius: 5px; box-shadow: 0 3px 0 #17131b, 0 5px 7px #0005; }
+.combat-arena .dps-meter-panel { border-color: #766149; }
+.combat-arena .caster-label, .combat-arena .monster-name-label, .combat-arena .arena-stage-reward-banner { background: #241b22ed; border: 1px solid #8b7055; border-radius: 3px; box-shadow: 0 2px 0 #151119; }
+.combat-arena .stage-nav-btn, .combat-arena .btn-meter-details { background: #3c3035; border-color: #8b7055; border-radius: 3px; }
+.combat-arena .monster-hp-wrap, .combat-arena .castbar-wrapper { background: #201922; border: 2px solid #b39770; border-radius: 3px; box-shadow: 0 2px 0 #17131b; }
+.combat-arena .monster-hp-wrap.boss-frame { border-color: #f3be63; box-shadow: 0 2px 0 #17131b, 0 0 12px #ef97314d; }
+.combat-arena .hp-bar-fill { background: #b84d40; }
+.combat-arena .castbar-fill:not(.pyro-cast) { background: #c98d37; }
+.combat-arena .hp-bar-text, .combat-arena .castbar-text { color: #fff4dc; text-shadow: 0 1px 2px #000, 1px 0 2px #000; font-variant-numeric: tabular-nums; }
+.combat-arena .castbar-wrapper.pyro-cast, .art-hot-streak .castbar-wrapper { border-color: #ffe39b; box-shadow: 0 0 12px #ff7a3266; }
+.combat-arena .auto-cast-btn { background: #3c3035; border-color: #8b7055; border-radius: 3px; }
+.combat-arena .auto-cast-btn.active { background: #24443b; border-color: #57ba91; color: #b1f1cb; }
+.action-bar .skill-btn { border: 2px solid #b39770; border-radius: 5px; background: #241b22; box-shadow: 0 2px 0 #151119; }
+.action-bar .skill-btn .skill-icon { position: absolute; inset: 0; font-size: 0; background-image: url('assets/art/paper-ui-skills-v1.png'); background-repeat: no-repeat; background-size: 300% 200%; border-radius: 3px; }
+.action-bar [data-skill='fireball'] .skill-icon { background-position: 0 0; }
+.action-bar [data-skill='fireblast'] .skill-icon { background-position: 50% 0; }
+.action-bar [data-skill='meteor'] .skill-icon { background-position: 100% 0; }
+.action-bar [data-skill='combustion'] .skill-icon { background-position: 0 100%; }
+.action-bar [data-skill='flame_patch'] .skill-icon { background-position: 50% 100%; }
+.action-bar .skill-btn .skill-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 3px 0; background: #211923ed; color: #fff0d5; text-shadow: 0 1px 2px #000; }
+.action-bar .skill-hotkey { color: #241b22; background: #e7cca0; border-radius: 2px; text-shadow: none; }
+.action-bar .skill-btn.locked-skill { border-color: #655548; background: #201922; }
+.action-bar .skill-btn.locked-skill .skill-icon { filter: grayscale(.85); }
+.action-bar .skill-btn.locked-skill::after { content: '🔒'; position: absolute; top: 3px; right: 4px; z-index: 7; font-size: 12px; }
+.action-bar .skill-btn:hover:not(.locked-skill) { border-color: #f5da9b; box-shadow: 0 3px 0 #151119; }
+.action-bar .skill-btn.proc-glow { border-color: #fff0ae; box-shadow: 0 0 14px #ff9b436b; }
+.action-bar .skill-btn:focus-visible, .top-bar .btn-top:focus-visible { outline: 2px solid #fff0ae; outline-offset: 3px; }
+.living-paused .wow-proc-svg .proc-beam-trail, .living-paused .wow-proc-svg .proc-beam-head { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .action-bar .skill-btn, .top-bar .btn-top { transition: none; }
+  .action-bar .skill-btn:hover, .action-bar .skill-btn:active, .action-bar .skill-btn.pressed { transform: none; }
+  .wow-proc-svg .proc-beam-trail, .wow-proc-svg .proc-beam-head { animation: none; }
+}

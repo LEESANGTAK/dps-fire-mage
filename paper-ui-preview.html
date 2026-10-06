@@ -1,0 +1,99 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>페이퍼 전투 UI 비교</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="art.css"><link rel="stylesheet" href="paper-ui.css?v=paper-ui-1"><style>
+body {height:auto;min-height:100vh;overflow:auto;background:#18151b;padding:24px;gap:24px}h1 {font-size:22px;color:#efdbb7}p{font-size:13px;color:#cdbda6}.top-bar{height:auto;flex-wrap:wrap;padding:16px;gap:12px}.stats-summary{flex-wrap:wrap;gap:12px}.combat-arena{height:auto!important;min-height:0!important;max-height:none!important;display:flex;padding:22px;gap:24px;background:#322830;flex-direction:column;overflow:visible}.action-bar{width:max-content;max-width:100%;flex-wrap:wrap}.castbar-wrapper{max-width:100%;width:310px}.monster-hp-wrap{position:relative;inset:auto;transform:none;width:240px;margin-top:10px}.hp-bar-outer{height:22px}.preview-states{display:flex;gap:18px;flex-wrap:wrap}.preview-states>div{display:flex;flex-direction:column;gap:10px}.preview-states .action-bar{padding:10px}.paper-extra{width:66px;height:66px;background:url('assets/art/paper-ui-skills-v1.png') 100% 100%/300% 200%;border:2px solid #b39770;border-radius:5px}@media(max-width:600px){body{padding:12px}.combat-arena{padding:16px}.stats-summary{gap:8px}}
+body:has(#preview-reduce:checked) .wow-proc-svg .proc-beam-trail,body:has(#preview-reduce:checked) .wow-proc-svg .proc-beam-head,body:has(#preview-reduce:checked) .art-followup{animation:none}body:has(#preview-reduce:checked) .skill-btn{transition:none;transform:none}</style><h1>페이퍼 전투 UI</h1><p>실제 게임과 같은 CSS·아이콘을 사용하는 상태 비교 화면입니다. 진행 데이터는 저장하지 않습니다.</p><label><input type="checkbox" id="preview-reduce"> 모션 감소 표시 확인</label><header class="top-bar"><div class="stats-summary">
+      <div class="stat-pill gold-pill" id="pill-gold">
+        <span class="label"><i class="paper-ui-icon" data-paper-icon="gold" aria-hidden="true"></i> 골드</span>
+        <span class="value" id="ui-gold">0</span>
+      </div>
+      <div class="stat-pill essence-pill " id="pill-essence" title="몬스터 토벌 및 치명타 추출로 획득하는 고대 마력 자원입니다 (마법 부여에 사용)">
+        <span class="label"><i class="paper-ui-icon" data-paper-icon="essence" aria-hidden="true"></i> 정수</span>
+        <span class="value" id="ui-essence">0</span>
+      </div>
+      <div class="stat-pill feather-pill " id="pill-feathers" title="불사조 승천으로 획득하는 영구 유물 재화입니다">
+        <span class="label"><i class="paper-ui-icon" data-paper-icon="feather" aria-hidden="true"></i> 깃털</span>
+        <span class="value" id="ui-feathers">0</span>
+      </div>
+      <div class="stat-pill">
+        <span class="label"><i class="paper-ui-icon" data-paper-icon="power" aria-hidden="true"></i> 주문 공격력</span>
+        <span class="value" id="ui-sp">10</span>
+      </div>
+      <div class="stat-pill" id="pill-crit">
+        <span class="label"><i class="paper-ui-icon" data-paper-icon="crit" aria-hidden="true"></i> 치명타</span>
+        <span class="value" id="ui-crit">5.0%</span>
+      </div>
+      <div class="stat-pill" id="pill-haste">
+        <span class="label"><i class="paper-ui-icon" data-paper-icon="haste" aria-hidden="true"></i> 시전속도</span>
+        <span class="value" id="ui-haste">+0%</span>
+      </div></div></header><section class="combat-arena"><div><p>스킬 5종 · 아이콘은 종이 / 실제 화염 파티클은 유지</p><div class="action-bar"><button class="skill-btn has-badge-anchor" data-skill="fireball" title="[1] 화염구">
+              <span class="skill-hotkey">1</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">화염구</span>
+              <span class="pity-crit-badge hidden" aria-hidden="true" style="display:none;"></span>
+              <span class="noti-badge hidden">!</span>
+              <div class="gcd-Overlay"></div>
+              <div class="cd-overlay"></div>
+            </button><button class="skill-btn has-badge-anchor" data-skill="fireblast" title="[2] 불꽃 작렬 (즉시 시전, 100% 치명타)">
+              <span class="skill-hotkey">2</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">불꽃 작렬</span>
+              <span class="skill-charges" style="display:none;">2</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="cd-overlay"></div>
+            </button><button class="skill-btn has-badge-anchor" data-skill="meteor" title="[3] 메테오 (연쇄 치명타 시 즉시 발사)">
+              <span class="skill-hotkey">3</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">메테오</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="gcd-Overlay"></div>
+              <div class="cd-overlay"></div>
+              <svg class="wow-proc-svg" viewBox="0 0 66 66" aria-hidden="true">
+                <rect class="proc-track" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+                <rect class="proc-beam-trail" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+                <rect class="proc-beam-head" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+              </svg>
+            </button><button class="skill-btn has-badge-anchor" data-skill="combustion" title="[4] 마력 폭주 (모든 마법 100% 치명타 & 가속)">
+              <span class="skill-hotkey">4</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">마력 폭주</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="cd-overlay"></div>
+            </button><button class="skill-btn has-badge-anchor" data-skill="flame_patch" title="[6] 불장판 (몬스터 바닥 화염 지대 생성 및 지속 도트 피해)">
+              <span class="skill-hotkey">6</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">불장판</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="gcd-Overlay"></div>
+              <div class="cd-overlay"></div>
+            </button></div></div><div class="preview-states"><div><p>몰열 · 즉시 시전</p><div class="action-bar"><button class="skill-btn has-badge-anchor proc-glow art-followup" data-skill="meteor" title="[3] 메테오 (연쇄 치명타 시 즉시 발사)">
+              <span class="skill-hotkey">3</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">메테오</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="gcd-Overlay"></div>
+              <div class="cd-overlay"></div>
+              <svg class="wow-proc-svg" viewBox="0 0 66 66" aria-hidden="true">
+                <rect class="proc-track" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+                <rect class="proc-beam-trail" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+                <rect class="proc-beam-head" x="1" y="1" width="64" height="64" rx="7" ry="7" pathLength="100"></rect>
+              </svg>
+            </button></div></div><div><p>쿨다운</p><div class="action-bar"><button class="skill-btn has-badge-anchor" data-skill="fireblast" title="[2] 불꽃 작렬 (즉시 시전, 100% 치명타)">
+              <span class="skill-hotkey">2</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">불꽃 작렬</span>
+              <span class="skill-charges" style="display:none;">2</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="cd-overlay active" style="background:conic-gradient(#0b091acf 0deg 230deg,transparent 230deg 360deg)">4.2</div>
+            </button></div></div><div><p>활성 · 마력 폭주</p><div class="action-bar"><button class="skill-btn has-badge-anchor art-active" data-skill="combustion" title="[4] 마력 폭주 (모든 마법 100% 치명타 & 가속)">
+              <span class="skill-hotkey">4</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">마력 폭주</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="cd-overlay"></div>
+            </button></div></div><div><p>잠금</p><div class="action-bar"><button class="skill-btn has-badge-anchor locked-skill" data-skill="flame_patch" title="[6] 불장판 (몬스터 바닥 화염 지대 생성 및 지속 도트 피해)">
+              <span class="skill-hotkey">6</span>
+              <span class="skill-icon" aria-hidden="true"></span>
+              <span class="skill-name">불장판</span>
+              <span class="noti-badge hidden">!</span>
+              <div class="gcd-Overlay"></div>
+              <div class="cd-overlay"></div>
+            </button></div></div></div><div><p>체력 · 시전 진행</p><div class="monster-hp-wrap"><div class="hp-bar-outer"><div class="hp-bar-fill" style="width:68%"></div><div class="hp-bar-text"><span>340 / 500</span><span>68%</span></div></div></div></div><div class="castbar-wrapper"><div class="castbar-fill" style="width:62%"></div><div class="castbar-text"><span>화염구</span><span>0.6초</span></div></div><div><p>확장용 화염 정령 아이콘 · 전투 소환수 원화는 유지</p><div class="paper-extra"></div></div></section></html>
