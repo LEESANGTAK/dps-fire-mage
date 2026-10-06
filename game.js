@@ -4550,7 +4550,7 @@ function renderShopUI() {
             <div class="shop-info">
               <div class="shop-title">
                 <span>${it.name}</span>
-                <span class="shop-lv-tag">${lv === 0 ? '미보유' : `+${lv}강`}</span>
+                <span class="shop-lv-tag ${lv > 0 ? 'upgraded' : 'unowned'}">${lv === 0 ? '미보유' : `+${lv}강`}</span>
               </div>
               <div class="shop-desc">${it.desc}</div>
             </div>

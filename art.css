@@ -242,6 +242,11 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .shop-card { background:#e1cfad;border:2px solid #251a21;border-radius:5px 8px 6px 4px;color:#392b2c;box-shadow:2px 3px #100c1280; }
 .shop-title { font-size:.9rem;color:#35232a; }
 .shop-desc { color:#635044;font-size:.68rem;line-height:1.4; }
+.shop-lv-tag { font-size:.7rem;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;line-height:1.2;vertical-align:middle; }
+.shop-lv-tag.unowned { color:#8c786c !important;background:#35272a !important;border:1.5px solid #1a1215 !important; }
+.shop-lv-tag.upgraded { color:#4ade80 !important;background:#12281e !important;border:1.5px solid #064e3b !important;box-shadow:inset 0 1px #22c55e44,1px 1px 0 #100b11;text-shadow:0 1px 2px #000; }
+.caster-eq-lv { background:#12281e !important;border:1.5px solid #064e3b !important;color:#4ade80 !important;box-shadow:1px 1px 0 #100b11; }
+.section-sub,.total-power-tag { background:#251c22 !important;border:1.5px solid #4a3433 !important;color:#edd5af !important;padding:2px 8px;border-radius:99px; }
 .shop-card.affordable { background:#ecd8b0;border-color:#806038; }
 .shop-card.purchased-grimoire { opacity:.65;background:#a99a85;border-color:#282027; }
 .shop-icon { background:#30232b;border:2px solid #604330;border-radius:5px;box-shadow:inset 0 0 0 1px #cfa86755; }

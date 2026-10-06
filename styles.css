@@ -872,10 +872,10 @@ body {
   position: absolute;
   bottom: -4px;
   right: -4px;
-  background: #0b0f18;
-  border: 1px solid #fbbf24;
-  color: #fde047;
-  font-size: 0.6rem;
+  background: #092015;
+  border: 1px solid #10b981;
+  color: #6ee7b7;
+  font-size: 0.62rem;
   font-weight: 900;
   padding: 0 4px;
   border-radius: 99px;
@@ -2110,8 +2110,14 @@ body {
 .total-power-tag,
 .section-sub {
   font-size: 0.72rem;
-  color: var(--fire-gold);
+  color: #f1f5f9;
+  background: #0f172a;
+  border: 1px solid #334155;
+  padding: 2px 8px;
+  border-radius: 99px;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
 }
 
 .equipped-slots {
@@ -2214,11 +2220,26 @@ body {
 }
 
 .shop-lv-tag {
-  font-size: 0.7rem;
-  color: var(--fire-gold);
-  background: rgba(251, 191, 36, 0.14);
+  font-size: 0.68rem;
+  font-weight: 800;
   padding: 1px 6px;
   border-radius: 4px;
+  line-height: 1.25;
+  display: inline-flex;
+  align-items: center;
+}
+
+.shop-lv-tag.unowned {
+  color: #94a3b8;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.shop-lv-tag.upgraded {
+  color: #6ee7b7;
+  background: #092015;
+  border: 1px solid #10b981;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .shop-desc {
