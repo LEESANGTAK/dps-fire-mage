@@ -691,6 +691,7 @@ const state = {
     critStreak: 0,
     streakTimer: 0,
     combustionRem: 0,
+    fireballCombustionSnapshot: false,
 
     fbCharges: 2,
     fbMaxCharges: 2,
@@ -3029,7 +3030,8 @@ let lastHeavyKnockbackTime = 0;
 let hitDirectionCounter = 0;
 let lastDotShiverTime = 0;
 
-function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false) {
+function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false, isCombustionCast = false) {
+  const isCombustingEffective = Boolean((state.combat && state.combat.combustionRem > 0) || isCombustionCast);
   const masteryMult = getSkillMasteryMult(skillKey);
   rawDamage *= masteryMult;
 
@@ -3137,7 +3139,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       state.stats.biggestCritSkill = skillKey;
     }
   }
-  if (state.combat.combustionRem > 0) {
+  if (isCombustingEffective) {
     state.stats.combustionDmg = (state.stats.combustionDmg || 0) + dmg;
     state.stats.combustionHits = (state.stats.combustionHits || 0) + 1;
   }
@@ -3158,7 +3160,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   if (skillKey === 'meteor') checkBountyProgress('meteor_hit', 1);
   if (skillKey === 'fireblast') checkBountyProgress('fireblast_hit', 1);
   if (skillKey === 'flame_patch') checkBountyProgress('flame_patch_tick', 1);
-  if (state.combat.combustionRem > 0) checkBountyProgress('combustion_dmg', dmg);
+  if (isCombustingEffective) checkBountyProgress('combustion_dmg', dmg);
 
   // 타격 즉시 DPS 달성 여부를 체크해 요구 DPS 충족 시 다음 도전 버튼을 즉시 영구 활성화
   const windowSec = 6.0;
@@ -3258,7 +3260,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   } else if (isCrit) {
     spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
     if (!isDotTick && skillKey !== 'meteor') playSound('crit');
-    if (state.combat.combustionRem > 0) {
+    if (isCombustingEffective) {
       spawnParticles(targetPos.x, targetPos.y, 12, '#fef08a', '#ea580c', 1.6);
     }
   } else {
@@ -3445,10 +3447,11 @@ function triggerAllSummonsSyncAttack() {
 // ==========================================
 // 12. 마법사 스킬 시전 로직
 // ==========================================
-function fireWithMultishot(type, baseMult) {
+function fireWithMultishot(type, baseMult, isCombustingSnapshot = false) {
   const multiLv = state.skillTree.multishot || 0;
   const evo = getCurrentFlameEvolution();
   const totalShots = 1 + multiLv;
+  const isCombustingAtLaunch = Boolean(isCombustingSnapshot || (state.combat && state.combat.combustionRem > 0));
 
   // 1. 기본 탄환 + 갈래 화염구 특성 탄환
   for (let i = 0; i < totalShots; i++) {
@@ -3461,14 +3464,15 @@ function fireWithMultishot(type, baseMult) {
         type,
         () => {
           const st = getPlayerStats();
+          const isCombustEffective = Boolean(isCombustingAtLaunch || (state.combat && state.combat.combustionRem > 0));
           // 타오르는 기운 (Heating Up Pity System): 비치명타 시마다 치명타율 누적 보정 (+15%/스택)
           const pityBonus = isMain ? (state.combat.pityCritStacks || 0) * 15 : 0;
-          const effectiveCrit = Math.min(100, st.crit + pityBonus);
-          const isCrit = Math.random() * 100 < effectiveCrit;
+          const effectiveCrit = isCombustEffective ? 100 : Math.min(100, st.crit + pityBonus);
+          const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
           const mult = isMain ? baseMult : baseMult * 0.4;
           const base = st.sp * mult;
           const finalDmg = isCrit ? base * st.critDmg : base;
-          dealDamage(type, finalDmg, isCrit, isMain);
+          dealDamage(type, finalDmg, isCrit, isMain, false, isCombustEffective);
         },
         lineOffsetY,
         isMain ? 1.0 : 0.82
@@ -3492,10 +3496,12 @@ function fireWithMultishot(type, baseMult) {
           type,
           () => {
             const st = getPlayerStats();
-            const isCrit = Math.random() * 100 < st.crit;
+            const isCombustEffective = Boolean(isCombustingAtLaunch || (state.combat && state.combat.combustionRem > 0));
+            const effectiveCrit = isCombustEffective ? 100 : st.crit;
+            const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
             const base = st.sp * (baseMult * 0.22);
             const finalDmg = isCrit ? base * st.critDmg : base;
-            dealDamage(type, finalDmg, isCrit, false);
+            dealDamage(type, finalDmg, isCrit, false, false, isCombustEffective);
           },
           barrageOffsetY,
           0.62
@@ -3518,7 +3524,8 @@ function triggerSkill(skillKey, isManual = false) {
     if (instantChance > 0 && Math.random() < instantChance) {
       spawnFloatingText('☀️ 파편: 즉시 시전!', 'fct-proc', -35, { anchor: 'caster' });
       playSound('proc');
-      fireWithMultishot('fireball', 1.0);
+      const isCombusting = Boolean(c.combustionRem > 0);
+      fireWithMultishot('fireball', 1.0, isCombusting);
       beginMageGesture('fireball');
       c.gcdTotal = Math.max(0.35, 0.85 / stats.speedMult);
       c.gcdRemaining = c.gcdTotal;
@@ -3528,6 +3535,7 @@ function triggerSkill(skillKey, isManual = false) {
     // 수동 조작 시 발화 중 캐스팅 속도 25% 가속
     const manualSpeedBonus = (isManual && c.combustionRem > 0) ? 1.25 : 1.0;
     const castTime = Math.max(0.35, 1.5 / (stats.speedMult * manualSpeedBonus));
+    c.fireballCombustionSnapshot = Boolean(c.combustionRem > 0);
     c.castingSkill = 'fireball';
     c.castTotal = castTime;
     c.castRemaining = castTime;
@@ -3641,7 +3649,8 @@ function triggerSkill(skillKey, isManual = false) {
 
 function releaseMeteor(isManual = false) {
   beginMageGesture('meteor');
-  if (state.combat && state.combat.combustionRem > 0) {
+  const isCombustingAtLaunch = Boolean(state.combat && state.combat.combustionRem > 0);
+  if (isCombustingAtLaunch) {
     if (!state.stats) state.stats = {};
     state.stats.combustionPyros = (state.stats.combustionPyros || 0) + 1;
   }
@@ -3650,13 +3659,15 @@ function releaseMeteor(isManual = false) {
   }
   launchMeteorVfx(() => {
     const stats = getPlayerStats();
-    const isCrit = Math.random() * 100 < stats.crit;
+    const isCombustEffective = Boolean(isCombustingAtLaunch || (state.combat && state.combat.combustionRem > 0));
+    const effectiveCrit = isCombustEffective ? 100 : stats.crit;
+    const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
     let damage = stats.sp * 3.2 * (isCrit ? stats.critDmg : 1);
     if (isManual) {
       damage *= 1.6; // 수동 몰열 폭딜: 60% 추가 증폭!
     }
     // 메테오 자체는 소비한 몰열을 다시 충전하지 않습니다.
-    dealDamage('meteor', damage, isCrit, false);
+    dealDamage('meteor', damage, isCrit, false, false, isCombustEffective);
     state.combat.meteorBurnRem = 6;
   }, isManual ? 1.2 : 1.0);
 
@@ -3667,10 +3678,12 @@ function releaseMeteor(isManual = false) {
       setTimeout(() => {
         launchMeteorVfx(() => {
           const stats = getPlayerStats();
-          const isCrit = Math.random() * 100 < stats.crit;
+          const isCombustEffective = Boolean(isCombustingAtLaunch || (state.combat && state.combat.combustionRem > 0));
+          const effectiveCrit = isCombustEffective ? 100 : stats.crit;
+          const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
           let damage = stats.sp * 1.6 * (isCrit ? stats.critDmg : 1);
           if (isManual) damage *= 1.6;
-          dealDamage('meteor', damage, isCrit, false);
+          dealDamage('meteor', damage, isCrit, false, false, isCombustEffective);
         }, isManual ? 0.8 : 0.68);
       }, (tc + 1) * 220);
     }
@@ -3680,7 +3693,9 @@ function releaseMeteor(isManual = false) {
 function finishCast(skillKey) {
   if (skillKey === 'fireball') {
     checkBountyProgress('fireball_cast', 1);
-    fireWithMultishot('fireball', 1.0);
+    const isCombusting = Boolean((state.combat.combustionRem > 0) || state.combat.fireballCombustionSnapshot);
+    state.combat.fireballCombustionSnapshot = false;
+    fireWithMultishot('fireball', 1.0, isCombusting);
     // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 메테오 즉시 발사 연계!
     if (state.combat.critStreak === 2 && isSkillAutoActive('meteor') && state.grimoires.meteor) {
       triggerSkill('meteor');
