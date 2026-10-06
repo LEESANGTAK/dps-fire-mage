@@ -1396,14 +1396,14 @@ const FLAME_EVOLUTION_TIERS = [
   },
   {
     tier: 4,
-    name: '심연 비전화',
-    badgeText: '🟣 Lv.4 심연 비전화',
+    name: '작열 극염',
+    badgeText: '🔥 Lv.4 작열 극염',
     reqSp: 260,
     reqEquipLv: 18,
-    colorCore: '#fae8ff',
-    colorMid: '#c084fc',
-    colorEdge: 'rgba(126, 34, 206, 0)',
-    ringRgb: '192, 132, 252',
+    colorCore: '#ffffff',
+    colorMid: '#f97316',
+    colorEdge: 'rgba(234, 88, 12, 0)',
+    ringRgb: '234, 88, 12',
     scale: 1.5,
     orbiters: 3,
     barrageCount: 1
@@ -1636,10 +1636,10 @@ function launchCustomProjectile(opts) {
     progress: 0,
     duration: opts.duration || 0.28,
     radius: opts.radius || 10,
-    colorCore: opts.colorCore || '#fde047',
+    colorCore: opts.colorCore || '#ffffff',
     colorMid: opts.colorMid || '#f97316',
-    colorEdge: opts.colorEdge || 'rgba(239, 68, 68, 0)',
-    ringRgb: opts.ringRgb || '251, 146, 60',
+    colorEdge: opts.colorEdge || 'rgba(234, 88, 12, 0)',
+    ringRgb: opts.ringRgb || '234, 88, 12',
     evoTier: opts.evoTier || 1,
     orbiters: opts.orbiters || 0,
     onHit: opts.onHit
@@ -1979,11 +1979,13 @@ function updateAndDrawVfx(dt) {
     p.progress += dt / p.duration;
 
     if (p.progress >= 1) {
-      // 일반 화염구의 타격 파티클은 작고 짧게 유지합니다.
+      // 일반 화염구의 타격은 짧은 불꽃 꽃잎 + 작은 불씨로 유지합니다.
+      spawnFireballImpact(particles, p,
+        typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
       spawnParticles(
         p.targetX,
         p.targetY,
-        7,
+        4,
         p.colorCore,
         p.colorMid,
         0.62
@@ -2218,28 +2220,15 @@ function updateAndDrawVfx(dt) {
       }
       continue;
     }
-    if (pt.fireballTrail || pt.comicTrail) {
-      if (typeof drawFireballParticle === 'function') {
-        drawFireballParticle(ctx, pt, dt);
-        continue;
-      }
+    if (pt.fireTrail) {
+      drawFireTrail(ctx, pt, dt);
+      continue;
     }
     const alpha = 1 - pt.life / pt.maxLife;
     ctx.fillStyle = pt.life < pt.maxLife * 0.4 ? pt.colorCore : pt.colorEdge;
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    if (pt.comicTrail) {
-      // 둥근 광점 대신 만화 원화와 같은 각진 불씨가 작아지며 사라집니다.
-      const r = pt.radius * alpha;
-      ctx.moveTo(pt.x + r * 1.8, pt.y);
-      ctx.lineTo(pt.x - r, pt.y - r * 0.7);
-      ctx.lineTo(pt.x - r * 0.4, pt.y);
-      ctx.lineTo(pt.x - r * 1.4, pt.y + r * 0.6);
-      pt.vx *= Math.exp(-5 * dt);
-      pt.vy += 65 * dt;
-    } else {
-      ctx.arc(pt.x, pt.y, pt.radius * alpha, 0, Math.PI * 2);
-    }
+    ctx.arc(pt.x, pt.y, pt.radius * alpha, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
   }

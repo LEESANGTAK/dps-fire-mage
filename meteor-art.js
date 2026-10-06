@@ -39,15 +39,17 @@ function drawComicMeteor(ctx, m, pose, image = comicMeteor) {
       const flareAlpha = Math.min(0.48, (pose.progress - 0.3) * 0.95);
       ctx.globalAlpha = flareAlpha;
       const glowR = pose.radius * 1.4;
-      const grad = ctx.createRadialGradient(0, 0, glowR * 0.15, 0, 0, glowR);
-      grad.addColorStop(0, 'rgba(255, 237, 213, 0.7)');
-      grad.addColorStop(0.35, 'rgba(251, 146, 60, 0.45)');
-      grad.addColorStop(0.7, 'rgba(234, 88, 12, 0.2)');
-      grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(0, 0, glowR, 0, Math.PI * 2);
-      ctx.fill();
+      const grad = ctx.createRadialGradient ? ctx.createRadialGradient(0, 0, glowR * 0.15, 0, 0, glowR) : null;
+      if (grad && grad.addColorStop) {
+        grad.addColorStop(0, 'rgba(255, 237, 213, 0.7)');
+        grad.addColorStop(0.35, 'rgba(251, 146, 60, 0.45)');
+        grad.addColorStop(0.7, 'rgba(234, 88, 12, 0.2)');
+        grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, glowR, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
 

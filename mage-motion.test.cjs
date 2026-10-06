@@ -4,13 +4,13 @@ const combat = { castingSkill: null, castRemaining: 0, castTotal: 1.5, critStrea
 const rest = { kind: '', remaining: 0, total: 0 };
 assert.equal(selectMagePose(combat, rest), 'idle');
 for (const duration of [0.4, 1.5, 2.5]) {
-  assert.equal(selectMagePose({ ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * 0.9 }, rest), 'idle');
+  assert.equal(selectMagePose({ ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * 0.9 }, rest), 'anticipation');
   assert.equal(selectMagePose({ ...combat, castingSkill: 'meteor', castTotal: duration, castRemaining: duration * 0.2 }, rest), 'charge');
 }
 assert.equal(selectMagePose({ ...combat, critStreak: 2 }, rest), 'idle');
 assert.equal(selectMagePose({ ...combat, combustionRem: 1 }, rest), 'hot');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.3, total: 0.3 }), 'idle');
-assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'idle');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.3, total: 0.3 }), 'release');
+assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.15, total: 0.3 }), 'recoil');
 assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: 0.01, total: 0.3 }), 'idle');
 assert.equal(selectMagePose({ ...combat, critStreak: 2 }, { kind: 'meteor', remaining: 0.38, total: 0.38 }), 'release');
 assert.equal(selectMagePose(combat, { kind: 'combustion', remaining: 0.5, total: 0.5 }), 'hot');
@@ -22,15 +22,15 @@ const context = vm.createContext({ state: { combat }, document: { getElementById
 vm.runInContext(fs.readFileSync('./mage-motion.js', 'utf8'), context);
 vm.runInContext("beginMageGesture('meteor'); updateMageMotion(0.2, true)", context);
 assert.equal(art.dataset.pose, 'release');
-assert.equal(vm.runInContext('mageGesture.remaining', context), 0.38);
-vm.runInContext('updateMageMotion(0.15, false)', context);
+assert.equal(vm.runInContext('mageGesture.remaining', context), 0.42);
+vm.runInContext('updateMageMotion(0.2, false)', context);
 assert.equal(art.dataset.pose, 'recoil');
 vm.runInContext('updateMageMotion(0.5, false)', context);
 assert.equal(art.dataset.pose, 'idle');
 vm.runInContext("beginMageGesture('fireball'); mageGesture.hitStop = 0.03; updateMageMotion(0.02, false)", context);
-assert.equal(vm.runInContext('mageGesture.remaining', context), 0.3);
+assert.equal(vm.runInContext('mageGesture.remaining', context), 0.26);
 vm.runInContext('updateMageMotion(0.02, false); updateMageMotion(0.05, false)', context);
-assert.ok(vm.runInContext('mageGesture.remaining < 0.3', context));
+assert.ok(vm.runInContext('mageGesture.remaining < 0.26', context));
 const spring = { x: 0, vx: 0, squash: 0, vs: 0, cloth: 0, vc: 0 };
 let peak = 0;
 for (let i = 0; i < 120; i++) { advanceSpring(spring, 1 / 120, 20, 0.08); peak = Math.max(peak, spring.x); }
@@ -70,26 +70,25 @@ assert.ok(briskBody.x>6 && briskBody.cloth<briskBody.x*.4,'상체는 빠르게 �
 for (const duration of [0.02, 0.05, 0.1, 1.5]) {
   for (let i = 0; i <= 10; i++) {
     const fast = { ...combat, castingSkill: 'fireball', castTotal: duration, castRemaining: duration * i / 10 };
-    assert.equal(selectMagePose(fast, rest), 'idle');
+    assert.ok(['anticipation', 'charge'].includes(selectMagePose(fast, rest)));
     assert.ok(Math.abs(armTarget(fast, rest)) <= 0.201);
   }
 }
-// 픽셀 읽기가 금지된 파일 실행 환경에서도 이미지 원본을 사용해야 합니다.
+// 캔버스를 만들 수 없는 환경에서는 화염구 텍스처 생성을 건너뛰고 오류 없이 넘어가야 합니다.
 let imageCalls = 0;
-class TestImage { complete = true; naturalWidth = 1536; }
-const projectileContext = vm.createContext({ Image: TestImage, console, document: { createElement() { throw Error('픽셀 읽기 금지'); } } });
+const projectileContext = vm.createContext({ console, Map, document: { createElement() { throw Error('캔버스 생성 불가'); } } });
 vm.runInContext(fs.readFileSync('./combat-art.js', 'utf8'), projectileContext);
 projectileContext.painter = { save(){}, restore(){}, translate(){}, rotate(){}, scale(){}, drawImage(){ imageCalls++; } };
-vm.runInContext("drawComicProjectile(painter, {type:'fireball', radius:10, startX:0, startY:0, targetX:100, targetY:0}, 50, 0, 0.5)", projectileContext);
-assert.equal(imageCalls, 3);
+vm.runInContext("drawComicProjectile(painter, {type:'fireball', radius:10, startX:0, startY:0, targetX:100, targetY:0, colorCore:'#fde047', colorMid:'#f97316', ringRgb:'251, 146, 60'}, 50, 0, 0.5)", projectileContext);
+assert.equal(imageCalls, 0);
 
 const trailPool = [];
 projectileContext.trailPool = trailPool;
 vm.runInContext("const trailShot = {type:'fireball', radius:10}; for(let i=0;i<500;i++) emitComicTrail(trailShot, i, 50, 1/60, trailPool, false)", projectileContext);
-assert.equal(trailPool.length, 96, '고속 연사의 불씨 수를 제한해야 합니다.');
-assert.ok(trailPool.every(p => p.maxLife <= 0.24));
+assert.equal(trailPool.length, 150, '고속 연사의 꼬리 불꽃 수를 제한해야 합니다.');
+assert.ok(trailPool.every(p => p.fireTrail && p.maxLife <= 0.3));
 vm.runInContext("emitComicTrail(trailShot, 0, 0, 1, trailPool, true)", projectileContext);
-assert.equal(trailPool.length, 96);
+assert.equal(trailPool.length, 150);
 
 assert.ok(armTarget({ ...combat, castingSkill:'fireball', castRemaining:1 }, rest) < -0.1, '시전 초반부터 팔의 준비 동작이 읽혀야 합니다.');
 assert.equal(armTarget(combat, {kind:'fireball', remaining:0.3, total:0.3}), 0.24);
@@ -109,13 +108,14 @@ vm.runInContext('spawnSlimeSplash(slimePool,100,100,160,false,true,100,true)', p
 assert.equal(slimePool.length, 48);
 
 const { livingMageMotion } = require('./mage-motion.js');
-assert.equal(livingMageMotion(10, true, false).breath, 1);
-assert.equal(livingMageMotion(10, true, false).hat, 0);
+assert.equal(livingMageMotion(10, true, false).breathY, 1);
+assert.equal(livingMageMotion(10, true, false).breathX, 1);
+assert.equal(livingMageMotion(10, true, false).lean, 0);
 assert.notDeepEqual(livingMageMotion(1, false, false), livingMageMotion(2, false, false));
 for(let i=0;i<1000;i++) {
   const idle = livingMageMotion(i/10,false,false);
-  assert.ok(Math.abs(idle.breath-1)<=0.0121 && Math.abs(idle.shear)<=0.0101);
-  assert.ok(Math.abs(livingMageMotion(i/10,false,true).hat)<=1.401);
+  assert.ok(Math.abs(idle.breathY - 1) <= 0.02 && Math.abs(idle.breathX - 1) <= 0.01);
+  assert.ok(Math.abs(idle.lean) <= 0.01);
 }
 
 const edgePool = [];

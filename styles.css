@@ -805,8 +805,8 @@ body {
 }
 
 .caster-avatar.evo-4.casting-active {
-  border-color: #c084fc;
-  box-shadow: 0 0 30px rgba(192, 132, 252, 0.85);
+  border-color: #f97316;
+  box-shadow: 0 0 30px rgba(234, 88, 12, 0.85);
 }
 
 .caster-avatar.evo-5.casting-active {
@@ -991,10 +991,10 @@ body {
 }
 
 .flame-evo-badge.evo-tier-4 {
-  color: #f5d0fe;
-  background: rgba(107, 33, 168, 0.75);
-  border: 1px solid #c084fc;
-  box-shadow: 0 0 14px rgba(192, 132, 252, 0.55);
+  color: #fed7aa;
+  background: rgba(194, 65, 12, 0.75);
+  border: 1px solid #ea580c;
+  box-shadow: 0 0 14px rgba(234, 88, 12, 0.55);
 }
 
 .flame-evo-badge.evo-tier-5 {
