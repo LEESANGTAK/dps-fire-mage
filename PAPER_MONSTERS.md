@@ -15,7 +15,7 @@
 
 ## 저장 에셋과 연결
 
-- `assets/art/paper-monsters-field.png`: 들쥐·고블린·멧돼지·늑대·놀·해골.
+- `assets/art/paper-monsters-field-v3.png`: 들쥐·고블린·멧돼지·늑대·놀·해골.
 - `assets/art/paper-monsters-depth.png`: 전갈·오우거·도마뱀·박쥐·바위 파수꾼·어둠마법사.
 - `assets/art/paper-monsters-boss.png`: 비룡·기사·밴시·거미·파멸수호병·화염군주.
 - `assets/art/paper-monsters-abyss.png`: 심연 추적자·전령.
@@ -26,7 +26,7 @@
 - `monster-motion-preview.html`: 22가지 모습의 일반·강화 타격·사망 비교.
 - `paper-monster-gallery.html`: 전체 원화 검수 화면.
 
-첫 묶음에서 장비 여백을 좁게 만든 후보를 수정했습니다. 생성 도구의 출력 미리보기는 투명 RGB 영역까지 배경처럼 표시했지만 PNG의 알파 채널을 검사해 실제 투명 배경임을 확인했습니다. 코드에서는 PNG 그대로 알파 합성합니다. 첫 묶음은 여백 수정 후보를 채택했고 이후 문장으로 지정한 후보는 폐기했습니다.
+첫 묶음에서 장비 여백을 좁게 만든 후보를 수정했습니다. 생성 도구의 출력 미리보기는 투명 RGB 영역까지 배경처럼 표시했지만 PNG의 알파 채널을 검사해 실제 투명 배경임을 확인했습니다. 코드에서는 PNG 그대로 알파 합성합니다. 첫 적용에서는 두 번째 여백 수정 후보를 사용했지만, 사용자 선택에 따라 세 번째 후보로 교체했습니다. 현재 원화는 `paper-monsters-field-v3.png`이며 표시 윤곽도 다시 분석했습니다. 두 번째 후보는 기존 파일에 보존했습니다.
 
 ## 검증
 
@@ -38,7 +38,7 @@
 - 파일 직접 실행은 검증 브라우저의 file:// 정책 때문에 직접 화면을 열지 못했습니다. 동일한 진입 파일의 HTTP 실행을 확인했으며 fetch나 픽셀 읽기가 필요한 데이터 경로는 추가하지 않았습니다.
 - 모든 후반 스테이지의 실제 게임 진행과 장시간 고속 연사 성능은 측정하지 않았습니다. 시범의 저속·고속·모션 감소·일시정지 검증과 실제 게임 연결 검증은 구분합니다.
 
-![전체 몬스터 원화](docs/paper-monsters-gallery.jpg)
+![전체 몬스터 원화](docs/paper-monsters-gallery-v3.jpg)
 
 ## 생성 프롬프트 원문
 
@@ -60,6 +60,6 @@ Use case: style-transfer. Production game sprite atlas, EXACTLY six different mo
 
 Use case: stylized-concept. Asset type: production monster sprite atlas. Exactly TWO full-body LEFT-facing fantasy enemies side by side, 2 equal columns by 1 row, transparent alpha background. Reference image only defines fibrous matte layered cardstock texture and cream cut edges; do not depict slime. Left: small sinister violet hooded abyss stalker, black featureless face with two bright violet paper eyes, layered dark purple cloak with feather-like ragged paper tails, short curved glowing-violet-colored paper dagger held forward, small dark boots. Right: larger hovering abyss herald in rich purple and black robe with broad gold-trimmed shoulder armor, flowing ribbon sleeves and curled trailing cloak, empty black face rimmed with lavender paper, two floating purple paper crystal orbs by its claw hands. Both clearly flat layered hand-cut paper puppets, narrow layer shadows, simple crisp shapes, restrained matte colors. No ink outlines, no glossy realistic 3D, no luminous background haze. Each actor completely inside its own half with 70px clear transparent margin on all sides, no overlaps, no shadows outside puppets. No text, labels, grids, scenery. Match other game's paper monsters.
 
-### 첫 묶음 여백 수정 — 채택
+### 첫 묶음 여백 수정 — 이전 후보
 
 Edit target is the provided six-monster paper atlas. Preserve EXACTLY all six character designs, colored-paper texture, equipment and 3x2 ordering. Critical production correction: REMOVE THE ENTIRE colored smoky background completely, make EVERY empty pixel genuinely TRANSPARENT alpha. No ground shadows, glow, colored halos, backdrop or gradients. Scale all six complete puppets uniformly DOWN by 22 percent and reposition each centered within its own exact third-column and half-row cell. The rat's entire pink tail, wolf's full tail, gnoll bow, skeleton pickaxe, boar tusks must all fit inside their OWN cell with at least 45 pixels empty TRANSPARENT margins. Keep current layered paper style, not a different style. EXACTLY six complete monsters, 3 columns by 2 rows, 1536x1024. No clipping, no grid, no text.
