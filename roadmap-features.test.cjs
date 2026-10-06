@@ -128,7 +128,7 @@ test('UX 피드백 2: 캐릭터 발 아래 자동시전 마법진 전개 및 발
   // styles.css에 원근 및 회전 애니메이션 스타일 검증
   assert.ok(stylesCssContent.includes('.autocast-magic-circle'), '마법진 CSS 클래스가 정의되어 있어야 합니다.');
   assert.ok(stylesCssContent.includes('magicCircleSpin'), '마법진 회전 애니메이션이 정의되어 있어야 합니다.');
-  assert.ok(stylesCssContent.includes('scale(1, 0.35)'), '바닥면에 눕혀진 원근감(scale)이 적용되어 있어야 합니다.');
+  assert.ok(stylesCssContent.includes('scale(1, 0.28)'), '바닥면에 눕혀진 원근감(scale)이 적용되어 있어야 합니다.');
 
   // game.js에 updateAutoCastMagicCircle 함수 검증
   assert.ok(gameJsContent.includes('function updateAutoCastMagicCircle'), 'updateAutoCastMagicCircle 함수가 구현되어 있어야 합니다.');

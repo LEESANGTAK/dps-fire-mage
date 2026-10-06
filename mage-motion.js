@@ -73,16 +73,7 @@ function selectMagePose(combat, gesture) {
   if (gesture.remaining > 0 && gesture.kind === 'combustion') return 'hot';
   if (combat.combustionRem > 0) return 'hot';
 
-  // 1. 화염구 시전 중: 오직 단일 '준비 동작(anticipation)'만 유지
-  if (combat.castingSkill === 'fireball') {
-    return 'anticipation';
-  }
-  if (combat.castingSkill) {
-    const progress = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
-    return progress < 0.32 ? 'anticipation' : 'charge';
-  }
-
-  // 2. 발사 제스처: 화염구는 오직 단일 '발사 동작(release)'만 유지하여 2포즈 교대 완성
+  // 1. 발사 제스처: 자동 시전으로 다음 시전이 즉시 시작되어도 발사 동작(release)을 확실히 표출
   if (gesture.remaining > 0) {
     if (gesture.kind === 'fireball' || gesture.kind === 'fireblast') {
       return 'release';
@@ -91,12 +82,21 @@ function selectMagePose(combat, gesture) {
     return progress < 0.38 ? 'release' : progress < 0.82 ? 'recoil' : 'idle';
   }
 
+  // 2. 시전 중: 발사 제스처 완료 후 다음 발사를 위한 준비 동작(anticipation) 유지
+  if (combat.castingSkill === 'fireball') {
+    return 'anticipation';
+  }
+  if (combat.castingSkill) {
+    const progress = 1 - combat.castRemaining / Math.max(0.001, combat.castTotal);
+    return progress < 0.32 ? 'anticipation' : 'charge';
+  }
+
   return 'idle';
 }
 
 function beginMageGesture(kind) {
   mageGesture.kind = kind;
-  mageGesture.total = kind === 'meteor' ? 0.42 : kind === 'combustion' ? 0.5 : 0.26;
+  mageGesture.total = kind === 'meteor' ? 0.42 : kind === 'combustion' ? 0.5 : 0.14;
   mageGesture.remaining = mageGesture.total;
   updateMageMotion(0, false);
 }

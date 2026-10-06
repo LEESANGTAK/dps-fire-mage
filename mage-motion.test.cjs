@@ -29,9 +29,9 @@ assert.equal(art.dataset.pose, 'recoil');
 vm.runInContext('updateMageMotion(0.5, false)', context);
 assert.equal(art.dataset.pose, 'idle');
 vm.runInContext("beginMageGesture('fireball'); mageGesture.hitStop = 0.03; updateMageMotion(0.02, false)", context);
-assert.equal(vm.runInContext('mageGesture.remaining', context), 0.26);
+assert.equal(vm.runInContext('mageGesture.remaining', context), 0.14);
 vm.runInContext('updateMageMotion(0.02, false); updateMageMotion(0.05, false)', context);
-assert.ok(vm.runInContext('mageGesture.remaining < 0.26', context));
+assert.ok(vm.runInContext('mageGesture.remaining < 0.14', context));
 const spring = { x: 0, vx: 0, squash: 0, vs: 0, cloth: 0, vc: 0 };
 let peak = 0;
 for (let i = 0; i < 120; i++) { advanceSpring(spring, 1 / 120, 20, 0.08); peak = Math.max(peak, spring.x); }

@@ -4588,14 +4588,14 @@ body {
   margin-top: 4px;
 }
 
-/* 6. 발 아래 자동 시전 마법진 (Auto-Cast Magic Circle - 2.5D 돌바닥 완벽 접지) */
+/* 6. 발 아래 자동 시전 마법진 (Auto-Cast Magic Circle - 2.5D 바닥면 접지) */
 .autocast-magic-circle {
   position: absolute;
-  bottom: 0;
+  bottom: 18px;
   left: 50%;
-  width: 190px;
-  height: 190px;
-  transform: translateX(-50%) scale(1, 0.35);
+  width: 250px;
+  height: 250px;
+  transform: translate(-50%, 50%) scale(1, 0.28);
   transform-origin: center center;
   display: flex;
   align-items: center;
@@ -4702,9 +4702,9 @@ body {
 }
 
 @keyframes magicCircleUnfold {
-  0% { transform: translateX(-50%) scale(0.1, 0.035); opacity: 0; }
-  65% { transform: translateX(-50%) scale(1.18, 0.41); opacity: 1; filter: brightness(1.8); }
-  100% { transform: translateX(-50%) scale(1, 0.35); opacity: 0.95; }
+  0% { transform: translate(-50%, 50%) scale(0.1, 0.028); opacity: 0; }
+  65% { transform: translate(-50%, 50%) scale(1.18, 0.33); opacity: 1; filter: brightness(1.8); }
+  100% { transform: translate(-50%, 50%) scale(1, 0.28); opacity: 0.95; }
 }
 
 /* ==========================================
