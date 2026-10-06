@@ -37,3 +37,21 @@ assert.ok(parseFloat(actor.style.width)<=195,'모바일 보스는 전장 폭 절
 assert.ok(parseFloat(actor.style.height)>150,'모바일에서도 보스 실루엣을 유지해야 합니다');
 assert.equal(actor.style.bottom,'0px');
 console.log('몬스터 성장·보스 크기·화면 상한·이미지·슬라임 복원 검증 통과');
+
+// 불장판의 소멸 알파를 유지하고 다른 소환물로 합성 상태가 새지 않아야 한다.
+const paint={beginPath(){},ellipse(){},stroke(){},globalAlpha:.4,globalCompositeOperation:'source-over',filter:'none',draws:[],stack:[],
+ save(){this.stack.push([this.globalAlpha,this.globalCompositeOperation,this.filter]);},
+ restore(){[this.globalAlpha,this.globalCompositeOperation,this.filter]=this.stack.pop();},
+ drawImage(...args){this.draws.push({args,alpha:this.globalAlpha,blend:this.globalCompositeOperation});}};
+context.paint=paint;
+vm.runInContext("comicAbilityImages['flame-patch']={complete:true,naturalWidth:1536};comicAbilityImages['fire-elemental']={complete:true,naturalWidth:1536};drawComicAbility(paint,'flame-patch',100,200,230,150);",context);
+assert.ok(paint.draws[0].alpha>0 && paint.draws[0].alpha<.3,'불장판은 호출자의 소멸 알파보다 더 옅게 합성해야 합니다');
+assert.equal(paint.draws[0].blend,'screen');
+const patchDraw=paint.draws[0].args;
+assert.ok(patchDraw[4]<150,'높이를 낮춰 배우를 가리지 않아야 합니다');
+assert.equal(patchDraw[2]+patchDraw[4]*.75,237.5,'원화 바닥 접지점은 유지해야 합니다');
+assert.equal(paint.globalAlpha,.4);assert.equal(paint.globalCompositeOperation,'source-over');assert.equal(paint.filter,'none');
+vm.runInContext("drawComicAbility(paint,'fire-elemental',100,200,48)",context);
+assert.equal(paint.draws[1].alpha,.4,'다른 소환수의 불투명도는 변경하지 않아야 합니다');
+paint.globalAlpha=0;vm.runInContext("drawComicAbility(paint,'flame-patch',100,200,230,150)",context);
+assert.equal(paint.draws[2].alpha,0,'소멸 완료 뒤 원화가 남으면 안 됩니다');

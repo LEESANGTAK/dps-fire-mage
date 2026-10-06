@@ -95,5 +95,25 @@ for (const key of ['fire-elemental','flame-patch','combustion']) {
 function drawComicAbility(painter,key,x,y,width,height=width) {
   const image = comicAbilityImages[key];
   if (!image || !image.complete || !image.naturalWidth) return;
+  if(key === 'flame-patch') {
+    // 검은 돌바닥을 화면에 덮지 않고, 기존 소멸 알파를 곱해 반투명한 불빛만 합성한다.
+    const ground = y + height * .25;
+    const flameHeight = height * .7;
+    painter.save();
+    const fade = painter.globalAlpha;
+    // 얇은 바닥 윤곽은 밝은 배경에서도 활성 영역을 알아볼 수 있게 한다.
+    painter.globalAlpha = fade * .22;
+    painter.strokeStyle = '#e49b4b';
+    painter.lineWidth = 1.5;
+    painter.beginPath();
+    painter.ellipse(x, ground, width * .44, height * .1, 0, 0, Math.PI * 2);
+    painter.stroke();
+    painter.globalAlpha = fade * .5;
+    painter.globalCompositeOperation = 'screen';
+    painter.filter = 'blur(0.45px)';
+    painter.drawImage(image, x - width / 2, ground - flameHeight * .75, width, flameHeight);
+    painter.restore();
+    return;
+  }
   painter.drawImage(image,x-width/2,y-height/2,width,height);
 }
