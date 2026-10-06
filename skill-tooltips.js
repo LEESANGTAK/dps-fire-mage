@@ -5,7 +5,7 @@ function buildSkillDetails(skill, stats, combat, tree, mastery = 1, duration = 2
   const hit = mult => `일반 ${damage(mult).toLocaleString('ko-KR')} · 치명타 ${damage(mult, true).toLocaleString('ko-KR')}`;
   const gcd = seconds(Math.max(.5, 1.2 / stats.speedMult));
   const definitions = {
-    fireball: { name:'화염구', cast:seconds(Math.max(.4,1.5/stats.speedMult)), cooldown:`없음 · 공통 대기 ${gcd}`, damage:hit(1), feature:'치명타를 연속으로 적중시켜 몰아치는 열기를 준비합니다. 피해량은 주 탄환 1발 기준입니다.' },
+    fireball: { name:'화염구', cast:seconds(Math.max(.4,1.5/stats.speedMult)), cooldown:`없음 · 공통 대기 ${gcd}`, damage:hit(1), feature:`치명타율 ${stats.crit.toFixed(1)}% (반지·장비 스탯 반영). 치명타를 연속으로 적중시켜 몰아치는 열기를 준비합니다. 피해량은 주 탄환 1발 기준입니다.` },
     fireblast: { name:'불꽃 작렬', cast:'즉시 · 시전 중 사용 가능', cooldown:`1회 충전 ${seconds(Math.max(3.5,9*(1-stats.cdr)/stats.speedMult))}`, damage:`확정 치명타 ${damage(.85,true).toLocaleString('ko-KR')}`, feature:`항상 치명타로 적중합니다. 버튼 숫자는 남은 충전 횟수입니다 (${combat.fbCharges}/${combat.fbMaxCharges}). 충전은 한 번에 1회씩 회복됩니다.` },
     combustion: { name:'마력 폭주', cast:'즉시', cooldown:seconds(Math.max(14,30*(1-stats.cdr))), damage:'직접 피해 없음', feature:`${seconds(duration)} 동안 치명타 확률 100%와 가속 +20%를 얻습니다. 현재 장비와 숙련에 따라 지속시간이 증가합니다.` },
     meteor: { name:'메테오', cast:combat.critStreak===2?'즉시 · 몰아치는 열기 활성':`${seconds(Math.max(.7,2.5/stats.speedMult))} · 몰열 시 즉시`, cooldown:seconds(Math.max(8,18*(1-stats.cdr))), damage:hit(3.2), feature:`열기 2회 충전 시 쿨타임 중에도 즉시 시전하며 소환물의 동시 공격을 유도합니다. 낙하 1초 후 적중하며 6초간 연소합니다. 0.85초마다 일반 ${damage(.35).toLocaleString('ko-KR')}의 추가 피해를 줍니다.` },
