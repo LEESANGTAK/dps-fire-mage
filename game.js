@@ -2057,7 +2057,7 @@ function updateAndDrawVfx(dt) {
         lastMeteorShakeTime = now;
         triggerArenaShake('lg');
       }
-      playSound('meteor_impact');
+      playSound('meteor_impact', m.scale >= 1.1 ? 1.06 : 1.0);
       if (m.onImpact) m.onImpact();
       meteors.splice(i, 1);
       continue;
@@ -2873,6 +2873,10 @@ function onMonsterKilled() {
       state.stats.lastBossKillDiff = diff;
       if (duration < prevBest) {
         state.bossClearTimes[state.currentStage] = duration;
+        // 보스 토벌 신기록 경신 연출 (단축 축하 팡파르)
+        spawnFloatingText(`⚡ 보스 기록 단축! -${diff.toFixed(2)}초 (${duration.toFixed(2)}s)`, 'fct-crit', -70, { isBig: true });
+        triggerSpeedrunRecordFlash();
+        playSound('proc', 1.25);
       }
     } else {
       if (!state.bossClearTimes) state.bossClearTimes = {};
@@ -2918,6 +2922,8 @@ function onMonsterKilled() {
     const curTime = state.playTimeSec || 0;
     if (!state.bestSpeedrunTime || curTime < state.bestSpeedrunTime) {
       state.bestSpeedrunTime = curTime;
+      triggerSpeedrunRecordFlash();
+      spawnFloatingText(`🏆 라그나로스 스피드런 신기록! (${formatSpeedrunTime(curTime)})`, 'fct-crit', -90, { isBig: true });
     }
   }
 
@@ -2933,7 +2939,18 @@ function onMonsterKilled() {
   const pos = getTargetPos();
   // 재질에 맞는 사망 여운. 생물까지 유리처럼 조각내지 않습니다.
   spawnMaterialDeath(state.currentStage, data.isPhaseBoss);
-  if (data.isPhaseBoss) triggerArenaShake('lg');
+  if (data.isPhaseBoss) {
+    triggerArenaShake('lg');
+  } else {
+    triggerArenaShake('sm'); // 일반 몬스터 토벌 시에도 경쾌한 마이크로 셰이크
+  }
+
+  // 몬스터 처치 파열 효과음 및 화염 파열 파티클 방출
+  playSound('monster_destroy', data.isPhaseBoss ? 0.9 : 1.05);
+  spawnParticles(pos.x, pos.y, data.isPhaseBoss ? 28 : 16, '#ffedd5', '#ea580c', data.isPhaseBoss ? 1.6 : 1.3);
+
+  // 처치 순간 미세 히트스탑 (타격 손맛)
+  mageGesture.hitStop = data.isPhaseBoss ? 0.08 : 0.04;
 
   updateDpsMeterUI();
 
@@ -3219,13 +3236,21 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     spawnFloatingText(`${fmt(dmg)}`, 'fct-dot', 5);
   } else if (isCrit) {
     spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
-    if (!isDotTick && skillKey !== 'meteor') playSound('crit');
+    if (!isDotTick && skillKey !== 'meteor') {
+      // 연속 치명타(몰아치는 열기) 콤보 피치 빌드업:
+      // 1타 크리: 1.0 (예열) ➔ 2타 크리: 1.15 (몰열 완성 쾌감)
+      const streakPitch = (state.combat && state.combat.critStreak >= 1) ? 1.15 : 1.0;
+      playSound('crit', streakPitch);
+    }
     if (isCombustingEffective) {
       spawnParticles(targetPos.x, targetPos.y, 12, '#fef08a', '#ea580c', 1.6);
     }
   } else {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-normal', 0);
-    if (skillKey !== 'meteor') playSound('hit');
+    if (skillKey !== 'meteor') {
+      // 반복 타격 피로도를 줄이기 위한 미세한 피치 변조 (0.97~1.03)
+      playSound('hit', 0.97 + Math.random() * 0.06);
+    }
   }
 
   if (isCrit && !isDotTick && skillKey !== 'ignite') {
@@ -4819,6 +4844,15 @@ function updateStageUI() {
   updateBossGimmick(0);
   updateBountyUI();
   updateNotificationBadges();
+}
+
+function triggerSpeedrunRecordFlash() {
+  const box = document.querySelector('.speedrun-stat-box');
+  if (!box) return;
+  box.classList.remove('record-flash');
+  void box.offsetWidth;
+  box.classList.add('record-flash');
+  setTimeout(() => box.classList.remove('record-flash'), 1400);
 }
 
 // ==========================================
