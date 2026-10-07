@@ -604,6 +604,32 @@ test('Step 22: 화염 정령 정상 시각화/골렘 소환 차단 & 결과창 �
   assert.ok(gameSource.includes("speedrunRetryBtn.addEventListener('click'"), '스피드런 재도전 버튼 클릭 이벤트가 바인딩되어 있어야 합니다.');
 });
 
+test('Step 23: 메테오 연속 낙하 시 파티클 지속 보장, 다시 도전하기 런 완전 초기화, 상단 구형 UI 비노출 검증', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const meteorSource = fs.readFileSync(path.join(__dirname, '../src/scripts/meteor-art.js'), 'utf8');
+
+  // 1. 메테오 꼬리 및 폭발 파티클 풀 고갈 방지 로직 검증
+  assert.ok(meteorSource.includes('if (available < count && meteorCount > 0)'), '연속 메테오 투하 시 오래된 꼬리 파티클 재활용 로직이 있어야 합니다.');
+  assert.ok(gameSource.includes('if (particles.length + desiredBurst > 450)'), '메테오 폭발 파티클을 위해 풀 공간 확보 로직이 구현되어 있어야 합니다.');
+
+  // 2. 다시 도전하기(restartSpeedrunRun)의 완전 초기화 로직 검증
+  assert.ok(gameSource.includes('function restartSpeedrunRun()'), 'restartSpeedrunRun 함수가 구현되어 있어야 합니다.');
+  assert.ok(gameSource.includes("state.spellOrder = ['fireball'];"), '다시 도전하기 시 스킬 슬롯이 기본 화염구 1개로 초기화되어야 합니다.');
+  assert.ok(gameSource.includes('state.autoCast = false;'), '다시 도전하기 시 자동 시전이 초기화되어야 합니다.');
+  assert.ok(gameSource.includes('state.playTimeSec = 0;'), '다시 도전하기 시 타이머가 0초로 초기화되어야 합니다.');
+  assert.ok(gameSource.includes('restartSpeedrunRun();'), '재도전 버튼 클릭 시 restartSpeedrunRun이 호출되어야 합니다.');
+
+  // 3. 상단 구형 UI(불사조 승천, 심연의 규약, 깃털 알약, 유물 탭) 전면 비노출 검증
+  assert.ok(css.includes('#btn-ascend') && css.includes('#btn-heat-pacts') && css.includes('#pill-feathers') && css.includes('display: none !important;'), '불필요한 구형 승천/규약/깃털 UI가 CSS에서 영구 비노출 처리되어 있어야 합니다.');
+  assert.ok(html.includes('id="btn-ascend" style="display: none !important;"'), 'HTML 마크업에서도 btn-ascend가 비노출되어야 합니다.');
+  assert.ok(html.includes('id="btn-heat-pacts" style="display: none !important;"'), 'HTML 마크업에서도 btn-heat-pacts가 비노출되어야 합니다.');
+  assert.ok(html.includes('id="pill-feathers" style="display: none !important;"'), 'HTML 마크업에서도 pill-feathers가 비노출되어야 합니다.');
+});
+
+
 
 
 

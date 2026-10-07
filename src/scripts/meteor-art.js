@@ -271,9 +271,9 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   if (reduced || dt <= 0) return;
   m.trailClock = (m.trailClock || 0) + Math.min(0.08, dt);
   
-  // 60FPS 기준 틱당 8~10개 파티클 방출 (두껍고 풍성한 꼬리 바디 유지)
-  const spawnInterval = 0.0020;
-  const count = Math.min(26, Math.floor(m.trailClock / spawnInterval));
+  // 60FPS 기준 틱당 파티클 방출 최적화 (연속 메테오 낙하 시에도 파티클 풀 고갈 차단)
+  const spawnInterval = 0.0075;
+  const count = Math.min(10, Math.floor(m.trailClock / spawnInterval));
   m.trailClock %= spawnInterval;
   if (count <= 0) return;
 
@@ -284,7 +284,22 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   }
   const maxMeteorParticles = 260;
   const maxTotalParticles = 450;
-  const available = Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length);
+  let available = Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length);
+
+  // 연속 메테오 시 파티클이 끊기지 않도록: 꼬리 파티클이 차있을 때 가장 오래된 꼬리 파티클을 재활용
+  if (available < count && meteorCount > 0) {
+    const toFree = Math.min(count, meteorCount);
+    let removed = 0;
+    for (let i = 0; i < pool.length && removed < toFree; i++) {
+      if (pool[i].meteorTrail) {
+        pool.splice(i, 1);
+        i--;
+        removed++;
+      }
+    }
+    meteorCount -= removed;
+    available = Math.min(count, Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length));
+  }
   if (available <= 0) return;
 
   const actualCount = Math.min(count, available);

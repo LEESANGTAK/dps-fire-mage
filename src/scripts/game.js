@@ -1980,7 +1980,18 @@ function updateAndDrawVfx(dt) {
         } catch (e) {}
       }
       // 메테오 충돌 시 대규모 화염 폭발 + 이중 충격파 + 사방으로 튀어 나가는 바위 파편들!
-      const burstCount = Math.min(reducedMeteor ? 6 : Math.round(30 * m.scale), Math.max(0, 450 - particles.length));
+      const desiredBurst = reducedMeteor ? 6 : Math.round(30 * m.scale);
+      if (particles.length + desiredBurst > 450) {
+        let freed = 0;
+        for (let pIdx = 0; pIdx < particles.length && freed < desiredBurst; pIdx++) {
+          if (particles[pIdx].meteorTrail) {
+            particles.splice(pIdx, 1);
+            pIdx--;
+            freed++;
+          }
+        }
+      }
+      const burstCount = Math.min(desiredBurst, Math.max(0, 450 - particles.length));
       spawnParticles(m.targetX, m.targetY, burstCount, '#ffe4a0', '#e8592f', 1.8 * m.scale);
       if (!reducedMeteor) spawnMeteorRockDebris(m.targetX, m.targetY, m.scale);
       if (!reducedMeteor && shockwaves.length <= 28) {
@@ -3936,14 +3947,6 @@ function updateNotificationBadges() {
 
   setBadge('badge-tab-shop', anyShopAffordable);
 
-  // 4-A. 승천 버튼 노출 및 (!) 배지
-  const canAscendNow = Boolean(state.campaignCleared || state.highestClearedStage >= 20);
-  const ascendBtn = document.getElementById('btn-ascend');
-  if (ascendBtn) {
-    ascendBtn.classList.toggle('unfold-hidden', !canAscendNow);
-  }
-  setBadge('badge-ascend', canAscendNow);
-
   // 4-B. 마법 부여 탭 (!) 배지: 구매 가능한 마법 부여가 있을 때 표시
   let anyInfusionAffordable = false;
   for (const inf of INFUSION_LIST) {
@@ -4599,33 +4602,6 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
-  // 5. 불사조 영구 유물 상점 해금 (승천 1회 이상 또는 깃털 보유 또는 20스테이지 도달)
-  const hasArtifactProgress =
-    (state.ascensionCount || 0) > 0 ||
-    (state.phoenixFeathers || 0) > 0 ||
-    state.highestClearedStage >= 20 ||
-    state.campaignCleared ||
-    Object.values(state.artifacts || {}).some((lv) => lv > 0);
-  if (!u.artifactShop && hasArtifactProgress) {
-    u.artifactShop = true;
-    changed = true;
-    if (!silent) {
-      showUnfoldToast('🔓 새로운 시스템 해금: 불사조 영구 유물!', '우측 상단 [🪶 유물] 탭에서 승천 깃털로 영구 아티팩트를 각성하세요!');
-      triggerUnfoldPop('tab-btn-artifacts');
-      triggerUnfoldPop('pill-feathers');
-    }
-  }
-
-  // 6. 심연의 열기(Heat) 규약 해금 (승천 1회 이상 또는 20스테이지 클리어)
-  if (!u.heatPacts && ((state.ascensionCount || 0) > 0 || state.campaignCleared || state.highestClearedStage >= 20)) {
-    u.heatPacts = true;
-    changed = true;
-    if (!silent) {
-      showUnfoldToast('🔓 새로운 시스템 해금: 심연의 열기(Heat) 규약!', '상단 [🔥 심연의 규약]에서 난이도 제약을 걸고 승천 깃털을 추가 획득하세요!');
-      triggerUnfoldPop('btn-heat-pacts');
-    }
-  }
-
   applyUnfoldedVisibility();
   if (changed && !silent) {
     saveGame();
@@ -4635,25 +4611,19 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 치명타/시전속도 알약 & 명예의 전당/깃털/규약 버튼
+  // 상단 치명타/시전속도 알약 & 명예의 전당 버튼
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
-  const pillFeathers = document.getElementById('pill-feathers');
   const hallBtn = document.getElementById('btn-hall-of-fame');
-  const btnHeat = document.getElementById('btn-heat-pacts');
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
-  if (pillFeathers) pillFeathers.classList.toggle('unfold-hidden', !u.artifactShop);
   if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
-  if (btnHeat) btnHeat.classList.toggle('unfold-hidden', !u.heatPacts);
 
-  // 우측 상단 [상점 / 스킬 트리 / 불사조 유물] 탭 전환 바
+  // 우측 상단 [상점 / 스킬 트리] 탭 전환 바
   const modeTabs = document.getElementById('right-mode-tabs');
   const tabTreeBtn = document.getElementById('tab-btn-tree');
-  const tabArtBtn = document.getElementById('tab-btn-artifacts');
-  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.skillTree && !u.artifactShop);
+  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.skillTree);
   if (tabTreeBtn) tabTreeBtn.classList.toggle('unfold-hidden', !u.skillTree);
-  if (tabArtBtn) tabArtBtn.classList.toggle('unfold-hidden', !u.artifactShop);
 
   // 우측 상점 내부: 초기 봉인 안내 vs 마법 습득 vs 스킬 연마 vs 장비 강화
   const sealedCard = document.getElementById('unfold-sealed-shop');
@@ -5834,6 +5804,122 @@ function closeVictoryModal() {
   }
 }
 
+function restartSpeedrunRun() {
+  closeVictoryModal();
+  state.isPaused = false;
+
+  // 1. 스피드런 및 스테이지 진행도 완전 초기화 (역대 최단시간 bestSpeedrunTime은 보존)
+  state.currentStage = 1;
+  state.highestClearedStage = 0;
+  state.dpsClearedStage = 0;
+  state.gold = 0;
+  state.playTimeSec = 0;
+  state.campaignCleared = false;
+  state.canAscend = false;
+
+  // 2. 스킬 및 주문서 완전 초기화 (기본 화염구 1개로 초기화)
+  state.grimoires = {
+    fireblast: false,
+    meteor: false,
+    combustion: false,
+    flame_patch: false,
+    ignite: false
+  };
+  state.spellOrder = ['fireball'];
+  state.autoCast = false;
+  state.skillAuto = {
+    fireball: true,
+    fireblast: false,
+    meteor: false,
+    combustion: false,
+    flame_patch: false
+  };
+  if (state.skillMastery) {
+    for (const k of Object.keys(state.skillMastery)) {
+      state.skillMastery[k] = 0;
+    }
+  }
+
+  // 3. 로그라이크 각성 덱 및 특성 완전 초기화
+  if (deckManager) {
+    deckManager.resetDeck(state);
+    renderDeckStripUI();
+  }
+  state.playerStatsBonus = {};
+  state.deckMechanics = {};
+  state.skillTree = {
+    fire_elem: 0,
+    flame_patch: 0,
+    phoenix: 0,
+    magma_golem: 0,
+    multishot: 0,
+    rune_aura: 0,
+    legion_sync: 0,
+    meteor_rain: 0
+  };
+
+  // 4. 일반 장비 레벨 초기화
+  for (const k of Object.keys(state.items)) {
+    state.items[k] = 0;
+  }
+
+  // 5. 언폴딩 상태 초반으로 리셋
+  state.unfolded.skillTree = false;
+  state.unfolded.grimoireShop = false;
+  state.unfolded.stageNav = false;
+  state.unfolded.equipShop = false;
+  state.unfolded.infusionShop = false;
+  state.unfolded.artifactShop = false;
+  state.unfolded.heatPacts = false;
+
+  // 6. 전투 상태 초기화
+  state.combat.castingSkill = null;
+  state.combat.castRemaining = 0;
+  state.combat.gcdRemaining = 0;
+  state.combat.critStreak = 0;
+  state.combat.streakTimer = 0;
+  state.combat.igniteRem = 0;
+  state.combat.meteorBurnRem = 0;
+  state.combat.flamePatchRem = 0;
+  state.combat.golemTimer = 0;
+  state.combat.elemTimer = 0;
+  state.combat.phoenixTimer = 0;
+
+  projectiles.length = 0;
+  meteors.length = 0;
+  particles.length = 0;
+  shockwaves.length = 0;
+  groundEffects.length = 0;
+  rockDebris.length = 0;
+  monsterShards.length = 0;
+
+  const s3 = document.getElementById('skill-3');
+  if (s3) s3.classList.remove('proc-glow');
+
+  // 7. 연출: 황금빛 스파크 & 1-1 새로 로드
+  playSound('proc');
+  const casterCenter = getCasterCenter();
+  spawnParticles(casterCenter.x, casterCenter.y, 36, '#fef08a', '#ea580c', 1.8);
+  triggerArenaShake('md');
+
+  spawnFloatingText('⚡ 스피드런 새 런 시작! (Stage 1-1 · 타이머 00:00)', 'fct-proc', -55, { isBig: true });
+
+  loadStage(1);
+  checkAndTriggerUnfolds(true);
+  updateSkillActionBarVisibility();
+  saveGame();
+  renderShopUI();
+  renderSkillTreeUI();
+  updateLiveHUD();
+
+  const timerEl = document.getElementById('ui-speedrun-timer');
+  if (timerEl) {
+    timerEl.textContent = formatSpeedrunTime(0);
+  }
+  updateNotificationBadges();
+  switchRightTab('shop');
+}
+
 function doAscend() {
   if (!state.campaignCleared && state.highestClearedStage < 20) {
     spawnFloatingText('🔒 Stage 20을 클리어해야 승천할 수 있습니다!', 'fct-normal', -40);
@@ -5910,7 +5996,6 @@ function doAscend() {
   saveGame();
   renderShopUI();
   renderSkillTreeUI();
-  renderArtifactsUI();
   updateLiveHUD();
   const timerEl = document.getElementById('ui-speedrun-timer');
   if (timerEl) {
@@ -5918,7 +6003,6 @@ function doAscend() {
   }
   updateNotificationBadges();
 
-  // 특성 트리 탭으로 자동 전환하여 새로 얻은 스킬 포인트를 찍도록 유도!
   switchRightTab('tree');
 }
 
@@ -6470,6 +6554,8 @@ function loadGame() {
       state.skillTree.fire_elem = Math.max(state.skillTree.fire_elem || 0, state.deckMechanics.spiritCount);
       state.skillTree.magma_golem = 0;
     }
+    state.unfolded.artifactShop = false;
+    state.unfolded.heatPacts = false;
     if (!state.bounty || !isBountyValid(state.bounty.type)) {
       generateNextBounty();
     }
@@ -6817,7 +6903,7 @@ function initEvents() {
   if (speedrunRetryBtn) {
     speedrunRetryBtn.addEventListener('click', () => {
       playSound('proc');
-      doAscend();
+      restartSpeedrunRun();
     });
   }
 

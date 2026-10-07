@@ -5876,5 +5876,16 @@ body {
   border-radius: 3px;
 }
 
+/* 불필요한 구형 승천, 심연의 규약, 깃털 및 유물 UI 전면 비노출 */
+#btn-ascend,
+#btn-heat-pacts,
+#pill-feathers,
+#tab-btn-artifacts,
+#pane-artifacts,
+#modal-heat-pacts {
+  display: none !important;
+}
+
+
 
 
