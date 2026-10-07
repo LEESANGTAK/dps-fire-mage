@@ -46,6 +46,18 @@ const protectedSmoke=young[0];
 emitMeteorTrail({...m},getMeteorPose(m,.5),1/60,young);
 assert.ok(young.includes(protectedSmoke),'새 연기를 풀 재활용으로 즉시 삭제하면 안 됩니다.');
 const game=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
+// 실제 파티클 루프를 실행하여 보상 정지 중 수명·좌표·그리기 시간이 보존되는지 확인합니다.
+const particleBegin=game.indexOf('  for (let i = particles.length - 1;');
+const particleLoop=game.slice(particleBegin,game.indexOf('  updateFloatingTexts(dt);',particleBegin));
+const frozenTrail={meteorTrail:true,kind:'smoke',life:.1,maxLife:.5,x:100,y:200,vx:30,vy:-20};
+const frozenPool=[frozenTrail];let drawnDt=-1;
+const particleContext=vm.createContext({particles:frozenPool,ctx:{},drawMeteorParticle(ctx,pt,dt){drawnDt=dt;}});
+vm.runInContext(`function tickParticles(dt,paused){const meteorDt=paused?0:dt;${particleLoop}}`,particleContext);
+for(let frame=0;frame<120;frame++)vm.runInContext('tickParticles(1/60,true)',particleContext);
+assert.equal(frozenPool.length,1);assert.equal(frozenTrail.life,.1);
+assert.equal(frozenTrail.x,100);assert.equal(frozenTrail.y,200);assert.equal(drawnDt,0);
+vm.runInContext('tickParticles(.1,false)',particleContext);
+assert.equal(frozenTrail.life,.2);assert.equal(frozenTrail.x,103);assert.equal(frozenTrail.y,198);assert.equal(drawnDt,.1);
 const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('const monsterShards = [];'));
 const debrisContext=vm.createContext({});vm.runInContext(debrisCode,debrisContext);
 vm.runInContext('for(let i=0;i<30;i++)spawnMeteorRockDebris(100,200);',debrisContext);

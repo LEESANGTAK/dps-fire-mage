@@ -2159,13 +2159,15 @@ function updateAndDrawVfx(dt) {
 
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
-    pt.life += dt;
+    // 보상 선택 중 운석과 꼬리의 시간축을 함께 멈춰 잔상이 증발하지 않게 합니다.
+    const particleDt = pt.meteorTrail ? meteorDt : dt;
+    pt.life += particleDt;
     if (pt.life >= pt.maxLife) {
       particles.splice(i, 1);
       continue;
     }
-    pt.x += pt.vx * dt;
-    pt.y += pt.vy * dt;
+    pt.x += pt.vx * particleDt;
+    pt.y += pt.vy * particleDt;
     if (pt.materialChip) {
       pt.vy += 540 * dt;
       pt.vx *= Math.exp(-2 * dt);
@@ -2181,7 +2183,7 @@ function updateAndDrawVfx(dt) {
     }
     if (pt.meteorTrail) {
       if (typeof drawMeteorParticle === 'function') {
-        drawMeteorParticle(ctx, pt, dt);
+        drawMeteorParticle(ctx, pt, particleDt);
       }
       continue;
     }
