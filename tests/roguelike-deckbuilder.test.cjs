@@ -409,3 +409,26 @@ test('Step 16: 화염 기관총 (rapid_gatling) 시전 시간 단축(0.3s) 및 �
   assert.equal(combat.gcdTotal, 0.30, '화염 기관총 활성화 시 gcdTotal이 0.30초여야 합니다.');
 });
 
+test('Step 17: 좌상단 덱 스트립에서 주문서(spellKey) 제외 및 패시브 카드 전용 렌더링 검증', () => {
+  const fs = require('node:fs');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+
+  // 1. game.js 내 주문서 필터링 구문 검증
+  assert.ok(gameSource.includes("!c.spellKey && !c.id.startsWith('spell_')"), '주문서 카드는 좌상단 덱 스트립에서 필터링되어야 합니다.');
+
+  // 2. 주문서와 패시브 카드가 혼합된 경우 필터링 로직 동작 검증
+  const sampleCards = [
+    { id: 'rapid_spark', title: '신속의 불꽃', icon: '⚡', count: 1 },
+    { id: 'spell_fireblast', title: '주문서: 불꽃 작렬', icon: '💥', spellKey: 'fireblast', count: 1 },
+    { id: 'spell_meteor', title: '주문서: 메테오', icon: '☄️', spellKey: 'meteor', count: 1 },
+    { id: 'rapid_overdrive', title: '가속 과부하', icon: '🌀', count: 2 }
+  ];
+
+  const filtered = sampleCards.filter(c => !c.spellKey && !c.id.startsWith('spell_'));
+  assert.equal(filtered.length, 2, '주문서 2종이 제외되고 패시브 카드 2종만 남아야 합니다.');
+  assert.equal(filtered[0].id, 'rapid_spark');
+  assert.equal(filtered[1].id, 'rapid_overdrive');
+  assert.equal(filtered.reduce((a, b) => a + b.count, 0), 3, '패시브 카드 중첩 수만 덱 카운트로 집계되어야 합니다.');
+});
+
+

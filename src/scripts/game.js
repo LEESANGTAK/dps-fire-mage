@@ -5377,11 +5377,14 @@ function renderDeckStripUI() {
   const cardsEl = document.getElementById('deck-strip-cards');
   if (!container || !cardsEl || !deckManager) return;
 
-  const activeCards = deckManager.getActiveCards();
-  const countEl = document.getElementById('ui-deck-count');
-  if (countEl) countEl.textContent = activeCards.reduce((a, b) => a + (b.count || 1), 0);
+  // 주문서(액티브 스킬 및 자동시전 마법진)는 하단 스킬바에 이미 배치되므로, 좌상단 덱 스트립에서는 패시브 파워업 카드만 표시
+  const allCards = deckManager.getActiveCards();
+  const passiveCards = allCards.filter(c => !c.spellKey && !c.id.startsWith('spell_'));
 
-  if (activeCards.length === 0) {
+  const countEl = document.getElementById('ui-deck-count');
+  if (countEl) countEl.textContent = passiveCards.reduce((a, b) => a + (b.count || 1), 0);
+
+  if (passiveCards.length === 0) {
     container.classList.add('hidden');
     cardsEl.innerHTML = '';
     hideDeckTooltip();
@@ -5391,7 +5394,7 @@ function renderDeckStripUI() {
   container.classList.remove('hidden');
   cardsEl.innerHTML = '';
 
-  activeCards.forEach((c) => {
+  passiveCards.forEach((c) => {
     const slot = document.createElement('div');
     const rarityClass = `rarity-${c.rarity}`;
     slot.className = `vampire-deck-slot ${rarityClass}`;
