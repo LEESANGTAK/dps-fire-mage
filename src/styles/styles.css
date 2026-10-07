@@ -5127,4 +5127,332 @@ body {
   line-height: 1.35;
 }
 
+/* ==========================================================================
+   7. 로그라이크 마도서 각성 (Grimoire Awakening) 3지선다 모달 & 덱 트레이
+   ========================================================================== */
+
+/* 7-1. 전체화면 모달 백드롭 (게임 일시정지 중 팝업) */
+.awakening-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgba(8, 6, 14, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.awakening-modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* 7-2. 모달 컨테이너 (쫀득한 오버슈트 팝업) */
+.awakening-modal {
+  position: relative;
+  width: 100%;
+  max-width: 740px;
+  background: linear-gradient(165deg, #1c182a 0%, #0d0b14 100%);
+  border: 2px solid #b45309;
+  border-radius: 18px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85), 0 0 35px rgba(217, 119, 6, 0.3);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: modalOvershoot 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes modalOvershoot {
+  0% { transform: scale(0.85) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.awakening-modal-header {
+  margin-bottom: 18px;
+}
+
+.awakening-wave-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fde047;
+  background: rgba(180, 83, 9, 0.4);
+  border: 1px solid #d97706;
+  padding: 3px 12px;
+  border-radius: 99px;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.awakening-modal-title {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #fffbeb;
+  text-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  margin: 0 0 6px 0;
+}
+
+.awakening-modal-subtitle {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* 7-3. 3장의 카드 그리드 */
+.awakening-cards-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin: 12px 0 20px 0;
+}
+
+@media (max-width: 640px) {
+  .awakening-cards-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+}
+
+/* 7-4. 개별 각성 카드 */
+.awakening-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 230px;
+  padding: 18px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  background: #1e1b2e;
+  border: 2px solid #475569;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  user-select: none;
+}
+
+.awakening-card:hover {
+  transform: translateY(-8px) scale(1.04);
+}
+
+.awakening-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+/* 등급별 테두리 및 컬러 */
+.awakening-card.rarity-common {
+  border-color: #64748b;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+}
+.awakening-card.rarity-common:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 12px 28px rgba(100, 116, 139, 0.35);
+}
+
+.awakening-card.rarity-rare {
+  border-color: #0284c7;
+  background: linear-gradient(180deg, #075985 0%, #082f49 100%);
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
+}
+.awakening-card.rarity-rare:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 14px 32px rgba(56, 189, 248, 0.45);
+}
+
+.awakening-card.rarity-legendary {
+  border-color: #d97706;
+  background: linear-gradient(180deg, #78350f 0%, #451a03 100%);
+  box-shadow: 0 8px 30px rgba(217, 119, 6, 0.35);
+  animation: cardLegendaryPulse 2.8s infinite alternate;
+}
+.awakening-card.rarity-legendary:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 16px 40px rgba(251, 191, 36, 0.6);
+}
+
+@keyframes cardLegendaryPulse {
+  0% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+  100% { box-shadow: 0 0 35px rgba(251, 191, 36, 0.65); }
+}
+
+.card-rarity-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.rarity-common .card-rarity-badge { background: #334155; color: #94a3b8; }
+.rarity-rare .card-rarity-badge { background: #0369a1; color: #7dd3fc; }
+.rarity-legendary .card-rarity-badge { background: #b45309; color: #fef08a; }
+
+.card-icon {
+  font-size: 2.5rem;
+  margin: 6px 0;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.card-desc {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.card-desc b {
+  color: #fde047;
+}
+
+.card-build-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+}
+
+/* 7-5. 모달 하단 버튼 */
+.awakening-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-reroll-cards {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  border: 1px solid #fcd34d;
+  color: #ffffff;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.4);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+}
+
+.btn-reroll-cards:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.5);
+}
+
+.btn-reroll-cards:active {
+  transform: translateY(1px);
+}
+
+.reroll-cost-badge {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid #fde047;
+  color: #fde047;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+.btn-skip-cards {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-skip-cards:hover {
+  color: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+/* 7-6. 액션바 하단 덱 스트립 (Active Deck Tray) */
+.deck-strip-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(18, 14, 24, 0.88);
+  border: 1px solid #4a3b32;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.deck-strip-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #e2cca8;
+}
+
+.deck-strip-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 26px;
+  align-items: center;
+}
+
+.deck-empty-hint {
+  font-size: 0.72rem;
+  color: #78716c;
+}
+
+.deck-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid #57534e;
+  background: #292524;
+  color: #e7e5e4;
+  cursor: help;
+  transition: transform 0.15s ease;
+}
+
+.deck-chip:hover {
+  transform: translateY(-2px);
+}
+
+.deck-chip.rarity-rare {
+  border-color: #0284c7;
+  background: #0c4a6e;
+  color: #bae6fd;
+}
+
+.deck-chip.rarity-legendary {
+  border-color: #d97706;
+  background: #78350f;
+  color: #fef08a;
+}
+
+
 

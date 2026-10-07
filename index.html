@@ -336,6 +336,16 @@
             </button>
           </div>
         </div>
+
+        <!-- 현재 런 획득 각성 덱 스트립 (Active Deck Tray) -->
+        <div class="deck-strip-container" id="deck-strip-container">
+          <div class="deck-strip-label">
+            <span>🃏 마도서 덱 (<span id="ui-deck-count">0</span>)</span>
+          </div>
+          <div class="deck-strip-cards" id="deck-strip-cards">
+            <span class="deck-empty-hint">웨이브 클리어 시 각성 카드가 추가됩니다.</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -587,6 +597,32 @@
     </div>
   </div>
 
+  <!-- 로그라이크 마도서 각성 3지선다 모달 -->
+  <div class="awakening-modal-backdrop hidden" id="awakening-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="awakening-modal-title">
+    <div class="awakening-modal">
+      <div class="awakening-modal-header">
+        <div class="awakening-badge-row">
+          <span class="awakening-wave-tag" id="awakening-wave-tag">STAGE 1-1 돌파 보상</span>
+        </div>
+        <h2 class="awakening-modal-title" id="awakening-modal-title">🔥 마도서 각성 (Grimoire Awakening)</h2>
+        <p class="awakening-modal-subtitle">고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!</p>
+      </div>
+
+      <div class="awakening-cards-container" id="awakening-cards-container">
+        <!-- 3장의 카드가 동적으로 렌더링됨 -->
+      </div>
+
+      <div class="awakening-modal-footer">
+        <button type="button" class="btn-reroll-cards" id="btn-reroll-cards">
+          <span class="reroll-icon">🎲</span>
+          <span class="reroll-text">다시 뽑기 (Redraw)</span>
+          <span class="reroll-cost-badge" id="ui-reroll-cost">💰 10 G</span>
+        </button>
+        <button type="button" class="btn-skip-cards" id="btn-skip-cards">선택 없이 넘기기 ➔</button>
+      </div>
+    </div>
+  </div>
+
   <script src="src/scripts/meteor-art.js?v=meteor-fix-pose-jump"></script>
   <script src="src/scripts/combat-art.js?v=fireball-flame-color-1"></script>
   <script src="src/scripts/paper-art.js?v=paper-monsters-3"></script>
@@ -598,6 +634,7 @@
   <script src="src/scripts/monster-motion.js?v=paper-monsters-3"></script>
   <script src="src/scripts/skill-tooltips.js?v=2"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
-  <script src="src/scripts/game.js?v=paper-monsters-3"></script>
+  <script src="src/scripts/roguelike-deck.js"></script>
+  <script src="src/scripts/game.js?v=roguelike-deck-1"></script>
 </body>
 </html>

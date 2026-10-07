@@ -547,6 +547,9 @@ const KEYSTONE_DEFINITIONS = [
   }
 ];
 
+// 로그라이크 마도서 각성 (Grimoire Awakening) 덱 관리자
+const deckManager = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.createDeckManager() : null;
+
 // ==========================================
 // 4. 게임 상태 (State)
 // ==========================================
@@ -585,6 +588,17 @@ const state = {
   // 실시간 측정 DPS 및 최근 전투 시각
   currentDps: 0,
   lastCombatTime: 0,
+
+  // 로그라이크 마도서 각성 (Grimoire Awakening) 런 단위 상태
+  playerStatsBonus: {
+    sp: 0,
+    haste: 0,
+    crit: 0,
+    critDmg: 0,
+    cdr: 0,
+    goldMult: 0
+  },
+  deckMechanics: {},
 
   // 1단계: Magic Archery 스타일 점진적 언폴딩(Unfolding) 해금 상태
   unfolded: {
@@ -820,6 +834,16 @@ function getPlayerStats() {
       if (eff.cdr) cdr += eff.cdr;
       if (eff.bonusPct) bonusPct += eff.bonusPct;
     }
+  // 로그라이크 마도서 각성 (Grimoire Awakening) 카드 덱 보너스 합산
+  if (state.playerStatsBonus) {
+    if (state.playerStatsBonus.sp) sp += state.playerStatsBonus.sp;
+    if (state.playerStatsBonus.haste) haste += state.playerStatsBonus.haste;
+    if (state.playerStatsBonus.crit) crit += state.playerStatsBonus.crit;
+    if (state.playerStatsBonus.critDmg) critDmg += state.playerStatsBonus.critDmg;
+    if (state.playerStatsBonus.cdr) cdr += state.playerStatsBonus.cdr;
+  }
+  if (state.combat && state.combat.deckHasteTimer > 0 && (state.combat.deckHasteStacks || 0) > 0) {
+    haste += state.combat.deckHasteStacks * 15;
   }
 
   // 마법 부여(Infusion) 패시브 및 공명 시너지 반영
@@ -873,7 +897,8 @@ function getPlayerStats() {
 
   const infusionSpMult = (1 + azureLv * 0.15) * (1 + totalInfLv * 0.02) * abyssSpMult;
   const artifactTreasuryBonus = 1 + ((state.artifacts && state.artifacts.phoenix_treasury) || 0) * 0.30;
-  const goldMult = (1 + alchemyLv * 0.22) * artifactTreasuryBonus;
+  const deckGoldBonus = (state.playerStatsBonus && state.playerStatsBonus.goldMult) ? (state.playerStatsBonus.goldMult / 100) : 0;
+  const goldMult = (1 + alchemyLv * 0.22 + deckGoldBonus) * artifactTreasuryBonus;
   const essenceMult = (1 + alchemyLv * 0.08) * abyssEssenceMult * artifactTreasuryBonus;
   let igniteMult = (1 + ignitionLv * 0.25);
   if (state.activeKeystone === 'dot') {
@@ -2857,14 +2882,29 @@ function onMonsterKilled() {
     updateNotificationBadges();
     return;
   } else if (state.autoAdvance !== false && canAdvanceToNextStage()) {
-    // 몬스터 1회 처치 완료 시 다음 도전으로 자동 진입!
-    loadStage(state.currentStage + 1);
-    const nextData = getStageData(state.currentStage);
-    spawnFloatingText(
-      nextData.isPhaseBoss ? '👑 보스 구역 자동 진입!' : '🚀 다음 도전 자동 진입!',
-      'fct-proc',
-      -50
-    );
+    // 웨이브 클리어 ➔ 0.6초 피격/사망 여운 후 마도서 각성 3지선다 카드 선택 트리거!
+    const clearedStage = state.currentStage;
+    setTimeout(() => {
+      triggerAwakeningSelection(clearedStage, data.isPhaseBoss, () => {
+        loadStage(clearedStage + 1);
+        const nextData = getStageData(state.currentStage);
+        spawnFloatingText(
+          nextData.isPhaseBoss ? '👑 보스 구역 자동 진입!' : '🚀 다음 도전 자동 진입!',
+          'fct-proc',
+          -50
+        );
+        const dummyEl = document.getElementById('dummy-avatar');
+        if (dummyEl) {
+          dummyEl.className = 'dummy-avatar';
+          void dummyEl.offsetWidth;
+          dummyEl.classList.add('respawn-pop');
+          const dummyEmoji = document.getElementById('dummy-emoji');
+          if (dummyEmoji) dummyEmoji.className = 'dummy-emoji';
+        }
+        saveGame();
+      });
+    }, 600);
+    return;
   } else {
     // 공격 흐름이 끊기지 않도록 즉시 새 몬스터를 스폰하되, 팝업 등장 모션(.respawn-pop) 적용!
     loadStage(state.currentStage);
@@ -2963,6 +3003,13 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         rawDamage *= 0.6; // 껍질 방어력: 일반 피해 40% 감소
       }
     }
+  }
+
+  // 로그라이크 덱: 작열하는 의지 (다음 공격 피해량 +120%)
+  if (state.combat && state.combat.deckNextDmgMult && !isDotTick) {
+    rawDamage *= state.combat.deckNextDmgMult;
+    state.combat.deckNextDmgMult = null;
+    spawnFloatingText('🔥 작열하는 의지! (+120%)', 'fct-crit', -48, { isBig: true, anchor: 'caster' });
   }
 
   if (state.cheats && state.cheats.alwaysCrit) {
@@ -3173,6 +3220,28 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         playSound('proc');
       }
     }
+
+    // 로그라이크 덱: 산산조각 (치명타 시 35% 파편 피해 즉시 폭발)
+    if (state.deckMechanics && state.deckMechanics.critShatter) {
+      const shatterDmg = Math.round(dmg * 0.35);
+      const pos = getTargetPos();
+      spawnParticles(pos.x, pos.y, 8, '#f97316', '#dc2626', 1.3);
+      spawnFloatingText(`💥 파편 ${fmt(shatterDmg)}`, 'fct-crit', -20, { anchor: 'dummy' });
+      state.monster.hp = Math.max(0, state.monster.hp - shatterDmg);
+      state.dpsHistory.push({ time: now, amount: shatterDmg });
+      if (state.skillDamage[skillKey]) {
+        state.skillDamage[skillKey].dmg += shatterDmg;
+      }
+    }
+
+    // 로그라이크 덱: 치명타 메아리 (치명타 시 25% 확률로 75% 피해 연쇄 타격)
+    if (canTriggerStreak && state.deckMechanics && state.deckMechanics.critEcho && Math.random() < 0.25) {
+      spawnFloatingText('🌀 치명타 메아리!', 'fct-proc', -38, { anchor: 'dummy' });
+      playSound('proc');
+      setTimeout(() => {
+        dealDamage(skillKey, rawDamage * 0.75, true, false, false, isCombustingEffective);
+      }, 110);
+    }
   }
 
   // 3대 빌드 키스톤: 작열 연소 (도트 틱 발생 시 25% 확률로 작렬 쿨타임 0.4초 단축)
@@ -3203,6 +3272,11 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
         playSound('proc');
         triggerReadyFlash('skill-3');
         checkBountyProgress('hot_streak_trigger', 1);
+
+        // 로그라이크 덱: 작열하는 의지 (몰열 달성 시 다음 공격 피해량 +120%)
+        if (state.deckMechanics && state.deckMechanics.critAscend) {
+          state.combat.deckNextDmgMult = 2.2;
+        }
       }
     } else if (skillKey === 'fireball') {
       if (state.combat.critStreak === 1) {
@@ -3231,7 +3305,7 @@ function triggerFireSpiritSpawn() {
 }
 
 function fireElementalAttack() {
-  const lv = state.skillTree.fire_elem || 0;
+  const lv = Math.max(state.skillTree.fire_elem || 0, (state.deckMechanics && state.deckMechanics.spiritCount) || 0);
   if (lv <= 0) return;
   const casterCenter = getCasterCenter();
   const target = getTargetPos();
@@ -3261,7 +3335,7 @@ function fireElementalAttack() {
 }
 
 function firePhoenixAttack() {
-  const lv = state.skillTree.phoenix || 0;
+  const lv = Math.max(state.skillTree.phoenix || 0, (state.deckMechanics && state.deckMechanics.phoenixAwake) ? 1 : 0);
   if (lv <= 0) return;
   const casterCenter = getCasterCenter();
   const target = getTargetPos();
@@ -3344,6 +3418,28 @@ function fireWithMultishot(type, baseMult, isCombustingSnapshot = false) {
           const base = st.sp * mult;
           const finalDmg = isCrit ? base * st.critDmg : base;
           dealDamage(type, finalDmg, isCrit, isMain, false, isCombustEffective);
+
+          // 로그라이크 덱: 분열 화염구 메커니즘 (작은 불씨 2개가 분열되어 각각 40% 피해 타격)
+          if (isMain && type === 'fireball' && state.deckMechanics && state.deckMechanics.splitFireball) {
+            const splitCount = Math.min(6, state.deckMechanics.splitFireball * 2);
+            for (let s = 0; s < splitCount; s++) {
+              setTimeout(() => {
+                const splitOffsetY = (s % 2 === 0 ? -14 : 14) * (Math.floor(s / 2) + 1);
+                launchProjectile(
+                  'fireball',
+                  () => {
+                    const splitSt = getPlayerStats();
+                    const splitCrit = Math.random() * 100 < splitSt.crit;
+                    const splitBase = splitSt.sp * 0.4;
+                    const splitDmg = splitCrit ? splitBase * splitSt.critDmg : splitBase;
+                    dealDamage('fireball', splitDmg, splitCrit, false, false, isCombustEffective);
+                  },
+                  splitOffsetY,
+                  0.55
+                );
+              }, (s + 1) * 65);
+            }
+          }
         },
         lineOffsetY,
         isMain ? 1.0 : 0.82
@@ -3381,12 +3477,17 @@ function triggerSkill(skillKey, isManual = false) {
 
     // 수동 조작 시 발화 중 캐스팅 속도 25% 가속
     const manualSpeedBonus = (isManual && c.combustionRem > 0) ? 1.25 : 1.0;
-    const castTime = Math.max(0.35, 1.5 / (stats.speedMult * manualSpeedBonus));
+    const isGatling = Boolean(state.deckMechanics && state.deckMechanics.gatling);
+    const baseCast = isGatling ? 0.35 : 1.5;
+    const minCast = isGatling ? 0.18 : 0.35;
+    const castTime = Math.max(minCast, baseCast / (stats.speedMult * manualSpeedBonus));
     c.fireballCombustionSnapshot = Boolean(c.combustionRem > 0);
     c.castingSkill = 'fireball';
     c.castTotal = castTime;
     c.castRemaining = castTime;
-    c.gcdTotal = Math.max(0.4, 1.2 / (stats.speedMult * manualSpeedBonus));
+    const baseGcd = isGatling ? 0.35 : 1.2;
+    const minGcd = isGatling ? 0.18 : 0.4;
+    c.gcdTotal = Math.max(minGcd, baseGcd / (stats.speedMult * manualSpeedBonus));
     c.gcdRemaining = c.gcdTotal;
     updateCastingLoopSound();
     return true;
@@ -3540,6 +3641,13 @@ function releaseMeteor(isManual = false) {
 function finishCast(skillKey) {
   if (skillKey === 'fireball') {
     checkBountyProgress('fireball_cast', 1);
+
+    // 로그라이크 덱: 가속 과부하 (화염구 시전 완료 시 4초간 +15% 가속 중첩, 최대 5중첩)
+    if (state.deckMechanics && state.deckMechanics.hasteStack) {
+      state.combat.deckHasteStacks = Math.min(5, (state.combat.deckHasteStacks || 0) + 1);
+      state.combat.deckHasteTimer = 4.0;
+    }
+
     const isCombusting = Boolean((state.combat.combustionRem > 0) || state.combat.fireballCombustionSnapshot);
     state.combat.fireballCombustionSnapshot = false;
     fireWithMultishot('fireball', 1.0, isCombusting);
@@ -5160,6 +5268,206 @@ function formatPlayTime(sec) {
   return `${mins}분 ${secs}초`;
 }
 
+// ==========================================
+// 로그라이크 마도서 각성 (Grimoire Awakening) UI 및 제어 함수군
+// ==========================================
+let awakeningOnComplete = null;
+let isCurrentAwakeningBoss = false;
+
+function renderDeckStripUI() {
+  const container = document.getElementById('deck-strip-container');
+  const cardsEl = document.getElementById('deck-strip-cards');
+  if (!container || !cardsEl || !deckManager) return;
+
+  const activeCards = deckManager.getActiveCards();
+  if (activeCards.length === 0) {
+    container.classList.add('hidden');
+    cardsEl.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  cardsEl.innerHTML = activeCards.map((c) => {
+    const rarityClass = `rarity-${c.rarity}`;
+    const stackText = c.count > 1 ? `<span class="deck-chip-stack">x${c.count}</span>` : '';
+    const cleanDesc = c.desc ? c.desc.replace(/<[^>]*>/g, '') : '';
+    const rarityName = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[c.rarity]?.name) || '';
+    return `
+      <div class="deck-chip ${rarityClass}" title="${c.title} (${rarityName}): ${cleanDesc}">
+        <span class="deck-chip-icon">${c.icon}</span>
+        <span class="deck-chip-name">${c.title}</span>
+        ${stackText}
+      </div>
+    `;
+  }).join('');
+}
+
+function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = null) {
+  if (!deckManager) {
+    if (typeof onComplete === 'function') onComplete();
+    return;
+  }
+
+  awakeningOnComplete = onComplete;
+  isCurrentAwakeningBoss = isBossWave;
+  state.isPaused = true;
+
+  const modal = document.getElementById('awakening-modal-backdrop');
+  const tagEl = document.getElementById('awakening-wave-tag');
+  const titleEl = document.getElementById('awakening-modal-title');
+  const subEl = document.querySelector('.awakening-modal-subtitle');
+
+  if (tagEl) {
+    const phase = Math.floor((stageNum - 1) / 5) + 1;
+    const wave = ((stageNum - 1) % 5) + 1;
+    tagEl.textContent = isBossWave ? `👑 STAGE ${stageNum} 보스 돌파 특별 보상` : `STAGE ${phase}-${wave} 돌파 보상`;
+    tagEl.className = isBossWave ? 'awakening-wave-tag boss' : 'awakening-wave-tag';
+  }
+
+  if (titleEl) {
+    titleEl.textContent = isBossWave ? '👑 마도서 대각성 (Greater Awakening)' : '🔥 마도서 각성 (Grimoire Awakening)';
+  }
+
+  if (subEl) {
+    subEl.textContent = isBossWave
+      ? '강력한 페이즈 보스를 물리치고 최고위 마력이 개방되었습니다! (희귀/전설 카드 확정 출현)'
+      : '고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!';
+  }
+
+  const choices = deckManager.drawChoices(3, isBossWave);
+  renderAwakeningChoicesUI(choices, isBossWave);
+  updateRerollButtonUI();
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    playSound('proc');
+  }
+}
+
+function renderAwakeningChoicesUI(choices, isBossWave = false) {
+  const container = document.getElementById('awakening-cards-container');
+  if (!container || !deckManager) return;
+
+  const activeDeck = deckManager.getActiveDeck();
+
+  container.innerHTML = choices.map((card) => {
+    const rarityClass = `rarity-${card.rarity}`;
+    const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: '일반' };
+    const currentCount = activeDeck[card.id] || 0;
+    const stackBadge = currentCount > 0 ? `<div class="card-stack-badge">보유: ${currentCount}/${card.maxStack}</div>` : '';
+
+    let buildBadgeText = '특수';
+    if (typeof RoguelikeDeck !== 'undefined') {
+      if (card.build === RoguelikeDeck.BUILD.RAPID) buildBadgeText = '⚡ 속사 머신건';
+      else if (card.build === RoguelikeDeck.BUILD.CRIT) buildBadgeText = '🎯 극치명 누킹';
+      else if (card.build === RoguelikeDeck.BUILD.SUMMON) buildBadgeText = '🔥 정령 군단';
+      else if (card.build === RoguelikeDeck.BUILD.UTILITY) buildBadgeText = '✨ 유틸리티';
+    }
+
+    return `
+      <div class="awakening-card ${rarityClass}" data-card-id="${card.id}">
+        <div class="card-rarity-badge">${rarityMeta.name}</div>
+        ${stackBadge}
+        <div class="card-icon">${card.icon}</div>
+        <div class="card-name">${card.title}</div>
+        <div class="card-build-tag">${buildBadgeText}</div>
+        <div class="card-desc">${card.desc}</div>
+        <button type="button" class="btn-card-choose">각성 수락</button>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.awakening-card').forEach((cardEl) => {
+    cardEl.addEventListener('click', () => {
+      const cardId = cardEl.getAttribute('data-card-id');
+      if (cardId) selectAwakeningCard(cardId);
+    });
+  });
+}
+
+function selectAwakeningCard(cardId) {
+  if (!deckManager) return;
+  const success = deckManager.selectCard(cardId, state);
+  if (!success) return;
+
+  const card = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find((c) => c.id === cardId) : null;
+  playSound('fireball_impact');
+  if (card) {
+    spawnFloatingText(`✨ [${card.title}] 각성 획득!`, 'fct-proc', -60, { isBig: true });
+  }
+
+  closeAwakeningModal();
+  renderDeckStripUI();
+  updateLiveHUD();
+
+  if (typeof awakeningOnComplete === 'function') {
+    const cb = awakeningOnComplete;
+    awakeningOnComplete = null;
+    cb();
+  }
+}
+
+function updateRerollButtonUI() {
+  const btn = document.getElementById('btn-reroll-cards');
+  const costEl = document.getElementById('ui-reroll-cost');
+  if (!btn || !costEl || !deckManager) return;
+
+  const cost = deckManager.getRerollCost();
+  costEl.textContent = `💰 ${fmt(cost)} G`;
+
+  const canAfford = (state.gold >= cost);
+  btn.disabled = !canAfford;
+  btn.style.opacity = canAfford ? '1' : '0.5';
+  btn.style.cursor = canAfford ? 'pointer' : 'not-allowed';
+}
+
+function handleAwakeningReroll() {
+  if (!deckManager) return;
+  const result = deckManager.reroll(state, isCurrentAwakeningBoss);
+  if (!result.success) {
+    spawnFloatingText('💰 리롤에 필요한 골드가 부족합니다!', 'fct-normal', -40);
+    return;
+  }
+
+  playSound('fireball_launch');
+  triggerArenaShake('sm');
+  updateLiveHUD();
+  updateRerollButtonUI();
+  renderAwakeningChoicesUI(result.choices, isCurrentAwakeningBoss);
+
+  const container = document.getElementById('awakening-cards-container');
+  if (container) {
+    container.classList.remove('cards-shuffle-pop');
+    void container.offsetWidth;
+    container.classList.add('cards-shuffle-pop');
+  }
+}
+
+function closeAwakeningModal() {
+  const modal = document.getElementById('awakening-modal-backdrop');
+  if (modal) modal.classList.add('hidden');
+  state.isPaused = false;
+}
+
+function initAwakeningModalEvents() {
+  const rerollBtn = document.getElementById('btn-reroll-cards');
+  if (rerollBtn) {
+    rerollBtn.addEventListener('click', handleAwakeningReroll);
+  }
+
+  const skipBtn = document.getElementById('btn-skip-cards');
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      closeAwakeningModal();
+      if (typeof awakeningOnComplete === 'function') {
+        const cb = awakeningOnComplete;
+        awakeningOnComplete = null;
+        cb();
+      }
+    });
+  }
+}
+
 function openVictoryModal(isFirstVictory = false) {
   const modal = document.getElementById('victory-modal');
   const grid = document.getElementById('victory-stats-grid');
@@ -5345,6 +5653,12 @@ function doAscend() {
     }
   }
 
+  // 로그라이크 각성 덱 초기화
+  if (deckManager) {
+    deckManager.resetDeck(state);
+    renderDeckStripUI();
+  }
+
   // ★ 스킬 유지 스피드런: 마도서(스킬)와 자동 시전 및 상점을 영구 보존하여, 승천 즉시 폭발적인 화력으로 스피드런 쾌감 제공!
   state.unfolded.grimoireShop = true;
   state.unfolded.stageNav = true;
@@ -5441,10 +5755,18 @@ function gameLoop(nowMs) {
     }
   }
 
+  // 로그라이크 덱: 가속 과부하 타이머 갱신
+  if (c.deckHasteTimer > 0) {
+    c.deckHasteTimer = Math.max(0, c.deckHasteTimer - dt);
+    if (c.deckHasteTimer <= 0) {
+      c.deckHasteStacks = 0;
+    }
+  }
 
-
-  const summonSpeedBonus = state.activeKeystone === 'summon' ? 1.5 : 1.0;
-  if (state.skillTree.fire_elem > 0) {
+  const deckSummonHaste = (state.deckMechanics && state.deckMechanics.summonHaste) ? 1.3 : 1.0;
+  const summonSpeedBonus = (state.activeKeystone === 'summon' ? 1.5 : 1.0) * deckSummonHaste;
+  const hasDeckSpirit = Boolean(state.deckMechanics && state.deckMechanics.spiritCount > 0);
+  if (state.skillTree.fire_elem > 0 || hasDeckSpirit) {
     c.elemTimer += dt * stats.speedMult * summonSpeedBonus;
     if (c.elemTimer >= 1.3) {
       c.elemTimer -= 1.3;
@@ -5452,7 +5774,8 @@ function gameLoop(nowMs) {
     }
   }
 
-  if (state.skillTree.phoenix > 0) {
+  const hasDeckPhoenix = Boolean(state.deckMechanics && state.deckMechanics.phoenixAwake);
+  if (state.skillTree.phoenix > 0 || hasDeckPhoenix) {
     c.phoenixTimer += dt * stats.speedMult * summonSpeedBonus;
     if (c.phoenixTimer >= 2.4) {
       c.phoenixTimer -= 2.4;
@@ -5854,7 +6177,8 @@ function saveGame() {
       bestSpeedrunTime: state.bestSpeedrunTime || null,
       skillMastery: state.skillMastery,
       stats: state.stats,
-      bounty: state.bounty
+      bounty: state.bounty,
+      activeDeck: deckManager ? deckManager.getActiveDeck() : {}
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   } catch (e) {}
@@ -5912,6 +6236,9 @@ function loadGame() {
     if (data.skillMastery) Object.assign(state.skillMastery, data.skillMastery);
     if (data.stats) Object.assign(state.stats, data.stats);
     if (data.bounty) Object.assign(state.bounty, data.bounty);
+    if (data.activeDeck && deckManager) {
+      deckManager.restoreDeck(data.activeDeck, state);
+    }
     if (!state.bounty || !isBountyValid(state.bounty.type)) {
       generateNextBounty();
     }
@@ -6498,6 +6825,9 @@ function initEvents() {
       location.reload();
     }
   });
+
+  // 로그라이크 마도서 각성 모달 이벤트 초기화
+  initAwakeningModalEvents();
 }
 
 // ==========================================
@@ -6527,6 +6857,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updatePityCritBadgeUI();
   updateSkillAutoUI();
   renderHeatUI();
+  renderDeckStripUI();
   updateNotificationBadges();
   requestAnimationFrame(gameLoop);
 });
