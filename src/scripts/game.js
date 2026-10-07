@@ -600,6 +600,7 @@ const state = {
     goldMult: 0
   },
   deckMechanics: {},
+  spellOrder: ['fireball'],
 
   // 1단계: Magic Archery 스타일 점진적 언폴딩(Unfolding) 해금 상태
   unfolded: {
@@ -3501,9 +3502,6 @@ function triggerSkill(skillKey, isManual = false) {
       dmg *= 1.35; // 수동 작렬 기본 35% 증폭
       if (c.combustionRem > 0) {
         dmg *= 1.5; // 발화 중 수동 작렬 콤보 추가 50% 증폭! (총 2배 이상)
-        spawnFloatingText('⚡ 수동 작렬 콤보! (+100%)', 'fct-crit', -35, { isBig: true, anchor: 'caster' });
-      } else {
-        spawnFloatingText('⚡ 수동 작렬! (+35%)', 'fct-crit', -30, { anchor: 'caster' });
       }
     }
     dealDamage('fireblast', dmg, true, true);
@@ -3520,11 +3518,6 @@ function triggerSkill(skillKey, isManual = false) {
     const timeWarpCdCut = ((state.artifacts && state.artifacts.time_warp) || 0) * 3;
     c.combustionCdTotal = Math.max(Math.max(10, 14 - timeWarpCdCut), (30 - timeWarpCdCut) * (1 - stats.cdr));
     c.combustionCdRem = c.combustionCdTotal;
-    if (isManual) {
-      spawnFloatingText('🔥⚡ 수동 마력 폭주! (수동 스킬 2배 폭딜 가속!)', 'fct-proc', -50, { isBig: true, anchor: 'caster' });
-    } else {
-      spawnFloatingText('🤖 자동 마력 폭주', 'fct-proc', -40, { anchor: 'caster' });
-    }
     playSound('proc');
     return true;
   }
@@ -3599,9 +3592,6 @@ function releaseMeteor(isManual = false) {
   if (isCombustingAtLaunch) {
     if (!state.stats) state.stats = {};
     state.stats.combustionPyros = (state.stats.combustionPyros || 0) + 1;
-  }
-  if (isManual) {
-    spawnFloatingText('☄️ 수동 몰열 메테오! (+60% 폭딜)', 'fct-crit', -45, { isBig: true, anchor: 'caster' });
   }
   launchMeteorVfx(() => {
     const stats = getPlayerStats();
@@ -4665,50 +4655,81 @@ function applyUnfoldedVisibility() {
   }
 }
 
+const SPELL_ACTION_CONFIG = {
+  fireball: { id: 'skill-1', icon: '🔥', name: '화염구' },
+  fireblast: { id: 'skill-2', icon: '💥', name: '불꽃 작렬' },
+  meteor: { id: 'skill-3', icon: '☄️', name: '메테오' },
+  combustion: { id: 'skill-4', icon: '☀️', name: '마력 폭주' },
+  flame_patch: { id: 'skill-6', icon: '♨️', name: '불장판' }
+};
+
+function getActiveSpellList() {
+  state.spellOrder = state.spellOrder || ['fireball'];
+  // 누락된 해금 주문이 있다면 순서대로 추가
+  const candidates = ['fireblast', 'meteor', 'combustion', 'flame_patch'];
+  candidates.forEach((s) => {
+    const has = (s === 'flame_patch')
+      ? Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0)
+      : Boolean(state.grimoires && state.grimoires[s]);
+    if (has && !state.spellOrder.includes(s)) {
+      state.spellOrder.push(s);
+    }
+  });
+
+  const activeList = [];
+  state.spellOrder.forEach((s) => {
+    if (s === 'fireball') {
+      activeList.push(s);
+    } else if (s === 'flame_patch') {
+      if (state.skillTree && (state.skillTree.flame_patch || 0) > 0) activeList.push(s);
+    } else {
+      if (state.grimoires && state.grimoires[s]) activeList.push(s);
+    }
+  });
+  return activeList;
+}
+
 function updateSkillActionBarVisibility() {
   checkAndTriggerUnfolds(true);
 
-  const btn2 = document.getElementById('skill-2');
-  const icon2 = document.getElementById('icon-2');
-  const charges2 = document.getElementById('charges-2');
-  const hasFireblast = Boolean(state.grimoires.fireblast);
-  if (btn2) {
-    btn2.classList.toggle('hidden-slot', !hasFireblast);
-    btn2.classList.toggle('locked-skill', !hasFireblast);
-    if (icon2) icon2.textContent = '💥';
-    if (charges2) {
-      charges2.style.display = hasFireblast ? 'block' : 'none';
-      charges2.textContent = (state.combat && state.combat.fbCharges > 0) ? state.combat.fbCharges : '';
+  const activeSpells = getActiveSpellList();
+
+  // 모든 스킬 버튼을 순회하며 해금 여부 및 동적 단축키 번호[1, 2, 3...] 부여
+  Object.entries(SPELL_ACTION_CONFIG).forEach(([skillKey, conf]) => {
+    const btn = document.getElementById(conf.id);
+    if (!btn) return;
+    const activeIndex = activeSpells.indexOf(skillKey);
+    const isUnlocked = activeIndex !== -1;
+
+    btn.classList.toggle('hidden-slot', !isUnlocked);
+    btn.classList.toggle('locked-skill', !isUnlocked);
+
+    if (isUnlocked) {
+      const hotkeyNum = activeIndex + 1;
+      btn.style.order = String(hotkeyNum);
+      btn.setAttribute('data-hotkey', String(hotkeyNum));
+
+      const hotkeyEl = btn.querySelector('.skill-hotkey');
+      if (hotkeyEl) {
+        hotkeyEl.textContent = String(hotkeyNum);
+      }
+      btn.setAttribute('title', `[${hotkeyNum}] ${conf.name}`);
+    } else {
+      btn.style.order = '99';
     }
+  });
+
+  const charges2 = document.getElementById('charges-2');
+  const hasFireblast = Boolean(state.grimoires && state.grimoires.fireblast);
+  if (charges2) {
+    charges2.style.display = hasFireblast ? 'block' : 'none';
+    charges2.textContent = (state.combat && state.combat.fbCharges > 0) ? state.combat.fbCharges : '';
   }
 
   const btn3 = document.getElementById('skill-3');
-  const icon3 = document.getElementById('icon-3');
-  const hasMeteor = Boolean(state.grimoires.meteor);
-  if (btn3) {
-    btn3.classList.toggle('hidden-slot', !hasMeteor);
-    btn3.classList.toggle('locked-skill', !hasMeteor);
-    if (icon3) icon3.textContent = '☄️';
-    if (!hasMeteor) btn3.classList.remove('proc-glow');
-  }
-
-  const btn4 = document.getElementById('skill-4');
-  const icon4 = document.getElementById('icon-4');
-  const hasCombustion = Boolean(state.grimoires.combustion);
-  if (btn4) {
-    btn4.classList.toggle('hidden-slot', !hasCombustion);
-    btn4.classList.toggle('locked-skill', !hasCombustion);
-    if (icon4) icon4.textContent = '☀️';
-    btn4.setAttribute('aria-label', '마력 폭주');
-  }
-
-  const btn6 = document.getElementById('skill-6');
-  const icon6 = document.getElementById('icon-6');
-  const hasFlamePatch = Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0);
-  if (btn6) {
-    btn6.classList.toggle('hidden-slot', !hasFlamePatch);
-    btn6.classList.toggle('locked-skill', !hasFlamePatch);
-    if (icon6) icon6.textContent = '♨️';
+  const hasMeteor = Boolean(state.grimoires && state.grimoires.meteor);
+  if (btn3 && !hasMeteor) {
+    btn3.classList.remove('proc-glow');
   }
 
   const autoBtn = document.getElementById('btn-auto-cast');
@@ -6316,6 +6337,7 @@ function saveGame() {
       skillMastery: state.skillMastery,
       stats: state.stats,
       bounty: state.bounty,
+      spellOrder: state.spellOrder || ['fireball'],
       activeDeck: deckManager ? deckManager.getActiveDeck() : {}
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
@@ -6338,6 +6360,7 @@ function loadGame() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return;
     const data = JSON.parse(raw);
+    if (Array.isArray(data.spellOrder)) state.spellOrder = [...data.spellOrder];
     if (typeof data.gold === 'number') state.gold = data.gold;
     if (typeof data.essence === 'number') state.essence = data.essence;
     if (typeof data.currentStage === 'number') state.currentStage = data.currentStage;
@@ -6441,6 +6464,17 @@ function initEvents() {
       const detailsModal = document.getElementById('details-modal');
       if (detailsModal && !detailsModal.classList.contains('hidden')) {
         closeDetailsModal();
+        return;
+      }
+    }
+
+    // 숫자키 1~6 입력 시 현재 활성화된 스킬 순서(동적 단축키)에 따라 발동
+    const keyMatch = e.code.match(/^(?:Digit|Numpad)([1-6])$/) || (e.key && e.key.match(/^([1-6])$/));
+    if (keyMatch) {
+      const slotIndex = parseInt(keyMatch[1], 10) - 1;
+      const activeSpells = getActiveSpellList();
+      if (slotIndex >= 0 && slotIndex < activeSpells.length) {
+        triggerSkill(activeSpells[slotIndex], true);
         return;
       }
     }

@@ -201,7 +201,6 @@
     "build": "utility",
     "maxStack": 1,
     "desc": "발아래 마법진을 전개하여 습득한 마법을 쿨다운마다 <b>자동 연계 시전</b>합니다.",
-    "prerequisite": "has_any_spell",
     "spellKey": "autocast"
   },
   {

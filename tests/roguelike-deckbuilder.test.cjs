@@ -234,10 +234,13 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
       assert.notEqual(c.id, 'crit_meteor_storm', '메테오가 없는 상태에서는 태양석 메테오 카드가 등장하지 않아야 합니다.');
       assert.notEqual(c.id, 'crit_chain_streak', '메테오(몰열)가 없는 상태에서는 연쇄 몰열 카드가 등장하지 않아야 합니다.');
       assert.notEqual(c.id, 'crit_crimson_frenzy', '마력 폭주가 없는 상태에서는 진홍의 마력 폭주 카드가 등장하지 않아야 합니다.');
-      assert.notEqual(c.id, 'spell_autocast', '쿨다운 스킬이 없는 상태에서는 자동 시전 카드가 등장하지 않아야 합니다.');
       assert.notEqual(c.id, 'util_phoenix_reborn', '쿨다운 스킬이 없는 상태에서는 불사조의 가호(쿨다운 리셋) 카드가 등장하지 않아야 합니다.');
     }
   }
+
+  // 1-1. 1-5 스테이지 이전 손 피로도 방지: 자동 시전은 초기 상태에서도 정상 등장해야 함을 검증
+  const earlyChoices = manager.drawChoices(3, false, { currentStage: 2, grimoires: {} });
+  assert.ok(earlyChoices.some(c => c.id === 'spell_autocast'), '1-5 스테이지 이전 초반에는 자동 시전 카드가 우선 제시되어야 합니다.');
 
   // 2. 메테오(spell_meteor)를 획득한 후에는 연쇄 몰열 및 메테오 강화 카드가 정상 등장하는지 검증
   manager.selectCard('spell_meteor', emptyState);
@@ -430,5 +433,47 @@ test('Step 17: 좌상단 덱 스트립에서 주문서(spellKey) 제외 및 패�
   assert.equal(filtered[1].id, 'rapid_overdrive');
   assert.equal(filtered.reduce((a, b) => a + b.count, 0), 3, '패시브 카드 중첩 수만 덱 카운트로 집계되어야 합니다.');
 });
+
+test('Step 18: 스킬 습득 순서에 따른 동적 단축키 및 슬롯 배정 검증', () => {
+  const fs = require('node:fs');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const { createDeckManager } = require('../src/scripts/roguelike-deck.js');
+
+  // 1. game.js 내 getActiveSpellList 및 동적 단축키 로직 존재 확인
+  assert.ok(gameSource.includes('function getActiveSpellList()'), 'getActiveSpellList 함수가 정의되어 있어야 합니다.');
+  assert.ok(gameSource.includes('btn.style.order = String(hotkeyNum)'), '스킬 액션바 버튼에 order가 동적으로 부여되어야 합니다.');
+  assert.ok(gameSource.includes('const activeSpells = getActiveSpellList();'), '키보드 입력 시 동적 스킬 목록을 참조해야 합니다.');
+
+  // 2. 카드 획득 시 spellOrder 순서 등록 검증 (불꽃 작렬 없이 메테오를 2번째로 배울 경우)
+  const manager = createDeckManager();
+  const testState = {
+    grimoires: {},
+    spellOrder: ['fireball'],
+    deckMechanics: {},
+    playerStatsBonus: {}
+  };
+
+  // 메테오 주문서 선택
+  manager.selectCard('spell_meteor', testState);
+  assert.deepEqual(testState.spellOrder, ['fireball', 'meteor'], '화염구 다음으로 메테오가 spellOrder에 2번째로 추가되어야 합니다.');
+  assert.equal(testState.grimoires.meteor, true, '메테오가 해금되어야 합니다.');
+
+  // 그 다음 불꽃 작렬 주문서 선택
+  manager.selectCard('spell_fireblast', testState);
+  assert.deepEqual(testState.spellOrder, ['fireball', 'meteor', 'fireblast'], '그 다음 배운 불꽃 작렬이 3번째로 추가되어야 합니다.');
+  assert.equal(testState.grimoires.fireblast, true, '불꽃 작렬이 해금되어야 합니다.');
+
+  // 3. getActiveSpellList 모의 실행 검증
+  const getActiveSpells = (stateObj) => {
+    const list = Array.isArray(stateObj.spellOrder) ? stateObj.spellOrder.slice() : ['fireball'];
+    return list.filter(k => k === 'fireball' || Boolean(stateObj.grimoires?.[k]));
+  };
+
+  const activeSpells = getActiveSpells(testState);
+  assert.equal(activeSpells[0], 'fireball', '1번 슬롯/단축키는 fireball이어야 합니다.');
+  assert.equal(activeSpells[1], 'meteor', '2번 슬롯/단축키는 meteor이어야 합니다.');
+  assert.equal(activeSpells[2], 'fireblast', '3번 슬롯/단축키는 fireblast이어야 합니다.');
+});
+
 
 

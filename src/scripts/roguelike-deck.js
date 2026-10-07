@@ -225,7 +225,6 @@
       build: BUILD.UTILITY,
       maxStack: 1,
       desc: '발아래 마법진을 전개하여 습득한 마법을 쿨다운마다 <b>자동 연계 시전</b>합니다.',
-      prerequisite: 'has_any_spell',
       spellKey: 'autocast'
     },
     {
@@ -309,6 +308,12 @@
       if (raw.spellKey) {
         state.grimoires = state.grimoires || {};
         state.grimoires[raw.spellKey] = true;
+        if (raw.spellKey !== 'autocast') {
+          state.spellOrder = state.spellOrder || ['fireball'];
+          if (!state.spellOrder.includes(raw.spellKey)) {
+            state.spellOrder.push(raw.spellKey);
+          }
+        }
         if (raw.spellKey === 'autocast') {
           state.autoCast = true;
           if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
@@ -482,6 +487,23 @@
 
       const selected = [];
       const poolCopy = [...eligible];
+
+      // 1-5 스테이지 이전 초반 손 피로도 완화를 위한 자동 시전 카드 우선 출현 보장
+      const currentStage = (st && st.currentStage) || 1;
+      const needsEarlyAutoCast = (
+        currentStage < 5 &&
+        !isBossWave &&
+        !activeDeck['spell_autocast'] &&
+        !(st && st.grimoires && st.grimoires.autocast)
+      );
+
+      if (needsEarlyAutoCast) {
+        const autoCardIndex = poolCopy.findIndex(c => c.id === 'spell_autocast');
+        if (autoCardIndex !== -1) {
+          const autoCard = poolCopy.splice(autoCardIndex, 1)[0];
+          selected.push(autoCard);
+        }
+      }
 
       while (selected.length < count && poolCopy.length > 0) {
         // 가중치가 0인 카드는 후보 풀에서 제외
