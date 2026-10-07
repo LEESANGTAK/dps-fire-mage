@@ -16,7 +16,10 @@ for(const fps of [30,60,144]) {
 }
 const pool=[];emitMeteorTrail(m,getMeteorPose(m,.5),.1,pool,true);assert.equal(pool.length,0);
 emitMeteorTrail(m,getMeteorPose(m,.5),0,pool);assert.equal(pool.length,0);
-const full=Array.from({length:450},()=>({}));emitMeteorTrail(m,getMeteorPose(m,.5),.1,full);assert.equal(full.length,450);
+const full=Array.from({length:450},()=>({life:0,maxLife:.5}));
+emitMeteorTrail({...m,trailEmissionIndex:0},getMeteorPose(m,.5),.1,full);
+assert.equal(full.length,450);
+assert.ok(full.some(pt=>pt.meteorTrail&&pt.kind==='smoke'),'새 일반 입자가 전체 풀을 채워도 연기가 생성되어야 합니다.');
 // 수십 개가 동시에 낙하해도 모든 운석의 연기가 여러 프레임 살아남아야 합니다.
 for (const fps of [30, 60, 144]) {
  for (const simultaneous of [20, 50]) {

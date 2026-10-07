@@ -305,13 +305,14 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false, activeMeteorCount =
     available = Math.min(count, Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length));
   }
 
-  // 만약 전체 풀(450)이 일반 파티클로 꽉 차서 메테오 꼬리를 스폰할 수 없는 경우, 오래된 일반 파티클 정리
+  // 전체 풀이 차면 일반 입자의 나이와 무관하게 공간을 확보합니다.
+  // 고속 화염구가 매 프레임 새 입자를 채워도 운석 꼬리는 생성되어야 합니다.
   if (available < count && pool.length + count > maxTotalParticles) {
     const need = count - Math.max(0, available);
     let freed = 0;
     for (let i = 0; i < pool.length && freed < need && pool.length + count > maxTotalParticles; i++) {
       const pt = pool[i];
-      if (!pt.meteorTrail && typeof pt.life === 'number' && typeof pt.maxLife === 'number' && pt.life / pt.maxLife >= 0.5) {
+      if (!pt.meteorTrail) {
         pool.splice(i, 1);
         i--;
         freed++;
