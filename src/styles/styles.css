@@ -385,14 +385,15 @@ body {
   color: #052e16;
 }
 
-/* 2. Main Layout Grid (Left Combat + Right Shop) */
+/* 2. Main Layout (Roguelike Single Centered Wide Arena) */
 .main-layout {
-  display: grid;
-  grid-template-columns: 1fr 450px;
-  gap: 14px;
-  padding: 12px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 12px 20px;
   flex: 1;
   min-height: 0;
+  width: 100%;
 }
 
 .combat-column {
@@ -400,6 +401,12 @@ body {
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  width: 100%;
+  max-width: 1080px;
+}
+
+.shop-column {
+  display: none !important;
 }
 
 /* Stage Navigation Buttons & Phase Info */

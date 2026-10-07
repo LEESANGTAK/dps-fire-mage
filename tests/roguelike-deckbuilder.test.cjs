@@ -167,5 +167,52 @@ test('Step 10: 런타임 덱 획득 및 activeCards 리스트 연동 검증', ()
   assert.equal(activeCards[0].count, 1);
 });
 
+test('Step 11: 고대 마법 주문서 5종 카드 통합 및 중복 습득 방지 검증', () => {
+  const manager = createDeckManager();
+  const spellIds = ['spell_autocast', 'spell_fireblast', 'spell_meteor', 'spell_flame_patch', 'spell_combustion'];
+
+  // 1. 5종 주문서가 CARD_POOL에 모두 등록되어 있고 maxStack이 1인지 검증
+  for (const id of spellIds) {
+    const card = CARD_POOL.find(c => c.id === id);
+    assert.ok(card, `${id} 주문서 카드가 CARD_POOL에 존재해야 합니다.`);
+    assert.equal(card.maxStack, 1, `${id} 카드의 최대 중첩 수는 1이어야 합니다.`);
+  }
+
+  // 2. 카드 선택 시 state.grimoires 및 스킬 트리 플래그 갱신 검증
+  const fakeState = {
+    gold: 500,
+    grimoires: {},
+    skillTree: {},
+    autoCast: false,
+    playerStatsBonus: {},
+    deckMechanics: {}
+  };
+
+  manager.selectCard('spell_fireblast', fakeState);
+  assert.equal(fakeState.grimoires.fireblast, true, '불꽃 작렬 주문서 습득 시 grimoires.fireblast가 true여야 합니다.');
+
+  manager.selectCard('spell_autocast', fakeState);
+  assert.equal(fakeState.grimoires.autocast, true, '자동 시전 주문서 습득 시 grimoires.autocast가 true여야 합니다.');
+  assert.equal(fakeState.autoCast, true, '자동 시전이 즉시 활성화되어야 합니다.');
+
+  manager.selectCard('spell_flame_patch', fakeState);
+  assert.equal(fakeState.grimoires.flame_patch, true);
+  assert.ok(fakeState.skillTree.flame_patch >= 1, '불장판 스킬 트리가 1레벨 이상이어야 합니다.');
+
+  manager.selectCard('spell_meteor', fakeState);
+  assert.equal(fakeState.grimoires.meteor, true);
+
+  manager.selectCard('spell_combustion', fakeState);
+  assert.equal(fakeState.grimoires.combustion, true);
+
+  // 3. 모든 주문서를 이미 습득한 상태에서는 3지선다에 주문서 카드가 단 하나도 등장하지 않는지 50회 추첨 검증
+  for (let i = 0; i < 50; i++) {
+    const choices = manager.drawChoices(3, false, fakeState);
+    for (const c of choices) {
+      assert.ok(!spellIds.includes(c.id), `이미 습득한 주문서(${c.id})는 선택지에 등장하지 않아야 합니다.`);
+    }
+  }
+});
+
 
 

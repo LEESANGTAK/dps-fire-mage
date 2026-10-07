@@ -292,6 +292,85 @@
         state.deckMechanics = state.deckMechanics || {};
         state.deckMechanics.phoenixReset = true;
       }
+    },
+
+    // ==========================================
+    // 5. 고대 마법 주문서 (Spell Grimoires)
+    // ==========================================
+    {
+      id: 'spell_autocast',
+      title: '비전 마법진: 자동 시전',
+      icon: '🪄',
+      rarity: RARITY.COMMON,
+      build: BUILD.UTILITY,
+      maxStack: 1,
+      desc: '발아래 마법진을 전개하여 습득한 마법을 쿨다운마다 <b>자동 연계 시전</b>합니다.',
+      apply: (state) => {
+        state.grimoires = state.grimoires || {};
+        state.grimoires.autocast = true;
+        state.autoCast = true;
+        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+        if (typeof updateAutoCastMagicCircle === 'function') updateAutoCastMagicCircle();
+        if (typeof updateSkillAutoUI === 'function') updateSkillAutoUI();
+      }
+    },
+    {
+      id: 'spell_fireblast',
+      title: '주문서: 불꽃 작렬',
+      icon: '💥',
+      rarity: RARITY.COMMON,
+      build: BUILD.CRIT,
+      maxStack: 1,
+      desc: '시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다.',
+      apply: (state) => {
+        state.grimoires = state.grimoires || {};
+        state.grimoires.fireblast = true;
+        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+      }
+    },
+    {
+      id: 'spell_meteor',
+      title: '주문서: 메테오',
+      icon: '☄️',
+      rarity: RARITY.RARE,
+      build: BUILD.CRIT,
+      maxStack: 1,
+      desc: '하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다.',
+      apply: (state) => {
+        state.grimoires = state.grimoires || {};
+        state.grimoires.meteor = true;
+        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+      }
+    },
+    {
+      id: 'spell_flame_patch',
+      title: '주문서: 불장판',
+      icon: '🌋',
+      rarity: RARITY.RARE,
+      build: BUILD.RAPID,
+      maxStack: 1,
+      desc: '몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.',
+      apply: (state) => {
+        state.grimoires = state.grimoires || {};
+        state.grimoires.flame_patch = true;
+        state.skillTree = state.skillTree || {};
+        state.skillTree.flame_patch = Math.max(1, state.skillTree.flame_patch || 1);
+        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+      }
+    },
+    {
+      id: 'spell_combustion',
+      title: '주문서: 마력 폭주',
+      icon: '🔥',
+      rarity: RARITY.LEGENDARY,
+      build: BUILD.CRIT,
+      maxStack: 1,
+      desc: '일정 시간 동안 <b>모든 마법 100% 확정 치명타 및 시전 속도 대폭 가속</b> 궁극기를 습득합니다.',
+      apply: (state) => {
+        state.grimoires = state.grimoires || {};
+        state.grimoires.combustion = true;
+        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+      }
     }
   ];
 
@@ -307,11 +386,20 @@
     }
 
     // 3장의 카드 무작위 추첨
-    function drawChoices(count = 3, isBossWave = false) {
-      // 1. 뽑을 수 있는 유효 카드 필터링 (최대 중첩 미달성 카드)
+    function drawChoices(count = 3, isBossWave = false, gameState = null) {
+      // 1. 뽑을 수 있는 유효 카드 필터링 (최대 중첩 미달성 카드 및 이미 습득한 주문서 제외)
+      const st = gameState || (typeof state !== 'undefined' ? state : null);
       const eligible = CARD_POOL.filter(card => {
         const currentCount = activeDeck[card.id] || 0;
-        return currentCount < card.maxStack;
+        if (currentCount >= card.maxStack) return false;
+        if (st && st.grimoires) {
+          if (card.id === 'spell_fireblast' && st.grimoires.fireblast) return false;
+          if (card.id === 'spell_meteor' && st.grimoires.meteor) return false;
+          if (card.id === 'spell_combustion' && st.grimoires.combustion) return false;
+          if (card.id === 'spell_flame_patch' && st.grimoires.flame_patch) return false;
+          if (card.id === 'spell_autocast' && st.grimoires.autocast) return false;
+        }
+        return true;
       });
 
       if (eligible.length === 0) return [];
@@ -382,7 +470,7 @@
 
       gameState.gold -= cost;
       rerollCount++;
-      const newChoices = drawChoices(3, isBossWave);
+      const newChoices = drawChoices(3, isBossWave, gameState);
 
       return {
         success: true,

@@ -4506,8 +4506,7 @@ function checkAndTriggerUnfolds(silent = false) {
     u.grimoireShop = true;
     changed = true;
     if (!silent) {
-      showUnfoldToast('🔓 새로운 시스템 해금: 마법 연구소!', '우측 [📜 주문서] 상점에서 새로운 주문서를 구매할 수 있습니다.');
-      triggerUnfoldPop('grimoire-section');
+      showUnfoldToast('🔥 마도서 각성 시스템 개방!', '웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!');
     }
   }
 
@@ -4519,18 +4518,16 @@ function checkAndTriggerUnfolds(silent = false) {
     }
   }
 
-  // 2. 자동 시전 마법진 구매(또는 장비 1개 이상 보유) 시: 장비 강화 상점 & 자동 시전 버튼 & 치명타/시전속도 스탯 개방
-  const hasAnyEquip = Object.values(state.items).some((lv) => lv > 0);
-  if (!u.equipShop && (state.grimoires.autocast || hasAnyEquip || state.highestClearedStage >= 3)) {
+  // 2. 자동 시전 마법진 획득 시: 자동 시전 버튼 & 치명타/시전속도 스탯 개방
+  if (!u.equipShop && (state.grimoires.autocast || state.highestClearedStage >= 1)) {
     u.equipShop = true;
     changed = true;
-    if (!silent) {
-      showUnfoldToast('🔓 새로운 시스템 해금: 자동 시전 & 장비 강화!', '이제 마법을 자동으로 시전하고 장비를 강화해 스탯을 높일 수 있습니다.');
-      triggerUnfoldPop('item-section');
+    if (!silent && state.grimoires.autocast) {
+      showUnfoldToast('🪄 자동 시전 마법진 개방!', '이제 마법사가 습득한 마법을 최적의 타이밍에 자동으로 시전합니다.');
       triggerUnfoldPop('btn-auto-cast');
-      triggerUnfoldPop('pill-crit');
-      triggerUnfoldPop('pill-haste');
     }
+    triggerUnfoldPop('pill-crit');
+    triggerUnfoldPop('pill-haste');
   }
 
   // 2-B. 불꽃의 정수 최초 획득 또는 주입 레벨 보유 시: 불꽃의 정수 & [🔮 마법 부여] 탭 개방
@@ -5339,7 +5336,7 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
       : '고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!';
   }
 
-  const choices = deckManager.drawChoices(3, isBossWave);
+  const choices = deckManager.drawChoices(3, isBossWave, state);
   renderAwakeningChoicesUI(choices, isBossWave);
   updateRerollButtonUI();
 
@@ -5401,6 +5398,13 @@ function selectAwakeningCard(cardId) {
     spawnFloatingText(`✨ [${card.title}] 각성 획득!`, 'fct-proc', -60, { isBig: true });
   }
 
+  if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
+  else if (cardId === 'spell_meteor') triggerUnfoldPop('skill-3');
+  else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
+  else if (cardId === 'spell_flame_patch') triggerUnfoldPop('skill-6');
+  else if (cardId === 'spell_autocast') triggerUnfoldPop('btn-auto-cast');
+
+  updateSkillActionBarVisibility();
   closeAwakeningModal();
   renderDeckStripUI();
   updateLiveHUD();
