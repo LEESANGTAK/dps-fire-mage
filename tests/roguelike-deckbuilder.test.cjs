@@ -548,6 +548,63 @@ test('Step 21: 정수(Essence) 재화 및 관련 UI(상단 알약, 마법 부여
   assert.ok(!gameSource.includes('chainHotStreak'), 'game.js에 연쇄 몰열(chainHotStreak) 로직이 남아있지 않아야 합니다.');
 });
 
+test('Step 22: 화염 정령 정상 시각화/골렘 소환 차단 & 결과창 스피드런 기록 비교 대시보드 및 재도전 검증', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const { createDeckManager, CARD_POOL } = require('../src/scripts/roguelike-deck.js');
+
+  // 1. 화염 정령 소환 시 골렘 소환 차단 & fire_elem 정상 반영 검증
+  const manager = createDeckManager();
+  const testState = {
+    skillTree: { fire_elem: 0, magma_golem: 0 },
+    deckMechanics: {},
+    playerStatsBonus: {}
+  };
+  manager.selectCard('sum_spirit', testState);
+  assert.equal(testState.skillTree.fire_elem, 1, 'sum_spirit 카드 획득 시 fire_elem 특성이 1이어야 합니다.');
+  assert.equal(testState.skillTree.magma_golem, 0, 'sum_spirit 카드 획득 시 용암 골렘(magma_golem)은 0이어야 합니다.');
+  assert.equal(testState.deckMechanics.spiritCount, 1, 'spiritCount가 1이어야 합니다.');
+
+  // 2. sum_spirit 2중첩 시 정령 편대 증가 검증
+  manager.selectCard('sum_spirit', testState);
+  assert.equal(testState.skillTree.fire_elem, 2, 'sum_spirit 2회 획득 시 fire_elem이 2여야 합니다.');
+  assert.equal(testState.deckMechanics.spiritCount, 2, 'spiritCount가 2여야 합니다.');
+  assert.equal(testState.skillTree.magma_golem, 0, '용암 골렘은 여전히 0이어야 합니다.');
+
+  // 3. 선행 조건(has_summon)이 골렘이 아닌 정령을 체크하는지 검증
+  const summonCard = CARD_POOL.find(c => c.prerequisite === 'has_summon');
+  assert.ok(summonCard, 'has_summon 선행 조건 카드가 존재해야 합니다.');
+  assert.equal(summonCard.req(testState, manager.getActiveDeck()), true, '정령 보유 시 has_summon 조건이 충족되어야 합니다.');
+
+  // 4. game.js 정령 렌더링/공격/스폰 및 세이브 복구 로직 검증
+  assert.ok(gameSource.includes('const elemLv = Math.max(state.skillTree.fire_elem || 0, (state.deckMechanics && state.deckMechanics.spiritCount) || 0);'), '정령 레벨이 deckMechanics.spiritCount를 포함하여 계산되어야 합니다.');
+  assert.ok(gameSource.includes("else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();"), 'sum_spirit 카드 선택 시 스폰 연출이 트리거되어야 합니다.');
+  assert.ok(gameSource.includes('state.skillTree.magma_golem = 0;'), '정령 보유 시 골렘 오염을 방지/복구하는 로직이 있어야 합니다.');
+
+  // 5. index.html 승천 결과 모달 UI 개편 검증
+  assert.ok(html.includes('id="btn-speedrun-retry"'), '스피드런 재도전 버튼(#btn-speedrun-retry)이 존재해야 합니다.');
+  assert.ok(html.includes('id="btn-victory-close"'), '결과창 닫기 버튼(#btn-victory-close)이 존재해야 합니다.');
+  assert.ok(html.includes('id="speedrun-comparison-board"'), '스피드런 비교 보드(#speedrun-comparison-board)가 존재해야 합니다.');
+  assert.ok(html.includes('id="speedrun-current-val"'), '이번 도전 결과 엘리먼트가 존재해야 합니다.');
+  assert.ok(html.includes('id="speedrun-best-val"'), '역대 최단시간 엘리먼트가 존재해야 합니다.');
+  assert.ok(html.includes('id="speedrun-diff-banner"'), '기록 차이 분석 배너가 존재해야 합니다.');
+  assert.ok(!html.includes('id="btn-victory-continue"'), '구형 심연 계속하기 버튼은 제거되어야 합니다.');
+
+  // 6. styles.css 스타일 검증
+  assert.ok(css.includes('.speedrun-comparison-board'), '스피드런 비교 보드 스타일이 정의되어 있어야 합니다.');
+  assert.ok(css.includes('.speedrun-retry-btn'), '스피드런 재도전 버튼 스타일이 정의되어 있어야 합니다.');
+  assert.ok(css.includes('.victory-close-icon'), '결과창 닫기 아이콘 스타일이 정의되어 있어야 합니다.');
+
+  // 7. game.js 내 스피드런 비교 데이터 갱신 검증
+  assert.ok(gameSource.includes('speedrun-current-val'), 'openVictoryModal에서 이번 기록을 주입해야 합니다.');
+  assert.ok(gameSource.includes('speedrun-best-val'), 'openVictoryModal에서 최단시간을 주입해야 합니다.');
+  assert.ok(gameSource.includes('speedrun-diff-banner'), 'openVictoryModal에서 차이 배너를 주입해야 합니다.');
+  assert.ok(gameSource.includes("speedrunRetryBtn.addEventListener('click'"), '스피드런 재도전 버튼 클릭 이벤트가 바인딩되어 있어야 합니다.');
+});
+
+
 
 
 

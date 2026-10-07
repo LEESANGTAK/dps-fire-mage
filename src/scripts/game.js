@@ -1692,12 +1692,9 @@ function drawSummonsAndAuras(dt) {
 
   // 화염구는 발사 시에만 생성합니다. 시전 중에는 준비 탄환을 그리지 않습니다.
   // 2. 불의 정령
-  const elemLv = state.skillTree.fire_elem || 0;
+  const elemLv = Math.max(state.skillTree.fire_elem || 0, (state.deckMechanics && state.deckMechanics.spiritCount) || 0);
   if (elemLv > 0) {
     if (c.elemRecoil > 0) c.elemRecoil = Math.max(0, c.elemRecoil - dt * 5);
-    const bobY = Math.sin(c.animTime * 3.5) * 6;
-    const ex = casterCenter.x + 58 + c.elemRecoil * 8;
-    const ey = casterCenter.y - 68 + bobY;
 
     // 12대 애니메이션 원칙(Squash & Stretch, Follow Through, Ease-In/Out) 스폰 모션
     let scaleX = 1;
@@ -1735,41 +1732,62 @@ function drawSummonsAndAuras(dt) {
       }
     }
 
-    ctx.save();
-    ctx.translate(ex, ey + spawnOffsetY);
-    ctx.scale(scaleX, scaleY);
-    ctx.globalAlpha = spawnAlpha;
+    // 소환된 정령 편대 (최대 4기까지 개별 시각화)
+    const spiritCount = Math.min(4, elemLv);
+    const spiritConfigs = [
+      { ox: 58, oy: -68, phase: 0.0, baseSize: 48, scale: 1.0 },
+      { ox: 86, oy: -46, phase: 1.3, baseSize: 40, scale: 0.88 },
+      { ox: 36, oy: -96, phase: 2.6, baseSize: 36, scale: 0.80 },
+      { ox: 104, oy: -82, phase: 3.9, baseSize: 34, scale: 0.75 }
+    ];
 
-    const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, 28);
-    grad.addColorStop(0, '#fef08a');
-    grad.addColorStop(0.45, '#f97316');
-    grad.addColorStop(0.8, 'rgba(239, 68, 68, 0.35)');
-    grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(0, 0, 28, 0, Math.PI * 2);
-    ctx.fill();
+    for (let sIdx = 0; sIdx < spiritCount; sIdx++) {
+      const cfg = spiritConfigs[sIdx];
+      const bobY = Math.sin(c.animTime * 3.5 + cfg.phase) * (6 * cfg.scale);
+      const ex = casterCenter.x + cfg.ox + c.elemRecoil * (8 * cfg.scale);
+      const ey = casterCenter.y + cfg.oy + bobY;
 
-    for (let i = 0; i < elemLv + 1; i++) {
-      const ang = c.animTime * 4 + (i * Math.PI * 2) / (elemLv + 1);
-      const ox = Math.cos(ang) * 22;
-      const oy = Math.sin(ang) * 12;
-      ctx.fillStyle = '#fde047';
+      ctx.save();
+      ctx.translate(ex, ey + spawnOffsetY);
+      ctx.scale(scaleX * cfg.scale, scaleY * cfg.scale);
+      ctx.globalAlpha = spawnAlpha;
+
+      const auraRadius = Math.round(28 * cfg.scale);
+      const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, auraRadius);
+      grad.addColorStop(0, '#fef08a');
+      grad.addColorStop(0.45, '#f97316');
+      grad.addColorStop(0.8, 'rgba(239, 68, 68, 0.35)');
+      grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
+      ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
       ctx.fill();
+
+      // 정령 주변 공전 불씨
+      const emberCount = 3 + sIdx;
+      for (let i = 0; i < emberCount; i++) {
+        const ang = c.animTime * (4 + sIdx * 0.5) + (i * Math.PI * 2) / emberCount;
+        const ox = Math.cos(ang) * (20 * cfg.scale);
+        const oy = Math.sin(ang) * (11 * cfg.scale);
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(ox, oy, 3 * cfg.scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.font = `${Math.round(26 * cfg.scale)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawComicAbility(ctx, 'fire-elemental', 0, 0, Math.round(cfg.baseSize * cfg.scale));
+
+      if (sIdx === 0) {
+        ctx.font = 'bold 10px Pretendard, sans-serif';
+        ctx.fillStyle = '#fed7aa';
+        ctx.fillText(elemLv > 1 ? `불의 정령 x${elemLv}` : `불의 정령`, 0, Math.round(24 * cfg.scale));
+      }
+
+      ctx.restore();
     }
-
-    ctx.font = '26px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    drawComicAbility(ctx, 'fire-elemental', 0, 0, 48);
-
-    ctx.font = 'bold 10px Pretendard, sans-serif';
-    ctx.fillStyle = '#fed7aa';
-    ctx.fillText(`불의 정령 Lv.${elemLv}`, 0, 24);
-
-    ctx.restore();
   }
 
   // 3. 불사조
@@ -2837,7 +2855,13 @@ function onMonsterKilled() {
     state.canAscend = true;
     state.unfolded.hallOfFame = true;
     const curTime = state.playTimeSec || 0;
-    if (!state.bestSpeedrunTime || curTime < state.bestSpeedrunTime) {
+    state.stats = state.stats || {};
+    state.stats.lastSpeedrunTime = curTime;
+    const prevBest = state.bestSpeedrunTime || null;
+    state.stats.prevBestSpeedrunTime = prevBest;
+    const isNewRecord = !prevBest || curTime < prevBest;
+    state.stats.isNewSpeedrunRecord = isNewRecord;
+    if (isNewRecord) {
       state.bestSpeedrunTime = curTime;
       triggerSpeedrunRecordFlash();
       spawnFloatingText(`🏆 라그나로스 스피드런 신기록! (${formatSpeedrunTime(curTime)})`, 'fct-crit', -90, { isBig: true });
@@ -3308,27 +3332,42 @@ function fireElementalAttack() {
   const target = getTargetPos();
   state.combat.elemRecoil = 1.0;
 
-  launchCustomProjectile({
-    type: 'elem_bolt',
-    startX: casterCenter.x + 58,
-    startY: casterCenter.y - 68,
-    targetX: target.x,
-    targetY: target.y,
-    duration: 0.25,
-    radius: 8,
-    colorCore: '#fef08a',
-    colorMid: '#fb7185',
-    onHit: () => {
-      const st = getPlayerStats();
-      const isCrit = Math.random() * 100 < st.crit;
-      const base = st.sp * (0.45 * lv) * st.summonMult;
-      const finalDmg = isCrit ? base * st.critDmg : base;
-      if (state.combat.igniteRem > 0) {
-        state.combat.igniteRem = Math.min(6.0, state.combat.igniteRem + 0.8);
-      }
-      dealDamage('summon_elem', finalDmg, isCrit, false);
-    }
-  });
+  const spiritConfigs = [
+    { ox: 58, oy: -68 },
+    { ox: 86, oy: -46 },
+    { ox: 36, oy: -96 },
+    { ox: 104, oy: -82 }
+  ];
+  const count = Math.min(4, lv);
+
+  for (let i = 0; i < count; i++) {
+    const cfg = spiritConfigs[i];
+    const delay = i * 0.05;
+    setTimeout(() => {
+      launchCustomProjectile({
+        type: 'elem_bolt',
+        startX: casterCenter.x + cfg.ox,
+        startY: casterCenter.y + cfg.oy,
+        targetX: target.x,
+        targetY: target.y,
+        duration: 0.24,
+        radius: 8,
+        colorCore: '#fef08a',
+        colorMid: '#fb7185',
+        onHit: () => {
+          const st = getPlayerStats();
+          const isCrit = Math.random() * 100 < st.crit;
+          const totalBase = st.sp * (0.45 * lv) * st.summonMult;
+          const hitBase = totalBase / count;
+          const finalDmg = isCrit ? hitBase * st.critDmg : hitBase;
+          if (state.combat.igniteRem > 0) {
+            state.combat.igniteRem = Math.min(6.0, state.combat.igniteRem + 0.8 / count);
+          }
+          dealDamage('summon_elem', finalDmg, isCrit, false);
+        }
+      });
+    }, delay * 1000);
+  }
 }
 
 function firePhoenixAttack() {
@@ -5517,6 +5556,7 @@ function selectAwakeningCard(cardId) {
   else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
   else if (cardId === 'spell_flame_patch') triggerUnfoldPop('skill-6');
   else if (cardId === 'spell_autocast') triggerUnfoldPop('btn-auto-cast');
+  else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();
 
   updateSkillActionBarVisibility();
   closeAwakeningModal();
@@ -5660,11 +5700,54 @@ function openVictoryModal(isFirstVictory = false) {
     }
   }
 
+  // 스피드런 이번 도전 vs 역대 최단시간 비교 대시보드 갱신
+  const currentValEl = document.getElementById('speedrun-current-val');
+  const bestValEl = document.getElementById('speedrun-best-val');
+  const resultTagEl = document.getElementById('speedrun-result-tag');
+  const diffBannerEl = document.getElementById('speedrun-diff-banner');
+  const diffTextEl = document.getElementById('speedrun-diff-text');
+
+  const curSpeedrun = state.stats?.lastSpeedrunTime ?? state.playTimeSec ?? 0;
+  const bestSpeedrun = state.bestSpeedrunTime ?? curSpeedrun;
+  const prevBest = state.stats?.prevBestSpeedrunTime;
+  const isNewRec = Boolean(state.stats?.isNewSpeedrunRecord || (!prevBest && curSpeedrun > 0) || (curSpeedrun > 0 && curSpeedrun <= bestSpeedrun));
+
+  if (currentValEl) {
+    currentValEl.textContent = formatSpeedrunTime(curSpeedrun);
+  }
+  if (bestValEl) {
+    bestValEl.textContent = formatSpeedrunTime(bestSpeedrun);
+  }
+
+  if (diffBannerEl && diffTextEl) {
+    diffBannerEl.classList.remove('record', 'slower');
+    if (isNewRec && prevBest && prevBest > curSpeedrun) {
+      const diffSec = (prevBest - curSpeedrun).toFixed(1);
+      diffBannerEl.classList.add('record');
+      diffTextEl.innerHTML = `🎉 <b>스피드런 신기록 수립!</b> 이전 최단시간보다 <b>-${diffSec}초</b> 단축! ⚡`;
+      if (resultTagEl) {
+        resultTagEl.textContent = '👑 NEW RECORD';
+        resultTagEl.style.background = '#ea580c';
+      }
+    } else if (isNewRec && !prevBest) {
+      diffBannerEl.classList.add('record');
+      diffTextEl.innerHTML = `🌟 <b>라그나로스 최초 토벌 기록 수립!</b> 다시 도전하여 기록을 단축해보세요!`;
+      if (resultTagEl) {
+        resultTagEl.textContent = '🌟 FIRST CLEAR';
+        resultTagEl.style.background = '#d97706';
+      }
+    } else {
+      const diffSec = Math.max(0, curSpeedrun - bestSpeedrun).toFixed(1);
+      diffBannerEl.classList.add('slower');
+      diffTextEl.innerHTML = `⏱️ 역대 최단시간 대비 <b>+${diffSec}초</b> 지연 (다음 회차에서 기록 갱신에 도전하세요!)`;
+      if (resultTagEl) {
+        resultTagEl.textContent = '⚡ CHALLENGE';
+        resultTagEl.style.background = '#475569';
+      }
+    }
+  }
+
   grid.innerHTML = `
-    <div class="victory-stat-item speedrun-card">
-      <span class="victory-stat-label">⏱️ 라그나로스 스피드런 공식 기록</span>
-      <span class="victory-stat-val gold">${formatPlayTime(state.bestSpeedrunTime || state.playTimeSec)} ⚡</span>
-    </div>
     <div class="victory-stat-item">
       <span class="victory-stat-label">현재 승천 회차</span>
       <span class="victory-stat-val gold">제 ${currentAsc} 회차 (피해량 x${getAscensionDamageMult().toFixed(2)}배)</span>
@@ -5697,8 +5780,8 @@ function openVictoryModal(isFirstVictory = false) {
       <span class="victory-stat-label">누적 토벌 몬스터</span>
       <span class="victory-stat-val">${fmt(state.totalKills || 0)} 마리</span>
     </div>
-    <div class="victory-stat-item">
-      <span class="victory-stat-label">누적 전투 시간</span>
+    <div class="victory-stat-item" style="grid-column: span 2;">
+      <span class="victory-stat-label">누적 원정 시간</span>
       <span class="victory-stat-val">${formatPlayTime(state.totalPlayTimeSec || state.playTimeSec)}</span>
     </div>
   `;
@@ -6383,6 +6466,10 @@ function loadGame() {
     if (data.activeDeck && deckManager) {
       deckManager.restoreDeck(data.activeDeck, state);
     }
+    if (state.deckMechanics && state.deckMechanics.spiritCount > 0) {
+      state.skillTree.fire_elem = Math.max(state.skillTree.fire_elem || 0, state.deckMechanics.spiritCount);
+      state.skillTree.magma_golem = 0;
+    }
     if (!state.bounty || !isBountyValid(state.bounty.type)) {
       generateNextBounty();
     }
@@ -6723,6 +6810,22 @@ function initEvents() {
   if (doAscendBtn) {
     doAscendBtn.addEventListener('click', () => {
       doAscend();
+    });
+  }
+
+  const speedrunRetryBtn = document.getElementById('btn-speedrun-retry');
+  if (speedrunRetryBtn) {
+    speedrunRetryBtn.addEventListener('click', () => {
+      playSound('proc');
+      doAscend();
+    });
+  }
+
+  const victoryCloseBtn = document.getElementById('btn-victory-close');
+  if (victoryCloseBtn) {
+    victoryCloseBtn.addEventListener('click', () => {
+      playSound('item_select');
+      closeVictoryModal();
     });
   }
 

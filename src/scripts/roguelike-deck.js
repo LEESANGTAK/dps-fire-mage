@@ -221,7 +221,7 @@
 
     // 1. 선행 조건(req) 인터프리터
     if (raw.prerequisite === 'has_summon') {
-      card.req = (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0);
+      card.req = (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.fire_elem > 0);
     } else if (raw.prerequisite === 'has_meteor') {
       card.req = (st, deck) => (deck['spell_meteor'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.meteor);
     } else if (raw.prerequisite === 'has_combustion') {
@@ -304,7 +304,8 @@
             state.deckMechanics.extraSpirits = (state.deckMechanics.extraSpirits || 0) + 1;
             state.deckMechanics.spiritCount = state.deckMechanics.extraSpirits;
             state.skillTree = state.skillTree || {};
-            state.skillTree.magma_golem = Math.max(state.skillTree.magma_golem || 0, 1);
+            state.skillTree.fire_elem = Math.max(state.skillTree.fire_elem || 0, state.deckMechanics.extraSpirits);
+            state.skillTree.magma_golem = 0; // 화염 정령 소환 시 골렘 소환 방지
             break;
           case 'spirit_frenzy':
             state.deckMechanics.spiritDamageMult = (state.deckMechanics.spiritDamageMult || 1) * (p.spiritDamageMult || 1.4);
@@ -523,6 +524,10 @@
       if (gameState) {
         gameState.playerStatsBonus = {};
         gameState.deckMechanics = {};
+        if (gameState.skillTree) {
+          gameState.skillTree.fire_elem = 0;
+          gameState.skillTree.magma_golem = 0;
+        }
       }
     }
 

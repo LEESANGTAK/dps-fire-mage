@@ -467,14 +467,37 @@
   <!-- 골드 동전 곡선 비행 흡수 연출 전용 전체화면 오버레이 -->
   <div class="coin-fx-layer" id="coin-fx-layer"></div>
 
-  <!-- 4단계: Stage 20(화염군주 라그나로스) 토벌 시 승천 & 명예의 전당 모달 -->
+  <!-- 4단계: Stage 20(화염군주 라그나로스) 토벌 시 스피드런 결과 & 재도전 모달 -->
   <div class="victory-modal-backdrop hidden" id="victory-modal">
     <div class="victory-modal-card">
-      <div class="victory-crown-badge" id="victory-crown-badge">👑 VICTORY · PHOENIX ASCENSION</div>
+      <button type="button" class="victory-close-icon" id="btn-victory-close" title="닫기">✕</button>
+      <div class="victory-crown-badge" id="victory-crown-badge">👑 VICTORY · SPEEDRUN COMPLETE</div>
       <h2 class="victory-title" id="victory-modal-title">화염군주 라그나로스 토벌 완료!</h2>
       <p class="victory-subtitle" id="victory-modal-subtitle">
         불타는 심연의 지배자를 물리치고 아제로스 최고의 대마법사 반열에 올랐습니다!
       </p>
+
+      <!-- 스피드런 이번 기록 vs 최단시간 비교 보드 -->
+      <div class="speedrun-comparison-board" id="speedrun-comparison-board">
+        <div class="speedrun-board-header">
+          <span>⏱️ 라그나로스 스피드런 공식 기록</span>
+          <span class="speedrun-badge-tag" id="speedrun-result-tag">⚡ RECORD</span>
+        </div>
+        <div class="speedrun-times-grid">
+          <div class="speedrun-time-box current">
+            <span class="speedrun-box-label">🏃 이번 도전 결과</span>
+            <span class="speedrun-box-val fire" id="speedrun-current-val">00:00</span>
+          </div>
+          <div class="speedrun-vs-divider">VS</div>
+          <div class="speedrun-time-box best">
+            <span class="speedrun-box-label">🏆 역대 최단시간</span>
+            <span class="speedrun-box-val gold" id="speedrun-best-val">00:00</span>
+          </div>
+        </div>
+        <div class="speedrun-diff-banner" id="speedrun-diff-banner">
+          <span id="speedrun-diff-text">기록을 분석 중입니다...</span>
+        </div>
+      </div>
 
       <div class="victory-stats-grid" id="victory-stats-grid"></div>
 
@@ -487,19 +510,9 @@
         <div class="victory-logs-bars" id="victory-logs-bars"></div>
       </div>
 
-      <div class="victory-abyss-banner ascension-highlight">
-        <div class="abyss-banner-title" id="victory-ascend-title">🔥 불사조 승천 (Phoenix Ascension)</div>
-        <div class="abyss-banner-desc" id="victory-ascend-desc">
-          지금 승천하면 <b>🌟 스킬 포인트 +1 SP</b> 및 <b>전체 피해량 1.5배 영구 증폭(+50%)</b> 축복을 획득하고 Stage 1로 환생합니다!
-        </div>
-      </div>
-
-      <div class="victory-actions">
-        <button class="victory-btn primary" id="btn-do-ascend">
-          🔥 불사조 승천 진행 (+1 SP & 피해량 x1.5배)
-        </button>
-        <button class="victory-btn secondary" id="btn-victory-continue">
-          🌌 무한 심연 계속 도전하기
+      <div class="victory-actions speedrun-actions">
+        <button class="victory-btn primary speedrun-retry-btn" id="btn-speedrun-retry">
+          ⚡ 다시 스피드런 도전하기 (기록 갱신)
         </button>
       </div>
     </div>
