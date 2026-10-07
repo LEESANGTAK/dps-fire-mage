@@ -38,7 +38,7 @@ def sync_excel_to_json():
         if not card_id:
             continue
         card_id = str(card_id).strip()
-        if not card_id:
+        if not card_id or card_id == 'crit_chain_streak':
             continue
 
         title = str(ws.cell(row=row_idx, column=2).value or '').strip()

@@ -78,18 +78,6 @@
       stats: { crit: 15, critDmg: 0.4 }
     },
     {
-      id: 'crit_chain_streak',
-      title: '연쇄 몰열',
-      icon: '✨',
-      rarity: RARITY.RARE,
-      build: BUILD.CRIT,
-      maxStack: 2,
-      desc: '몰아치는 열기 소모 시 <b>40% 확률</b>로 몰열 버프가 사라지지 않고 유지됩니다.',
-      prerequisite: 'has_meteor',
-      mechanic: 'chain_hot_streak',
-      mechanicParams: { chainHotStreak: 0.4 }
-    },
-    {
       id: 'crit_meteor_storm',
       title: '태양석 메테오',
       icon: '☄️',
@@ -301,9 +289,6 @@
           case 'gatling_mode':
             state.deckMechanics.gatlingMode = true;
             state.deckMechanics.gatling = true; // game.js 및 모든 하위 호환성 100% 보장
-            break;
-          case 'chain_hot_streak':
-            state.deckMechanics.chainHotStreak = (state.deckMechanics.chainHotStreak || 0) + (p.chainHotStreak || 0.4);
             break;
           case 'meteor_buff':
             state.deckMechanics.meteorBuff = (state.deckMechanics.meteorBuff || 0) + 1;

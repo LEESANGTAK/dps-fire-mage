@@ -23,10 +23,6 @@
         <span class="label"><i class="paper-ui-icon" data-paper-icon="gold" aria-hidden="true"></i> 골드</span>
         <span class="value" id="ui-gold">0</span>
       </div>
-      <div class="stat-pill essence-pill unfold-hidden" id="pill-essence" title="몬스터 토벌 및 치명타 추출로 획득하는 고대 마력 자원입니다 (마법 부여에 사용)">
-        <span class="label"><i class="paper-ui-icon" data-paper-icon="essence" aria-hidden="true"></i> 정수</span>
-        <span class="value" id="ui-essence">0</span>
-      </div>
       <div class="stat-pill feather-pill unfold-hidden" id="pill-feathers" title="불사조 승천으로 획득하는 영구 유물 재화입니다">
         <span class="label"><i class="paper-ui-icon" data-paper-icon="feather" aria-hidden="true"></i> 깃털</span>
         <span class="value" id="ui-feathers">0</span>
@@ -138,9 +134,6 @@
           <div class="dev-cheat-actions">
             <button type="button" class="dev-cheat-btn" id="btn-cheat-gold">
               💰 즉시 골드 +10,000
-            </button>
-            <button type="button" class="dev-cheat-btn" id="btn-cheat-essence">
-              🔹 즉시 정수 +10,000
             </button>
             <button type="button" class="dev-cheat-btn" id="btn-cheat-sp">
               🌟 즉시 스킬 포인트 +10,000
@@ -393,11 +386,6 @@
           <span>🛒 상점</span>
           <span class="noti-badge hidden" id="badge-tab-shop">!</span>
         </button>
-        <button class="right-tab-btn unfold-hidden has-badge-anchor" id="tab-btn-infusion" data-right-tab="infusion">
-          <span>🔮 마법 부여</span>
-          <span class="essence-tab-badge" id="ui-tab-essence-badge">0 🔹</span>
-          <span class="noti-badge hidden" id="badge-tab-infusion">!</span>
-        </button>
         <button class="right-tab-btn unfold-hidden has-badge-anchor" id="tab-btn-tree" data-right-tab="tree">
           <span>🌳 스킬 트리</span>
           <span class="sp-tab-badge" id="ui-tab-sp-badge">0 SP</span>
@@ -441,25 +429,7 @@
         </div>
       </div>
 
-      <!-- 탭 2: 마법 부여 (제2 자원: 불꽃의 정수) 뷰 -->
-      <div class="right-tab-pane" id="pane-infusion">
-        <div class="infusion-header-box">
-          <div class="inf-header-top">
-            <span class="inf-title">🔮 고대 불꽃 마법 부여</span>
-            <span class="inf-essence-box" id="ui-infusion-essence-box">🔹 0 정수</span>
-          </div>
-          <div class="inf-resonance-bar" id="ui-infusion-resonance">
-            공명 등급 합계: <b>0 Lv</b> · 최종 피해 공명 보너스 <b>+0%</b>
-          </div>
-          <div class="inf-header-actions">
-            <span class="inf-sub-hint">스테이지 최초 토벌·보스 처치·치명타 추출 시 🔹 정수 획득</span>
-          </div>
-        </div>
-
-        <div class="shop-list infusion-list" id="infusion-shop-list"></div>
-      </div>
-
-      <!-- 탭 3: 스킬 트리 뷰 -->
+      <!-- 탭 2: 스킬 트리 뷰 -->
       <div class="right-tab-pane" id="pane-tree">
         <div class="skill-tree-header-box">
           <div class="st-header-top">

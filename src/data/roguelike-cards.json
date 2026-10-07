@@ -46,20 +46,6 @@
     }
   },
   {
-    "id": "crit_chain_streak",
-    "title": "연쇄 몰열",
-    "icon": "✨",
-    "rarity": "rare",
-    "build": "crit",
-    "maxStack": 2,
-    "desc": "몰아치는 열기 소모 시 <b>40% 확률</b>로 몰열 버프가 사라지지 않고 유지됩니다.",
-    "prerequisite": "has_meteor",
-    "mechanic": "chain_hot_streak",
-    "mechanicParams": {
-      "chainHotStreak": 0.4
-    }
-  },
-  {
     "id": "crit_meteor_storm",
     "title": "태양석 메테오",
     "icon": "☄️",

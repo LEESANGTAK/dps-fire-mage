@@ -514,7 +514,7 @@ const PHOENIX_ARTIFACTS = [
     icon: '🪶',
     maxLv: 3,
     cost: 1,
-    desc: (lv) => `몬스터 토벌 및 스테이지 완료 시 골드 & 정수 획득량 +${lv === 0 ? 30 : lv * 30}%`
+    desc: (lv) => `몬스터 토벌 및 스테이지 완료 시 골드 획득량 +${lv === 0 ? 30 : lv * 30}%`
   }
 ];
 
@@ -2776,11 +2776,7 @@ function switchRightTab(tabName) {
 }
 
 function getFirstClearEssenceBonus(stageNum) {
-  const data = getStageData(stageNum);
-  if (!data.isPhaseBoss) return 0; // 일반 몬스터는 정수를 주지 않음!
-  const stats = getPlayerStats();
-  const base = Math.max(30, Math.round(stageNum * 6));
-  return Math.max(1, Math.round(base * (stats.essenceMult || 1)));
+  return 0;
 }
 
 function onMonsterKilled() {
@@ -2793,7 +2789,6 @@ function onMonsterKilled() {
   const isFirstRagnarosKill = state.currentStage === 20 && !state.campaignCleared;
   const isRagnarosKill = state.currentStage === 20;
   let totalGold = Math.max(1, Math.round(data.gold * (stats.goldMult || 1)));
-  let gainedEssence = 0;
 
   state.totalKills = (state.totalKills || 0) + 1;
   checkBountyProgress('monster_kill', 1);
@@ -2825,29 +2820,17 @@ function onMonsterKilled() {
     totalGold += Math.round(data.firstBonus * (stats.goldMult || 1));
 
     if (data.isPhaseBoss) {
-      gainedEssence = getFirstClearEssenceBonus(state.currentStage);
       const isBossSpStage = [5, 10, 15, 20].includes(state.currentStage);
       if (isBossSpStage) {
-        spawnFloatingText(`👑 보스 격파! 🌟 +1 SP & 🔹 +${gainedEssence} 정수!`, 'fct-proc', -60, { isBig: true });
+        spawnFloatingText('👑 보스 격파! 🌟 +1 SP!', 'fct-proc', -60, { isBig: true });
       } else {
-        spawnFloatingText(`👑 보스 격파! 🔹 +${gainedEssence} 정수!`, 'fct-proc', -60);
+        spawnFloatingText('👑 보스 격파!', 'fct-proc', -60);
       }
       playSound('proc');
-    }
-  } else {
-    // 반복 처치 시: 보스만 100% 확정 정수 지급, 일반 몬스터는 정수 지급 없음!
-    if (data.isPhaseBoss) {
-      const baseDrop = Math.max(5, Math.floor(state.currentStage * 0.9));
-      gainedEssence = Math.max(1, Math.round(baseDrop * (stats.essenceMult || 1)));
-    } else {
-      gainedEssence = 0;
     }
   }
 
   state.gold += totalGold;
-  if (gainedEssence > 0) {
-    state.essence = (state.essence || 0) + gainedEssence;
-  }
 
   if (isRagnarosKill || state.highestClearedStage >= 20) {
     state.campaignCleared = true;
@@ -2861,14 +2844,10 @@ function onMonsterKilled() {
     }
   }
 
-  // 정수 UI(#pill-essence)가 처음 해금되는 순간에도 도착 좌표를 정확히 계산할 수 있도록 Unfold를 먼저 실행
   checkAndTriggerUnfolds(false);
 
-  // 골드는 상단 배너(#target-reward)에서 #pill-gold로, 정수는 몬스터(#dummy-avatar)에서 #pill-essence로 곡선 비행 흡수!
+  // 골드는 상단 배너(#target-reward)에서 #pill-gold로 곡선 비행 흡수!
   spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
-  if (gainedEssence > 0) {
-    spawnEssenceFlight(gainedEssence);
-  }
 
   const pos = getTargetPos();
   // 재질에 맞는 사망 여운. 생물까지 유리처럼 조각내지 않습니다.
@@ -3552,15 +3531,8 @@ function triggerSkill(skillKey, isManual = false) {
     if (!state.grimoires.meteor) return false;
     // 몰열은 일반 쿨타임과 화염구 시전을 방해하지 않는 즉시 연계입니다.
     if (c.critStreak === 2) {
-      // 로그라이크 덱: 연쇄 몰열 (40% 확률로 몰열 버프 유지)
-      const chainChance = (state.deckMechanics && state.deckMechanics.chainHotStreak) || 0;
-      if (chainChance > 0 && Math.random() < Math.min(0.8, chainChance)) {
-        spawnFloatingText('🔥 연쇄 몰열 유지! (40%)', 'fct-proc', -45, { isBig: true, anchor: 'caster' });
-        playSound('proc');
-      } else {
-        c.critStreak = 0;
-        c.streakTimer = 0;
-      }
+      c.critStreak = 0;
+      c.streakTimer = 0;
       releaseMeteor(isManual);
       triggerAllSummonsSyncAttack();
       return true;
@@ -4563,21 +4535,6 @@ function checkAndTriggerUnfolds(silent = false) {
     triggerUnfoldPop('pill-haste');
   }
 
-  // 2-B. 불꽃의 정수 최초 획득 또는 주입 레벨 보유 시: 불꽃의 정수 & [🔮 마법 부여] 탭 개방
-  if (!u.infusionShop && ((state.essence || 0) > 0 || getTotalInfusionLevels() > 0)) {
-    u.infusionShop = true;
-    changed = true;
-    if (!silent) {
-      showUnfoldToast(
-        '🔓 새로운 시스템 해금: 불꽃의 정수 & 마법 부여!',
-        '우측 상단 [🔮 마법 부여] 탭에서 🔹 정수를 주입해 고대 유물 패시브를 각성하세요!'
-      );
-      triggerUnfoldPop('pill-essence');
-      triggerUnfoldPop('tab-btn-infusion');
-      triggerUnfoldPop('right-mode-tabs');
-    }
-  }
-
   // 3. Stage 5 보스 격파 또는 SP 보유/투자 시: 소환수 & 특성 트리 탭 개방
   const hasSpProgress =
     state.highestClearedStage >= 5 ||
@@ -4639,27 +4596,23 @@ function checkAndTriggerUnfolds(silent = false) {
 function applyUnfoldedVisibility() {
   const u = state.unfolded;
 
-  // 상단 정수/치명타/시전속도 알약 & 명예의 전당/깃털/규약 버튼
-  const pillEssence = document.getElementById('pill-essence');
+  // 상단 치명타/시전속도 알약 & 명예의 전당/깃털/규약 버튼
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
   const pillFeathers = document.getElementById('pill-feathers');
   const hallBtn = document.getElementById('btn-hall-of-fame');
   const btnHeat = document.getElementById('btn-heat-pacts');
-  if (pillEssence) pillEssence.classList.toggle('unfold-hidden', !u.infusionShop);
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.equipShop);
   if (pillFeathers) pillFeathers.classList.toggle('unfold-hidden', !u.artifactShop);
   if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
   if (btnHeat) btnHeat.classList.toggle('unfold-hidden', !u.heatPacts);
 
-  // 우측 상단 [상점 / 마법 부여 / 스킬 트리 / 불사조 유물] 탭 전환 바
+  // 우측 상단 [상점 / 스킬 트리 / 불사조 유물] 탭 전환 바
   const modeTabs = document.getElementById('right-mode-tabs');
-  const tabInfBtn = document.getElementById('tab-btn-infusion');
   const tabTreeBtn = document.getElementById('tab-btn-tree');
   const tabArtBtn = document.getElementById('tab-btn-artifacts');
-  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.infusionShop && !u.skillTree && !u.artifactShop);
-  if (tabInfBtn) tabInfBtn.classList.toggle('unfold-hidden', !u.infusionShop);
+  if (modeTabs) modeTabs.classList.toggle('unfold-hidden', !u.skillTree && !u.artifactShop);
   if (tabTreeBtn) tabTreeBtn.classList.toggle('unfold-hidden', !u.skillTree);
   if (tabArtBtn) tabArtBtn.classList.toggle('unfold-hidden', !u.artifactShop);
 
@@ -4676,7 +4629,7 @@ function applyUnfoldedVisibility() {
   // 전체 해금 완료 시 상단 테스트 버튼 숨김/비활성 표시
   const unfoldAllBtn = document.getElementById('btn-unfold-all');
   if (unfoldAllBtn) {
-    const allDone = u.grimoireShop && u.equipShop && u.infusionShop && u.skillTree && u.hallOfFame && u.artifactShop && u.heatPacts;
+    const allDone = u.grimoireShop && u.equipShop && u.skillTree && u.hallOfFame && u.artifactShop && u.heatPacts;
     unfoldAllBtn.style.display = allDone ? 'none' : '';
   }
 }
@@ -4853,15 +4806,7 @@ function updateStageUI() {
   const dispGold = isCleared
     ? Math.max(1, Math.round(data.gold * (stats.goldMult || 1)))
     : Math.max(1, Math.round((data.gold + data.firstBonus) * (stats.goldMult || 1)));
-  let rewardText = `💰 ${fmt(dispGold)} G`;
-
-  if (!isCleared && state.currentStage >= 2) {
-    const firstEss = getFirstClearEssenceBonus(state.currentStage);
-    if (firstEss > 0) {
-      rewardText += ` · 🔹 ${fmt(firstEss)}`;
-    }
-  }
-  document.getElementById('target-reward').textContent = rewardText;
+  document.getElementById('target-reward').textContent = `💰 ${fmt(dispGold)} G`;
 
   const prevBtnEl = document.getElementById('btn-prev-stage');
   if (prevBtnEl) prevBtnEl.disabled = state.currentStage <= 1;
@@ -6898,16 +6843,14 @@ function initEvents() {
       state.unfolded.stageNav = true;
       state.unfolded.grimoireShop = true;
       state.unfolded.equipShop = true;
-      state.unfolded.infusionShop = true;
       state.unfolded.skillTree = true;
       state.unfolded.hallOfFame = true;
       state.unfolded.artifactShop = true;
       state.unfolded.heatPacts = true;
       playSound('item_select');
-      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 마법 부여, 특성 트리, 불사조 유물이 모두 펼쳐졌습니다.');
+      showUnfoldToast('🔓 모든 시스템 UI 개방 완료!', '스테이지 이동, 주문서, 장비 강화, 특성 트리, 불사조 유물이 모두 펼쳐졌습니다.');
       applyUnfoldedVisibility();
       updateSkillActionBarVisibility();
-      renderInfusionUI();
       renderArtifactsUI();
       saveGame();
     });

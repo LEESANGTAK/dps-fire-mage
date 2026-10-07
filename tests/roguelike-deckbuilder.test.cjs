@@ -236,27 +236,29 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
     for (const c of choices) {
       assert.ok(!summonUpgradeIds.includes(c.id), `소환수가 없는 상태에서는 ${c.id} 카드가 등장하지 않아야 합니다.`);
       assert.notEqual(c.id, 'crit_meteor_storm', '메테오가 없는 상태에서는 태양석 메테오 카드가 등장하지 않아야 합니다.');
-      assert.notEqual(c.id, 'crit_chain_streak', '메테오(몰열)가 없는 상태에서는 연쇄 몰열 카드가 등장하지 않아야 합니다.');
       assert.notEqual(c.id, 'crit_crimson_frenzy', '마력 폭주가 없는 상태에서는 진홍의 마력 폭주 카드가 등장하지 않아야 합니다.');
       assert.notEqual(c.id, 'util_phoenix_reborn', '쿨다운 스킬이 없는 상태에서는 불사조의 가호(쿨다운 리셋) 카드가 등장하지 않아야 합니다.');
     }
   }
 
+  // 1-0. 연쇄 몰열 카드는 카드 풀 전체에서 완전히 제외되었는지 확인
+  assert.ok(!manager.CARD_POOL.some(c => c.id === 'crit_chain_streak'), '연쇄 몰열(crit_chain_streak) 카드는 카드 풀에서 완전히 제거되어야 합니다.');
+
   // 1-1. 1-5 스테이지 이전 손 피로도 방지: 자동 시전은 초기 상태에서도 정상 등장해야 함을 검증
   const earlyChoices = manager.drawChoices(3, false, { currentStage: 2, grimoires: {} });
   assert.ok(earlyChoices.some(c => c.id === 'spell_autocast'), '1-5 스테이지 이전 초반에는 자동 시전 카드가 우선 제시되어야 합니다.');
 
-  // 2. 메테오(spell_meteor)를 획득한 후에는 연쇄 몰열 및 메테오 강화 카드가 정상 등장하는지 검증
+  // 2. 메테오(spell_meteor)를 획득한 후에는 메테오 강화 카드가 정상 등장하는지 검증
   manager.selectCard('spell_meteor', emptyState);
   let foundMeteorUpgrade = false;
   for (let i = 0; i < 50; i++) {
     const choices = manager.drawChoices(3, false, emptyState);
-    if (choices.some(c => c.id === 'crit_chain_streak' || c.id === 'crit_meteor_storm')) {
+    if (choices.some(c => c.id === 'crit_meteor_storm')) {
       foundMeteorUpgrade = true;
       break;
     }
   }
-  assert.ok(foundMeteorUpgrade, '메테오를 획득한 이후에는 연쇄 몰열 및 메테오 강화 카드가 등장할 수 있어야 합니다.');
+  assert.ok(foundMeteorUpgrade, '메테오를 획득한 이후에는 메테오 강화(태양석 메테오) 카드가 등장할 수 있어야 합니다.');
 
   // 3. 화염 정령 소환(sum_spirit)을 1장 획득한 후에는 소환수 업그레이드 카드가 정상 등장할 수 있는지 검증
   manager.selectCard('sum_spirit', emptyState);
@@ -278,7 +280,8 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   const rawJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   assert.ok(Array.isArray(rawJson), 'JSON 루트는 배열이어야 합니다.');
-  assert.equal(rawJson.length, 18, '총 18종의 정예 카드가 JSON에 정의되어 있어야 합니다.');
+  assert.equal(rawJson.length, 17, '연쇄 몰열 제거 후 총 17종의 정예 카드가 JSON에 정의되어 있어야 합니다.');
+  assert.ok(!rawJson.some(c => c.id === 'crit_chain_streak'), '연쇄 몰열 카드는 JSON에 존재하지 않아야 합니다.');
 
   // 동적 로더 및 실시간 반영 검증
   const { setCardPoolFromRaw, CARD_POOL, createDeckManager } = require('../src/scripts/roguelike-deck.js');
@@ -309,7 +312,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   // 원본 JSON 데이터로 복원
   setCardPoolFromRaw(rawJson);
-  assert.equal(CARD_POOL.length, 18, '원본 18장으로 복원되어야 합니다.');
+  assert.equal(CARD_POOL.length, 17, '원본 17장으로 복원되어야 합니다.');
 });
 
 test('Step 14: 뱀파이어 서바이버즈 스타일 좌상단 덱 슬롯 및 마우스 오버 툴팁 무결성 검증', () => {
@@ -524,6 +527,25 @@ test('Step 20: 모든 화염구 및 추가 생성 탄환의 마법봉 끝(Wand T
   // 3. 소환수 불사조 볼트의 발바닥 출발 제거 검증
   assert.ok(!gameSource.includes('startY: casterCenter.y + 62'), '불사조 볼트가 발바닥(+62px)에서 출발하는 버그가 수정되어 있어야 합니다.');
   assert.ok(gameSource.includes('startY: casterCenter.y - 45'), '불사조 볼트는 마법사 어깨 위 비상 고도에서 출발해야 합니다.');
+});
+
+test('Step 21: 정수(Essence) 재화 및 관련 UI(상단 알약, 마법 부여 탭/패널, 치트 버튼) 완전 배제 검증', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+
+  // 1. index.html 내 정수 관련 UI 부재 검증
+  assert.ok(!html.includes('id="pill-essence"'), '상단 상태바에 #pill-essence가 존재하지 않아야 합니다.');
+  assert.ok(!html.includes('id="btn-cheat-essence"'), '개발자 치트에 #btn-cheat-essence가 존재하지 않아야 합니다.');
+  assert.ok(!html.includes('id="tab-btn-infusion"'), '우측 탭에 #tab-btn-infusion이 존재하지 않아야 합니다.');
+  assert.ok(!html.includes('id="pane-infusion"'), '우측 패널에 #pane-infusion이 존재하지 않아야 합니다.');
+
+  // 2. target-reward가 오직 골드(G)만 표기하고 정수를 붙이지 않는지 검증
+  assert.ok(!gameSource.includes("rewardText += ` · 🔹 ${fmt(firstEss)}`"), '스테이지 보상에 🔹 정수가 표시되지 않아야 합니다.');
+  assert.ok(gameSource.includes("document.getElementById('target-reward').textContent = `💰 ${fmt(dispGold)} G`;"), '스테이지 보상은 오직 골드(G)만 표시해야 합니다.');
+
+  // 3. 연쇄 몰열(crit_chain_streak) 카드가 완전히 배제되었는지 검증
+  assert.ok(!gameSource.includes('chainHotStreak'), 'game.js에 연쇄 몰열(chainHotStreak) 로직이 남아있지 않아야 합니다.');
 });
 
 
