@@ -372,3 +372,40 @@ test('Step 15: 라그나로스 세계관/스토리 및 파멸 저지 진척도 U
   assert.ok(paperCss.includes('.doom-story-tooltip'), '스토리 툴팁 스타일이 정의되어 있어야 합니다.');
   assert.ok(paperCss.includes('.doom-boss-pin.pin-final'), '최종 보스 핀 스타일이 정의되어 있어야 합니다.');
 });
+
+test('Step 16: 화염 기관총 (rapid_gatling) 시전 시간 단축(0.3s) 및 덱 메커니즘 연동 검증', () => {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const { createDeckManager } = require('../src/scripts/roguelike-deck.js');
+
+  // 1. 카드 선택 시 gatling & gatlingMode 키 정상 활성화 검증
+  const manager = createDeckManager();
+  const fakeState = { deckMechanics: {}, playerStatsBonus: {} };
+  manager.selectCard('rapid_gatling', fakeState);
+  assert.equal(fakeState.deckMechanics.gatlingMode, true, 'gatlingMode가 true여야 합니다.');
+  assert.equal(fakeState.deckMechanics.gatling, true, '하위 호환성 gatling 키도 true여야 합니다.');
+
+  // 2. game.js 소스 코드 수치 스펙 검증
+  assert.ok(gameSource.includes('baseCast = isGatling ? 0.30 : 1.5'), '기관총 모드 시 기본 시전 시간이 0.30초여야 합니다.');
+  assert.ok(gameSource.includes('minCast = isGatling ? 0.12 : 0.35'), '기관총 모드 시 최소 시전 상한이 0.12초여야 합니다.');
+  assert.ok(gameSource.includes('baseGcd = isGatling ? 0.30 : 1.2'), '기관총 모드 시 기본 GCD가 0.30초여야 합니다.');
+  assert.ok(gameSource.includes('minGcd = isGatling ? 0.12 : 0.4'), '기관총 모드 시 최소 GCD가 0.12초여야 합니다.');
+  assert.ok(gameSource.includes('⚡ 화염 기관총 난사!'), '캐스트바에 ⚡ 화염 기관총 난사! 문구가 표시되어야 합니다.');
+
+  // 3. 실제 triggerSkill('fireball') 실행 시 0.3초 시전 및 GCD 단축 실측 검증
+  const trigger = gameSource.slice(gameSource.indexOf('function triggerSkill('), gameSource.indexOf('function runSmartAutoCast('));
+  const combat = { castingSkill: null, gcdRemaining: 0, castTotal: 0, castRemaining: 0, gcdTotal: 0 };
+  const stats = { speedMult: 1.0, cdr: 0 };
+  const context = vm.createContext({
+    state: { combat, deckMechanics: { gatling: true }, artifacts: {} },
+    getPlayerStats: () => stats,
+    updateCastingLoopSound: () => {}
+  });
+  vm.runInContext(trigger, context);
+  const success = vm.runInContext("triggerSkill('fireball', false)", context);
+  assert.equal(success, true, '화염구 시전이 성공해야 합니다.');
+  assert.equal(combat.castTotal, 0.30, '화염 기관총 활성화 시 castTotal이 0.30초여야 합니다.');
+  assert.equal(combat.gcdTotal, 0.30, '화염 기관총 활성화 시 gcdTotal이 0.30초여야 합니다.');
+});
+

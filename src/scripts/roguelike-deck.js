@@ -336,6 +336,7 @@
             break;
           case 'gatling_mode':
             state.deckMechanics.gatlingMode = true;
+            state.deckMechanics.gatling = true; // game.js 및 모든 하위 호환성 100% 보장
             break;
           case 'chain_hot_streak':
             state.deckMechanics.chainHotStreak = (state.deckMechanics.chainHotStreak || 0) + (p.chainHotStreak || 0.4);
@@ -352,12 +353,14 @@
             break;
           case 'extra_spirit':
             state.deckMechanics.extraSpirits = (state.deckMechanics.extraSpirits || 0) + 1;
+            state.deckMechanics.spiritCount = state.deckMechanics.extraSpirits;
             state.skillTree = state.skillTree || {};
             state.skillTree.magma_golem = Math.max(state.skillTree.magma_golem || 0, 1);
             break;
           case 'spirit_frenzy':
             state.deckMechanics.spiritDamageMult = (state.deckMechanics.spiritDamageMult || 1) * (p.spiritDamageMult || 1.4);
             state.deckMechanics.spiritSpeedMult = (state.deckMechanics.spiritSpeedMult || 1) * (p.spiritSpeedMult || 1.5);
+            state.deckMechanics.summonHaste = state.deckMechanics.spiritSpeedMult;
             break;
           case 'synchronized_fire':
             state.deckMechanics.synchronizedFire = true;
@@ -370,6 +373,7 @@
             break;
           case 'phoenix_reset':
             state.deckMechanics.phoenixReset = true;
+            state.deckMechanics.phoenixAwake = true;
             break;
         }
       }

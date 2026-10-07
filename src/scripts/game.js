@@ -391,7 +391,8 @@ function getCombustionDuration() {
   const mastery = SKILL_MASTERY_LIST.find((m) => m.id === 'combustion');
   const bonus = mastery ? mastery.bonusPerLv : 0.2;
   const artifactBonus = ((state.artifacts && state.artifacts.time_warp) || 0) * 1.5;
-  return Number((base + lv * bonus + artifactBonus).toFixed(1));
+  const deckMult = (state.deckMechanics && (state.deckMechanics.combustionGod || state.deckMechanics.combustion_god)) ? 2.0 : 1.0;
+  return Number(((base + lv * bonus + artifactBonus) * deckMult).toFixed(1));
 }
 
 function getSkillMasteryCost(mastery) {
@@ -2961,6 +2962,36 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     spawnFloatingText('🔥 작열하는 의지! (+120%)', 'fct-crit', -48, { isBig: true, anchor: 'caster' });
   }
 
+  // 로그라이크 덱: 진홍의 마력 폭주 (발화 중 모든 공격 피해 150% 증폭 = 2.5배)
+  if (isCombustingEffective && state.deckMechanics && (state.deckMechanics.combustionGod || state.deckMechanics.combustion_god)) {
+    rawDamage *= 2.5;
+  }
+
+  // 로그라이크 덱: 잿더미 군단장 (소환수 1기당 마법사 주문 피해량 +30% 증폭)
+  if (state.deckMechanics && state.deckMechanics.cinderLord) {
+    let activeMinions = 0;
+    if ((state.skillTree.fire_elem || 0) > 0 || (state.deckMechanics && state.deckMechanics.spiritCount > 0)) {
+      activeMinions += Math.max(state.skillTree.fire_elem || 0, (state.deckMechanics && state.deckMechanics.spiritCount) || 0);
+    }
+    if ((state.skillTree.phoenix || 0) > 0 || (state.deckMechanics && state.deckMechanics.phoenixAwake)) {
+      activeMinions += 1;
+    }
+    if ((state.skillTree.magma_golem || 0) > 0) {
+      activeMinions += 1;
+    }
+    if (activeMinions > 0) {
+      rawDamage *= (1 + activeMinions * 0.3);
+    }
+  }
+
+  // 로그라이크 덱: 처형인의 불꽃 (적 체력 40% 이하 시 모든 피해량 +70% 증폭)
+  if (state.deckMechanics && (state.deckMechanics.executionerMult || state.deckMechanics.executioner)) {
+    const execMult = state.deckMechanics.executionerMult || 0.7;
+    if (state.monster && state.monster.maxHp > 0 && (state.monster.hp / state.monster.maxHp) <= 0.4) {
+      rawDamage *= (1 + execMult);
+    }
+  }
+
   if (state.cheats && state.cheats.alwaysCrit) {
     if (!isCrit) {
       rawDamage *= getPlayerStats().critDmg;
@@ -3190,6 +3221,17 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       setTimeout(() => {
         dealDamage(skillKey, rawDamage * 0.75, true, false, false, isCombustingEffective);
       }, 110);
+    }
+
+    // 로그라이크 덱: 불사조의 가호 (치명타 시 15% 확률로 전 스킬 쿨다운 즉시 리셋)
+    if (state.deckMechanics && (state.deckMechanics.phoenixReset || state.deckMechanics.phoenix_reset) && Math.random() < 0.15) {
+      state.combat.fbCharges = state.combat.fbMaxCharges;
+      state.combat.fbRechargeRem = 0;
+      state.combat.meteorCdRem = 0;
+      state.combat.combustionCdRem = 0;
+      state.combat.flamePatchCdRem = 0;
+      spawnFloatingText('🪶 불사조의 가호! 전 스킬 쿨다운 초기화!', 'fct-proc', -55, { isBig: true, anchor: 'caster' });
+      playSound('proc');
     }
   }
 
@@ -3426,16 +3468,16 @@ function triggerSkill(skillKey, isManual = false) {
 
     // 수동 조작 시 발화 중 캐스팅 속도 25% 가속
     const manualSpeedBonus = (isManual && c.combustionRem > 0) ? 1.25 : 1.0;
-    const isGatling = Boolean(state.deckMechanics && state.deckMechanics.gatling);
-    const baseCast = isGatling ? 0.35 : 1.5;
-    const minCast = isGatling ? 0.18 : 0.35;
+    const isGatling = Boolean(state.deckMechanics && (state.deckMechanics.gatling || state.deckMechanics.gatlingMode));
+    const baseCast = isGatling ? 0.30 : 1.5;
+    const minCast = isGatling ? 0.12 : 0.35;
     const castTime = Math.max(minCast, baseCast / (stats.speedMult * manualSpeedBonus));
     c.fireballCombustionSnapshot = Boolean(c.combustionRem > 0);
     c.castingSkill = 'fireball';
     c.castTotal = castTime;
     c.castRemaining = castTime;
-    const baseGcd = isGatling ? 0.35 : 1.2;
-    const minGcd = isGatling ? 0.18 : 0.4;
+    const baseGcd = isGatling ? 0.30 : 1.2;
+    const minGcd = isGatling ? 0.12 : 0.4;
     c.gcdTotal = Math.max(minGcd, baseGcd / (stats.speedMult * manualSpeedBonus));
     c.gcdRemaining = c.gcdTotal;
     updateCastingLoopSound();
@@ -3491,8 +3533,15 @@ function triggerSkill(skillKey, isManual = false) {
     if (!state.grimoires.meteor) return false;
     // 몰열은 일반 쿨타임과 화염구 시전을 방해하지 않는 즉시 연계입니다.
     if (c.critStreak === 2) {
-      c.critStreak = 0;
-      c.streakTimer = 0;
+      // 로그라이크 덱: 연쇄 몰열 (40% 확률로 몰열 버프 유지)
+      const chainChance = (state.deckMechanics && state.deckMechanics.chainHotStreak) || 0;
+      if (chainChance > 0 && Math.random() < Math.min(0.8, chainChance)) {
+        spawnFloatingText('🔥 연쇄 몰열 유지! (40%)', 'fct-proc', -45, { isBig: true, anchor: 'caster' });
+        playSound('proc');
+      } else {
+        c.critStreak = 0;
+        c.streakTimer = 0;
+      }
       releaseMeteor(isManual);
       triggerAllSummonsSyncAttack();
       return true;
@@ -3560,6 +3609,10 @@ function releaseMeteor(isManual = false) {
     const effectiveCrit = isCombustEffective ? 100 : stats.crit;
     const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
     let damage = stats.sp * 3.2 * (isCrit ? stats.critDmg : 1);
+    const meteorBuffCount = (state.deckMechanics && state.deckMechanics.meteorBuff) || 0;
+    if (meteorBuffCount > 0) {
+      damage *= (1 + 0.6 * meteorBuffCount); // 태양석 메테오: 스택당 +60% 피해 증폭
+    }
     if (isManual) {
       damage *= 1.6; // 수동 몰열 폭딜: 60% 추가 증폭!
     }
@@ -3579,6 +3632,7 @@ function releaseMeteor(isManual = false) {
           const effectiveCrit = isCombustEffective ? 100 : stats.crit;
           const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
           let damage = stats.sp * 1.6 * (isCrit ? stats.critDmg : 1);
+          if (meteorBuffCount > 0) damage *= (1 + 0.6 * meteorBuffCount);
           if (isManual) damage *= 1.6;
           dealDamage('meteor', damage, isCrit, false, false, isCombustEffective);
         }, isManual ? 0.8 : 0.68);
@@ -3600,13 +3654,24 @@ function finishCast(skillKey) {
     const isCombusting = Boolean((state.combat.combustionRem > 0) || state.combat.fireballCombustionSnapshot);
     state.combat.fireballCombustionSnapshot = false;
     fireWithMultishot('fireball', 1.0, isCombusting);
+
+    // 로그라이크 덱: 일제 협공 사격 (화염구 발사 시 소환 정령 동시 발사)
+    if (state.deckMechanics && state.deckMechanics.synchronizedFire) {
+      fireElementalAttack();
+    }
+
     // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 메테오 즉시 발사 연계!
     if (state.combat.critStreak === 2 && isSkillAutoActive('meteor') && state.grimoires.meteor) {
       triggerSkill('meteor');
     }
   } else if (skillKey === 'meteor') {
     const c = state.combat;
-    c.meteorCdTotal = Math.max(8, 18 * (1 - getPlayerStats().cdr));
+    const meteorBuffCount = (state.deckMechanics && state.deckMechanics.meteorBuff) || 0;
+    if (meteorBuffCount > 0) {
+      c.meteorCdTotal = Math.max(4, (18 * Math.pow(0.5, meteorBuffCount)) * (1 - getPlayerStats().cdr));
+    } else {
+      c.meteorCdTotal = Math.max(8, 18 * (1 - getPlayerStats().cdr));
+    }
     c.meteorCdRem = c.meteorCdTotal;
     releaseMeteor();
   }
@@ -6024,17 +6089,20 @@ function updateLiveHUD() {
   if (castWrapper) castWrapper.classList.toggle('pyro-cast', isMeteorReady);
   if (castFill) castFill.classList.toggle('pyro-cast', isMeteorReady);
 
+  const isGatlingActive = Boolean(state.deckMechanics && (state.deckMechanics.gatling || state.deckMechanics.gatlingMode));
   if (c.castingSkill) {
     const progress = ((c.castTotal - c.castRemaining) / c.castTotal) * 100;
     castFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
     if (c.castingSkill === 'meteor') {
       castName.textContent = '☄️ 메테오 시전 중';
     } else if (isMeteorReady) {
-      castName.textContent = '🔥 화염구 (☄️메테오 장전됨!)';
+      castName.textContent = isGatlingActive ? '⚡ 화염 기관총 (☄️메테오 장전됨!)' : '🔥 화염구 (☄️메테오 장전됨!)';
+    } else if (isGatlingActive) {
+      castName.textContent = '⚡ 화염 기관총 난사!';
     } else {
       castName.textContent = '🔥 화염구';
     }
-    castTime.textContent = `${c.castRemaining.toFixed(1)}s`;
+    castTime.textContent = isGatlingActive ? `${c.castRemaining.toFixed(2)}s` : `${c.castRemaining.toFixed(1)}s`;
   } else if (state.grimoires.meteor && c.critStreak === 2) {
     castFill.style.width = '100%';
     castName.textContent = '☄️ 메테오 준비 완료!';
