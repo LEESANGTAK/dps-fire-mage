@@ -48,6 +48,36 @@
       stats: { haste: 30, sp: 25 }
     },
     {
+      id: 'common_ember_spark',
+      title: '작은 불씨',
+      icon: '🔥',
+      rarity: RARITY.COMMON,
+      build: BUILD.RAPID,
+      maxStack: 5,
+      desc: '순수한 화염 마력이 깃들어 주문 공격력이 <b>+15</b> 증가합니다.',
+      stats: { sp: 15 }
+    },
+    {
+      id: 'common_pyro_flow',
+      title: '화염 순환',
+      icon: '🌀',
+      rarity: RARITY.COMMON,
+      build: BUILD.RAPID,
+      maxStack: 5,
+      desc: '마력의 흐름이 원활해져 주문 공격력 <b>+8</b>, 시전 속도 <b>+8%</b>가 증가합니다.',
+      stats: { sp: 8, haste: 8 }
+    },
+    {
+      id: 'common_quick_cast',
+      title: '신속한 집중',
+      icon: '⚡',
+      rarity: RARITY.COMMON,
+      build: BUILD.RAPID,
+      maxStack: 5,
+      desc: '화염 마법 시전 속도가 <b>+10%</b> 빨라집니다.',
+      stats: { haste: 10 }
+    },
+    {
       id: 'rapid_split',
       title: '분열 화염구',
       icon: '💥',
@@ -56,6 +86,16 @@
       maxStack: 3,
       desc: '화염구 적중 시 <b>2개의 작은 불씨</b>로 분열되어 추가 타격합니다 (각각 40% 피해).',
       mechanic: 'split_fireball'
+    },
+    {
+      id: 'rare_arcane_surge',
+      title: '비전 급류',
+      icon: '🌊',
+      rarity: RARITY.RARE,
+      build: BUILD.RAPID,
+      maxStack: 3,
+      desc: '마력이 솟구쳐 시전 속도가 <b>+15%</b>, 주문 공격력이 <b>+30</b> 증가합니다.',
+      stats: { haste: 15, sp: 30 }
     },
     {
       id: 'rapid_gatling',
@@ -76,6 +116,46 @@
       maxStack: 5,
       desc: '치명타 확률이 <b>+15%</b>, 치명타 피해량이 <b>+40%</b> 증가합니다.',
       stats: { crit: 15, critDmg: 0.4 }
+    },
+    {
+      id: 'common_keen_eye',
+      title: '예리한 불꽃',
+      icon: '🎯',
+      rarity: RARITY.COMMON,
+      build: BUILD.CRIT,
+      maxStack: 5,
+      desc: '몬스터의 약점을 포착하여 치명타 확률이 <b>+5%</b>, 주문 공격력이 <b>+6</b> 증가합니다.',
+      stats: { crit: 5, sp: 6 }
+    },
+    {
+      id: 'common_blazing_heat',
+      title: '작열하는 열기',
+      icon: '💥',
+      rarity: RARITY.COMMON,
+      build: BUILD.CRIT,
+      maxStack: 5,
+      desc: '치명타 피해량이 <b>+15%</b>, 주문 공격력이 <b>+8</b> 증가합니다.',
+      stats: { critDmg: 0.15, sp: 8 }
+    },
+    {
+      id: 'common_flame_affinity',
+      title: '화염 친화',
+      icon: '🔮',
+      rarity: RARITY.COMMON,
+      build: BUILD.CRIT,
+      maxStack: 5,
+      desc: '치명타 확률이 <b>+4%</b>, 치명타 피해량이 <b>+10%</b> 증가합니다.',
+      stats: { crit: 4, critDmg: 0.1 }
+    },
+    {
+      id: 'rare_ignite_catalyst',
+      title: '작열 촉매',
+      icon: '🩸',
+      rarity: RARITY.RARE,
+      build: BUILD.CRIT,
+      maxStack: 3,
+      desc: '치명타 확률이 <b>+7%</b>, 치명타 피해량이 <b>+25%</b>, 주문 공격력이 <b>+20</b> 증가합니다.',
+      stats: { crit: 7, critDmg: 0.25, sp: 20 }
     },
     {
       id: 'crit_meteor_storm',
@@ -110,6 +190,16 @@
       mechanic: 'extra_spirit'
     },
     {
+      id: 'common_spirit_vitality',
+      title: '정령의 온기',
+      icon: '🧚',
+      rarity: RARITY.COMMON,
+      build: BUILD.SUMMON,
+      maxStack: 5,
+      desc: '소환수와의 교감으로 주문 공격력이 <b>+10</b>, 시전 속도가 <b>+6%</b> 증가합니다.',
+      stats: { sp: 10, haste: 6 }
+    },
+    {
       id: 'sum_volley',
       title: '일제 협공 사격',
       icon: '🏹',
@@ -140,6 +230,36 @@
       maxStack: 3,
       desc: '몬스터 처치 시 획득하는 골드가 <b>+60%</b> 증가합니다.',
       stats: { goldMult: 0.6 }
+    },
+    {
+      id: 'common_iron_will',
+      title: '마력 집중',
+      icon: '✨',
+      rarity: RARITY.COMMON,
+      build: BUILD.UTILITY,
+      maxStack: 5,
+      desc: '흐트러짐 없는 집중으로 주문 공격력이 <b>+20</b> 증가합니다.',
+      stats: { sp: 20 }
+    },
+    {
+      id: 'common_bounty_hunter',
+      title: '모험가의 주머니',
+      icon: '🪙',
+      rarity: RARITY.COMMON,
+      build: BUILD.UTILITY,
+      maxStack: 5,
+      desc: '골드 획득량이 <b>+20%</b> 증가하고, 주문 공격력이 <b>+5</b> 증가합니다.',
+      stats: { goldBonus: 0.2, sp: 5 }
+    },
+    {
+      id: 'common_cinder_spark',
+      title: '잿더미 잔불',
+      icon: '🌋',
+      rarity: RARITY.COMMON,
+      build: BUILD.UTILITY,
+      maxStack: 5,
+      desc: '불꽃 잔재를 흡수하여 주문 공격력이 <b>+12</b>, 치명타 확률이 <b>+3%</b> 증가합니다.',
+      stats: { sp: 12, crit: 3 }
     },
     {
       id: 'util_executioner',
@@ -424,10 +544,10 @@
 
       if (eligible.length === 0) return [];
 
-      // 등급 가중치 설정 (보스 웨이브는 고급 등급 우대)
+      // 등급 가중치 설정 (보스 웨이브는 고급 등급 우대, 일반 웨이브는 일반 카드 중심 빌드업)
       const weights = isBossWave
-        ? { [RARITY.COMMON]: 0, [RARITY.RARE]: 65, [RARITY.LEGENDARY]: 35 }
-        : { [RARITY.COMMON]: 65, [RARITY.RARE]: 28, [RARITY.LEGENDARY]: 7 };
+        ? { [RARITY.COMMON]: 0, [RARITY.RARE]: 85, [RARITY.LEGENDARY]: 15 }
+        : { [RARITY.COMMON]: 75, [RARITY.RARE]: 21, [RARITY.LEGENDARY]: 4 };
 
       const selected = [];
       const poolCopy = [...eligible];

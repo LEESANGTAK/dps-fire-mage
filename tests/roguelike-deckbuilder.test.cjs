@@ -251,7 +251,7 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
   // 2. 메테오(spell_meteor)를 획득한 후에는 메테오 강화 카드가 정상 등장하는지 검증
   manager.selectCard('spell_meteor', emptyState);
   let foundMeteorUpgrade = false;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     const choices = manager.drawChoices(3, false, emptyState);
     if (choices.some(c => c.id === 'crit_meteor_storm')) {
       foundMeteorUpgrade = true;
@@ -263,7 +263,7 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
   // 3. 화염 정령 소환(sum_spirit)을 1장 획득한 후에는 소환수 업그레이드 카드가 정상 등장할 수 있는지 검증
   manager.selectCard('sum_spirit', emptyState);
   let foundSummonUpgrade = false;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     const choices = manager.drawChoices(3, false, emptyState);
     if (choices.some(c => summonUpgradeIds.includes(c.id))) {
       foundSummonUpgrade = true;
@@ -280,7 +280,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   const rawJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   assert.ok(Array.isArray(rawJson), 'JSON 루트는 배열이어야 합니다.');
-  assert.equal(rawJson.length, 17, '연쇄 몰열 제거 후 총 17종의 정예 카드가 JSON에 정의되어 있어야 합니다.');
+  assert.equal(rawJson.length, 29, '일반/희귀 카드 풀 확장 후 총 29종의 정예 카드가 JSON에 정의되어 있어야 합니다.');
   assert.ok(!rawJson.some(c => c.id === 'crit_chain_streak'), '연쇄 몰열 카드는 JSON에 존재하지 않아야 합니다.');
 
   // 동적 로더 및 실시간 반영 검증
@@ -312,7 +312,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   // 원본 JSON 데이터로 복원
   setCardPoolFromRaw(rawJson);
-  assert.equal(CARD_POOL.length, 17, '원본 17장으로 복원되어야 합니다.');
+  assert.equal(CARD_POOL.length, rawJson.length, `원본 ${rawJson.length}장으로 복원되어야 합니다.`);
 });
 
 test('Step 14: 뱀파이어 서바이버즈 스타일 좌상단 덱 슬롯 및 마우스 오버 툴팁 무결성 검증', () => {

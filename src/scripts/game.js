@@ -2750,6 +2750,168 @@ function updateFloatingTexts(dt) {
 }
 
 // ==========================================
+// 8-C. 플레이테스트 텔레메트리 (Playtest Telemetry Logger) 시스템
+// ==========================================
+const playtestTelemetry = {
+  sessionId: 'run_' + Date.now(),
+  sessionStartTime: Date.now(),
+  stageRecords: [],
+  currentStageStart: performance.now(),
+  currentStageDamage: 0,
+  currentStageHits: 0,
+  currentStageCrits: 0,
+  stageStartStats: null,
+
+  onStageStart(stageNum) {
+    this.currentStageStart = performance.now();
+    this.currentStageDamage = 0;
+    this.currentStageHits = 0;
+    this.currentStageCrits = 0;
+    this.stageStartStats = typeof getPlayerStats === 'function' ? { ...getPlayerStats() } : null;
+  },
+
+  onDamage(dmg, isCrit) {
+    this.currentStageDamage += dmg;
+    this.currentStageHits++;
+    if (isCrit) this.currentStageCrits++;
+  },
+
+  onStageDefeat(stageNum) {
+    const elapsedSec = (performance.now() - this.currentStageStart) / 1000;
+    const stageData = getStageData(stageNum);
+    const avgDps = elapsedSec > 0 ? Math.round(this.currentStageDamage / elapsedSec) : 0;
+    const critRate = this.currentStageHits > 0
+      ? Number(((this.currentStageCrits / this.currentStageHits) * 100).toFixed(1))
+      : 0;
+
+    const deckSummary = {};
+    if (typeof deckManager !== 'undefined' && deckManager) {
+      Object.assign(deckSummary, deckManager.getActiveDeck());
+    }
+
+    this.stageRecords.push({
+      stage: stageNum,
+      name: stageData.name,
+      hp: stageData.hp,
+      ttkSec: Number(elapsedSec.toFixed(2)),
+      avgDps,
+      critRate,
+      sp: Math.round(this.stageStartStats?.sp || 0),
+      crit: Number((this.stageStartStats?.crit || 0).toFixed(1)),
+      haste: Number((this.stageStartStats?.haste || 0).toFixed(1)),
+      deck: deckSummary
+    });
+  },
+
+  generateReport() {
+    const elapsedTotalSec = Math.round((Date.now() - this.sessionStartTime) / 1000);
+    const totalMin = Math.floor(elapsedTotalSec / 60);
+    const totalSec = elapsedTotalSec % 60;
+    const currentStage = (typeof state !== 'undefined' && state.currentStage) || 1;
+    const highestStage = (typeof state !== 'undefined' && Math.max(state.highestClearedStage || 0, currentStage)) || currentStage;
+    const stats = typeof getPlayerStats === 'function' ? getPlayerStats() : {};
+    const deck = (typeof deckManager !== 'undefined' && deckManager) ? deckManager.getActiveDeck() : {};
+
+    let report = `======================================================\n`;
+    report += `🔥 DPS: Fire Mage 플레이테스트 밸런스 리포트\n`;
+    report += `======================================================\n\n`;
+    report += `[📌 세션 요약]\n`;
+    report += `- 총 플레이 시간: ${totalMin}분 ${totalSec}초\n`;
+    report += `- 현재 스테이지: STAGE ${currentStage} (최고 돌파: STAGE ${highestStage})\n`;
+    report += `- 최종 보유 골드: ${Math.round(state?.gold || 0).toLocaleString()} G\n`;
+    report += `- 승천 회차: 제 ${state?.ascensionCount || 0} 회차 (공격력 x${(typeof getAscensionDamageMult === 'function' ? getAscensionDamageMult() : 1).toFixed(2)}배)\n`;
+    report += `- 최종 스탯: 주문력 ${stats.sp || 10} | 치명타 ${Number((stats.crit || 5).toFixed(1))}% | 가속 +${Number((stats.haste || 0).toFixed(1))}%\n\n`;
+
+    report += `[📊 스테이지별 실측 전투 로그 (TTK & DPS)]\n`;
+    report += `단계 | 몬스터 이름           | 몬스터 HP  | 처치 소요시간 | 평균 DPS   | 치명타율\n`;
+    report += `-----|-----------------------|------------|---------------|------------|---------\n`;
+
+    if (this.stageRecords.length === 0) {
+      report += `(아직 클리어된 스테이지 기록이 없습니다. 몬스터를 처치하면 누적됩니다.)\n`;
+    } else {
+      this.stageRecords.forEach((r) => {
+        const sPad = String(r.stage).padStart(2, ' ');
+        const nPad = r.name.padEnd(12, ' ');
+        const hpPad = String(r.hp.toLocaleString()).padStart(10, ' ');
+        const ttkPad = String(r.ttkSec + 's').padStart(13, ' ');
+        const dpsPad = String(r.avgDps.toLocaleString()).padStart(10, ' ');
+        const critPad = String(r.critRate + '%').padStart(8, ' ');
+        report += `${sPad}   | ${nPad} | ${hpPad} | ${ttkPad} | ${dpsPad} | ${critPad}\n`;
+      });
+    }
+
+    report += `\n[🃏 최종 보유 각성 카드 덱 목록]\n`;
+    const cardEntries = Object.entries(deck);
+    if (cardEntries.length === 0) {
+      report += `- 보유 카드 없음 (기본 화염구)\n`;
+    } else {
+      cardEntries.forEach(([cardId, count]) => {
+        const cardDef = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find(c => c.id === cardId) : null;
+        const name = cardDef ? cardDef.title : cardId;
+        const rarity = cardDef ? cardDef.rarity : 'unknown';
+        report += `- [${rarity.toUpperCase()}] ${name}: ${count}장\n`;
+      });
+    }
+
+    report += `\n[💥 스킬별 누적 피해 점유율]\n`;
+    const skillsArr = Object.values(state?.skillDamage || {}).filter(s => s.dmg > 0);
+    const totalDmg = skillsArr.reduce((a, b) => a + b.dmg, 0);
+    if (totalDmg > 0) {
+      skillsArr.sort((a, b) => b.dmg - a.dmg);
+      skillsArr.forEach(s => {
+        const pct = ((s.dmg / totalDmg) * 100).toFixed(1);
+        report += `- ${s.name}: ${Math.round(s.dmg).toLocaleString()} (${pct}%) [${s.hits || 0}타]\n`;
+      });
+    } else {
+      report += `- 기록된 피해량 없음\n`;
+    }
+
+    report += `\n[📋 JSON 덤프 (AI 분석용)]\n\`\`\`json\n`;
+    report += JSON.stringify({
+      sessionStartTime: this.sessionStartTime,
+      highestStage,
+      gold: state?.gold,
+      stats: { sp: stats.sp, crit: stats.crit, haste: stats.haste },
+      activeDeck: deck,
+      stageRecords: this.stageRecords
+    }, null, 2);
+    report += `\n\`\`\`\n`;
+
+    return report;
+  },
+
+  async copyToClipboard() {
+    const report = this.generateReport();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = report;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      if (typeof spawnFloatingText === 'function') {
+        spawnFloatingText('📋 밸런스 로그가 클립보드에 복사되었습니다!', 'fct-proc', -60, { isBig: true });
+      }
+      if (typeof showUnfoldToast === 'function') {
+        showUnfoldToast('📋 밸런스 로그 복사 완료!', 'AI 에이전트 채팅창에 붙여넣어(Ctrl+V) 밸런스 피드백을 전달해주세요.');
+      }
+      return true;
+    } catch (err) {
+      console.error('클립보드 복사 실패:', err);
+      return false;
+    }
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.playtestTelemetry = playtestTelemetry;
+}
+
+// ==========================================
 // 9. 스테이지 설정 및 몬스터 처치 처리 (제한시간 제거)
 // ==========================================
 function loadStage(stageNum) {
@@ -2759,6 +2921,7 @@ function loadStage(stageNum) {
   if (centerInfo) centerInfo.classList.remove('hidden');
 
   state.currentStage = Math.max(1, stageNum);
+  playtestTelemetry.onStageStart(state.currentStage);
   const data = getStageData(state.currentStage);
   if (arenaEnvironment) arenaEnvironment.setStage(state.currentStage);
   state.monster.maxHp = data.hp;
@@ -2907,6 +3070,7 @@ function onMonsterKilled() {
   // 처치 순간 미세 히트스탑 (타격 손맛)
   mageGesture.hitStop = data.isPhaseBoss ? 0.08 : 0.04;
 
+  playtestTelemetry.onStageDefeat(state.currentStage);
   updateDpsMeterUI();
 
   if (isRagnarosKill) {
@@ -3053,6 +3217,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
 
   state.lastCombatTime = now;
   state.dpsHistory.push({ time: now, amount: dmg });
+  playtestTelemetry.onDamage(dmg, isCrit);
 
   // 1-1. 상세 전투 분석 (Details! 딜로그) 및 스킬 통계 갱신
   if (!state.stats) {
@@ -7171,6 +7336,22 @@ function initEvents() {
   const resetDetailsBtn = document.getElementById('btn-details-reset');
   if (resetDetailsBtn) {
     resetDetailsBtn.addEventListener('click', resetDetailsStats);
+  }
+
+  // 플레이테스트 밸런스 텔레메트리 클립보드 복사 이벤트
+  const exportTelemetryBtn = document.getElementById('btn-export-telemetry');
+  if (exportTelemetryBtn) {
+    exportTelemetryBtn.addEventListener('click', () => playtestTelemetry.copyToClipboard());
+  }
+
+  const detailsExportBtn = document.getElementById('btn-details-export-telemetry');
+  if (detailsExportBtn) {
+    detailsExportBtn.addEventListener('click', () => playtestTelemetry.copyToClipboard());
+  }
+
+  const victoryExportBtn = document.getElementById('btn-victory-export-telemetry');
+  if (victoryExportBtn) {
+    victoryExportBtn.addEventListener('click', () => playtestTelemetry.copyToClipboard());
   }
 
   document.getElementById('btn-reset-save').addEventListener('click', () => {
