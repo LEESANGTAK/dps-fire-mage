@@ -4,6 +4,10 @@
  * 웨이브 클리어 시 3장의 무작위 각성 카드를 제공하며,
  * 플레이어의 선택에 따라 머신건 속사, 극치명타 누킹, 화염 정령 군단 등 
  * 완전히 다른 3대 빌드를 완성하는 런(Run) 단위 로그라이크 모듈.
+ * 
+ * 💡 데이터 주도 설계(Data-Driven):
+ * 모든 카드 데이터는 `src/data/roguelike-cards.json`에서 관리되며,
+ * 디자이너가 JSON 파일을 수정하면 새로고침 시 인게임에 즉시 반영됩니다.
  */
 
 (function (global) {
@@ -31,11 +35,8 @@
     UTILITY: 'utility'    // 유틸리티 및 특수
   };
 
-  // 전체 카드 풀 (Card Database)
-  const CARD_POOL = [
-    // ==========================================
-    // 1. 속사 머신건 빌드 (Rapid Fire)
-    // ==========================================
+  // 기본 내장 카드 데이터 (네트워크 실패/file:// 프로토콜 대비 fallback)
+  const DEFAULT_CARDS_RAW = [
     {
       id: 'rapid_spark',
       title: '신속의 불꽃',
@@ -44,11 +45,7 @@
       build: BUILD.RAPID,
       maxStack: 5,
       desc: '화염구 시전 속도가 <b>+25%</b> 빨라집니다.',
-      stats: { haste: 25 },
-      apply: (state) => {
-        state.playerStatsBonus = state.playerStatsBonus || {};
-        state.playerStatsBonus.haste = (state.playerStatsBonus.haste || 0) + 25;
-      }
+      stats: { haste: 25 }
     },
     {
       id: 'rapid_power',
@@ -58,11 +55,7 @@
       build: BUILD.RAPID,
       maxStack: 5,
       desc: '주문 공격력이 <b>+30</b> 증가합니다.',
-      stats: { sp: 30 },
-      apply: (state) => {
-        state.playerStatsBonus = state.playerStatsBonus || {};
-        state.playerStatsBonus.sp = (state.playerStatsBonus.sp || 0) + 30;
-      }
+      stats: { sp: 30 }
     },
     {
       id: 'rapid_split',
@@ -72,11 +65,7 @@
       build: BUILD.RAPID,
       maxStack: 3,
       desc: '화염구 적중 시 <b>2개의 작은 불씨</b>로 분열되어 추가 타격합니다 (각각 40% 피해).',
-      mechanic: 'split_fireball',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.splitFireball = (state.deckMechanics.splitFireball || 0) + 1;
-      }
+      mechanic: 'split_fireball'
     },
     {
       id: 'rapid_overdrive',
@@ -86,11 +75,7 @@
       build: BUILD.RAPID,
       maxStack: 2,
       desc: '화염구 시전 완료 시 4초간 시전 속도가 <b>+15%</b> 가속됩니다 (최대 5중첩).',
-      mechanic: 'haste_stack',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.hasteStack = true;
-      }
+      mechanic: 'haste_stack'
     },
     {
       id: 'rapid_gatling',
@@ -100,16 +85,8 @@
       build: BUILD.RAPID,
       maxStack: 1,
       desc: '화염구의 기본 시전 시간이 <b>0.3초</b>로 극도로 단축되며 기관총처럼 난사됩니다.',
-      mechanic: 'gatling_mode',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.gatlingMode = true;
-      }
+      mechanic: 'gatling_mode'
     },
-
-    // ==========================================
-    // 2. 극치명타 몰열 누킹 빌드 (Hot Streak Nuke)
-    // ==========================================
     {
       id: 'crit_focus',
       title: '타오르는 집중',
@@ -118,11 +95,7 @@
       build: BUILD.CRIT,
       maxStack: 5,
       desc: '치명타 확률이 <b>+15%</b> 증가합니다.',
-      stats: { crit: 15 },
-      apply: (state) => {
-        state.playerStatsBonus = state.playerStatsBonus || {};
-        state.playerStatsBonus.crit = (state.playerStatsBonus.crit || 0) + 15;
-      }
+      stats: { crit: 15 }
     },
     {
       id: 'crit_multiplier',
@@ -132,11 +105,7 @@
       build: BUILD.CRIT,
       maxStack: 5,
       desc: '치명타 피해량이 <b>+45%</b> 증가합니다.',
-      stats: { critDmg: 0.45 },
-      apply: (state) => {
-        state.playerStatsBonus = state.playerStatsBonus || {};
-        state.playerStatsBonus.critDmg = (state.playerStatsBonus.critDmg || 0) + 0.45;
-      }
+      stats: { critDmg: 0.45 }
     },
     {
       id: 'crit_chain_streak',
@@ -147,10 +116,7 @@
       maxStack: 2,
       desc: '몰아치는 열기 소모 시 <b>40% 확률</b>로 몰열 버프가 사라지지 않고 유지됩니다.',
       mechanic: 'chain_hot_streak',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.chainHotStreak = (state.deckMechanics.chainHotStreak || 0) + 0.4;
-      }
+      mechanicParams: { chainHotStreak: 0.4 }
     },
     {
       id: 'crit_meteor_storm',
@@ -161,13 +127,7 @@
       maxStack: 2,
       desc: '메테오의 재사용 대기시간이 <b>50% 감소</b>하고 피해량이 <b>+60%</b> 증가합니다.',
       mechanic: 'meteor_buff',
-      req: (st, deck) => (deck['spell_meteor'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.meteor),
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.meteorBuff = (state.deckMechanics.meteorBuff || 0) + 1;
-        state.grimoires = state.grimoires || {};
-        state.grimoires.meteor = true; // 메테오 즉시 해금
-      }
+      prerequisite: 'has_meteor'
     },
     {
       id: 'crit_crimson_frenzy',
@@ -178,18 +138,8 @@
       maxStack: 1,
       desc: '발화(마력 폭주) 지속 시간이 2배가 되며, 발화 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.',
       mechanic: 'combustion_god',
-      req: (st, deck) => (deck['spell_combustion'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.combustion),
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.combustionGod = true;
-        state.grimoires = state.grimoires || {};
-        state.grimoires.combustion = true; // 발화 즉시 해금
-      }
+      prerequisite: 'has_combustion'
     },
-
-    // ==========================================
-    // 3. 화염 정령 군단 빌드 (Flame Summoner)
-    // ==========================================
     {
       id: 'sum_spirit',
       title: '화염 정령 소환',
@@ -198,13 +148,7 @@
       build: BUILD.SUMMON,
       maxStack: 4,
       desc: '플레이어 옆에 지속 화염 공격을 퍼붓는 <b>화염 정령 1기</b>를 소환합니다 (최대 4기).',
-      mechanic: 'extra_spirit',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.extraSpirits = (state.deckMechanics.extraSpirits || 0) + 1;
-        state.skillTree = state.skillTree || {};
-        state.skillTree.magma_golem = Math.max(state.skillTree.magma_golem || 0, 1);
-      }
+      mechanic: 'extra_spirit'
     },
     {
       id: 'sum_haste',
@@ -215,12 +159,8 @@
       maxStack: 3,
       desc: '모든 소환수의 공격 속도 <b>+50%</b> 및 공격력 <b>+40%</b> 증가.',
       mechanic: 'spirit_frenzy',
-      req: (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0),
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.spiritDamageMult = (state.deckMechanics.spiritDamageMult || 1) * 1.4;
-        state.deckMechanics.spiritSpeedMult = (state.deckMechanics.spiritSpeedMult || 1) * 1.5;
-      }
+      prerequisite: 'has_summon',
+      mechanicParams: { spiritDamageMult: 1.4, spiritSpeedMult: 1.5 }
     },
     {
       id: 'sum_volley',
@@ -231,11 +171,7 @@
       maxStack: 1,
       desc: '마법사가 화염구를 발사할 때마다 <b>소환된 모든 정령이 동시에 협공 탄환</b>을 발사합니다.',
       mechanic: 'synchronized_fire',
-      req: (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0),
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.synchronizedFire = true;
-      }
+      prerequisite: 'has_summon'
     },
     {
       id: 'sum_cinder_lord',
@@ -246,16 +182,8 @@
       maxStack: 1,
       desc: '소환수 1기당 마법사의 모든 주문 피해량이 <b>+30%</b> 증폭됩니다.',
       mechanic: 'cinder_lord',
-      req: (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0),
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.cinderLord = true;
-      }
+      prerequisite: 'has_summon'
     },
-
-    // ==========================================
-    // 4. 유틸리티 및 특수 파밍 (Utility & Synergy)
-    // ==========================================
     {
       id: 'util_gold_greed',
       title: '탐욕의 불길',
@@ -264,11 +192,7 @@
       build: BUILD.UTILITY,
       maxStack: 3,
       desc: '몬스터 처치 시 획득하는 골드가 <b>+60%</b> 증가합니다.',
-      stats: { goldMult: 0.6 },
-      apply: (state) => {
-        state.playerStatsBonus = state.playerStatsBonus || {};
-        state.playerStatsBonus.goldMult = (state.playerStatsBonus.goldMult || 0) + 0.6;
-      }
+      stats: { goldMult: 0.6 }
     },
     {
       id: 'util_executioner',
@@ -279,10 +203,7 @@
       maxStack: 2,
       desc: '체력이 40% 이하인 적에게 입히는 모든 피해량이 <b>+70%</b> 증가합니다.',
       mechanic: 'executioner',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.executionerMult = (state.deckMechanics.executionerMult || 0) + 0.7;
-      }
+      mechanicParams: { executionerMult: 0.7 }
     },
     {
       id: 'util_phoenix_reborn',
@@ -292,16 +213,8 @@
       build: BUILD.UTILITY,
       maxStack: 1,
       desc: '치명타 적중 시 15% 확률로 모든 스킬의 쿨다운이 즉시 초기화됩니다.',
-      mechanic: 'phoenix_reset',
-      apply: (state) => {
-        state.deckMechanics = state.deckMechanics || {};
-        state.deckMechanics.phoenixReset = true;
-      }
+      mechanic: 'phoenix_reset'
     },
-
-    // ==========================================
-    // 5. 고대 마법 주문서 (Spell Grimoires)
-    // ==========================================
     {
       id: 'spell_autocast',
       title: '비전 마법진: 자동 시전',
@@ -310,14 +223,7 @@
       build: BUILD.UTILITY,
       maxStack: 1,
       desc: '발아래 마법진을 전개하여 습득한 마법을 쿨다운마다 <b>자동 연계 시전</b>합니다.',
-      apply: (state) => {
-        state.grimoires = state.grimoires || {};
-        state.grimoires.autocast = true;
-        state.autoCast = true;
-        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
-        if (typeof updateAutoCastMagicCircle === 'function') updateAutoCastMagicCircle();
-        if (typeof updateSkillAutoUI === 'function') updateSkillAutoUI();
-      }
+      spellKey: 'autocast'
     },
     {
       id: 'spell_fireblast',
@@ -327,11 +233,7 @@
       build: BUILD.CRIT,
       maxStack: 1,
       desc: '시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다.',
-      apply: (state) => {
-        state.grimoires = state.grimoires || {};
-        state.grimoires.fireblast = true;
-        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
-      }
+      spellKey: 'fireblast'
     },
     {
       id: 'spell_meteor',
@@ -341,11 +243,7 @@
       build: BUILD.CRIT,
       maxStack: 1,
       desc: '하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다.',
-      apply: (state) => {
-        state.grimoires = state.grimoires || {};
-        state.grimoires.meteor = true;
-        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
-      }
+      spellKey: 'meteor'
     },
     {
       id: 'spell_flame_patch',
@@ -355,13 +253,7 @@
       build: BUILD.RAPID,
       maxStack: 1,
       desc: '몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.',
-      apply: (state) => {
-        state.grimoires = state.grimoires || {};
-        state.grimoires.flame_patch = true;
-        state.skillTree = state.skillTree || {};
-        state.skillTree.flame_patch = Math.max(1, state.skillTree.flame_patch || 1);
-        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
-      }
+      spellKey: 'flame_patch'
     },
     {
       id: 'spell_combustion',
@@ -371,13 +263,160 @@
       build: BUILD.CRIT,
       maxStack: 1,
       desc: '일정 시간 동안 <b>모든 마법 100% 확정 치명타 및 시전 속도 대폭 가속</b> 궁극기를 습득합니다.',
-      apply: (state) => {
-        state.grimoires = state.grimoires || {};
-        state.grimoires.combustion = true;
-        if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
-      }
+      spellKey: 'combustion'
     }
   ];
+
+  // 선언적 raw 카드 객체를 실행 가능한 카드 객체로 변환
+  function buildCardFromData(raw) {
+    const card = { ...raw };
+
+    // 1. 선행 조건(req) 인터프리터
+    if (raw.prerequisite === 'has_summon') {
+      card.req = (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0);
+    } else if (raw.prerequisite === 'has_meteor') {
+      card.req = (st, deck) => (deck['spell_meteor'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.meteor);
+    } else if (raw.prerequisite === 'has_combustion') {
+      card.req = (st, deck) => (deck['spell_combustion'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.combustion);
+    } else if (raw.prerequisite === 'has_fireblast') {
+      card.req = (st, deck) => (deck['spell_fireblast'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.fireblast);
+    }
+
+    // 2. 효과 적용(apply) 인터프리터
+    card.apply = (state) => {
+      if (!state) return;
+
+      // A. 스탯 보너스 부여
+      if (raw.stats) {
+        state.playerStatsBonus = state.playerStatsBonus || {};
+        for (const [key, val] of Object.entries(raw.stats)) {
+          state.playerStatsBonus[key] = (state.playerStatsBonus[key] || 0) + val;
+        }
+      }
+
+      // B. 주문서 스킬 습득 및 인터페이스 갱신
+      if (raw.spellKey) {
+        state.grimoires = state.grimoires || {};
+        state.grimoires[raw.spellKey] = true;
+        if (raw.spellKey === 'autocast') {
+          state.autoCast = true;
+          if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+          if (typeof updateAutoCastMagicCircle === 'function') updateAutoCastMagicCircle();
+          if (typeof updateSkillAutoUI === 'function') updateSkillAutoUI();
+        } else if (raw.spellKey === 'flame_patch') {
+          state.skillTree = state.skillTree || {};
+          state.skillTree.flame_patch = Math.max(1, state.skillTree.flame_patch || 1);
+          if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+        } else {
+          if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
+        }
+      }
+
+      // C. 특수 로그라이크 메카닉 부여
+      if (raw.mechanic) {
+        state.deckMechanics = state.deckMechanics || {};
+        const p = raw.mechanicParams || {};
+        switch (raw.mechanic) {
+          case 'split_fireball':
+            state.deckMechanics.splitFireball = (state.deckMechanics.splitFireball || 0) + 1;
+            break;
+          case 'haste_stack':
+            state.deckMechanics.hasteStack = true;
+            break;
+          case 'gatling_mode':
+            state.deckMechanics.gatlingMode = true;
+            break;
+          case 'chain_hot_streak':
+            state.deckMechanics.chainHotStreak = (state.deckMechanics.chainHotStreak || 0) + (p.chainHotStreak || 0.4);
+            break;
+          case 'meteor_buff':
+            state.deckMechanics.meteorBuff = (state.deckMechanics.meteorBuff || 0) + 1;
+            state.grimoires = state.grimoires || {};
+            state.grimoires.meteor = true;
+            break;
+          case 'combustion_god':
+            state.deckMechanics.combustionGod = true;
+            state.grimoires = state.grimoires || {};
+            state.grimoires.combustion = true;
+            break;
+          case 'extra_spirit':
+            state.deckMechanics.extraSpirits = (state.deckMechanics.extraSpirits || 0) + 1;
+            state.skillTree = state.skillTree || {};
+            state.skillTree.magma_golem = Math.max(state.skillTree.magma_golem || 0, 1);
+            break;
+          case 'spirit_frenzy':
+            state.deckMechanics.spiritDamageMult = (state.deckMechanics.spiritDamageMult || 1) * (p.spiritDamageMult || 1.4);
+            state.deckMechanics.spiritSpeedMult = (state.deckMechanics.spiritSpeedMult || 1) * (p.spiritSpeedMult || 1.5);
+            break;
+          case 'synchronized_fire':
+            state.deckMechanics.synchronizedFire = true;
+            break;
+          case 'cinder_lord':
+            state.deckMechanics.cinderLord = true;
+            break;
+          case 'executioner':
+            state.deckMechanics.executionerMult = (state.deckMechanics.executionerMult || 0) + (p.executionerMult || 0.7);
+            break;
+          case 'phoenix_reset':
+            state.deckMechanics.phoenixReset = true;
+            break;
+        }
+      }
+    };
+
+    return card;
+  }
+
+  // 런타임 카드 풀 배열
+  const CARD_POOL = [];
+
+  function setCardPoolFromRaw(rawList) {
+    CARD_POOL.length = 0;
+    for (const raw of rawList) {
+      CARD_POOL.push(buildCardFromData(raw));
+    }
+  }
+
+  // Node.js 환경에서 JSON 동기 로드
+  let initialRaw = DEFAULT_CARDS_RAW;
+  if (typeof require !== 'undefined' && typeof __dirname !== 'undefined') {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const jsonPath = path.join(__dirname, '../data/roguelike-cards.json');
+      if (fs.existsSync(jsonPath)) {
+        initialRaw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      }
+    } catch (e) {
+      initialRaw = DEFAULT_CARDS_RAW;
+    }
+  }
+  setCardPoolFromRaw(initialRaw);
+
+  // 브라우저 환경에서 실시간 JSON 파일 비동기 로드
+  async function loadCardsFromJSON() {
+    if (typeof fetch === 'undefined') return false;
+    try {
+      // 캐싱 방지용 타임스탬프 쿼리 적용 -> JSON 수정 후 새로고침 시 즉시 반영!
+      const res = await fetch('src/data/roguelike-cards.json?v=' + Date.now());
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json) && json.length > 0) {
+          setCardPoolFromRaw(json);
+          console.log(`[RoguelikeDeck] 📜 ${json.length}종의 카드를 roguelike-cards.json에서 성공적으로 로드했습니다.`);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('[RoguelikeDeck] JSON 파일 비동기 로드 실패 (기본 fallback 카드셋 유지):', err.message);
+    }
+    return false;
+  }
+
+  // 브라우저 환경이면 즉시 비동기 로드 시도
+  if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
+    loadCardsFromJSON();
+  }
 
   // 런(Run) 단위 덱 관리자 객체
   function createDeckManager() {
@@ -392,7 +431,7 @@
 
     // 3장의 카드 무작위 추첨
     function drawChoices(count = 3, isBossWave = false, gameState = null) {
-      // 1. 뽑을 수 있는 유효 카드 필터링 (최대 중첩 미달성 카드 및 이미 습득한 주문서 제외)
+      // 1. 뽑을 수 있는 유효 카드 필터링 (최대 중첩 미달성 카드, 이미 습득한 주문서, 선행 조건 미충족 카드 제외)
       const st = gameState || (typeof state !== 'undefined' ? state : null);
       const eligible = CARD_POOL.filter(card => {
         const currentCount = activeDeck[card.id] || 0;
@@ -498,25 +537,34 @@
       }
     }
 
-    // 현재 획득한 카드 덱 정보 반환 (UI 렌더링용)
+    // 획득한 카드 목록 반환 (UI 노출용)
     function getActiveCards() {
       return Object.entries(activeDeck).map(([id, count]) => {
         const card = CARD_POOL.find(c => c.id === id);
-        return { ...card, count };
+        return {
+          id,
+          count,
+          title: card ? card.title : id,
+          icon: card ? card.icon : '🃏',
+          rarity: card ? card.rarity : RARITY.COMMON,
+          build: card ? card.build : BUILD.UTILITY
+        };
       });
     }
 
-    // 덱 복원 (저장된 세이브 데이터 로드 시)
+    // 저장 데이터로부터 덱 복원
     function restoreDeck(savedDeck, gameState) {
       resetDeck(gameState);
       if (!savedDeck || typeof savedDeck !== 'object') return;
-      for (const [id, count] of Object.entries(savedDeck)) {
-        const card = CARD_POOL.find(c => c.id === id);
-        if (!card) continue;
-        activeDeck[id] = count;
-        for (let i = 0; i < count; i++) {
-          if (typeof card.apply === 'function') {
-            card.apply(gameState);
+
+      for (const [cardId, count] of Object.entries(savedDeck)) {
+        const card = CARD_POOL.find(c => c.id === cardId);
+        if (card) {
+          for (let i = 0; i < count; i++) {
+            activeDeck[card.id] = (activeDeck[card.id] || 0) + 1;
+            if (typeof card.apply === 'function') {
+              card.apply(gameState);
+            }
           }
         }
       }
@@ -545,7 +593,10 @@
     RARITY_META,
     BUILD,
     CARD_POOL,
-    createDeckManager
+    createDeckManager,
+    buildCardFromData,
+    setCardPoolFromRaw,
+    loadCardsFromJSON
   };
 
   if (typeof module !== 'undefined' && module.exports) {

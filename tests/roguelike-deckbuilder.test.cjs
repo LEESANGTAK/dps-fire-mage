@@ -247,5 +247,46 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
   assert.ok(foundSummonUpgrade, '소환수를 획득한 이후에는 소환수 업그레이드 카드가 등장할 수 있어야 합니다.');
 });
 
+test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 및 실시간 반영 검증', () => {
+  const fs = require('node:fs');
+  const jsonPath = path.join(__dirname, '../src/data/roguelike-cards.json');
+  assert.ok(fs.existsSync(jsonPath), 'src/data/roguelike-cards.json 파일이 존재해야 합니다.');
+
+  const rawJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  assert.ok(Array.isArray(rawJson), 'JSON 루트는 배열이어야 합니다.');
+  assert.equal(rawJson.length, 22, '총 22종의 카드가 JSON에 정의되어 있어야 합니다.');
+
+  // 동적 로더 및 실시간 반영 검증
+  const { setCardPoolFromRaw, CARD_POOL, createDeckManager } = require('../src/scripts/roguelike-deck.js');
+  
+  // 임의의 테스트용 커스텀 카드 데이터 주입
+  const customCards = [
+    {
+      id: 'custom_designer_super_card',
+      title: '디자이너의 시험용 슈퍼 불꽃',
+      icon: '💎',
+      rarity: 'legendary',
+      build: 'rapid',
+      maxStack: 1,
+      desc: '주문 공격력 <b>+999</b> 증가.',
+      stats: { sp: 999 }
+    }
+  ];
+
+  setCardPoolFromRaw(customCards);
+  assert.equal(CARD_POOL.length, 1);
+  assert.equal(CARD_POOL[0].id, 'custom_designer_super_card');
+  assert.equal(CARD_POOL[0].title, '디자이너의 시험용 슈퍼 불꽃');
+
+  const manager = createDeckManager();
+  const fakeState = { playerStatsBonus: {} };
+  manager.selectCard('custom_designer_super_card', fakeState);
+  assert.equal(fakeState.playerStatsBonus.sp, 999, 'JSON에서 수정된 수치(+999 SP)가 즉시 인게임에 반영되어야 합니다.');
+
+  // 원본 JSON 데이터로 복원
+  setCardPoolFromRaw(rawJson);
+  assert.equal(CARD_POOL.length, 22, '원본 22장으로 복원되어야 합니다.');
+});
+
 
 
