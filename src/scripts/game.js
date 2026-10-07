@@ -1330,7 +1330,9 @@ function getTargetPos() {
 }
 
 function spawnParticles(x, y, count, colorCore, colorEdge, speedScale = 1) {
-  for (let i = 0; i < count; i++) {
+  // 연속 적중과 폭발이 메테오 꼬리와 공유하는 풀을 무제한 채우지 않게 합니다.
+  const burstCount = Math.min(count, Math.max(0, 450 - particles.length));
+  for (let i = 0; i < burstCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = (35 + Math.random() * 140) * speedScale;
     particles.push({

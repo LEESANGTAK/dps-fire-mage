@@ -308,7 +308,8 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false, activeMeteorCount =
   // 전체 풀이 차면 일반 입자의 나이와 무관하게 공간을 확보합니다.
   // 고속 화염구가 매 프레임 새 입자를 채워도 운석 꼬리는 생성되어야 합니다.
   if (available < count && pool.length + count > maxTotalParticles) {
-    const need = count - Math.max(0, available);
+    // 새 꼬리 자리뿐 아니라 다른 방출기가 쌓은 전체 초과분까지 비웁니다.
+    const need = Math.max(0, pool.length + count - maxTotalParticles);
     let freed = 0;
     for (let i = 0; i < pool.length && freed < need && pool.length + count > maxTotalParticles; i++) {
       const pt = pool[i];

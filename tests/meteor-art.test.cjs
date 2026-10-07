@@ -20,6 +20,12 @@ const full=Array.from({length:450},()=>({life:0,maxLife:.5}));
 emitMeteorTrail({...m,trailEmissionIndex:0},getMeteorPose(m,.5),.1,full);
 assert.equal(full.length,450);
 assert.ok(full.some(pt=>pt.meteorTrail&&pt.kind==='smoke'),'새 일반 입자가 전체 풀을 채워도 연기가 생성되어야 합니다.');
+// 일반 입자가 전체 상한을 초과하면 초과분까지 정리한 뒤 꼬리를 생성해야 합니다.
+const overflow=Array.from({length:700},()=>({life:0,maxLife:.5}));
+const overflowMeteor={...m,trailClock:0,trailEmissionIndex:0};
+for(let frame=0;frame<10;frame++)emitMeteorTrail(overflowMeteor,getMeteorPose(m,.5),1/60,overflow,false,20);
+assert.ok(overflow.some(pt=>pt.meteorTrail&&pt.kind==='smoke'),'상한 초과 풀에서도 메테오 연기가 생성되어야 합니다.');
+assert.ok(overflow.length<=450,'초과분까지 정리하여 전체 상한을 복원해야 합니다.');
 // 수십 개가 동시에 낙하해도 모든 운석의 연기가 여러 프레임 살아남아야 합니다.
 for (const fps of [30, 60, 144]) {
  for (const simultaneous of [20, 50]) {
@@ -58,6 +64,17 @@ assert.equal(frozenPool.length,1);assert.equal(frozenTrail.life,.1);
 assert.equal(frozenTrail.x,100);assert.equal(frozenTrail.y,200);assert.equal(drawnDt,0);
 vm.runInContext('tickParticles(.1,false)',particleContext);
 assert.equal(frozenTrail.life,.2);assert.equal(frozenTrail.x,103);assert.equal(frozenTrail.y,198);assert.equal(drawnDt,.1);
+// 실제 일반 입자 방출기를 반복 호출해도 전체 예산을 넘기지 않아야 합니다.
+const spawnCode=game.slice(game.indexOf('function spawnParticles('),game.indexOf('function spawnHitSparkVfx('));
+const generalPool=[];const spawnContext=vm.createContext({particles:generalPool,Math});
+vm.runInContext(spawnCode,spawnContext);
+vm.runInContext("for(let i=0;i<100;i++)spawnParticles(100,200,30,'#fff','#f00')",spawnContext);
+assert.equal(generalPool.length,450);
+emitMeteorTrail({...m,trailEmissionIndex:0},getMeteorPose(m,.5),1/60,generalPool);
+assert.ok(generalPool.some(pt=>pt.meteorTrail&&pt.kind==='smoke'));
+vm.runInContext("spawnParticles(100,200,100,'#fff','#f00')",spawnContext);
+assert.equal(generalPool.length,450);
+assert.ok(generalPool.some(pt=>pt.meteorTrail),'일반 폭발이 기존 꼬리를 삭제하면 안 됩니다.');
 const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('const monsterShards = [];'));
 const debrisContext=vm.createContext({});vm.runInContext(debrisCode,debrisContext);
 vm.runInContext('for(let i=0;i<30;i++)spawnMeteorRockDebris(100,200);',debrisContext);
