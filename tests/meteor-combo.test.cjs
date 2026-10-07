@@ -1,6 +1,6 @@
 /* 몰열 연계·일반 시전·기존 투자 이전의 실제 실행 경로를 검증합니다. */
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync('game.js','utf8');
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
 const skillCode=source.slice(source.indexOf('function triggerSkill('),source.indexOf('function runSmartAutoCast('));
 const combat={castingSkill:'fireball',castRemaining:1,castTotal:1.5,gcdRemaining:.8,critStreak:2,streakTimer:12,meteorCdRem:9};
 let impacts=0,syncs=0,streakFlag;

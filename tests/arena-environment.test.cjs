@@ -1,6 +1,6 @@
 /* 실제 배경 제어기로 경계·역주행·승천·정지·이미지 지연을 검증합니다. */
 const assert=require('node:assert/strict');
-const {getArenaTheme,createArenaEnvironment}=require('./arena-environment.js');
+const {getArenaTheme,createArenaEnvironment}=require('../src/scripts/arena-environment.js');
 for(const [stage,id] of [[1,'meadow'],[5,'meadow'],[6,'mine'],[10,'mine'],[11,'ruins'],[15,'ruins'],[16,'citadel'],[20,'citadel'],[21,'void'],[1000,'void'],[0,'meadow']])assert.equal(getArenaTheme(stage).id,id);
 let drawCount=0;
 const gradient={addColorStop(){}};

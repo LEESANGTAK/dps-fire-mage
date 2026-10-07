@@ -1,5 +1,5 @@
-const assert = require('node:assert/strict');
-const C = require('./paper-preview-core.js');
+const assert = require('node:assert/strict'), path = require('node:path');
+const C = require('../previews/paper-preview-core.js');
 const advance = (s, seconds) => { for (let i = 0; i < Math.round(seconds * 240); i++) C.step(s, 1 / 240); };
 // 화염구는 시전 완료 전 나타나지 않으며 강화 발사는 같은 순간에 반영됩니다.
 const s = C.createState(); s.auto = false;
@@ -27,9 +27,9 @@ advance(dead, .12); assert.equal(dead.modal, true); const stopped = JSON.stringi
 advance(dead, 3); assert.equal(JSON.stringify(dead), stopped); assert.equal(C.startCast(dead), false);
 // 원화 좌표가 실제 PNG 경계를 벗어나거나 발 원점을 잘라내면 접지와 발사점이 깨집니다.
 const fs = require('node:fs');
-const frames = require('./paper-art.js');
+const frames = require('../src/scripts/paper-art.js');
 for (const actor of ['mage', 'slime']) {
-  const png = fs.readFileSync(`assets/art/paper-${actor}-poses.png`);
+  const png = fs.readFileSync(path.join(__dirname, `../assets/art/paper-${actor}-poses.png`));
   const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
   for (const [pose, f] of Object.entries(frames[actor])) {
     if (pose === 'cell') continue;

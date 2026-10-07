@@ -1,6 +1,6 @@
 /* 실제 불장판 렌더러를 사용한 비교. 전투 판정·진행 데이터는 사용하지 않는다. */
 const flameScenes = [];
-const patch = new Image(); patch.src = 'assets/art/comic-flame-patch.png';
+const patch = new Image(); patch.src = '../assets/art/comic-flame-patch.png';
 for (const theme of ['meadow', 'citadel']) {
   for (const before of [true, false]) {
     const card = document.createElement('section');

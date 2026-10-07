@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), vm = require('node:vm');
-const { selectMagePose, mageFrames, getMagePlacement } = require('./mage-motion.js');
+const fs = require('node:fs'), vm = require('node:vm'), path = require('node:path');
+const { selectMagePose, mageFrames, getMagePlacement } = require('../src/scripts/mage-motion.js');
 const combat = { castingSkill: null, castRemaining: 0, castTotal: 1.5, combustionRem: 0 };
 const rest = { kind: '', remaining: 0, total: 0 };
 assert.equal(selectMagePose(combat, rest), 'idle');
@@ -14,7 +14,7 @@ assert.equal(selectMagePose(combat, { kind: 'fireball', remaining: .05, total: .
 assert.equal(selectMagePose({ ...combat, combustionRem: 1 }, { kind: 'fireball', remaining: .14, total: .14 }), 'release');
 assert.equal(selectMagePose(combat, { kind: 'meteor', remaining: .15, total: .42 }), 'recoil');
 // 실제 종이 원화의 경계와 접지점, 지팡이 끝의 일치를 검증합니다.
-const png = fs.readFileSync('assets/art/paper-mage-poses.png');
+const png = fs.readFileSync(path.join(__dirname, '../assets/art/paper-mage-poses.png'));
 for (const [pose, frame] of Object.entries(mageFrames)) {
   const [x, y, w, h] = frame.box;
   assert.ok(x >= 0 && y >= 0 && x + w <= png.readUInt32BE(16) && y + h <= png.readUInt32BE(20));
@@ -25,8 +25,8 @@ for (const [pose, frame] of Object.entries(mageFrames)) {
 }
 const art = { dataset: {}, classList: { toggle() {} }, style: { setProperty() {} } };
 const context = vm.createContext({ state: { combat }, document: { getElementById: () => art } });
-vm.runInContext(fs.readFileSync('./paper-art.js', 'utf8'), context);
-vm.runInContext(fs.readFileSync('./mage-motion.js', 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/scripts/paper-art.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/scripts/mage-motion.js'), 'utf8'), context);
 vm.runInContext("beginMageGesture('meteor'); updateMageMotion(.2, true)", context);
 assert.equal(art.dataset.pose, 'release');
 assert.equal(vm.runInContext('mageGesture.remaining', context), .42);
@@ -41,7 +41,7 @@ vm.runInContext("beginMageGesture('fireblast')", context);
 assert.equal(art.dataset.pose, 'release', '시각적 멈춤 중 즉시 발사도 지팡이 끝을 즉시 갱신해야 합니다.');
 vm.runInContext('updateMageMotion(.02, false); updateMageMotion(.08, false)', context);
 assert.equal(art.dataset.pose, 'recoil');
-const { getPaperSlimePose } = require('./paper-art.js');
+const { getPaperSlimePose } = require('../src/scripts/paper-art.js');
 assert.equal(getPaperSlimePose({ time: 0, hit: .25, stage: 1 }), 'hit');
 assert.equal(getPaperSlimePose({ time: 0, hit: .1, stage: 1 }), 'recover');
 assert.equal(getPaperSlimePose({ time: 3.25, hit: 0, stage: 1 }), 'rest');
@@ -51,7 +51,7 @@ console.log('종이 마법사·슬라임의 시전 포즈·실제 원화 좌표�
 // 캔버스를 만들 수 없는 환경에서는 화염구 텍스처 생성을 건너뛰고 오류 없이 넘어가야 합니다.
 let imageCalls = 0;
 const projectileContext = vm.createContext({ console, Map, document: { createElement() { throw Error('캔버스 생성 불가'); } } });
-vm.runInContext(fs.readFileSync('./combat-art.js', 'utf8'), projectileContext);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/scripts/combat-art.js'), 'utf8'), projectileContext);
 projectileContext.painter = { save(){}, restore(){}, translate(){}, rotate(){}, scale(){}, drawImage(){ imageCalls++; } };
 vm.runInContext("drawComicProjectile(painter, {type:'fireball', radius:10, startX:0, startY:0, targetX:100, targetY:0, colorCore:'#fde047', colorMid:'#f97316', ringRgb:'251, 146, 60'}, 50, 0, 0.5)", projectileContext);
 assert.equal(imageCalls, 0);
@@ -72,7 +72,7 @@ assert.ok(slimePool.every(p => p.vy < 0 && p.maxLife <= 0.63));
 vm.runInContext('spawnSlimeSplash(slimePool,100,100,160,false,true,100,true)', projectileContext);
 assert.equal(slimePool.length, 48);
 
-const { livingMageMotion } = require('./mage-motion.js');
+const { livingMageMotion } = require('../src/scripts/mage-motion.js');
 assert.equal(livingMageMotion(10, true, false).breathY, 1);
 assert.equal(livingMageMotion(10, true, false).breathX, 1);
 assert.equal(livingMageMotion(10, true, false).lean, 0);

@@ -6,7 +6,7 @@ const arenaPreviewSamples=[
   {stage:21,label:'공허의 경계',range:'21 이후',monster:25}
 ];
 const arenaPreviewScenes=[];
-const previewMageSheet=new Image();previewMageSheet.src='assets/art/paper-mage-poses.png';
+const previewMageSheet=new Image();previewMageSheet.src='../assets/art/paper-mage-poses.png';
 const previewPause=document.querySelector('#pause'),previewReduced=document.querySelector('#reduced');
 for(const sample of arenaPreviewSamples){
   const card=document.createElement('section');card.className='card';

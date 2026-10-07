@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {getMonsterMotionProfile,monsterMotionProfiles}=require('./monster-motion.js');
+const {getMonsterMotionProfile,monsterMotionProfiles}=require('../src/scripts/monster-motion.js');
 assert.equal(monsterMotionProfiles.length,20);
 for(let stage=1;stage<=20;stage++){
  const p=getMonsterMotionProfile(stage);

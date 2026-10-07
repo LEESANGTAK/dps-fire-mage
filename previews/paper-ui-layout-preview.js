@@ -1,6 +1,6 @@
 /* 실제 HTML·CSS를 사용하는 위치 검증 화면. 전투·진행·저장 로직은 실행하지 않는다. */
 const layoutMage = new Image();
-layoutMage.src = 'assets/art/paper-mage-poses.png';
+layoutMage.src = '../assets/art/paper-mage-poses.png';
 function drawLayoutMage() {
   const frame = PAPER_ART_FRAMES.mage[document.querySelector('#preview-pose').value];
   const ctx = document.querySelector('#mage-pose-canvas').getContext('2d');

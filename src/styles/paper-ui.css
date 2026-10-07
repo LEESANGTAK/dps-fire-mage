@@ -25,7 +25,7 @@
 }
 .top-bar { background: #30282c; border-bottom: 2px solid #8b7055; box-shadow: 0 3px 0 #17131b; }
 .game-title { color: #f3d391; text-shadow: 0 2px #17131b; }
-.game-title .comic-icon[data-sheet='spell'] { background-image: url('assets/art/paper-ui-skills-v1.png'); background-size: 300% 200%; background-position: 0 0 !important; }
+.game-title .comic-icon[data-sheet='spell'] { background-image: url('../../assets/art/paper-ui-skills-v1.png'); background-size: 300% 200%; background-position: 0 0 !important; }
 /* 몬스터 이름·체력과 하단 시전 UI가 같은 높이를 차지하지 않게 접지선을 조정한다. */
 .combat-arena:has(.player-hud) { --floor-line: min(66%, calc(100% - 190px)); }
 .top-bar .stat-pill { background: #241b22; border-color: #766149; border-radius: 3px; box-shadow: 0 2px 0 #141118; }
@@ -39,7 +39,7 @@
 .top-bar .btn-top:active { transform: translateY(2px); box-shadow: none; }
 .top-bar .btn-top.btn-danger-outline { border-color: #a46254; }
 .top-bar .btn-top.active { border-color: #57ba91; color: #b1f1cb; background: #24443b; }
-.paper-ui-icon { display: inline-block; width: 22px; height: 22px; flex-shrink: 0; vertical-align: middle; background-image: url('assets/art/paper-ui-stats-v1.png'); background-size: 300% 200%; border-radius: 2px; }
+.paper-ui-icon { display: inline-block; width: 22px; height: 22px; flex-shrink: 0; vertical-align: middle; background-image: url('../../assets/art/paper-ui-stats-v1.png'); background-size: 300% 200%; border-radius: 2px; }
 .paper-ui-icon[data-paper-icon='gold'] { background-position: 0 0; }
 .paper-ui-icon[data-paper-icon='essence'] { background-position: 50% 0; }
 .paper-ui-icon[data-paper-icon='feather'] { background-position: 100% 0; }
@@ -59,7 +59,7 @@
 .combat-arena .auto-cast-btn { background: #3c3035; border-color: #8b7055; border-radius: 3px; }
 .combat-arena .auto-cast-btn.active { background: #24443b; border-color: #57ba91; color: #b1f1cb; }
 .action-bar .skill-btn { border: 2px solid #b39770; border-radius: 5px; background: #241b22; box-shadow: 0 2px 0 #151119; }
-.action-bar .skill-btn .skill-icon { position: absolute; inset: 0; font-size: 0; background-image: url('assets/art/paper-ui-skills-v1.png'); background-repeat: no-repeat; background-size: 300% 200%; border-radius: 3px; }
+.action-bar .skill-btn .skill-icon { position: absolute; inset: 0; font-size: 0; background-image: url('../../assets/art/paper-ui-skills-v1.png'); background-repeat: no-repeat; background-size: 300% 200%; border-radius: 3px; }
 .action-bar [data-skill='fireball'] .skill-icon { background-position: 0 0; }
 .action-bar [data-skill='fireblast'] .skill-icon { background-position: 50% 0; }
 .action-bar [data-skill='meteor'] .skill-icon { background-position: 100% 0; }

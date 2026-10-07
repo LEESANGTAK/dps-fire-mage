@@ -1,8 +1,9 @@
 /* 스테이지 전환 시 슬라임 복원과 심연 이미지 선택을 검증합니다. */
-const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const actor={dataset:{},style:{},textContent:'🐀'};
 const context=vm.createContext({document:{getElementById:id=>id==='dummy-emoji'?actor:{clientHeight:126},addEventListener(){}},console});
-vm.runInContext(fs.readFileSync('comic-monster-frames.js','utf8')+fs.readFileSync('paper-monster-frames.js','utf8')+fs.readFileSync('comic-assets.js','utf8'),context);
+const readScript = name => fs.readFileSync(path.join(__dirname, '../src/scripts', name), 'utf8');
+vm.runInContext(readScript('comic-monster-frames.js')+readScript('paper-monster-frames.js')+readScript('comic-assets.js'),context);
 assert.match(vm.runInContext("comicIconHTML('🔹')",context),/data-sheet="essence"/,'정수는 화염 스킬 아틀라스와 다른 이미지로 표시해야 합니다');
 for(let stage=3;stage<=30;stage++){
  vm.runInContext(`configureComicMonster(${stage})`,context);

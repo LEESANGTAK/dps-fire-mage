@@ -4,9 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const gameJsContent = fs.readFileSync(path.join(__dirname, 'game.js'), 'utf8');
-const indexHtmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-const stylesCssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+const gameJsContent = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+const indexHtmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+const stylesCssContent = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
 
 // ==========================================
 // 1. [P0] 타오르는 기운 (Heating Up Pity System) 검증

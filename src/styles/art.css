@@ -12,7 +12,7 @@
   border-bottom: 2px solid #75543b;
 }
 .combat-arena {
-  background: linear-gradient(180deg, rgba(9,12,21,.4), rgba(9,12,21,.05) 50%, rgba(13,10,16,.7)), url('assets/art/paper-arena.png') center 55% / cover;
+  background: linear-gradient(180deg, rgba(9,12,21,.4), rgba(9,12,21,.05) 50%, rgba(13,10,16,.7)), url('../../assets/art/paper-arena.png') center 55% / cover;
   border: 3px solid #806044;
   box-shadow: inset 0 0 0 2px #271c18, inset 0 0 65px #090b16, 0 8px 24px #0008;
 }
@@ -75,7 +75,7 @@
 .dummy-avatar:has([data-art='slime']) { background: transparent; border-color: transparent; box-shadow: none; }
 .dummy-emoji[data-art='slime'] {
   width: 220px; height: 220px; font-size: 0;
-  background: url('assets/art/comic-slime.png') center / contain no-repeat;
+  background: url('../../assets/art/comic-slime.png') center / contain no-repeat;
   filter: drop-shadow(0 12px 5px #0007);
 }
 .dummy-emoji[data-variant='blue'] { filter: hue-rotate(85deg) drop-shadow(0 12px 5px #0007); }
@@ -86,7 +86,7 @@
 }
 .skill-btn:is([data-skill='fireball'],[data-skill='fireblast'],[data-skill='combustion']) .skill-icon {
   position: absolute; inset: 0; font-size: 0;
-  background-image: url('assets/art/comic-skill-atlas.png'); background-size: 200% 200%; border-radius: 5px;
+  background-image: url('../../assets/art/comic-skill-atlas.png'); background-size: 200% 200%; border-radius: 5px;
 }
 [data-skill='fireball'] .skill-icon { background-position: left top; }
 [data-skill='fireblast'] .skill-icon { background-position: right top; }
@@ -132,7 +132,7 @@
 /* 모든 포즈는 같은 캔버스와 발 원점을 사용합니다. 포즈별 CSS 이동은 사용하지 않습니다. */
 .mage-art[data-pose] { width: var(--mage-width); aspect-ratio: 1; bottom: -1px; background: none; clip-path: none; transform: none; }
 .heat-sigils { bottom: 25%; right: calc(100% + 2px); }
-.monster-hit-mark { width: 56px; height: 56px; font-size: 0; background: url('assets/art/comic-skill-atlas.png') right top / 200% 200%; mix-blend-mode: screen; clip-path: polygon(50% 0,60% 25%,90% 10%,75% 40%,100% 50%,75% 60%,90% 90%,60% 75%,50% 100%,40% 75%,10% 90%,25% 60%,0 50%,25% 40%,10% 10%,40% 25%); }
+.monster-hit-mark { width: 56px; height: 56px; font-size: 0; background: url('../../assets/art/comic-skill-atlas.png') right top / 200% 200%; mix-blend-mode: screen; clip-path: polygon(50% 0,60% 25%,90% 10%,75% 40%,100% 50%,75% 60%,90% 90%,60% 75%,50% 100%,40% 75%,10% 90%,25% 60%,0 50%,25% 40%,10% 10%,40% 25%); }
 .dummy-avatar.impact-stop, .dummy-avatar.impact-stop .dummy-emoji { animation-play-state: paused !important; }
 .caster-avatar::before, .dummy-avatar:has([data-art='slime'])::before { bottom: -5px; height: 12px; }
 .center-stage { padding: 0; }
@@ -226,8 +226,8 @@
 @keyframes death-reduced {from{opacity:1}to{opacity:0}}
 
 /* 잉크 만화 UI: 읽는 영역은 차분한 종이색, 조작 영역은 가죽·황동색입니다. */
-@font-face { font-family:'ComicJua';src:url('assets/fonts/Jua-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
-@font-face { font-family:'ComicRead';src:url('assets/fonts/NanumGothic-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
+@font-face { font-family:'ComicJua';src:url('../../assets/fonts/Jua-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
+@font-face { font-family:'ComicRead';src:url('../../assets/fonts/NanumGothic-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
 :root { --bg-slot:#282127; --bg-panel-header:#34292c; --border-color:#695345; --text-main:#f1e2c9; --text-muted:#bbae9b; --mage-blue:#bea0d8; }
 body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .game-title,.stat-pill .value,.panel-title-row,.right-tab-btn,.skill-name,.skill-hotkey,.shop-title,.shop-buy-btn,.stage-nav-btn,.btn-top,.caster-label,.monster-name-label,.castbar-text,h1,h2,h3,.fct-crit {
@@ -259,9 +259,9 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .hp-bar-fill { background:#b54539; }
 .shop-buy-btn:active,.btn-top:active,.right-tab-btn:active { transform:translateY(2px);box-shadow:inset 0 1px #997651; }
 .modal-content,.victory-modal-content,.wow-tooltip { background:#2d222b;border-color:#977047;color:#f2e1c4; }
-.comic-icon { display:inline-block;width:1.15em;height:1.15em;vertical-align:-.18em;background-repeat:no-repeat;background-size:400% 400%;background-image:url('assets/art/comic-equipment-atlas.png');flex-shrink:0; }
+.comic-icon { display:inline-block;width:1.15em;height:1.15em;vertical-align:-.18em;background-repeat:no-repeat;background-size:400% 400%;background-image:url('../../assets/art/comic-equipment-atlas.png');flex-shrink:0; }
 .shop-icon .comic-icon,.inf-icon .comic-icon,.wow-node-icon .comic-icon,.caster-eq-icon .comic-icon { width:100%;height:100%;vertical-align:0; }
-.comic-icon[data-sheet='spell'] { background-image:url('assets/art/comic-skill-atlas.png');background-size:200% 200%; }
+.comic-icon[data-sheet='spell'] { background-image:url('../../assets/art/comic-skill-atlas.png');background-size:200% 200%; }
 .dummy-emoji[data-art='monster'] { position:absolute;bottom:0;font-size:0;flex-shrink:0;filter:drop-shadow(0 6px 4px #0007);background-repeat:no-repeat; }
 .dummy-avatar:has([data-art='monster']) { background:transparent;border-color:transparent;box-shadow:none; }
 .dummy-avatar:has([data-art='monster'])::before { content:'';position:absolute;bottom:-4px;left:0;width:100%;height:10px;background:radial-gradient(ellipse,#08060baa,transparent 70%); }
@@ -271,9 +271,9 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 @media(max-width:768px) { .shop-title{font-size:.85rem}.shop-desc{font-size:.66rem}.stat-pill .label{font-size:.6rem} }
 
 .shop-card .shop-desc,.shop-card .shop-desc * { color:#635044 !important; }
-[data-skill='meteor'] .skill-icon,[data-skill='flame_patch'] .skill-icon {position:absolute;inset:0;border-radius:5px;font-size:0;background-image:url('assets/art/comic-equipment-atlas.png');background-size:400% 400%;}
+[data-skill='meteor'] .skill-icon,[data-skill='flame_patch'] .skill-icon {position:absolute;inset:0;border-radius:5px;font-size:0;background-image:url('../../assets/art/comic-equipment-atlas.png');background-size:400% 400%;}
 [data-skill='meteor'] .skill-icon {background-position:100% 100%;}
-[data-skill='flame_patch'] .skill-icon {background-image:url('assets/art/comic-skill-atlas.png');background-size:200% 200%;background-position:0 0;}
+[data-skill='flame_patch'] .skill-icon {background-image:url('../../assets/art/comic-skill-atlas.png');background-size:200% 200%;background-position:0 0;}
 
 /* 이미지로 치환한 특성 아이콘의 부모에도 명시적인 영역을 확보합니다. */
 .wow-node-icon { display:block;width:100%;height:100%; }
@@ -287,8 +287,8 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .inf-sub-hint { color:#cfc5b8; }
 .inf-buy-btn:disabled { color:#b8c4d3; }
 
-.comic-icon[data-sheet='essence'] { background:url('assets/art/comic-essence.png') center / contain no-repeat; }
-.flying-essence-orb { background:url('assets/art/comic-essence.png') center / contain no-repeat;border:0;box-shadow:none;border-radius:0;filter:drop-shadow(0 0 5px #4fc9ff80); }
+.comic-icon[data-sheet='essence'] { background:url('../../assets/art/comic-essence.png') center / contain no-repeat; }
+.flying-essence-orb { background:url('../../assets/art/comic-essence.png') center / contain no-repeat;border:0;box-shadow:none;border-radius:0;filter:drop-shadow(0 0 5px #4fc9ff80); }
 .flying-essence-orb::after { content:none; }
 .skill-charges { background:#140e16e6;border:1px solid #ad8150;border-radius:4px;padding:0 3px;bottom:16px; }
 .skill-tooltip { position:fixed;z-index:10000;width:min(300px,calc(100vw - 16px));padding:12px 14px;border:1px solid #b18a59;border-radius:8px;background:#211b25;color:#f0e5d2;box-shadow:0 6px 20px #0009;line-height:1.5;font-size:.78rem;animation:skill-tooltip-enter .14s cubic-bezier(.16,1,.3,1); }
@@ -304,9 +304,9 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 @media(prefers-reduced-motion:reduce) { .skill-tooltip { animation:none; } }
 
 /* 전용 원화는 공용 화염구·불사조 아틀라스와 분리합니다. */
-.comic-icon[data-sheet='fire-elemental'] { background:url('assets/art/comic-fire-elemental.png') center / contain no-repeat; }
-.comic-icon[data-sheet='flame-patch'],[data-skill='flame_patch'] .skill-icon { background:url('assets/art/comic-flame-patch.png') center / contain no-repeat; }
-.comic-icon[data-sheet='combustion'],[data-skill='combustion'] .skill-icon { background:url('assets/art/comic-combustion.png') center / contain no-repeat; }
+.comic-icon[data-sheet='fire-elemental'] { background:url('../../assets/art/comic-fire-elemental.png') center / contain no-repeat; }
+.comic-icon[data-sheet='flame-patch'],[data-skill='flame_patch'] .skill-icon { background:url('../../assets/art/comic-flame-patch.png') center / contain no-repeat; }
+.comic-icon[data-sheet='combustion'],[data-skill='combustion'] .skill-icon { background:url('../../assets/art/comic-combustion.png') center / contain no-repeat; }
 
 /* 전투·정보보다 아래에 독립 배경을 둡니다. 입력은 기존 아레나가 처리합니다. */
 .arena-environment-canvas { position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0; }
@@ -318,10 +318,10 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .combat-arena[data-environment='void'] { border-color:#766292; }
 
 /* 거친 운석 원화를 메테오 액션바와 설명 아이콘에도 적용합니다. */
-.comic-icon[data-sheet='meteor'] { background:url('assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
-[data-skill='meteor'] .skill-icon { background:url('assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
+.comic-icon[data-sheet='meteor'] { background:url('../../assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
+[data-skill='meteor'] .skill-icon { background:url('../../assets/art/comic-meteor.png') 92% 57% / 170% auto no-repeat; }
 /* 종이 배우는 원화 포즈 자체로 호흡·피격을 표현하고 CSS 전신 변형을 중복 적용하지 않습니다. */
-.combat-arena { background-image: linear-gradient(180deg, rgba(9,12,21,.25), rgba(9,12,21,.02) 50%, rgba(13,10,16,.55)), url('assets/art/paper-arena.png'); }
+.combat-arena { background-image: linear-gradient(180deg, rgba(9,12,21,.25), rgba(9,12,21,.02) 50%, rgba(13,10,16,.55)), url('../../assets/art/paper-arena.png'); }
 .mage-art { background-image: none; }
 .monster-idle:has([data-paper='true'][data-art='slime']) { animation: none !important; transform: none; }
 .dummy-avatar[data-paper='true'][data-motion='slime'] { animation: none !important; transform: none; }

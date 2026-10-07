@@ -3,9 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const gameJsContent = fs.readFileSync(path.join(__dirname, 'game.js'), 'utf8');
-const indexHtmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-const stylesCssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+const gameJsContent = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+const indexHtmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+const stylesCssContent = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
 
 // ==========================================
 // 1. [Step 1] 첫 엔딩 전 빌드 개방 (Stage 5 보스부터 SP 지급)

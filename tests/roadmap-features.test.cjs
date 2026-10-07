@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // game.js 파일 내용 분석 및 로드맵 기능 검증
-const gameJsContent = fs.readFileSync(path.join(__dirname, 'game.js'), 'utf8');
+const gameJsContent = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
 
 test('Step 1: 상세 딜로그(Details!) 파싱 등급 및 통계 산출 검증', () => {
   assert.ok(gameJsContent.includes('calculateParseGrade'), 'calculateParseGrade 함수가 구현되어 있어야 합니다.');
@@ -73,8 +73,8 @@ test('Step 3: 순환형 미니 현상금(Bounty) 퀘스트 시스템 검증', ()
 });
 
 test('Bugfix: 상세 딜미터기(Details!) 모달 hidden 스타일 우선순위 및 닫기/일시정지 무결성 검증', () => {
-  const stylesCssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
-  const indexHtmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const stylesCssContent = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
+  const indexHtmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
 
   // 1. styles.css에 전역 .hidden 및 .details-modal-backdrop.hidden 이 display: none !important 로 명시되어 있는지 검증
   assert.ok(
@@ -118,8 +118,8 @@ test('UX 피드백 1: 퀘스트 달성 보상 골드 및 정수 비행 애니메
 });
 
 test('UX 피드백 2: 캐릭터 발 아래 자동시전 마법진 전개 및 발광 검증', () => {
-  const indexHtmlContent = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-  const stylesCssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+  const indexHtmlContent = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const stylesCssContent = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
 
   // 마크업에 autocast-magic-circle 및 룬 SVG가 포함되어 있는지 검증
   assert.ok(indexHtmlContent.includes('id="autocast-magic-circle"'), '캐릭터 발 아래 autocast-magic-circle 마크업이 존재해야 합니다.');
@@ -144,7 +144,7 @@ test('UX 피드백 3: 퀘스트 해금 조건 연동 및 미해금 스킬 퀘스
 });
 
 test('UX 피드백 4: 스킬 마우스 클릭 시 툴팁 즉시 닫힘 검증', () => {
-  const tooltipsJsContent = fs.readFileSync(path.join(__dirname, 'skill-tooltips.js'), 'utf8');
+  const tooltipsJsContent = fs.readFileSync(path.join(__dirname, '../src/scripts/skill-tooltips.js'), 'utf8');
   assert.ok(tooltipsJsContent.includes('pointerdown'), 'pointerdown 이벤트 리스너가 등록되어 있어야 합니다.');
   assert.ok(tooltipsJsContent.includes('dismissOnClick'), '클릭/다운 시 즉시 툴팁을 닫는 핸들러가 구현되어 있어야 합니다.');
   assert.ok(tooltipsJsContent.includes('button.blur()'), '클릭 후 포커스가 해제되어 툴팁이 화면에 고정되지 않아야 합니다.');

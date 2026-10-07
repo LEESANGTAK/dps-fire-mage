@@ -1,7 +1,7 @@
 /* 실제 스킬 실행과 설명 수치가 같은지 장비·숙련 조합별로 비교합니다. */
-const assert=require('node:assert/strict'), fs=require('node:fs'), vm=require('node:vm');
-const {buildSkillDetails}=require('./skill-tooltips.js');
-const source=fs.readFileSync('game.js','utf8');
+const assert=require('node:assert/strict'), fs=require('node:fs'), vm=require('node:vm'), path=require('node:path');
+const {buildSkillDetails}=require('../src/scripts/skill-tooltips.js');
+const source=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
 const trigger=source.slice(source.indexOf('function triggerSkill('),source.indexOf('function runSmartAutoCast('));
 for(const stats of [{sp:100,speedMult:1,critDmg:1.5,cdr:0,igniteMult:1},{sp:317,speedMult:5,critDmg:2.4,cdr:.6,igniteMult:1.75}]) {
  for(const skill of ['fireball','fireblast','combustion','meteor','flame_patch']) {
@@ -30,7 +30,7 @@ const popupEvents={},windowEvents={};
 const popup={hidden:true,offsetWidth:300,offsetHeight:230,style:{},innerHTML:'',addEventListener(name,fn){popupEvents[name]=fn;}};
 const documentStub={activeElement:null,getElementById:()=>popup,querySelector:()=>null,querySelectorAll:()=>[button]};
 const ui=vm.createContext({document:documentStub,window:{addEventListener(name,fn){windowEvents[name]=fn;}},innerWidth:390,innerHeight:700,state:{combat:{fbCharges:2,fbMaxCharges:2},skillTree:{}},getPlayerStats:()=>stats,getSkillMasteryMult:()=>1,getCombustionDuration:()=>2,setTimeout:fn=>{timers.set(++nextId,fn);return nextId;},clearTimeout:id=>timers.delete(id),setInterval:fn=>{intervals.set(++nextId,fn);return nextId;},clearInterval:id=>intervals.delete(id)});
-vm.runInContext(fs.readFileSync('skill-tooltips.js','utf8')+'\ninitSkillTooltips();',ui);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/scripts/skill-tooltips.js'),'utf8')+'\ninitSkillTooltips();',ui);
 const flush=()=>{const pending=[...timers.values()];timers.clear();for(const fn of pending)fn();};
 events.pointerenter({pointerType:'mouse'});assert.ok(popup.hidden);flush();
 assert.equal(popup.hidden,false);assert.equal(button.attrs['aria-describedby'],'skill-tooltip');assert.equal(popup.style.left,'8px');assert.equal(popup.style.top,'360px');

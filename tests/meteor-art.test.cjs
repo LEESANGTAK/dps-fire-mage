@@ -1,6 +1,6 @@
 /* 실제 운석 렌더 경로의 궤적·잔상·입자·충돌·모달 정지를 검증합니다. */
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const {getMeteorPose,drawComicMeteor,emitMeteorTrail}=require('./meteor-art.js');
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const {getMeteorPose,drawComicMeteor,emitMeteorTrail}=require('../src/scripts/meteor-art.js');
 const m={startX:100,startY:60,targetX:400,targetY:320,radius:51,progress:0,duration:.96,scale:1};
 const start=getMeteorPose(m,0),end=getMeteorPose(m,1);
 assert.equal(start.x,100);assert.equal(start.y,60);assert.equal(end.x,400);assert.equal(end.y,320);
@@ -17,7 +17,7 @@ for(const fps of [30,60,144]) {
 const pool=[];emitMeteorTrail(m,getMeteorPose(m,.5),.1,pool,true);assert.equal(pool.length,0);
 emitMeteorTrail(m,getMeteorPose(m,.5),0,pool);assert.equal(pool.length,0);
 const full=Array.from({length:450},()=>({}));emitMeteorTrail(m,getMeteorPose(m,.5),.1,full);assert.equal(full.length,450);
-const game=fs.readFileSync('game.js','utf8');
+const game=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
 const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('const monsterShards = [];'));
 const debrisContext=vm.createContext({});vm.runInContext(debrisCode,debrisContext);
 vm.runInContext('for(let i=0;i<30;i++)spawnMeteorRockDebris(100,200);',debrisContext);

@@ -1,0 +1,15 @@
+{
+  "name": "dps-fire-mage",
+  "version": "1.0.0",
+  "description": "DPS: Fire Mage - MMORPG 손맛을 구현한 웹 기반 방치/클리커 시뮬레이터",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs"
+  },
+  "keywords": [
+    "fire-mage",
+    "game",
+    "dps"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,9 +1,9 @@
 /* 원화 경계·심연 재사용·종이 피격의 탄성 차단·사망 윤곽 보존을 검증합니다. */
-const assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
-const { PAPER_MONSTER_FRAMES, getPaperMonsterFrame } = require('./paper-monster-frames.js');
+const assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm'), path = require('node:path');
+const { PAPER_MONSTER_FRAMES, getPaperMonsterFrame } = require('../src/scripts/paper-monster-frames.js');
 assert.equal(PAPER_MONSTER_FRAMES.length, 20);
 for (const f of PAPER_MONSTER_FRAMES) {
-  const png = fs.readFileSync(f.sheet);
+  const png = fs.readFileSync(path.join(__dirname, '..', f.sheet));
   assert.deepEqual(f.size, [png.readUInt32BE(16), png.readUInt32BE(20)]);
   assert.ok(f.x >= 0 && f.y >= 0 && f.w > 0 && f.h > 0);
   assert.ok(f.x + f.w <= f.size[0] && f.y + f.h <= f.size[1]);
@@ -33,7 +33,7 @@ const timers=[];
 arena.classList={contains:()=>paused};
 const context=vm.createContext({ document:{getElementById:id=>({'dummy-avatar':actor,'dummy-emoji':source,'combat-arena':arena}[id]),createElement:node},
   performance:{now:()=>clock}, particles:pool, getComputedStyle:()=>({fontSize:'0px'}),setTimeout(fn){timers.push(fn);}, matchMedia:()=>({matches:false}) });
-vm.runInContext(fs.readFileSync('monster-motion.js','utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/scripts/monster-motion.js'),'utf8'),context);
 for (const stage of [3,5,8,9,13,16,17,20,21,25]) {
   vm.runInContext(`prepareMonsterHit(${stage},true,1,false)`,context);
   assert.equal(actor.style['--hit-squash'],'0','종이 원화는 젤리처럼 늘어나지 않아야 합니다.');
