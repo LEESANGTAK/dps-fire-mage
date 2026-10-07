@@ -119,10 +119,12 @@ test('Step 7: 저장된 덱 복원(restoreDeck) 검증', () => {
 test('Step 8: HTML 마크업 무결성 (각성 모달 및 하단 덱 트레이) 검증', () => {
   const fs = require('node:fs');
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
 
   // 각성 모달 구조 검증
   assert.ok(html.includes('id="awakening-modal-backdrop"'), '마도서 각성 모달 백드롭이 존재해야 합니다.');
-  assert.ok(html.includes('id="awakening-wave-tag"'), '웨이브 태그 요소가 존재해야 합니다.');
+  assert.ok(!html.includes('id="awakening-wave-tag"'), '불필요한 웨이브 돌파 보상 뱃지는 UI 미니멀리즘을 위해 제거되어 있어야 합니다.');
+  assert.ok(!gameSource.includes('btn-card-choose'), '카드 내부의 불필요한 각성 수락 버튼은 제거되어야 합니다.');
   assert.ok(html.includes('id="awakening-modal-title"'), '각성 모달 타이틀이 존재해야 합니다.');
   assert.ok(html.includes('id="awakening-cards-container"'), '3지선다 카드 컨테이너가 존재해야 합니다.');
   assert.ok(html.includes('id="btn-reroll-cards"'), '다시 뽑기(Reroll) 버튼이 존재해야 합니다.');

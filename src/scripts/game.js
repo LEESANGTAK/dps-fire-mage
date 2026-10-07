@@ -5408,7 +5408,6 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
         <div class="card-name">${card.title}</div>
         <div class="card-build-tag">${buildBadgeText}</div>
         <div class="card-desc">${card.desc}</div>
-        <button type="button" class="btn-card-choose">각성 수락</button>
       </div>
     `;
   }).join('');

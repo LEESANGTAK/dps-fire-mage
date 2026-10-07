@@ -5310,6 +5310,7 @@ body {
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
 }
 
+.card-name,
 .card-title {
   font-size: 1rem;
   font-weight: 800;
