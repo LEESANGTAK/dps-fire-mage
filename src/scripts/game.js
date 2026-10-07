@@ -834,6 +834,8 @@ function getPlayerStats() {
       if (eff.cdr) cdr += eff.cdr;
       if (eff.bonusPct) bonusPct += eff.bonusPct;
     }
+  }
+
   // 로그라이크 마도서 각성 (Grimoire Awakening) 카드 덱 보너스 합산
   if (state.playerStatsBonus) {
     if (state.playerStatsBonus.sp) sp += state.playerStatsBonus.sp;
