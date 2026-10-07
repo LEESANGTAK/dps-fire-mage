@@ -46,10 +46,11 @@ test('Step 4: 카드 선택 및 스탯/메커니즘 반영 검증', () => {
   const manager = createDeckManager();
   const fakeState = { gold: 100, playerStatsBonus: {}, deckMechanics: {} };
 
-  // 신속의 불꽃 (rapid_spark: haste +25) 선택
+  // 신속의 불꽃 (rapid_spark: haste +30, sp +25) 선택
   const res = manager.selectCard('rapid_spark', fakeState);
   assert.ok(res, '카드 선택이 성공해야 합니다.');
-  assert.equal(fakeState.playerStatsBonus.haste, 25, '시전 속도 25% 버프가 정상 적용되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.haste, 30, '시전 속도 30% 버프가 정상 적용되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.sp, 25, '주문 공격력 25 버프가 정상 적용되어야 합니다.');
   assert.equal(manager.getActiveDeck()['rapid_spark'], 1, '덱에 1장 등록되어야 합니다.');
 
   // 분열 화염구 (rapid_split: splitFireball) 선택
@@ -105,15 +106,16 @@ test('Step 7: 저장된 덱 복원(restoreDeck) 검증', () => {
   const fakeState = { gold: 100, playerStatsBonus: {}, deckMechanics: {} };
 
   const savedDeck = {
-    rapid_spark: 2, // haste +25 * 2 = +50
-    rapid_power: 1  // sp +30
+    rapid_spark: 2, // haste +30 * 2 = +60, sp +25 * 2 = +50
+    crit_focus: 1   // crit +15, critDmg +0.4
   };
 
   manager.restoreDeck(savedDeck, fakeState);
   assert.equal(manager.getActiveDeck()['rapid_spark'], 2);
-  assert.equal(manager.getActiveDeck()['rapid_power'], 1);
-  assert.equal(fakeState.playerStatsBonus.haste, 50, '복원 시 haste 스탯이 2중첩 반영되어야 합니다.');
-  assert.equal(fakeState.playerStatsBonus.sp, 30, '복원 시 sp 스탯이 정상 반영되어야 합니다.');
+  assert.equal(manager.getActiveDeck()['crit_focus'], 1);
+  assert.equal(fakeState.playerStatsBonus.haste, 60, '복원 시 haste 스탯이 2중첩 반영되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.sp, 50, '복원 시 sp 스탯이 정상 반영되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.crit, 15, '복원 시 crit 스탯이 정상 반영되어야 합니다.');
 });
 
 test('Step 8: HTML 마크업 무결성 (각성 모달 및 하단 덱 트레이) 검증', () => {
@@ -127,6 +129,8 @@ test('Step 8: HTML 마크업 무결성 (각성 모달 및 하단 덱 트레이) 
   assert.ok(!gameSource.includes('btn-card-choose'), '카드 내부의 불필요한 각성 수락 버튼은 제거되어야 합니다.');
   assert.ok(html.includes('id="awakening-modal-title"'), '각성 모달 타이틀이 존재해야 합니다.');
   assert.ok(html.includes('id="awakening-cards-container"'), '3지선다 카드 컨테이너가 존재해야 합니다.');
+  assert.ok(html.includes('id="ui-awakening-player-gold"'), '보상 창 내 보유 골드 표시 박스가 존재해야 합니다.');
+  assert.ok(html.includes('id="ui-awakening-gold-amount"'), '보상 창 내 보유 골드 텍스트 요소가 존재해야 합니다.');
   assert.ok(html.includes('id="btn-reroll-cards"'), '다시 뽑기(Reroll) 버튼이 존재해야 합니다.');
   assert.ok(html.includes('id="ui-reroll-cost"'), '리롤 비용 표시 배지가 존재해야 합니다.');
   assert.ok(html.includes('id="btn-skip-cards"'), '선택 없이 넘기기 버튼이 존재해야 합니다.');
@@ -218,7 +222,7 @@ test('Step 11: 고대 마법 주문서 5종 카드 통합 및 중복 습득 방�
 
 test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) 필터링 검증', () => {
   const manager = createDeckManager();
-  const summonUpgradeIds = ['sum_haste', 'sum_volley', 'sum_cinder_lord'];
+  const summonUpgradeIds = ['sum_volley', 'sum_cinder_lord'];
   const emptyState = {
     gold: 1000,
     grimoires: {},
@@ -274,7 +278,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   const rawJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   assert.ok(Array.isArray(rawJson), 'JSON 루트는 배열이어야 합니다.');
-  assert.equal(rawJson.length, 22, '총 22종의 카드가 JSON에 정의되어 있어야 합니다.');
+  assert.equal(rawJson.length, 18, '총 18종의 정예 카드가 JSON에 정의되어 있어야 합니다.');
 
   // 동적 로더 및 실시간 반영 검증
   const { setCardPoolFromRaw, CARD_POOL, createDeckManager } = require('../src/scripts/roguelike-deck.js');
@@ -305,7 +309,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   // 원본 JSON 데이터로 복원
   setCardPoolFromRaw(rawJson);
-  assert.equal(CARD_POOL.length, 22, '원본 22장으로 복원되어야 합니다.');
+  assert.equal(CARD_POOL.length, 18, '원본 18장으로 복원되어야 합니다.');
 });
 
 test('Step 14: 뱀파이어 서바이버즈 스타일 좌상단 덱 슬롯 및 마우스 오버 툴팁 무결성 검증', () => {
@@ -424,13 +428,13 @@ test('Step 17: 좌상단 덱 스트립에서 주문서(spellKey) 제외 및 패�
     { id: 'rapid_spark', title: '신속의 불꽃', icon: '⚡', count: 1 },
     { id: 'spell_fireblast', title: '주문서: 불꽃 작렬', icon: '💥', spellKey: 'fireblast', count: 1 },
     { id: 'spell_meteor', title: '주문서: 메테오', icon: '☄️', spellKey: 'meteor', count: 1 },
-    { id: 'rapid_overdrive', title: '가속 과부하', icon: '🌀', count: 2 }
+    { id: 'crit_focus', title: '타오르는 집중', icon: '🎯', count: 2 }
   ];
 
   const filtered = sampleCards.filter(c => !c.spellKey && !c.id.startsWith('spell_'));
   assert.equal(filtered.length, 2, '주문서 2종이 제외되고 패시브 카드 2종만 남아야 합니다.');
   assert.equal(filtered[0].id, 'rapid_spark');
-  assert.equal(filtered[1].id, 'rapid_overdrive');
+  assert.equal(filtered[1].id, 'crit_focus');
   assert.equal(filtered.reduce((a, b) => a + b.count, 0), 3, '패시브 카드 중첩 수만 덱 카운트로 집계되어야 합니다.');
 });
 
@@ -474,6 +478,35 @@ test('Step 18: 스킬 습득 순서에 따른 동적 단축키 및 슬롯 배정
   assert.equal(activeSpells[1], 'meteor', '2번 슬롯/단축키는 meteor이어야 합니다.');
   assert.equal(activeSpells[2], 'fireblast', '3번 슬롯/단축키는 fireblast이어야 합니다.');
 });
+
+test('Step 19: 보상 모달(각성 창) 내 보유 골드 표시 실시간 동기화 및 리롤 활성/비활성화 검증', () => {
+  const fs = require('node:fs');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const { createDeckManager } = require('../src/scripts/roguelike-deck.js');
+
+  // 1. game.js 내 골드 엘리먼트 갱신 로직 검증
+  assert.ok(gameSource.includes("document.getElementById('ui-awakening-gold-amount')"), '보유 골드 표시 엘리먼트를 참조해야 합니다.');
+  assert.ok(gameSource.includes("document.getElementById('ui-awakening-player-gold')"), '보유 골드 박스 요소를 참조해야 합니다.');
+  assert.ok(gameSource.includes("btn.classList.toggle('disabled', !canAfford)"), '골드 부족 시 disabled 클래스를 토글해야 합니다.');
+  assert.ok(gameSource.includes("goldBox.classList.toggle('insufficient', !canAfford)"), '골드 부족 시 경고 스타일을 토글해야 합니다.');
+
+  // 2. 리롤 시 골드 차감 및 비용 증가 수치 검증
+  const manager = createDeckManager();
+  const testState = { gold: 25 };
+  manager.drawChoices(3, false);
+
+  // 1회차: 비용 10G, 잔액 25G -> 성공, 잔액 15G
+  const r1 = manager.reroll(testState, false);
+  assert.equal(r1.success, true);
+  assert.equal(testState.gold, 15);
+  assert.equal(manager.getRerollCost(), 25);
+
+  // 2회차: 비용 25G, 잔액 15G -> 골드 부족 실패, 잔액 15G 유지
+  const r2 = manager.reroll(testState, false);
+  assert.equal(r2.success, false);
+  assert.equal(testState.gold, 15);
+});
+
 
 
 

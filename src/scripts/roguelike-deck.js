@@ -44,18 +44,8 @@
       rarity: RARITY.COMMON,
       build: BUILD.RAPID,
       maxStack: 5,
-      desc: '화염구 시전 속도가 <b>+25%</b> 빨라집니다.',
-      stats: { haste: 25 }
-    },
-    {
-      id: 'rapid_power',
-      title: '연속 점화',
-      icon: '🔥',
-      rarity: RARITY.COMMON,
-      build: BUILD.RAPID,
-      maxStack: 5,
-      desc: '주문 공격력이 <b>+30</b> 증가합니다.',
-      stats: { sp: 30 }
+      desc: '화염구 시전 속도가 <b>+30%</b> 빨라지고 주문 공격력이 <b>+25</b> 증가합니다.',
+      stats: { haste: 30, sp: 25 }
     },
     {
       id: 'rapid_split',
@@ -66,16 +56,6 @@
       maxStack: 3,
       desc: '화염구 적중 시 <b>2개의 작은 불씨</b>로 분열되어 추가 타격합니다 (각각 40% 피해).',
       mechanic: 'split_fireball'
-    },
-    {
-      id: 'rapid_overdrive',
-      title: '가속 과부하',
-      icon: '🌀',
-      rarity: RARITY.RARE,
-      build: BUILD.RAPID,
-      maxStack: 2,
-      desc: '화염구 시전 완료 시 4초간 시전 속도가 <b>+15%</b> 가속됩니다 (최대 2중첩).',
-      mechanic: 'haste_stack'
     },
     {
       id: 'rapid_gatling',
@@ -94,18 +74,8 @@
       rarity: RARITY.COMMON,
       build: BUILD.CRIT,
       maxStack: 5,
-      desc: '치명타 확률이 <b>+15%</b> 증가합니다.',
-      stats: { crit: 15 }
-    },
-    {
-      id: 'crit_multiplier',
-      title: '작열의 맹공',
-      icon: '🌋',
-      rarity: RARITY.COMMON,
-      build: BUILD.CRIT,
-      maxStack: 5,
-      desc: '치명타 피해량이 <b>+45%</b> 증가합니다.',
-      stats: { critDmg: 0.45 }
+      desc: '치명타 확률이 <b>+15%</b>, 치명타 피해량이 <b>+40%</b> 증가합니다.',
+      stats: { crit: 15, critDmg: 0.4 }
     },
     {
       id: 'crit_chain_streak',
@@ -150,18 +120,6 @@
       maxStack: 4,
       desc: '플레이어 옆에 지속 화염 공격을 퍼붓는 <b>화염 정령 1기</b>를 소환합니다 (최대 4기).',
       mechanic: 'extra_spirit'
-    },
-    {
-      id: 'sum_haste',
-      title: '정령 격노',
-      icon: '⚔️',
-      rarity: RARITY.RARE,
-      build: BUILD.SUMMON,
-      maxStack: 3,
-      desc: '모든 소환수의 공격 속도 <b>+50%</b> 및 공격력 <b>+40%</b> 증가.',
-      mechanic: 'spirit_frenzy',
-      prerequisite: 'has_summon',
-      mechanicParams: { spiritDamageMult: 1.4, spiritSpeedMult: 1.5 }
     },
     {
       id: 'sum_volley',

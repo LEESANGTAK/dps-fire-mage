@@ -5340,14 +5340,56 @@ body {
   width: 100%;
 }
 
-/* 7-5. 모달 하단 버튼 */
+/* 7-5. 모달 하단 버튼 및 보유 골드 정보 */
 .awakening-modal-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 16px;
   width: 100%;
   margin-top: 8px;
+  padding: 10px 18px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.awakening-player-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.awakening-player-gold .gold-icon {
+  font-size: 1.1rem;
+}
+
+.awakening-player-gold .gold-label {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.awakening-player-gold .gold-value {
+  font-size: 0.95rem;
+  color: #fbbf24;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+}
+
+.awakening-player-gold.insufficient .gold-value {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.awakening-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .btn-reroll-cards {
@@ -5363,7 +5405,16 @@ body {
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(180, 83, 9, 0.4);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-reroll-cards:disabled,
+.btn-reroll-cards.disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(0.5);
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .btn-reroll-cards:hover {

@@ -99,7 +99,19 @@ def export_to_excel():
 
     ws.row_dimensions[1].height = 30
 
-    # 2. 데이터 행 작성 (기획자가 지정한 셀 배경색/폰트 서식 100% 영구 보존!)
+    # 2. 데이터 행 작성 (기획자가 지정한 희귀도 셀 배경색/폰트 서식 100% 영구 보존!)
+    # (1) 기존 시트에서 각 희귀도(common, rare, legendary 등)별 기획자 커스텀 fill 수집
+    from copy import copy
+    rarity_fills = {}
+    if wb_is_existing:
+        for r in range(2, ws.max_row + 1):
+            r_val = ws.cell(row=r, column=4).value
+            c_fill = ws.cell(row=r, column=4).fill
+            if r_val and c_fill and c_fill.fill_type is not None:
+                r_key = str(r_val).strip()
+                if r_key not in rarity_fills:
+                    rarity_fills[r_key] = copy(c_fill)
+
     row_font = Font(name="Malgun Gothic", size=10)
     for row_idx, card in enumerate(cards, 2):
         if not ws.row_dimensions[row_idx].height:
@@ -125,15 +137,21 @@ def export_to_excel():
             json.dumps(card.get('mechanicParams', {}), ensure_ascii=False) if card.get('mechanicParams') else ''
         ]
 
+        card_rarity = card.get('rarity', 'common')
         for col_idx, val in enumerate(row_values, 1):
             cell = ws.cell(row=row_idx, column=col_idx)
             cell.value = val
 
-            # 기획자님이 배경색(fill)을 지정해두지 않은 셀에만 기본 서식 입히기
-            has_custom_fill = (cell.fill and cell.fill.fill_type is not None)
-            if not has_custom_fill:
+            # 희귀도 열(D열, col 4)은 수집된 희귀도별 커스텀 배경색 자동 동기화
+            if col_idx == 4 and card_rarity in rarity_fills:
+                cell.fill = copy(rarity_fills[card_rarity])
                 cell.font = row_font
                 cell.border = cell_border
+            else:
+                has_custom_fill = (cell.fill and cell.fill.fill_type is not None)
+                if not has_custom_fill:
+                    cell.font = row_font
+                    cell.border = cell_border
 
             # 정렬
             if not cell.alignment or not cell.alignment.horizontal:
@@ -141,6 +159,14 @@ def export_to_excel():
                     cell.alignment = center_align
                 else:
                     cell.alignment = left_align
+
+    # 카드가 줄어들어 남은 이전 행들의 셀 값 클리어
+    current_max = ws.max_row
+    for extra_row in range(len(cards) + 2, current_max + 1):
+        for col_idx in range(1, len(columns) + 1):
+            cell = ws.cell(row=extra_row, column=col_idx)
+            cell.value = None
+            cell.fill = PatternFill(fill_type=None)
 
     total_rows = max(len(cards) + 1, 50)
 

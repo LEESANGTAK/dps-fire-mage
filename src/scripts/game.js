@@ -5562,15 +5562,27 @@ function selectAwakeningCard(cardId) {
 function updateRerollButtonUI() {
   const btn = document.getElementById('btn-reroll-cards');
   const costEl = document.getElementById('ui-reroll-cost');
+  const goldEl = document.getElementById('ui-awakening-gold-amount');
+  const goldBox = document.getElementById('ui-awakening-player-gold');
   if (!btn || !costEl || !deckManager) return;
 
   const cost = deckManager.getRerollCost();
   costEl.textContent = `💰 ${fmt(cost)} G`;
 
+  const currentGold = Math.floor(state.gold || 0);
+  if (goldEl) {
+    goldEl.textContent = `${fmt(currentGold)} G`;
+  }
+
   const canAfford = (state.gold >= cost);
   btn.disabled = !canAfford;
+  btn.classList.toggle('disabled', !canAfford);
   btn.style.opacity = canAfford ? '1' : '0.5';
   btn.style.cursor = canAfford ? 'pointer' : 'not-allowed';
+
+  if (goldBox) {
+    goldBox.classList.toggle('insufficient', !canAfford);
+  }
 }
 
 function handleAwakeningReroll() {

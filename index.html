@@ -647,12 +647,19 @@
       </div>
 
       <div class="awakening-modal-footer">
-        <button type="button" class="btn-reroll-cards" id="btn-reroll-cards">
-          <span class="reroll-icon">🎲</span>
-          <span class="reroll-text">다시 뽑기 (Redraw)</span>
-          <span class="reroll-cost-badge" id="ui-reroll-cost">💰 10 G</span>
-        </button>
-        <button type="button" class="btn-skip-cards" id="btn-skip-cards">선택 없이 넘기기 ➔</button>
+        <div class="awakening-player-gold" id="ui-awakening-player-gold">
+          <span class="gold-icon">💰</span>
+          <span class="gold-label">보유 골드:</span>
+          <span class="gold-value" id="ui-awakening-gold-amount">0 G</span>
+        </div>
+        <div class="awakening-footer-actions">
+          <button type="button" class="btn-reroll-cards" id="btn-reroll-cards">
+            <span class="reroll-icon">🎲</span>
+            <span class="reroll-text">다시 뽑기 (Redraw)</span>
+            <span class="reroll-cost-badge" id="ui-reroll-cost">💰 10 G</span>
+          </button>
+          <button type="button" class="btn-skip-cards" id="btn-skip-cards">선택 없이 넘기기 ➔</button>
+        </div>
       </div>
     </div>
   </div>
