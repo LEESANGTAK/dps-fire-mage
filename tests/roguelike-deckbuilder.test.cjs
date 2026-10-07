@@ -341,6 +341,32 @@ test('Step 14: 뱀파이어 서바이버즈 스타일 좌상단 덱 슬롯 및 �
   assert.ok(card.stats && card.stats.haste, '스탯 정보가 포함되어 있어야 합니다.');
 });
 
+test('Step 15: 라그나로스 세계관/스토리 및 파멸 저지 진척도 UI 무결성 검증', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const paperCss = fs.readFileSync(path.join(__dirname, '../src/styles/paper-ui.css'), 'utf8');
 
+  // 1. HTML 마크업 검증 (진척도 게이지, 마법사/보스 핀, 스토리 툴팁)
+  assert.ok(html.includes('class="arena-center-mission-wrap"'), '중앙 미션 래퍼가 존재해야 합니다.');
+  assert.ok(html.includes('id="ragnaros-doom-tracker"'), '라그나로스 멸망 저지 트래커 요소가 존재해야 합니다.');
+  assert.ok(html.includes('id="ragnaros-stage-display"'), '스테이지 진행도 텍스트 요소가 존재해야 합니다.');
+  assert.ok(html.includes('id="ragnaros-track-fill"'), '게이지 바 채우기 요소가 존재해야 합니다.');
+  assert.ok(html.includes('id="ragnaros-caster-pin"'), '마법사 위치 핀이 존재해야 합니다.');
+  assert.ok(html.includes('id="doom-story-tooltip"'), '스토리 툴팁 요소가 존재해야 합니다.');
 
+  // 2. 세계관/스토리 대사 정확도 검증
+  const expectedStory = '불의 군주 라그나로스가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 라그나로스를 물리쳐 이 세상을 구해 주게나!';
+  assert.ok(html.includes(expectedStory), '요청된 세계관/스토리 대사가 HTML 툴팁에 정확히 반영되어 있어야 합니다.');
 
+  // 3. game.js 연동 무결성 검증
+  assert.ok(gameSource.includes('function updateRagnarosProgressUI('), 'updateRagnarosProgressUI 함수가 정의되어 있어야 합니다.');
+  assert.ok(gameSource.includes('updateRagnarosProgressUI()'), 'updateStageUI 내에서 updateRagnarosProgressUI가 호출되어야 합니다.');
+  assert.ok(gameSource.includes('function initRagnarosTrackerEvents('), 'initRagnarosTrackerEvents 함수가 정의되어 있어야 합니다.');
+
+  // 4. paper-ui.css 스타일링 무결성 검증
+  assert.ok(paperCss.includes('.arena-center-mission-wrap'), '중앙 미션 래퍼 스타일이 정의되어 있어야 합니다.');
+  assert.ok(paperCss.includes('.ragnaros-doom-tracker'), '라그나로스 트래커 스타일이 정의되어 있어야 합니다.');
+  assert.ok(paperCss.includes('.doom-story-tooltip'), '스토리 툴팁 스타일이 정의되어 있어야 합니다.');
+  assert.ok(paperCss.includes('.doom-boss-pin.pin-final'), '최종 보스 핀 스타일이 정의되어 있어야 합니다.');
+});

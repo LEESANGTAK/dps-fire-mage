@@ -158,10 +158,51 @@
           <div class="stage-center-info" id="stage-center-info" hidden aria-hidden="true">
             <div id="ui-phase-num"></div><div id="ui-stage-num"></div><div id="ui-phase-dots"></div>
           </div>
-          <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
+          <!-- 중앙: 스피드런 타이머 & 라그나로스 멸망 저지 트래커 -->
+          <div class="arena-center-mission-wrap">
+            <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
               <span class="dps-label">⏱️ 스피드런 시간</span>
               <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
             </div>
+
+            <!-- 라그나로스 세계 멸망 저지 진척도 UI -->
+            <div class="ragnaros-doom-tracker" id="ragnaros-doom-tracker" tabindex="0" role="region" aria-label="라그나로스 토벌 진척도" title="클릭하거나 마우스를 올리면 세계관 스토리를 확인할 수 있습니다">
+              <div class="doom-tracker-top">
+                <span class="doom-tracker-title">
+                  <span class="doom-flame-icon">🔥</span> 라그나로스 토벌
+                </span>
+                <span class="doom-tracker-stage" id="ragnaros-stage-display">STAGE 1 / 20</span>
+                <span class="doom-story-hint-icon">📜</span>
+              </div>
+              <div class="doom-track-wrapper">
+                <div class="doom-track-rail">
+                  <div class="doom-track-fill" id="ragnaros-track-fill" style="width: 5%;"></div>
+                  <!-- 보스 체크포인트 핀 (Stage 5, 10, 15, 20) -->
+                  <div class="doom-boss-pin pin-p1" style="left: 25%;" title="Phase 1 보스 (Stage 5)">👑</div>
+                  <div class="doom-boss-pin pin-p2" style="left: 50%;" title="Phase 2 보스 (Stage 10)">👑</div>
+                  <div class="doom-boss-pin pin-p3" style="left: 75%;" title="Phase 3 보스 (Stage 15)">👑</div>
+                  <div class="doom-boss-pin pin-final" style="left: 100%;" title="불의 군주 라그나로스 (Stage 20)">🌋</div>
+                  <!-- 플레이어 위치 핀 -->
+                  <div class="doom-caster-pin" id="ragnaros-caster-pin" style="left: 5%;" title="현재 마법사 위치">🧙‍♂️</div>
+                </div>
+              </div>
+
+              <!-- 세계관 스토리 툴팁 말풍선 -->
+              <div class="doom-story-tooltip" id="doom-story-tooltip" role="tooltip">
+                <div class="doom-story-header">
+                  <span class="story-emblem">🌋</span>
+                  <strong>불의 군주의 파멸 저지</strong>
+                </div>
+                <div class="doom-story-body">
+                  <p class="story-quote">"불의 군주 라그나로스가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 라그나로스를 물리쳐 이 세상을 구해 주게나!"</p>
+                  <div class="story-status-info">
+                    <span class="story-dest">목표: <strong>Stage 20</strong> 심연의 제단</span>
+                    <span class="story-remain" id="ragnaros-remain-text">남은 여정: 19 스테이지</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="arena-stage-reward-banner" id="arena-stage-banner">
             <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>

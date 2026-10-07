@@ -4819,6 +4819,66 @@ function updateStageUI() {
   updateBossGimmick(0);
   updateBountyUI();
   updateNotificationBadges();
+  updateRagnarosProgressUI();
+}
+
+// ==========================================
+// 15-A1. 라그나로스 세계 멸망 저지 진척도 UI 시스템
+// ==========================================
+function updateRagnarosProgressUI(stageNum) {
+  const currentStage = Math.max(1, stageNum !== undefined ? stageNum : (typeof state !== 'undefined' && state.currentStage ? state.currentStage : 1));
+  const trackerEl = document.getElementById('ragnaros-doom-tracker');
+  if (!trackerEl) return;
+
+  const maxStage = 20;
+  const isAbyss = currentStage > maxStage;
+  const clampedStage = Math.min(currentStage, maxStage);
+  const pct = Math.min(100, Math.round((clampedStage / maxStage) * 100));
+
+  // 1. 스테이지 텍스트 갱신
+  const stageDispEl = document.getElementById('ragnaros-stage-display');
+  if (stageDispEl) {
+    if (isAbyss) {
+      stageDispEl.textContent = `심연 돌파 (STAGE ${currentStage})`;
+    } else if (currentStage === 20) {
+      stageDispEl.textContent = `STAGE 20 / 20 (🔥최종 결전!)`;
+    } else {
+      stageDispEl.textContent = `STAGE ${currentStage} / ${maxStage}`;
+    }
+  }
+
+  // 2. 게이지 바 & 마법사 핀 위치 동기화
+  const fillEl = document.getElementById('ragnaros-track-fill');
+  if (fillEl) {
+    fillEl.style.width = `${pct}%`;
+  }
+  const casterPinEl = document.getElementById('ragnaros-caster-pin');
+  if (casterPinEl) {
+    casterPinEl.style.left = `${pct}%`;
+  }
+
+  // 3. 페이즈 보스 핀 클리어 상태 갱신
+  const p1Pin = trackerEl.querySelector('.pin-p1');
+  if (p1Pin) p1Pin.classList.toggle('cleared', currentStage > 5);
+  const p2Pin = trackerEl.querySelector('.pin-p2');
+  if (p2Pin) p2Pin.classList.toggle('cleared', currentStage > 10);
+  const p3Pin = trackerEl.querySelector('.pin-p3');
+  if (p3Pin) p3Pin.classList.toggle('cleared', currentStage > 15);
+
+  // 4. 스토리 툴팁 내 남은 여정 텍스트 갱신
+  const remainEl = document.getElementById('ragnaros-remain-text');
+  if (remainEl) {
+    if (isAbyss) {
+      remainEl.textContent = `세계 구원 완료! (심연 +${currentStage - maxStage})`;
+    } else if (currentStage === 20) {
+      remainEl.textContent = `🔥 불의 군주 강림! 지금 세계를 구원하십시오!`;
+    } else {
+      remainEl.textContent = `남은 여정: ${maxStage - currentStage} 스테이지`;
+    }
+  }
+
+  // 5. 20스테이지 최종 보스전 강조 발광
+  trackerEl.classList.toggle('doom-final-battle', currentStage === 20);
 }
 
 function triggerSpeedrunRecordFlash() {
@@ -6932,6 +6992,30 @@ function initEvents() {
 
   // 로그라이크 마도서 각성 모달 이벤트 초기화
   initAwakeningModalEvents();
+
+  // 라그나로스 토벌 트래커 및 스토리 툴팁 이벤트 초기화
+  initRagnarosTrackerEvents();
+}
+
+function initRagnarosTrackerEvents() {
+  const trackerEl = document.getElementById('ragnaros-doom-tracker');
+  if (!trackerEl) return;
+
+  trackerEl.addEventListener('click', (e) => {
+    trackerEl.classList.toggle('story-open');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!trackerEl.contains(e.target)) {
+      trackerEl.classList.remove('story-open');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      trackerEl.classList.remove('story-open');
+    }
+  });
 }
 
 // ==========================================
@@ -6962,6 +7046,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateSkillAutoUI();
   renderHeatUI();
   renderDeckStripUI();
+  updateRagnarosProgressUI(state.currentStage);
   updateNotificationBadges();
   requestAnimationFrame(gameLoop);
 });
