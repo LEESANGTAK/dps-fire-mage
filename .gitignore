@@ -9,8 +9,8 @@ $RECYCLE.BIN/
 .DS_Store
 .DS_Store?
 ._*
-.Spotlight-V100
-.Trashes
+# Office temporary lock files
+~$*
 
 # Editor directories and files
 .vscode/*

@@ -37,30 +37,25 @@ def export_to_excel():
         if isinstance(cards, dict) and 'cards' in cards:
             cards = cards['cards']
 
-    # 기존 파일이 있다면 기획자님이 조절해 둔 열 너비를 읽어서 100% 보존
-    existing_widths_sheet1 = {}
-    existing_widths_sheet2 = {}
+    # 기존 엑셀 파일이 있으면 로드하여 기획자 커스텀 서식(배경색, 폰트, 열 너비) 100% 보존
+    wb_is_existing = False
     if os.path.exists(EXCEL_PATH):
         try:
-            old_wb = openpyxl.load_workbook(EXCEL_PATH)
-            if 'RoguelikeCards' in old_wb.sheetnames:
-                for col_letter, col_dim in old_wb['RoguelikeCards'].column_dimensions.items():
-                    if col_dim.width is not None:
-                        existing_widths_sheet1[col_letter] = col_dim.width
-            if '📖 옵션_도움말_가이드' in old_wb.sheetnames:
-                for col_letter, col_dim in old_wb['📖 옵션_도움말_가이드'].column_dimensions.items():
-                    if col_dim.width is not None:
-                        existing_widths_sheet2[col_letter] = col_dim.width
+            wb = openpyxl.load_workbook(EXCEL_PATH)
+            wb_is_existing = True
         except Exception:
-            pass
-
-    wb = openpyxl.Workbook()
+            wb = openpyxl.Workbook()
+    else:
+        wb = openpyxl.Workbook()
 
     # =========================================================================
     # SHEET 1: 카드 데이터 편집 시트 (RoguelikeCards)
     # =========================================================================
-    ws = wb.active
-    ws.title = "RoguelikeCards"
+    if 'RoguelikeCards' in wb.sheetnames:
+        ws = wb['RoguelikeCards']
+    else:
+        ws = wb.active
+        ws.title = "RoguelikeCards"
 
     # 헤더 정의: (표시명, JSON 키 매핑, 기본 열 너비, 헤더 메모 설명)
     columns = [
@@ -76,7 +71,7 @@ def export_to_excel():
         ("치명타(crit)", "stats.crit", 12, "습득 시 플레이어의 치명타율(% 단위)에 가산됩니다."),
         ("치명피해(critDmg)", "stats.critDmg", 14, "습득 시 치명타 피해 배율(% 단위)에 가산됩니다."),
         ("골드보너스(goldBonus)", "stats.goldBonus", 16, "습득 시 몬스터 처치 골드 획득 배율(% 단위)에 가산됩니다."),
-        ("선행조건(prerequisite)", "prerequisite", 24, "3지선다에 등장하기 위한 선행 조건 (드롭다운 제공):\n- has_summon: 소환수 보유 시에만 등장\n- has_meteor: 메테오 습득 시에만 등장\n- has_combustion: 발화 습득 시에만 등장\n- (빈칸): 조건 없이 항상 등장"),
+        ("선행조건(prerequisite)", "prerequisite", 24, "3지선다에 등장하기 위한 선행 조건 (드롭다운 제공):\n- has_summon: 소환수 보유 시에만 등장\n- has_meteor: 메테오 습득 시에만 등장\n- has_combustion: 발화 습득 시에만 등장\n- has_any_spell: 쿨다운 스킬 습득 시에만 등장\n- (빈칸): 조건 없이 항상 등장"),
         ("해금스킬(spellKey)", "spellKey", 20, "고대 주문서 카드 습득 시 액션바에 해금할 스킬 키 (드롭다운 제공):\n- fireblast, meteor, combustion, summon, ice_barrier"),
         ("특수기믹(mechanic)", "mechanic", 24, "시스템에 내장된 특수 고유 로직 키입니다.\n자세한 키 목록과 기능은 하단의 [📖 옵션_도움말_가이드] 시트를 참고하세요."),
         ("기믹파라미터(JSON)", "mechanicParams", 22, "특수 기믹에 전달할 세부 JSON 수치입니다.\n(예: {\"executionerMult\": 0.7})")
@@ -98,16 +93,19 @@ def export_to_excel():
         cell.border = cell_border
         cell.comment = Comment(comment_text, "DPS: Fire Mage 엔진", height=120, width=280)
         col_letter = get_column_letter(col_idx)
-        ws.column_dimensions[col_letter].width = existing_widths_sheet1.get(col_letter, default_width)
+        # 열 너비가 아직 없거나 기본값일 때만 기본값 적용 (기획자 설정값 보존)
+        if not ws.column_dimensions[col_letter].width:
+            ws.column_dimensions[col_letter].width = default_width
 
     ws.row_dimensions[1].height = 30
 
-    # 2. 데이터 행 작성
+    # 2. 데이터 행 작성 (기획자가 지정한 셀 배경색/폰트 서식 100% 영구 보존!)
     row_font = Font(name="Malgun Gothic", size=10)
     for row_idx, card in enumerate(cards, 2):
-        ws.row_dimensions[row_idx].height = 24
+        if not ws.row_dimensions[row_idx].height:
+            ws.row_dimensions[row_idx].height = 24
+
         stats = card.get('stats', {}) or {}
-        
         row_values = [
             card.get('id', ''),
             card.get('title', ''),
@@ -128,14 +126,21 @@ def export_to_excel():
         ]
 
         for col_idx, val in enumerate(row_values, 1):
-            cell = ws.cell(row=row_idx, column=col_idx, value=val)
-            cell.font = row_font
-            cell.border = cell_border
+            cell = ws.cell(row=row_idx, column=col_idx)
+            cell.value = val
+
+            # 기획자님이 배경색(fill)을 지정해두지 않은 셀에만 기본 서식 입히기
+            has_custom_fill = (cell.fill and cell.fill.fill_type is not None)
+            if not has_custom_fill:
+                cell.font = row_font
+                cell.border = cell_border
+
             # 정렬
-            if col_idx in [3, 4, 5, 6, 8, 9, 10, 11, 12]:
-                cell.alignment = center_align
-            else:
-                cell.alignment = left_align
+            if not cell.alignment or not cell.alignment.horizontal:
+                if col_idx in [3, 4, 5, 6, 8, 9, 10, 11, 12]:
+                    cell.alignment = center_align
+                else:
+                    cell.alignment = left_align
 
     total_rows = max(len(cards) + 1, 50)
 
@@ -350,14 +355,19 @@ def export_to_excel():
         current_r += 2  # 섹션 간 여백
 
     # 가이드 시트 컬럼 너비 조정 (기존 조절값 우선 보존)
-    ws_guide.column_dimensions['A'].width = existing_widths_sheet2.get('A', 24)
-    ws_guide.column_dimensions['B'].width = existing_widths_sheet2.get('B', 24)
-    ws_guide.column_dimensions['C'].width = existing_widths_sheet2.get('C', 30)
-    ws_guide.column_dimensions['D'].width = existing_widths_sheet2.get('D', 55)
+    if not ws_guide.column_dimensions['A'].width: ws_guide.column_dimensions['A'].width = 24
+    if not ws_guide.column_dimensions['B'].width: ws_guide.column_dimensions['B'].width = 24
+    if not ws_guide.column_dimensions['C'].width: ws_guide.column_dimensions['C'].width = 30
+    if not ws_guide.column_dimensions['D'].width: ws_guide.column_dimensions['D'].width = 55
 
-    wb.save(EXCEL_PATH)
-    print(f"✨ [성공] 엑셀 파일(기획자 커스텀 열 너비 100% 보존 완료):")
-    print(f"   -> {EXCEL_PATH}")
+    try:
+        wb.save(EXCEL_PATH)
+        print(f"✨ [성공] 엑셀 파일(기획자 커스텀 열 너비 및 셀 배경색 100% 보존 완료):")
+        print(f"   -> {EXCEL_PATH}")
+    except PermissionError:
+        print(f"⚠️ [안내] 엑셀 프로그램(Excel)에서 파일이 열려 있어 저장할 수 없습니다.")
+        print(f"   기획자님이 엑셀에서 작업 중이실 때는 읽기 동기화(sync-cards.bat)를 사용하시면 되며,")
+        print(f"   엑셀 파일을 닫으신 후 본 스크립트를 실행하시면 커스텀 서식이 100% 보존되어 저장됩니다.")
 
 if __name__ == "__main__":
     export_to_excel()
