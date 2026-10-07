@@ -572,7 +572,7 @@ body {
 /* Arena Top-Center Phase Info + Stage & Reward Banner */
 .arena-top-stage-header {
   position: absolute;
-  top: 86px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -718,6 +718,7 @@ body {
 }
 
 .arena-side-nav {
+  display: none !important;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -1632,6 +1633,7 @@ body {
   align-items: center;
   gap: 7px;
   z-index: 10;
+  margin-top: auto;
 }
 
 .player-buff-row {
@@ -1957,11 +1959,11 @@ body {
   }
 }
 
-/* 4. Compact DPS Meter Panel (Top of Combat Arena) */
+/* 4. Compact DPS Meter Panel (로그라이크 덱빌딩 시스템 전환으로 숨김 처리) */
 .dps-meter-panel {
+  display: none !important;
   position: relative;
   z-index: 10;
-  display: flex;
   align-items: center;
   gap: 16px;
   background: rgba(17, 22, 32, 0.94);

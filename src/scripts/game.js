@@ -3817,16 +3817,20 @@ function updateNotificationBadges() {
   const nextBtnText = document.getElementById('btn-next-stage-text');
   const nextStageData = getStageData(state.currentStage + 1);
 
-  nextBtn.disabled = !canGoNext;
-  nextBtn.classList.toggle('ready-glow', canGoNext);
-  nextBtnText.textContent = nextStageData.isPhaseBoss
-    ? '👑 보스 도전 ▶'
-    : '다음 도전 ▶';
+  if (nextBtn) {
+    nextBtn.disabled = !canGoNext;
+    nextBtn.classList.toggle('ready-glow', canGoNext);
+    if (nextBtnText) {
+      nextBtnText.textContent = nextStageData.isPhaseBoss
+        ? '👑 보스 도전 ▶'
+        : '다음 도전 ▶';
+    }
 
-  if (canGoNext) {
-    nextBtn.title = '처치 완료! 클릭하여 다음 스테이지로 질주하세요. (스피드런 ⚡)';
-  } else {
-    nextBtn.title = '현재 몬스터 처치 완료 시 다음 도전이 즉시 활성화됩니다.';
+    if (canGoNext) {
+      nextBtn.title = '처치 완료! 클릭하여 다음 스테이지로 질주하세요. (스피드런 ⚡)';
+    } else {
+      nextBtn.title = '현재 몬스터 처치 완료 시 다음 도전이 즉시 활성화됩니다.';
+    }
   }
 
   setBadge('badge-next-stage', canGoNext);
@@ -4518,10 +4522,10 @@ function checkAndTriggerUnfolds(silent = false) {
   }
 
   // 2. 자동 시전 마법진 획득 시: 자동 시전 버튼 & 치명타/시전속도 스탯 개방
-  if (!u.equipShop && (state.grimoires.autocast || state.highestClearedStage >= 1)) {
+  if (!u.equipShop && state.grimoires && state.grimoires.autocast) {
     u.equipShop = true;
     changed = true;
-    if (!silent && state.grimoires.autocast) {
+    if (!silent) {
       showUnfoldToast('🪄 자동 시전 마법진 개방!', '이제 마법사가 습득한 마법을 최적의 타이밍에 자동으로 시전합니다.');
       triggerUnfoldPop('btn-auto-cast');
     }
@@ -4695,16 +4699,20 @@ function updateSkillActionBarVisibility() {
 
   const autoBtn = document.getElementById('btn-auto-cast');
   const autoBtnText = document.getElementById('btn-auto-cast-text');
-  autoBtn.classList.toggle('unfold-hidden', !state.unfolded.equipShop && !state.grimoires.autocast);
-  if (!state.grimoires.autocast) {
-    autoBtn.className = `auto-cast-btn locked has-badge-anchor ${!state.unfolded.equipShop ? 'unfold-hidden' : ''}`;
-    autoBtnText.textContent = '🔒 자동 시전';
-  } else if (state.autoCast) {
-    autoBtn.className = 'auto-cast-btn active has-badge-anchor';
-    autoBtnText.textContent = '🤖 자동: ON';
-  } else {
-    autoBtn.className = 'auto-cast-btn has-badge-anchor';
-    autoBtnText.textContent = '🤖 자동: OFF';
+  if (autoBtn) {
+    const hasAutoCast = Boolean(state.grimoires && state.grimoires.autocast);
+    autoBtn.classList.toggle('unfold-hidden', !hasAutoCast);
+    autoBtn.style.display = hasAutoCast ? '' : 'none';
+    if (!hasAutoCast) {
+      autoBtn.className = 'auto-cast-btn locked has-badge-anchor unfold-hidden';
+      if (autoBtnText) autoBtnText.textContent = '🔒 자동 시전';
+    } else if (state.autoCast) {
+      autoBtn.className = 'auto-cast-btn active has-badge-anchor';
+      if (autoBtnText) autoBtnText.textContent = '🤖 자동: ON';
+    } else {
+      autoBtn.className = 'auto-cast-btn has-badge-anchor';
+      if (autoBtnText) autoBtnText.textContent = '🤖 자동: OFF';
+    }
   }
 
   updateAutoCastMagicCircle();
@@ -4794,7 +4802,8 @@ function updateStageUI() {
   }
   document.getElementById('target-reward').textContent = rewardText;
 
-  document.getElementById('btn-prev-stage').disabled = state.currentStage <= 1;
+  const prevBtnEl = document.getElementById('btn-prev-stage');
+  if (prevBtnEl) prevBtnEl.disabled = state.currentStage <= 1;
 
   const reqDps = getStageReqDps(state.currentStage);
   const dpsMet = isStageDpsMet(state.currentStage);
@@ -6066,8 +6075,10 @@ function updateDpsMeterUI() {
   const dpsMet = isStageDpsMet(state.currentStage);
 
   const dpsEl = document.getElementById('ui-current-dps');
-  dpsEl.textContent = `${fmt(state.currentDps)} /초`;
-  dpsEl.classList.toggle('enough', state.currentDps >= reqDps || dpsMet);
+  if (dpsEl) {
+    dpsEl.textContent = `${fmt(state.currentDps)} /초`;
+    dpsEl.classList.toggle('enough', state.currentDps >= reqDps || dpsMet);
+  }
 
   const timerEl = document.getElementById('ui-speedrun-timer');
   if (timerEl) {
@@ -6079,24 +6090,26 @@ function updateDpsMeterUI() {
   }
 
   const breakdownContainer = document.getElementById('skill-breakdown-bars');
-  const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
-  const totalAllDmg = skillsArr.reduce((a, b) => a + b.dmg, 0);
+  if (breakdownContainer) {
+    const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
+    const totalAllDmg = skillsArr.reduce((a, b) => a + b.dmg, 0);
 
-  if (totalAllDmg > 0) {
-    skillsArr.sort((a, b) => b.dmg - a.dmg);
-    breakdownContainer.innerHTML = skillsArr
-      .slice(0, 3)
-      .map((s) => {
-        const pct = ((s.dmg / totalAllDmg) * 100).toFixed(0);
-        return `
-          <div class="mini-bar-row">
-            <div class="mini-bar-fill" style="width:${pct}%; background:${s.color};"></div>
-            <span class="mini-bar-left">${s.name}</span>
-            <span class="mini-bar-right">${fmt(s.dmg)} (${pct}%)</span>
-          </div>
-        `;
-      })
-      .join('');
+    if (totalAllDmg > 0) {
+      skillsArr.sort((a, b) => b.dmg - a.dmg);
+      breakdownContainer.innerHTML = skillsArr
+        .slice(0, 3)
+        .map((s) => {
+          const pct = ((s.dmg / totalAllDmg) * 100).toFixed(0);
+          return `
+            <div class="mini-bar-row">
+              <div class="mini-bar-fill" style="width:${pct}%; background:${s.color};"></div>
+              <span class="mini-bar-left">${s.name}</span>
+              <span class="mini-bar-right">${fmt(s.dmg)} (${pct}%)</span>
+            </div>
+          `;
+        })
+        .join('');
+    }
   }
 
   updateNotificationBadges();
@@ -6308,22 +6321,27 @@ function initEvents() {
     }
   });
 
-  document.getElementById('btn-prev-stage').addEventListener('click', () => {
-    if (state.currentStage > 1) {
-      playSound('item_select');
-      loadStage(state.currentStage - 1);
-      saveGame();
-    }
-  });
+  const prevStageBtn = document.getElementById('btn-prev-stage');
+  if (prevStageBtn) {
+    prevStageBtn.addEventListener('click', () => {
+      if (state.currentStage > 1) {
+        playSound('item_select');
+        loadStage(state.currentStage - 1);
+        saveGame();
+      }
+    });
+  }
 
-  // 다음 도전 버튼: 반드시 canAdvanceToNextStage() (현재 스테이지 몬스터 1회 처치 완료 + 요구 DPS 충족) 확인!
-  document.getElementById('btn-next-stage').addEventListener('click', () => {
-    if (canAdvanceToNextStage()) {
-      playSound('item_select');
-      loadStage(state.currentStage + 1);
-      saveGame();
-    }
-  });
+  const nextStageBtn = document.getElementById('btn-next-stage');
+  if (nextStageBtn) {
+    nextStageBtn.addEventListener('click', () => {
+      if (canAdvanceToNextStage()) {
+        playSound('item_select');
+        loadStage(state.currentStage + 1);
+        saveGame();
+      }
+    });
+  }
 
   const autoAdvanceChk = document.getElementById('chk-auto-advance');
   if (autoAdvanceChk) {

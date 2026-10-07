@@ -2,7 +2,7 @@
 :root { --paper-edge: #a88a64; --paper-ink: #241b22; --paper-label: #efe1c6; }
 /* 전장 상단의 중앙은 시간만 남기고 진행·보상 정보는 좌우로 분산한다. */
 .combat-arena .stage-center-info { display: none !important; }
-.combat-arena .arena-top-stage-header { top: 86px; left: 16px; right: 16px; transform: none; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: start; gap: 8px 12px; }
+.combat-arena .arena-top-stage-header { top: 12px; left: 16px; right: 16px; transform: none; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: start; gap: 8px 12px; }
 .arena-top-stage-header .speedrun-stat-box { grid-column: 2; grid-row: 1; justify-self: center; align-items: center; padding: 5px 10px; border: 1px solid #8b7055; border-radius: 3px; background: #241b22ed; }
 .arena-top-stage-header .speedrun-stat-box .dps-label { font-size: .62rem; }
 .arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 1; justify-self: start; max-width: 100%; padding: 7px 10px; gap: 8px; }

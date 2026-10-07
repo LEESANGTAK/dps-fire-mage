@@ -161,6 +161,7 @@
       maxStack: 2,
       desc: '메테오의 재사용 대기시간이 <b>50% 감소</b>하고 피해량이 <b>+60%</b> 증가합니다.',
       mechanic: 'meteor_buff',
+      req: (st, deck) => (deck['spell_meteor'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.meteor),
       apply: (state) => {
         state.deckMechanics = state.deckMechanics || {};
         state.deckMechanics.meteorBuff = (state.deckMechanics.meteorBuff || 0) + 1;
@@ -177,6 +178,7 @@
       maxStack: 1,
       desc: '발화(마력 폭주) 지속 시간이 2배가 되며, 발화 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.',
       mechanic: 'combustion_god',
+      req: (st, deck) => (deck['spell_combustion'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.combustion),
       apply: (state) => {
         state.deckMechanics = state.deckMechanics || {};
         state.deckMechanics.combustionGod = true;
@@ -213,6 +215,7 @@
       maxStack: 3,
       desc: '모든 소환수의 공격 속도 <b>+50%</b> 및 공격력 <b>+40%</b> 증가.',
       mechanic: 'spirit_frenzy',
+      req: (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0),
       apply: (state) => {
         state.deckMechanics = state.deckMechanics || {};
         state.deckMechanics.spiritDamageMult = (state.deckMechanics.spiritDamageMult || 1) * 1.4;
@@ -228,6 +231,7 @@
       maxStack: 1,
       desc: '마법사가 화염구를 발사할 때마다 <b>소환된 모든 정령이 동시에 협공 탄환</b>을 발사합니다.',
       mechanic: 'synchronized_fire',
+      req: (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0),
       apply: (state) => {
         state.deckMechanics = state.deckMechanics || {};
         state.deckMechanics.synchronizedFire = true;
@@ -242,6 +246,7 @@
       maxStack: 1,
       desc: '소환수 1기당 마법사의 모든 주문 피해량이 <b>+30%</b> 증폭됩니다.',
       mechanic: 'cinder_lord',
+      req: (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.magma_golem > 0),
       apply: (state) => {
         state.deckMechanics = state.deckMechanics || {};
         state.deckMechanics.cinderLord = true;
@@ -398,6 +403,9 @@
           if (card.id === 'spell_combustion' && st.grimoires.combustion) return false;
           if (card.id === 'spell_flame_patch' && st.grimoires.flame_patch) return false;
           if (card.id === 'spell_autocast' && st.grimoires.autocast) return false;
+        }
+        if (typeof card.req === 'function') {
+          if (!card.req(st, activeDeck)) return false;
         }
         return true;
       });
