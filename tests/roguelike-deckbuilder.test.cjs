@@ -224,17 +224,32 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
     deckMechanics: {}
   };
 
-  // 1. 소환수를 보유하지 않은 초기 상태에서 50회 추첨 시 소환수 업그레이드 카드가 전혀 나오지 않는지 검증
+  // 1. 초기 상태에서 50회 추첨 시 선행 조건 미충족 카드가 전혀 나오지 않는지 검증
   for (let i = 0; i < 50; i++) {
     const choices = manager.drawChoices(3, false, emptyState);
     for (const c of choices) {
       assert.ok(!summonUpgradeIds.includes(c.id), `소환수가 없는 상태에서는 ${c.id} 카드가 등장하지 않아야 합니다.`);
       assert.notEqual(c.id, 'crit_meteor_storm', '메테오가 없는 상태에서는 태양석 메테오 카드가 등장하지 않아야 합니다.');
+      assert.notEqual(c.id, 'crit_chain_streak', '메테오(몰열)가 없는 상태에서는 연쇄 몰열 카드가 등장하지 않아야 합니다.');
       assert.notEqual(c.id, 'crit_crimson_frenzy', '마력 폭주가 없는 상태에서는 진홍의 마력 폭주 카드가 등장하지 않아야 합니다.');
+      assert.notEqual(c.id, 'spell_autocast', '쿨다운 스킬이 없는 상태에서는 자동 시전 카드가 등장하지 않아야 합니다.');
+      assert.notEqual(c.id, 'util_phoenix_reborn', '쿨다운 스킬이 없는 상태에서는 불사조의 가호(쿨다운 리셋) 카드가 등장하지 않아야 합니다.');
     }
   }
 
-  // 2. 화염 정령 소환(sum_spirit)을 1장 획득한 후에는 소환수 업그레이드 카드가 정상 등장할 수 있는지 검증
+  // 2. 메테오(spell_meteor)를 획득한 후에는 연쇄 몰열 및 메테오 강화 카드가 정상 등장하는지 검증
+  manager.selectCard('spell_meteor', emptyState);
+  let foundMeteorUpgrade = false;
+  for (let i = 0; i < 50; i++) {
+    const choices = manager.drawChoices(3, false, emptyState);
+    if (choices.some(c => c.id === 'crit_chain_streak' || c.id === 'crit_meteor_storm')) {
+      foundMeteorUpgrade = true;
+      break;
+    }
+  }
+  assert.ok(foundMeteorUpgrade, '메테오를 획득한 이후에는 연쇄 몰열 및 메테오 강화 카드가 등장할 수 있어야 합니다.');
+
+  // 3. 화염 정령 소환(sum_spirit)을 1장 획득한 후에는 소환수 업그레이드 카드가 정상 등장할 수 있는지 검증
   manager.selectCard('sum_spirit', emptyState);
   let foundSummonUpgrade = false;
   for (let i = 0; i < 50; i++) {

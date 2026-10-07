@@ -161,11 +161,11 @@ def export_to_excel():
     dv_build.add(f"E2:E{total_rows + 50}")
 
     # (3) prerequisite 드롭다운 (M열 = col 13)
-    dv_prereq = DataValidation(type="list", formula1='"has_summon,has_meteor,has_combustion,has_fireblast,has_ice_barrier"', allow_blank=True)
+    dv_prereq = DataValidation(type="list", formula1='"has_summon,has_meteor,has_combustion,has_fireblast,has_ice_barrier,has_any_spell"', allow_blank=True)
     dv_prereq.error = "선행조건 목록에서 선택하거나 빈칸으로 두세요."
     dv_prereq.errorTitle = "유효하지 않은 선행조건"
     dv_prereq.promptTitle = "[선행조건(prerequisite) 안내]"
-    dv_prereq.prompt = "해당 조건이 달성되어야만 3지선다에 등장합니다:\n• has_summon: 소환수 보유 시\n• has_meteor: 메테오 습득 시\n• has_combustion: 발화 습득 시\n• (빈칸): 조건 없이 항상 등장"
+    dv_prereq.prompt = "해당 조건이 달성되어야만 3지선다에 등장합니다:\n• has_summon: 소환수 보유 시\n• has_meteor: 메테오 습득 시\n• has_combustion: 발화 습득 시\n• has_any_spell: 쿨다운 보조 마법 1개 이상 습득 시\n• (빈칸): 조건 없이 항상 등장"
     dv_prereq.showInputMessage = True
     ws.add_data_validation(dv_prereq)
     dv_prereq.add(f"M2:M{total_rows + 50}")
@@ -248,9 +248,10 @@ def export_to_excel():
             "rows": [
                 ["(빈칸)", "조건 없음", "처음부터 누구나 언제든 획득 가능한 기본 카드"],
                 ["has_summon", "불사조 소환수 보유 시", "소환수가 없는데 소환수 강화 카드가 나와서 선택지를 낭비하는 현상 방지"],
-                ["has_meteor", "유성낙하(메테오) 습득 시", "메테오를 배우지 않은 상태에서 메테오 강화 카드가 뜨는 현상 방지"],
+                ["has_meteor", "유성낙하(메테오) 습득 시", "메테오를 배우지 않은 상태에서 메테오 강화/연쇄 몰열 카드가 뜨는 현상 방지"],
                 ["has_combustion", "발화(Combustion) 습득 시", "발화 스킬을 배운 상태에서만 '발화의 화신' 등의 카드가 등장"],
-                ["has_fireblast", "화염 작렬 습득 시", "화염 작렬 스킬 보유자에게만 전용 강화 카드 제공"]
+                ["has_fireblast", "화염 작렬 습득 시", "화염 작렬 스킬 보유자에게만 전용 강화 카드 제공"],
+                ["has_any_spell", "쿨다운 보조 마법 1개 이상 습득 시", "쿨다운 스킬이 없는데 '자동 시전'이나 '쿨다운 초기화' 카드가 떠서 무용지물이 되는 현상 방지"]
             ]
         },
         {

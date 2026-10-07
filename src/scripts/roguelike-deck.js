@@ -115,6 +115,7 @@
       build: BUILD.CRIT,
       maxStack: 2,
       desc: '몰아치는 열기 소모 시 <b>40% 확률</b>로 몰열 버프가 사라지지 않고 유지됩니다.',
+      prerequisite: 'has_meteor',
       mechanic: 'chain_hot_streak',
       mechanicParams: { chainHotStreak: 0.4 }
     },
@@ -213,6 +214,7 @@
       build: BUILD.UTILITY,
       maxStack: 1,
       desc: '치명타 적중 시 15% 확률로 모든 스킬의 쿨다운이 즉시 초기화됩니다.',
+      prerequisite: 'has_any_spell',
       mechanic: 'phoenix_reset'
     },
     {
@@ -223,6 +225,7 @@
       build: BUILD.UTILITY,
       maxStack: 1,
       desc: '발아래 마법진을 전개하여 습득한 마법을 쿨다운마다 <b>자동 연계 시전</b>합니다.',
+      prerequisite: 'has_any_spell',
       spellKey: 'autocast'
     },
     {
@@ -280,6 +283,14 @@
       card.req = (st, deck) => (deck['spell_combustion'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.combustion);
     } else if (raw.prerequisite === 'has_fireblast') {
       card.req = (st, deck) => (deck['spell_fireblast'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.fireblast);
+    } else if (raw.prerequisite === 'has_any_spell') {
+      card.req = (st, deck) => Boolean(
+        (deck['spell_fireblast'] || 0) > 0 ||
+        (deck['spell_meteor'] || 0) > 0 ||
+        (deck['spell_combustion'] || 0) > 0 ||
+        (deck['spell_flame_patch'] || 0) > 0 ||
+        (st && st.grimoires && (st.grimoires.fireblast || st.grimoires.meteor || st.grimoires.combustion || st.grimoires.flame_patch))
+      );
     }
 
     // 2. 효과 적용(apply) 인터프리터

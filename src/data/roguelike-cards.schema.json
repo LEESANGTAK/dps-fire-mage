@@ -73,9 +73,10 @@
           "has_meteor",
           "has_combustion",
           "has_fireblast",
-          "has_ice_barrier"
+          "has_ice_barrier",
+          "has_any_spell"
         ],
-        "description": "3지선다에 등장하기 위한 선행 조건 필터 (선택 시 드롭다운 제공:\n- has_summon: 불사조 소환수를 배운 상태에서만 등장\n- has_meteor: 유성낙하를 배운 상태에서만 등장\n- has_combustion: 발화를 배운 상태에서만 등장\n- has_fireblast: 화염작렬을 배운 상태에서만 등장\n- has_ice_barrier: 얼음보호막을 배운 상태에서만 등장)"
+        "description": "3지선다에 등장하기 위한 선행 조건 필터 (선택 시 드롭다운 제공:\n- has_summon: 불사조 소환수를 배운 상태에서만 등장\n- has_meteor: 유성낙하를 배운 상태에서만 등장\n- has_combustion: 발화를 배운 상태에서만 등장\n- has_fireblast: 화염작렬을 배운 상태에서만 등장\n- has_ice_barrier: 얼음보호막을 배운 상태에서만 등장\n- has_any_spell: 쿨다운 보조 마법(불꽃작렬, 메테오 등)을 1개 이상 배운 상태에서만 등장)"
       },
       "spellKey": {
         "type": "string",
