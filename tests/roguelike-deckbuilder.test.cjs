@@ -288,5 +288,44 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
   assert.equal(CARD_POOL.length, 22, '원본 22장으로 복원되어야 합니다.');
 });
 
+test('Step 14: 뱀파이어 서바이버즈 스타일 좌상단 덱 슬롯 및 마우스 오버 툴팁 무결성 검증', () => {
+  const fs = require('node:fs');
+  const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+  const stylesSource = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
+  const { createDeckManager } = require('../src/scripts/roguelike-deck.js');
+
+  // 1. HTML 마크업 검증 (좌상단 컨테이너 및 전역 툴팁)
+  assert.ok(html.includes('class="deck-strip-container vampire-style hidden" id="deck-strip-container"'), '뱀서 스타일 좌측 상단 덱 컨테이너가 존재해야 합니다.');
+  assert.ok(html.includes('id="deck-vampire-tooltip"'), '마우스 오버 시 표시할 전역 덱 툴팁 요소가 존재해야 합니다.');
+
+  // 2. game.js 툴팁 및 뱀서 슬롯 렌더링 함수 검증
+  assert.ok(gameSource.includes('function showDeckTooltip('), 'showDeckTooltip 함수가 구현되어 있어야 합니다.');
+  assert.ok(gameSource.includes('function hideDeckTooltip('), 'hideDeckTooltip 함수가 구현되어 있어야 합니다.');
+  assert.ok(gameSource.includes('vampire-deck-slot'), 'game.js에서 뱀파이어 슬롯 클래스를 생성해야 합니다.');
+  assert.ok(gameSource.includes('vampire-deck-badge'), 'game.js에서 중첩/MAX 배지를 생성해야 합니다.');
+
+  // 3. CSS 스타일링 검증
+  assert.ok(stylesSource.includes('.vampire-deck-slot'), '뱀서 스타일 슬롯 CSS가 정의되어 있어야 합니다.');
+  assert.ok(stylesSource.includes('.deck-vampire-tooltip'), '마우스 오버 툴팁 CSS가 정의되어 있어야 합니다.');
+  assert.ok(stylesSource.includes('.vampire-deck-slot.rarity-legendary'), '전설 등급 슬롯 발광 스타일이 정의되어 있어야 합니다.');
+
+  // 4. getActiveCards() 데이터 완결성 검증
+  const manager = createDeckManager();
+  const fakeState = { playerStatsBonus: {} };
+  manager.selectCard('rapid_spark', fakeState);
+  manager.selectCard('rapid_spark', fakeState);
+  
+  const activeCards = manager.getActiveCards();
+  assert.equal(activeCards.length, 1);
+  const card = activeCards[0];
+  assert.equal(card.id, 'rapid_spark');
+  assert.equal(card.count, 2);
+  assert.ok(card.desc, '툴팁에 표시할 설명문(desc)이 포함되어 있어야 합니다.');
+  assert.ok(card.maxStack >= 2, '최대 중첩 수(maxStack)가 포함되어 있어야 합니다.');
+  assert.ok(card.stats && card.stats.haste, '스탯 정보가 포함되어 있어야 합니다.');
+});
+
+
 
 

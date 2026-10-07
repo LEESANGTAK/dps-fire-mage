@@ -184,6 +184,12 @@
           </div>
         </div>
 
+        <!-- 아레나 좌측 상단: 뱀파이어 서바이버즈 스타일 획득 덱 트레이 (Vampire Survivors Style Active Deck Tray) -->
+        <div class="deck-strip-container vampire-style hidden" id="deck-strip-container">
+          <div class="deck-strip-cards" id="deck-strip-cards"></div>
+          <span id="ui-deck-count" class="hidden">0</span>
+        </div>
+
         <!-- 아레나 중앙: 좌측 [◀ 이전] ➔ 마법사 ➔ 몬스터 ➔ 우측 [다음 도전 ▶] -->
         <div class="center-stage">
           <!-- 좌측 이전 스테이지 버튼 -->
@@ -334,16 +340,6 @@
               <div class="gcd-Overlay" id="gcd-6"></div>
               <div class="cd-overlay" id="cd-6"></div>
             </button>
-          </div>
-
-          <!-- 현재 런 획득 각성 덱 스트립 (Active Deck Tray) -->
-          <div class="deck-strip-container hidden" id="deck-strip-container">
-            <div class="deck-strip-label">
-              <span>🃏 마도서 덱 (<span id="ui-deck-count">0</span>)</span>
-            </div>
-            <div class="deck-strip-cards" id="deck-strip-cards">
-              <span class="deck-empty-hint">웨이브 클리어 시 각성 카드가 추가됩니다.</span>
-            </div>
           </div>
         </div>
       </div>
@@ -630,6 +626,7 @@
   <script src="src/scripts/comic-monster-frames.js?v=comic-ui-2"></script>
   <script src="src/scripts/paper-monster-frames.js?v=paper-monsters-3"></script>
   <div id="skill-tooltip" class="skill-tooltip" role="tooltip" hidden></div>
+  <div id="deck-vampire-tooltip" class="deck-vampire-tooltip hidden" role="tooltip"></div>
   <script src="src/scripts/comic-assets.js?v=flame-patch-soft-6"></script>
   <script src="src/scripts/monster-motion.js?v=paper-monsters-3"></script>
   <script src="src/scripts/skill-tooltips.js?v=2"></script>

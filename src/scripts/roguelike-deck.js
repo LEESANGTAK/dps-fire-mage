@@ -549,7 +549,12 @@
           title: card ? card.title : id,
           icon: card ? card.icon : '🃏',
           rarity: card ? card.rarity : RARITY.COMMON,
-          build: card ? card.build : BUILD.UTILITY
+          build: card ? card.build : BUILD.UTILITY,
+          maxStack: card ? (card.maxStack || 1) : 1,
+          desc: card ? (card.desc || '') : '',
+          stats: card ? card.stats : null,
+          mechanic: card ? card.mechanic : null,
+          spellKey: card ? card.spellKey : null
         };
       });
     }

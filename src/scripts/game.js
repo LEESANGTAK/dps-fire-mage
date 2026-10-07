@@ -5261,6 +5261,90 @@ function formatPlayTime(sec) {
 let awakeningOnComplete = null;
 let isCurrentAwakeningBoss = false;
 
+function showDeckTooltip(card, targetEl) {
+  const tooltip = document.getElementById('deck-vampire-tooltip');
+  if (!tooltip || !card) return;
+
+  const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: card.rarity, color: '#94a3b8' };
+  const buildNames = {
+    rapid: '⚡ 속사 머신건',
+    crit: '💥 극치명타 몰열',
+    pet: '🦅 불사조 정령',
+    util: '🛡️ 유틸리티',
+    spell: '📖 고대 주문서'
+  };
+  const buildLabel = buildNames[card.build] || card.build;
+  const isMax = card.count >= (card.maxStack || 1);
+  const stackLabel = isMax ? 'MAX' : `중첩 ${card.count} / ${card.maxStack || 1}`;
+
+  // 누적 스탯 칩 계산
+  let statsHtml = '';
+  if (card.stats && typeof card.stats === 'object') {
+    const chips = [];
+    const statLabels = {
+      sp: '주문력',
+      haste: '가속도',
+      crit: '치명타율',
+      critDmg: '치명피해',
+      goldBonus: '골드보너스'
+    };
+    for (const [key, val] of Object.entries(card.stats)) {
+      const totalVal = typeof val === 'number' ? (val * card.count) : val;
+      const unit = (key === 'sp') ? '' : '%';
+      const sign = (typeof totalVal === 'number' && totalVal > 0) ? '+' : '';
+      chips.push(`<span class="vtt-stat-chip">${statLabels[key] || key} ${sign}${totalVal}${unit} (누적)</span>`);
+    }
+    if (chips.length > 0) {
+      statsHtml = `<div class="vtt-stats">${chips.join('')}</div>`;
+    }
+  }
+
+  tooltip.innerHTML = `
+    <div class="vtt-header">
+      <span class="vtt-icon">${card.icon}</span>
+      <div class="vtt-title-box">
+        <span class="vtt-title">${card.title}</span>
+        <div class="vtt-meta-row">
+          <span class="vtt-rarity-pill ${card.rarity}">${rarityMeta.name}</span>
+          <span class="vtt-build-tag">${buildLabel}</span>
+        </div>
+      </div>
+      <span class="vtt-stack-pill ${isMax ? 'is-max' : ''}">${stackLabel}</span>
+    </div>
+    <div class="vtt-divider"></div>
+    <div class="vtt-desc">${card.desc || ''}</div>
+    ${statsHtml}
+  `;
+
+  tooltip.classList.remove('hidden');
+
+  // 위치 계산 (타겟 슬롯 기준 바로 아래 또는 위)
+  if (targetEl && targetEl.getBoundingClientRect) {
+    const rect = targetEl.getBoundingClientRect();
+    const ttWidth = 270;
+    let left = rect.left;
+    if (left + ttWidth > window.innerWidth - 12) {
+      left = window.innerWidth - ttWidth - 12;
+    }
+    if (left < 10) left = 10;
+
+    let top = rect.bottom + 8;
+    if (top + 160 > window.innerHeight) {
+      top = Math.max(10, rect.top - 140);
+    }
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+}
+
+function hideDeckTooltip() {
+  const tooltip = document.getElementById('deck-vampire-tooltip');
+  if (tooltip) {
+    tooltip.classList.add('hidden');
+  }
+}
+
 function renderDeckStripUI() {
   const container = document.getElementById('deck-strip-container');
   const cardsEl = document.getElementById('deck-strip-cards');
@@ -5273,23 +5357,34 @@ function renderDeckStripUI() {
   if (activeCards.length === 0) {
     container.classList.add('hidden');
     cardsEl.innerHTML = '';
+    hideDeckTooltip();
     return;
   }
 
   container.classList.remove('hidden');
-  cardsEl.innerHTML = activeCards.map((c) => {
+  cardsEl.innerHTML = '';
+
+  activeCards.forEach((c) => {
+    const slot = document.createElement('div');
     const rarityClass = `rarity-${c.rarity}`;
-    const stackText = c.count > 1 ? `<span class="deck-chip-stack">x${c.count}</span>` : '';
-    const cleanDesc = c.desc ? c.desc.replace(/<[^>]*>/g, '') : '';
-    const rarityName = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[c.rarity]?.name) || '';
-    return `
-      <div class="deck-chip ${rarityClass}" title="${c.title} (${rarityName}): ${cleanDesc}">
-        <span class="deck-chip-icon">${c.icon}</span>
-        <span class="deck-chip-name">${c.title}</span>
-        ${stackText}
-      </div>
+    slot.className = `vampire-deck-slot ${rarityClass}`;
+    slot.setAttribute('data-card-id', c.id);
+
+    const isMax = (c.count >= (c.maxStack || 1));
+    const badgeText = isMax ? 'MAX' : (c.count > 1 ? `x${c.count}` : '');
+    const badgeHtml = badgeText ? `<span class="vampire-deck-badge ${isMax ? 'is-max' : ''}">${badgeText}</span>` : '';
+
+    slot.innerHTML = `
+      <span class="vampire-deck-icon">${c.icon}</span>
+      ${badgeHtml}
     `;
-  }).join('');
+
+    slot.addEventListener('mouseenter', () => showDeckTooltip(c, slot));
+    slot.addEventListener('mouseleave', () => hideDeckTooltip());
+    slot.addEventListener('click', () => showDeckTooltip(c, slot));
+
+    cardsEl.appendChild(slot);
+  });
 }
 
 function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = null) {
