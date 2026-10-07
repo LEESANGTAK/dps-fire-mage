@@ -5402,7 +5402,7 @@ body {
 /* 7-6. 아레나 좌측 상단: 뱀파이어 서바이버즈 스타일 덱 트레이 (Vampire Survivors Style Active Deck Tray) */
 .deck-strip-container.vampire-style {
   position: absolute;
-  top: 54px;
+  top: 74px;
   left: 16px;
   z-index: 15;
   display: flex;
