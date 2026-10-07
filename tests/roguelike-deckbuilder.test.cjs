@@ -507,6 +507,26 @@ test('Step 19: 보상 모달(각성 창) 내 보유 골드 표시 실시간 동�
   assert.equal(testState.gold, 15);
 });
 
+test('Step 20: 모든 화염구 및 추가 생성 탄환의 마법봉 끝(Wand Tip) 발사 원점 고정 검증', () => {
+  const fs = require('node:fs');
+  const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
+
+  // 1. 마법봉 끝 전용 좌표 산출 함수 검증
+  assert.ok(gameSource.includes('function getWandTipPos()'), 'getWandTipPos 함수가 정의되어 있어야 합니다.');
+  assert.ok(gameSource.includes('artRect.width * 0.859'), '마법사 release 포즈의 마법봉 끝 X 비율(85.9%)이 계산되어야 합니다.');
+  assert.ok(gameSource.includes('artRect.height * 0.639'), '마법사 release 포즈의 마법봉 끝 Y 비율(63.9%)이 계산되어야 합니다.');
+
+  // 2. launchProjectile 출발점 고정 및 발사 제스처 동기화 검증
+  assert.ok(gameSource.includes('const start = getWandTipPos();'), '모든 투사체 발사 시 getWandTipPos를 출발점으로 삼아야 합니다.');
+  assert.ok(gameSource.includes("beginMageGesture('fireball')"), '추가 화염구 발사 시에도 마법봉을 뻗는 발사 제스처가 실행되어야 합니다.');
+  assert.ok(gameSource.includes('const startSpreadY = Math.sign(offsetY)'), '추가 화염구는 발 쪽으로 떨어지지 않고 마법봉 끝에서 미세 부채꼴로 뻗어나가야 합니다.');
+
+  // 3. 소환수 불사조 볼트의 발바닥 출발 제거 검증
+  assert.ok(!gameSource.includes('startY: casterCenter.y + 62'), '불사조 볼트가 발바닥(+62px)에서 출발하는 버그가 수정되어 있어야 합니다.');
+  assert.ok(gameSource.includes('startY: casterCenter.y - 45'), '불사조 볼트는 마법사 어깨 위 비상 고도에서 출발해야 합니다.');
+});
+
+
 
 
 

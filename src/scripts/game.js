@@ -1293,13 +1293,31 @@ function getActorGroundPos(id) {
   return { x: actor.left - arena.left + actor.width * 0.5, y: actor.bottom - arena.top };
 }
 
-function getCasterPos() {
+function getWandTipPos() {
   const arena = document.getElementById('combat-arena').getBoundingClientRect();
-  const muzzle = document.getElementById('mage-muzzle').getBoundingClientRect();
-  return {
-    x: muzzle.left - arena.left,
-    y: muzzle.top - arena.top
-  };
+  const mageArt = document.getElementById('mage-art');
+  if (mageArt) {
+    const artRect = mageArt.getBoundingClientRect();
+    // 종이 원화의 release(발사) 포즈 기준 마법봉 보석 머리(끝) 비율:
+    // 원화 640x640 중 foot: [320, 1121], tip: [576, 892] -> 캔버스 내 [550, 409] -> X 85.9%, Y 63.9%
+    return {
+      x: (artRect.left - arena.left) + artRect.width * 0.859,
+      y: (artRect.top - arena.top) + artRect.height * 0.639
+    };
+  }
+  const muzzle = document.getElementById('mage-muzzle');
+  if (muzzle) {
+    const rect = muzzle.getBoundingClientRect();
+    return {
+      x: rect.left - arena.left,
+      y: rect.top - arena.top
+    };
+  }
+  return getCasterCenter();
+}
+
+function getCasterPos() {
+  return getWandTipPos();
 }
 
 function getTargetPos() {
@@ -1557,22 +1575,30 @@ function launchCustomProjectile(opts) {
 }
 
 function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
-  // 주 탄환은 발사 자세로 바꾼 손끝에서 출발합니다.
-  if (scaleMult >= 0.9) beginMageGesture('fireball');
-  const start = getCasterPos();
+  // 주 탄환 및 추가 생성된 모든 화염구는 마법봉을 전방으로 뻗는 발사 제스처와 동기화됩니다.
+  if (typeof beginMageGesture === 'function') {
+    beginMageGesture('fireball');
+  }
+
+  // 모든 화염구의 출발점은 항상 마법봉 끝(Wand Tip)으로 고정됩니다.
+  const start = getWandTipPos();
   const end = getTargetPos();
 
-  if (scaleMult >= 0.9) {
+  if (scaleMult >= 0.8) {
     playFireballSfx('fly', 0.52);
   }
 
   // 화염구 기본 크기와 탄속 유지
   const baseRadius = 13.0;
 
+  // 발사 시작점은 마법봉 끝에서 미세한 분산(최대 ±3px)만 부여하여 발 쪽으로 쳐지지 않게 하고,
+  // 목표 지점에 offsetY를 주어 마법봉 끝 하나의 원점에서 적을 향해 부채꼴로 뻗어나가는 탄도를 형성합니다.
+  const startSpreadY = Math.sign(offsetY) * Math.min(3, Math.abs(offsetY) * 0.15);
+
   launchCustomProjectile({
     type,
     startX: start.x,
-    startY: start.y + offsetY,
+    startY: start.y + startSpreadY,
     targetX: end.x,
     targetY: end.y + offsetY,
     duration: 0.24,
@@ -3335,8 +3361,8 @@ function firePhoenixAttack() {
 
   launchCustomProjectile({
     type: 'phoenix_bolt',
-    startX: casterCenter.x + 62,
-    startY: casterCenter.y + 62,
+    startX: casterCenter.x + 45,
+    startY: casterCenter.y - 45,
     targetX: target.x,
     targetY: target.y,
     duration: 0.26,
