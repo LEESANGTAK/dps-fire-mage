@@ -777,8 +777,7 @@ const state = {
     title: '치명타 15회 달성',
     target: 15,
     current: 0,
-    rewardGold: 25,
-    rewardEssence: 1
+    rewardGold: 25
   }
 };
 
@@ -5086,7 +5085,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 8,
     scaleTarget: 1.5,
     rewardMult: 6.0,
-    baseEss: 3,
     req: () => true
   },
   {
@@ -5095,7 +5093,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 3,
     scaleTarget: 0.6,
     rewardMult: 8.5,
-    baseEss: 5,
     req: () => Boolean(state.grimoires && state.grimoires.fireblast)
   },
   {
@@ -5104,7 +5101,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 2,
     scaleTarget: 0.4,
     rewardMult: 5.0,
-    baseEss: 2,
     req: () => true
   },
   {
@@ -5113,7 +5109,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 6,
     scaleTarget: 1.2,
     rewardMult: 5.5,
-    baseEss: 2,
     req: () => true
   },
   {
@@ -5122,7 +5117,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 3,
     scaleTarget: 0.6,
     rewardMult: 7.0,
-    baseEss: 4,
     req: () => Boolean(state.grimoires && state.grimoires.fireblast)
   },
   {
@@ -5131,7 +5125,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 2,
     scaleTarget: 0.5,
     rewardMult: 9.0,
-    baseEss: 6,
     req: () => Boolean(state.grimoires && state.grimoires.meteor)
   },
   {
@@ -5140,7 +5133,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 400,
     scaleTarget: 250,
     rewardMult: 10.0,
-    baseEss: 8,
     req: () => Boolean(state.grimoires && state.grimoires.combustion)
   },
   {
@@ -5149,7 +5141,6 @@ const BOUNTY_TEMPLATES = [
     baseTarget: 10,
     scaleTarget: 2.0,
     rewardMult: 6.5,
-    baseEss: 4,
     req: () => Boolean(state.skillTree && (state.skillTree.flame_patch || 0) > 0)
   }
 ];
@@ -5173,12 +5164,11 @@ function generateNextBounty() {
   const target = Math.max(1, Math.round(tpl.baseTarget + tpl.scaleTarget * Math.min(20, stg)));
   const title = tpl.title.replace('{n}', fmt(target));
   
-  // Magic Archery 벤치마크: 퀘스트는 푼돈이 아닌 현재 스테이지 기본 골드의 5~10배 목돈을 공급해 장비 강화를 견인!
+  // 마도서 각성 리롤 목돈 지원: 스테이지 기본 골드의 5~10배 골드 공급!
   const stageData = getStageData(stg);
   const baseStageGold = stageData ? stageData.gold : 10;
   const mult = tpl.rewardMult || 6.0;
   const gold = Math.max(25, Math.round(baseStageGold * mult * (getPlayerStats().goldMult || 1)));
-  const essence = Math.max(2, Math.round((tpl.baseEss || 2) + Math.floor(stg / 5) * (getPlayerStats().essenceMult || 1)));
 
   state.bounty = {
     id: (state.bounty && state.bounty.id ? state.bounty.id : 0) + 1,
@@ -5186,8 +5176,7 @@ function generateNextBounty() {
     title,
     target,
     current: 0,
-    rewardGold: gold,
-    rewardEssence: essence
+    rewardGold: gold
   };
   updateBountyUI();
 }
@@ -5202,26 +5191,16 @@ function checkBountyProgress(type, amount = 1) {
   state.bounty.current = Math.min(state.bounty.target, state.bounty.current + amount);
   if (state.bounty.current >= state.bounty.target) {
     const rwGold = state.bounty.rewardGold || 0;
-    const rwEss = state.bounty.rewardEssence || 0;
     state.gold += rwGold;
-    if (rwEss > 0) {
-      state.essence += rwEss;
-      checkAndTriggerUnfolds(false);
-    }
     playSound('proc');
 
-    // 퀘스트 완료 보상: 대량의 골드 동전 & 푸른 정수 곡선 비행 흡수 애니메이션 발동!
+    // 퀘스트 완료 보상: 대량의 골드 동전 곡선 비행 흡수 애니메이션 발동!
     const bountyBarEl = document.getElementById('bounty-bar') || document.getElementById('target-reward');
     if (rwGold > 0) {
       spawnGoldCoinFlight(rwGold, true, bountyBarEl);
     }
-    if (rwEss > 0) {
-      spawnEssenceFlight(rwEss, bountyBarEl);
-    }
 
-    spawnFloatingText(`✨ 퀘스트 완료! 💰+${fmt(rwGold)} G · 🔹+${fmt(rwEss)}`, 'fct-proc', -60, { isBig: true });
-    renderShopUI();
-    renderInfusionUI();
+    spawnFloatingText(`✨ 퀘스트 완료! 💰+${fmt(rwGold)} G`, 'fct-proc', -60, { isBig: true });
     generateNextBounty();
   } else {
     updateBountyUI();
@@ -5243,7 +5222,7 @@ function updateBountyUI() {
   const pct = Math.min(100, Math.max(0, (b.current / b.target) * 100));
   if (fillEl) fillEl.style.width = `${pct}%`;
   if (textEl) textEl.textContent = `${fmt(b.current)} / ${fmt(b.target)}`;
-  if (rewardEl) rewardEl.textContent = `🪙 ${fmt(b.rewardGold)} · 🔹 ${fmt(b.rewardEssence)}`;
+  if (rewardEl) rewardEl.textContent = `🪙 ${fmt(b.rewardGold)} G`;
 }
 
 // ==========================================

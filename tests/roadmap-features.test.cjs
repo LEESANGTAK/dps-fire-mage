@@ -111,9 +111,9 @@ test('Bugfix: 상세 딜미터기(Details!) 모달 hidden 스타일 우선순위
   assert.ok(gameJsContent.includes("e.key === 'Escape'"), 'ESC 키를 통한 닫기 처리가 있어야 합니다.');
 });
 
-test('UX 피드백 1: 퀘스트 달성 보상 골드 및 정수 비행 애니메이션 검증', () => {
+test('UX 피드백 1: 퀘스트 달성 보상 골드 비행 애니메이션 검증 (정수 제거 및 골드 전담화)', () => {
   assert.ok(gameJsContent.includes('spawnGoldCoinFlight(rwGold, true, bountyBarEl)'), '퀘스트 완료 시 골드 비행 애니메이션이 발동되어야 합니다.');
-  assert.ok(gameJsContent.includes('spawnEssenceFlight(rwEss, bountyBarEl)'), '퀘스트 완료 시 정수 비행 애니메이션이 발동되어야 합니다.');
+  assert.ok(!gameJsContent.includes('spawnEssenceFlight(rwEss, bountyBarEl)'), '퀘스트 완료 시 불필요한 정수 비행 애니메이션이 제거되어야 합니다.');
   assert.ok(gameJsContent.includes('customStartEl'), '비행 화폐 함수가 커스텀 출발지 요소를 지원해야 합니다.');
 });
 
