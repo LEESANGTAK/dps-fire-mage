@@ -372,7 +372,8 @@
 
   function setCardPoolFromRaw(rawList) {
     CARD_POOL.length = 0;
-    for (const raw of rawList) {
+    const list = Array.isArray(rawList) ? rawList : (rawList && Array.isArray(rawList.cards) ? rawList.cards : []);
+    for (const raw of list) {
       CARD_POOL.push(buildCardFromData(raw));
     }
   }
@@ -401,9 +402,10 @@
       const res = await fetch('src/data/roguelike-cards.json?v=' + Date.now());
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json) && json.length > 0) {
-          setCardPoolFromRaw(json);
-          console.log(`[RoguelikeDeck] 📜 ${json.length}종의 카드를 roguelike-cards.json에서 성공적으로 로드했습니다.`);
+        const list = Array.isArray(json) ? json : (json && Array.isArray(json.cards) ? json.cards : null);
+        if (list && list.length > 0) {
+          setCardPoolFromRaw(list);
+          console.log(`[RoguelikeDeck] 📜 ${list.length}종의 카드를 roguelike-cards.json에서 성공적으로 로드했습니다.`);
           return true;
         }
       }

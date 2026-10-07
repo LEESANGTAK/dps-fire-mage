@@ -1,0 +1,11 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "src/data/roguelike-cards.json",
+        "/src/data/roguelike-cards.json"
+      ],
+      "url": "./src/data/roguelike-cards.schema.json"
+    }
+  ]
+}
