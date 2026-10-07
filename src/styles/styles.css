@@ -5393,28 +5393,33 @@ body {
 /* 7-6. 액션바 하단 덱 스트립 (Active Deck Tray) */
 .deck-strip-container {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: rgba(18, 14, 24, 0.88);
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 14, 24, 0.9);
   border: 1px solid #4a3b32;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-top: 10px;
-  width: 100%;
-  max-width: 480px;
+  border-radius: 6px;
+  padding: 3px 10px;
+  margin-top: 4px;
+  max-width: 95%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.deck-strip-container.hidden {
+  display: none !important;
 }
 
 .deck-strip-label {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 800;
   color: #e2cca8;
+  white-space: nowrap;
 }
 
 .deck-strip-cards {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  min-height: 26px;
+  gap: 5px;
   align-items: center;
 }
 

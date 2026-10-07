@@ -5282,6 +5282,9 @@ function renderDeckStripUI() {
   if (!container || !cardsEl || !deckManager) return;
 
   const activeCards = deckManager.getActiveCards();
+  const countEl = document.getElementById('ui-deck-count');
+  if (countEl) countEl.textContent = activeCards.reduce((a, b) => a + (b.count || 1), 0);
+
   if (activeCards.length === 0) {
     container.classList.add('hidden');
     cardsEl.innerHTML = '';
