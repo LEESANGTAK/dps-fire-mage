@@ -267,12 +267,13 @@ function drawMeteorParticle(ctx, pt, dt) {
   ctx.restore();
 }
 
-function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
+function emitMeteorTrail(m, pose, dt, pool, reduced = false, activeMeteorCount = 1) {
   if (reduced || dt <= 0) return;
-  m.trailClock = (m.trailClock || 0) + Math.min(0.08, dt);
+  // 가장 긴 연기 수명까지 고려하여 동시 낙하 전체가 꼬리 예산을 나눕니다.
+  const spawnInterval = Math.max(0.008, Math.max(1, activeMeteorCount) * 0.52 / 200);
+  m.trailClock = (m.trailClock ?? spawnInterval) + Math.min(0.08, dt);
   
-  // 60FPS 기준 틱당 파티클 방출 정예화 (다중 메테오 동시 투하 시에도 풀 고갈/조기 삭제 없이 매끄럽게 연결)
-  const spawnInterval = 0.008;
+  // 프레임당 최대 두 개만 생성하며, 밀집 시 생성 간격을 늘립니다.
   const count = Math.min(2, Math.floor(m.trailClock / spawnInterval));
   m.trailClock %= spawnInterval;
   if (count <= 0) return;
@@ -299,14 +300,7 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
         removed++;
       }
     }
-    // 충분히 성숙한 파티클이 부족하여 정리가 덜 된 경우, 가장 앞선 꼬리 파티클에서 안전 교체
-    for (let i = 0; i < pool.length && removed < toFree; i++) {
-      if (pool[i].meteorTrail) {
-        pool.splice(i, 1);
-        i--;
-        removed++;
-      }
-    }
+    // 어린 꼬리는 다른 운석의 방출 때문에 삭제하지 않습니다.
     meteorCount -= removed;
     available = Math.min(count, Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length));
   }
@@ -339,7 +333,10 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   const sparkBatch = [];
 
   for (let i = 0; i < actualCount; i++) {
-    const roll = Math.random();
+    // 첫 입자와 매 두 번째 입자는 연기: 난수에 따른 연기 누락을 막습니다.
+    const emissionIndex = m.trailEmissionIndex || 0;
+    m.trailEmissionIndex = emissionIndex + 1;
+    const roll = emissionIndex % 2 === 0 ? 0 : 0.45 + Math.random() * 0.55;
 
     if (roll < 0.45) {
       // 1. 연기 퍼프 (Smoke Puff) - 화염 뒤에 든든하게 깔려 첨부 이미지의 대비를 만드는 검은 연기

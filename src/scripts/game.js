@@ -2031,7 +2031,7 @@ function updateAndDrawVfx(dt) {
     }
 
     const pose = getMeteorPose(m);
-    emitMeteorTrail(m, pose, meteorDt, particles, reducedMeteor);
+    emitMeteorTrail(m, pose, meteorDt, particles, reducedMeteor, meteors.length);
     drawComicMeteor(ctx, m, pose);
   }
 

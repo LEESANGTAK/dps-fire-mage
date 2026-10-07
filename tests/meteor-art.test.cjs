@@ -17,6 +17,31 @@ for(const fps of [30,60,144]) {
 const pool=[];emitMeteorTrail(m,getMeteorPose(m,.5),.1,pool,true);assert.equal(pool.length,0);
 emitMeteorTrail(m,getMeteorPose(m,.5),0,pool);assert.equal(pool.length,0);
 const full=Array.from({length:450},()=>({}));emitMeteorTrail(m,getMeteorPose(m,.5),.1,full);assert.equal(full.length,450);
+// 수십 개가 동시에 낙하해도 모든 운석의 연기가 여러 프레임 살아남아야 합니다.
+for (const fps of [30, 60, 144]) {
+ for (const simultaneous of [20, 50]) {
+  const swarm=Array.from({length:simultaneous},()=>({...m,trailClock:undefined,trailEmissionIndex:0}));
+  const crowded=[];const smokeFrames=new Map();
+  for(let frame=0;frame<fps;frame++) {
+   for(const meteor of swarm) {
+    const previous=new Set(crowded);
+    emitMeteorTrail(meteor,getMeteorPose(meteor,.5),1/fps,crowded,false,simultaneous);
+    for(const pt of crowded)if(!previous.has(pt))pt.owner=meteor;
+   }
+   for(const pt of crowded) {
+    if(pt.kind==='smoke'&&pt.life>=.08)smokeFrames.set(pt.owner,(smokeFrames.get(pt.owner)||0)+1);
+    pt.life+=1/fps;
+   }
+   for(let i=crowded.length-1;i>=0;i--)if(crowded[i].life>=crowded[i].maxLife)crowded.splice(i,1);
+   assert.ok(crowded.length<=260);
+  }
+  assert.equal(smokeFrames.size,simultaneous,'모든 운석에서 성숙한 연기가 유지되어야 합니다.');
+ }
+}
+const young=Array.from({length:260},()=>({meteorTrail:true,kind:'smoke',life:0,maxLife:.5}));
+const protectedSmoke=young[0];
+emitMeteorTrail({...m},getMeteorPose(m,.5),1/60,young);
+assert.ok(young.includes(protectedSmoke),'새 연기를 풀 재활용으로 즉시 삭제하면 안 됩니다.');
 const game=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
 const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('const monsterShards = [];'));
 const debrisContext=vm.createContext({});vm.runInContext(debrisCode,debrisContext);
