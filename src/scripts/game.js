@@ -2938,36 +2938,10 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   const masteryMult = getSkillMasteryMult(skillKey);
   rawDamage *= masteryMult;
 
-  // 3-1. 페이즈 보스 전용 기믹 판정
+  // 3-1. 최종 보스(Stage 20 라그나로스) 전용 기믹 판정
+  // (일반 몬스터 및 중간 보스 기믹은 로그라이크 덱빌딩 코어 루프와 스피드런 집중을 위해 전면 배제)
   const bg = state.bossGimmick;
-  if (state.currentStage === 10) {
-    // Phase 2 오우거: 도트 화상이 묻어있을 때 바위 갑옷 융해(+30%), 아닐 때는 35% 감소
-    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
-    if (isDotted) {
-      rawDamage *= 1.3;
-    } else if (!isDotTick) {
-      rawDamage *= 0.65;
-    }
-  } else if (state.currentStage === 15 && bg) {
-    // Phase 3 비룡: 공중 비행 중 일반 화염구 50% 회피, 즉발기(작렬/메테오) 적중 시 추락 기절
-    if (bg.isAirborne) {
-      if (skillKey === 'fireblast' || skillKey === 'meteor') {
-        bg.isAirborne = false;
-        bg.groggyTimer = 3.5;
-        triggerArenaShake('lg');
-        playSound('meteor_impact');
-        spawnFloatingText('💥 비룡 격추! 3.5초간 기절!', 'fct-crit', -45, { isBig: true });
-        const dEl = document.getElementById('dummy-avatar');
-        if (dEl) dEl.classList.remove('airborne-flying');
-      } else if (skillKey === 'fireball' && Math.random() < 0.5) {
-        spawnFloatingText('💨 빗나감 (공중 회피)', 'fct-normal', 0);
-        return;
-      }
-    } else if (bg.groggyTimer > 0) {
-      isCrit = true; // 기절 중 100% 확정 크리티컬
-      rawDamage *= getPlayerStats().critDmg;
-    }
-  } else if (state.currentStage === 20 && bg && bg.shield > 0) {
+  if (state.currentStage === 20 && bg && bg.shield > 0) {
     // Phase 4 라그나로스: 불의 심장 보호막 우선 흡수
     bg.shield -= Math.round(rawDamage);
     if (bg.shield <= 0) {
@@ -2977,32 +2951,6 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       playSound('meteor_impact');
       spawnFloatingText('💥 불의 심장 파괴! 화염 역류!', 'fct-crit', -50, { isBig: true });
       rawDamage *= 1.5;
-    }
-  } else if ([3, 7, 12, 17].includes(state.currentStage)) {
-    // 일반 몬스터 기믹 1: 가연성 기름막 (도트가 걸려 있는 동안 치명타 피해 2배)
-    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
-    if (isDotted && isCrit) {
-      rawDamage *= 2.0;
-    }
-  } else if ([4, 8, 14, 18].includes(state.currentStage) && bg) {
-    // 일반 몬스터 기믹 2: 단단한 껍질 (치명타 2회 시 껍질 파괴 & 즉시 몰열 장전)
-    if (!bg.isShellBroken) {
-      if (isCrit) {
-        bg.shellCritHits = (bg.shellCritHits || 0) + 1;
-        if (bg.shellCritHits >= 2) {
-          bg.isShellBroken = true;
-          triggerArenaShake('sm');
-          playSound('meteor_impact');
-          spawnFloatingText('💥 껍질 파괴! 몰아치는 열기 충전!', 'fct-crit', -45, { isBig: true });
-          if (state.grimoires.meteor) {
-            state.combat.critStreak = 2;
-            state.combat.streakTimer = 6.0;
-            checkBountyProgress('hot_streak_trigger', 1);
-          }
-        }
-      } else if (!isDotTick) {
-        rawDamage *= 0.6; // 껍질 방어력: 일반 피해 40% 감소
-      }
     }
   }
 
@@ -5051,48 +4999,10 @@ function updateBossGimmick(dt) {
   if (!bg) return;
   const stage = state.currentStage;
   const badge = document.getElementById('boss-gimmick-badge');
-  const dummyEl = document.getElementById('dummy-avatar');
 
-  if (stage === 10) {
-    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
-    if (badge) {
-      badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy', 'gimmick-shield');
-      if (isDotted) {
-        badge.classList.add('gimmick-melted');
-        badge.textContent = '🔥 갑옷 융해! (+30% 피해 증폭)';
-      } else {
-        badge.classList.add('gimmick-armor');
-        badge.textContent = '🪨 바위 갑옷 (피해 35% 감소)';
-      }
-    }
-  } else if (stage === 15) {
-    if (bg.groggyTimer > 0) {
-      bg.groggyTimer -= dt;
-      if (bg.groggyTimer <= 0) {
-        bg.groggyTimer = 0;
-      }
-      if (badge) {
-        badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-shield');
-        badge.classList.add('gimmick-groggy');
-        badge.textContent = `💫 추락 기절! (100% 확정 크리 · ${bg.groggyTimer.toFixed(1)}s)`;
-      }
-    } else if (bg.isAirborne) {
-      if (badge) {
-        badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-groggy', 'gimmick-shield');
-        badge.classList.add('gimmick-airborne');
-        badge.textContent = '🌪️ 비룡 비상! (즉발 마법으로 격추 가능)';
-      }
-    } else {
-      if (state.monster.hp <= state.monster.maxHp * 0.5 && !bg.airborneDone && !state.monster.isDying) {
-        bg.isAirborne = true;
-        bg.airborneDone = true;
-        if (dummyEl) dummyEl.classList.add('airborne-flying');
-        spawnFloatingText('🌪️ 비룡이 공중으로 비상했습니다!', 'fct-crit', -45);
-        playSound('proc');
-      }
-      if (badge && !bg.isAirborne && bg.groggyTimer <= 0) badge.classList.add('hidden');
-    }
-  } else if (stage === 20) {
+  // 최종 보스(Stage 20 라그나로스) 불의 심장 보호막만 최종 관문으로 유지
+  // (일반 몬스터 및 중간 보스는 덱 시너지 집중을 위해 불필요한 기믹 배지 완전 제거)
+  if (stage === 20) {
     if (bg.shield > 0) {
       bg.shieldTimer -= dt;
       if (badge) {
@@ -5119,28 +5029,6 @@ function updateBossGimmick(dt) {
         spawnFloatingText('🌋 불의 심장 전개! 10초 내 보호막을 파괴하세요!', 'fct-crit', -50, { isBig: true });
       }
       if (badge && bg.shield <= 0) badge.classList.add('hidden');
-    }
-  } else if ([3, 7, 12, 17].includes(stage)) {
-    // 일반 몬스터 기믹 1: 가연성 기름막 (화상/불장판 도트 유지 시 치명타 2배 증폭!)
-    const isDotted = Boolean(state.combat.igniteRem > 0 || state.combat.flamePatchRem > 0);
-    if (badge) {
-      badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy', 'gimmick-shield');
-      badge.classList.add(isDotted ? 'gimmick-melted' : 'gimmick-armor');
-      badge.textContent = isDotted ? '🛢️ 기름 발화! (치명타 피해 +100%)' : '🛢️ 가연성 기름막 (도트 시 크리 2배)';
-    }
-  } else if ([4, 8, 14, 18].includes(stage)) {
-    // 일반 몬스터 기믹 2: 단단한 껍질 (치명타 2회 적중 시 껍질 파괴 & 즉시 몰열 장전!)
-    const hits = bg.shellCritHits || 0;
-    const isBroken = Boolean(bg.isShellBroken);
-    if (badge) {
-      badge.classList.remove('hidden', 'gimmick-armor', 'gimmick-melted', 'gimmick-airborne', 'gimmick-groggy', 'gimmick-shield');
-      if (isBroken) {
-        badge.classList.add('gimmick-groggy');
-        badge.textContent = '💥 껍질 파괴됨! (방어력 0)';
-      } else {
-        badge.classList.add('gimmick-armor');
-        badge.textContent = `💎 단단한 껍질 (${hits}/2 크리 시 파괴)`;
-      }
     }
   } else {
     if (badge) badge.classList.add('hidden');

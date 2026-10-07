@@ -49,20 +49,17 @@ test('Step 2: 불사조 승천 시 마도서 스킬 및 자동시전 영구 보�
   assert.ok(gameJsContent.includes('total = (state.ascensionCount || 0) * 1'), '승천 횟수당 영구 스킬 포인트가 연동되어야 합니다.');
 });
 
-test('Step 3: 5스테이지 단위 페이즈 보스 기믹 검증', () => {
+test('Step 3: 최종 보스(라그나로스) 불의 심장 보호막 기믹 및 일반 몬스터 기믹 배제 검증', () => {
   assert.ok(gameJsContent.includes('updateBossGimmick'), '보스 기믹 갱신 함수가 구현되어 있어야 합니다.');
   assert.ok(gameJsContent.includes('boss-gimmick-badge'), '보스 기믹 뱃지 연동이 포함되어 있어야 합니다.');
 
-  // Stage 10 오우거 바위 갑옷 & 융해
-  assert.ok(gameJsContent.includes('바위 갑옷'), '오우거 바위 갑옷 기믹이 포함되어 있어야 합니다.');
-  assert.ok(gameJsContent.includes('갑옷 융해'), '화상 도트 연계 시 갑옷 융해 기믹이 포함되어 있어야 합니다.');
-
-  // Stage 15 비룡 비상 & 격추 기절
-  assert.ok(gameJsContent.includes('isAirborne'), '비룡 공중 비행 상태가 구현되어 있어야 합니다.');
-  assert.ok(gameJsContent.includes('groggyTimer'), '격추 시 그로기 기절 타이머가 구현되어 있어야 합니다.');
-
-  // Stage 20 라그나로스 불의 심장 실드
+  // Stage 20 라그나로스 불의 심장 실드 유지 검증
   assert.ok(gameJsContent.includes('shieldTimer'), '라그나로스 광폭화 보호막 타이머가 구현되어 있어야 합니다.');
+  assert.ok(gameJsContent.includes('불의 심장'), '라그나로스 불의 심장 기믹이 구현되어 있어야 합니다.');
+
+  // 일반 몬스터 및 중간 보스 기믹 배제 검증 (스피드런 쾌감 집중)
+  assert.ok(!gameJsContent.includes('바위 갑옷 (피해 35% 감소)'), '오우거 바위 갑옷 감소 페널티가 제거되어 있어야 합니다.');
+  assert.ok(!gameJsContent.includes('비룡 비상! (즉발 마법으로 격추 가능)'), '비룡 공중 회피 페널티가 제거되어 있어야 합니다.');
 });
 
 test('Step 3: 순환형 미니 현상금(Bounty) 퀘스트 시스템 검증', () => {

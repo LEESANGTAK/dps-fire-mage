@@ -87,49 +87,21 @@ test('Step 3: 보스 처치 시간 실측 단축치 및 발화 몰열 횟수 리
 });
 
 // ==========================================
-// 4. [Step 4] 일반 몬스터의 "딜사이클 촉매" 기믹 2종
+// 4. [Step 4] 덱빌딩 코어 루프 집중을 위한 일반 몬스터 잔기믹 배제 및 순수 딜사이클 검증
 // ==========================================
-test('Step 4: 일반 몬스터 촉매 기믹 2종(기름막 도트 증폭 & 껍질 파괴 몰열) 검증', () => {
-  assert.ok(gameJsContent.includes('[3, 7, 12, 17].includes(state.currentStage)'), '기름막 기믹 스테이지가 지정되어 있어야 합니다.');
-  assert.ok(gameJsContent.includes('[4, 8, 14, 18].includes(state.currentStage)'), '단단한 껍질 기믹 스테이지가 지정되어 있어야 합니다.');
+test('Step 4: 덱빌딩 코어 루프 집중을 위한 일반 몬스터 잔기믹 배제 및 순수 딜사이클 검증', () => {
+  // 4-1. 일반 스테이지 딜사이클 방해 잔기믹(기름막/단단한 껍질 방어력 감소)이 배제되었는지 검증
+  assert.ok(!gameJsContent.includes('rawDamage *= 0.6; // 껍질 방어력'), '단단한 껍질의 불합리한 딜 40% 감소 페널티가 제거되어 있어야 합니다.');
+  assert.ok(!gameJsContent.includes("badge.textContent = '🛢️ 가연성 기름막"), '일반 몬스터 기름막 UI 배지가 제거되어 있어야 합니다.');
 
-  // 4-1. 가연성 기름막: 도트가 걸려 있을 때 크리티컬 피해 2배 증폭
+  // 4-2. 일반 스테이지에서는 덱 카드 시너지의 데미지가 페널티 없이 100% 온전히 발휘되는지 검증
   let rawDmg = 100;
-  const isDotted = true;
   const isCrit = true;
-  if (isDotted && isCrit) {
-    rawDmg *= 2.0;
+  const critMult = 2.0;
+  if (isCrit) {
+    rawDmg *= critMult;
   }
-  assert.equal(rawDmg, 200, '기름막 상태에서 도트+치명타 적중 시 2배 피해');
-
-  // 4-2. 단단한 껍질: 치명타 2회 적중 시 껍질 파괴 및 몰열 충전
-  const bg = { shellCritHits: 0, isShellBroken: false };
-  let streak = 0;
-
-  function hitShell(crit) {
-    if (!bg.isShellBroken) {
-      if (crit) {
-        bg.shellCritHits++;
-        if (bg.shellCritHits >= 2) {
-          bg.isShellBroken = true;
-          streak = 2; // 몰열 2스택 즉시 충전
-        }
-      }
-    }
-  }
-
-  hitShell(false);
-  assert.equal(bg.shellCritHits, 0);
-  assert.equal(bg.isShellBroken, false);
-
-  hitShell(true);
-  assert.equal(bg.shellCritHits, 1);
-  assert.equal(bg.isShellBroken, false);
-
-  hitShell(true);
-  assert.equal(bg.shellCritHits, 2);
-  assert.equal(bg.isShellBroken, true, '치명타 2회 적중 시 껍질 파괴');
-  assert.equal(streak, 2, '껍질 파괴 즉시 몰아치는 열기(메테오) 2스택 무료 충전!');
+  assert.equal(rawDmg, 200, '일반 몬스터 공격 시 덱의 치명타 배수가 어떠한 껍질 방어 페널티 없이 온전히 적용되어야 합니다.');
 });
 
 // ==========================================
