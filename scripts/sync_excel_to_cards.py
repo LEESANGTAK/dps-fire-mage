@@ -28,7 +28,7 @@ def sync_excel_to_json():
         sys.exit(1)
 
     wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
-    ws = wb.active
+    ws = wb['RoguelikeCards'] if 'RoguelikeCards' in wb.sheetnames else wb.active
 
     cards = []
 

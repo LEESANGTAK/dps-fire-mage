@@ -98,8 +98,8 @@
     "build": "crit",
     "maxStack": 2,
     "desc": "메테오의 재사용 대기시간이 <b>50% 감소</b>하고 피해량이 <b>+60%</b> 증가합니다.",
-    "mechanic": "meteor_buff",
-    "prerequisite": "has_meteor"
+    "prerequisite": "has_meteor",
+    "mechanic": "meteor_buff"
   },
   {
     "id": "crit_crimson_frenzy",
@@ -109,8 +109,8 @@
     "build": "crit",
     "maxStack": 1,
     "desc": "발화(마력 폭주) 지속 시간이 2배가 되며, 발화 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.",
-    "mechanic": "combustion_god",
-    "prerequisite": "has_combustion"
+    "prerequisite": "has_combustion",
+    "mechanic": "combustion_god"
   },
   {
     "id": "sum_spirit",
@@ -130,8 +130,8 @@
     "build": "summon",
     "maxStack": 3,
     "desc": "모든 소환수의 공격 속도 <b>+50%</b> 및 공격력 <b>+40%</b> 증가.",
-    "mechanic": "spirit_frenzy",
     "prerequisite": "has_summon",
+    "mechanic": "spirit_frenzy",
     "mechanicParams": {
       "spiritDamageMult": 1.4,
       "spiritSpeedMult": 1.5
@@ -145,8 +145,8 @@
     "build": "summon",
     "maxStack": 1,
     "desc": "마법사가 화염구를 발사할 때마다 <b>소환된 모든 정령이 동시에 협공 탄환</b>을 발사합니다.",
-    "mechanic": "synchronized_fire",
-    "prerequisite": "has_summon"
+    "prerequisite": "has_summon",
+    "mechanic": "synchronized_fire"
   },
   {
     "id": "sum_cinder_lord",
@@ -156,8 +156,8 @@
     "build": "summon",
     "maxStack": 1,
     "desc": "소환수 1기당 마법사의 모든 주문 피해량이 <b>+30%</b> 증폭됩니다.",
-    "mechanic": "cinder_lord",
-    "prerequisite": "has_summon"
+    "prerequisite": "has_summon",
+    "mechanic": "cinder_lord"
   },
   {
     "id": "util_gold_greed",
@@ -166,10 +166,7 @@
     "rarity": "common",
     "build": "utility",
     "maxStack": 3,
-    "desc": "몬스터 처치 시 획득하는 골드가 <b>+60%</b> 증가합니다.",
-    "stats": {
-      "goldMult": 0.6
-    }
+    "desc": "몬스터 처치 시 획득하는 골드가 <b>+60%</b> 증가합니다."
   },
   {
     "id": "util_executioner",
