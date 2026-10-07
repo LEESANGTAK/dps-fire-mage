@@ -74,7 +74,7 @@
       rarity: RARITY.RARE,
       build: BUILD.RAPID,
       maxStack: 2,
-      desc: '화염구 시전 완료 시 4초간 시전 속도가 <b>+15%</b> 가속됩니다 (최대 5중첩).',
+      desc: '화염구 시전 완료 시 4초간 시전 속도가 <b>+15%</b> 가속됩니다 (최대 2중첩).',
       mechanic: 'haste_stack'
     },
     {
@@ -333,6 +333,7 @@
             break;
           case 'haste_stack':
             state.deckMechanics.hasteStack = true;
+            state.deckMechanics.hasteMaxStacks = (state.deckMechanics.hasteMaxStacks || 0) + 2;
             break;
           case 'gatling_mode':
             state.deckMechanics.gatlingMode = true;
@@ -421,6 +422,12 @@
         if (list && list.length > 0) {
           setCardPoolFromRaw(list);
           console.log(`[RoguelikeDeck] 📜 ${list.length}종의 카드를 roguelike-cards.json에서 성공적으로 로드했습니다.`);
+          if (typeof window !== 'undefined') {
+            if (typeof window.renderDeckStripUI === 'function') {
+              window.renderDeckStripUI();
+            }
+            window.dispatchEvent(new CustomEvent('deck-cards-updated', { detail: list }));
+          }
           return true;
         }
       }

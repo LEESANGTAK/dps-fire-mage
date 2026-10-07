@@ -3645,9 +3645,10 @@ function finishCast(skillKey) {
   if (skillKey === 'fireball') {
     checkBountyProgress('fireball_cast', 1);
 
-    // 로그라이크 덱: 가속 과부하 (화염구 시전 완료 시 4초간 +15% 가속 중첩, 최대 5중첩)
+    // 로그라이크 덱: 가속 과부하 (화염구 시전 완료 시 4초간 +15% 가속 중첩)
     if (state.deckMechanics && state.deckMechanics.hasteStack) {
-      state.combat.deckHasteStacks = Math.min(5, (state.combat.deckHasteStacks || 0) + 1);
+      const maxHaste = (state.deckMechanics && state.deckMechanics.hasteMaxStacks) || 2;
+      state.combat.deckHasteStacks = Math.min(maxHaste, (state.combat.deckHasteStacks || 0) + 1);
       state.combat.deckHasteTimer = 4.0;
     }
 
@@ -5278,7 +5279,17 @@ function showDeckTooltip(card, targetEl) {
   const tooltip = document.getElementById('deck-vampire-tooltip');
   if (!tooltip || !card) return;
 
-  const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: card.rarity, color: '#94a3b8' };
+  // 최신 CARD_POOL에서 실시간 카드 정보 동기화 (F5 및 엑셀 수정 실시간 반영)
+  const liveCard = (deckManager && deckManager.CARD_POOL.find(c => c.id === card.id)) || card;
+  const title = liveCard.title || card.title;
+  const icon = liveCard.icon || card.icon;
+  const rarity = liveCard.rarity || card.rarity;
+  const build = liveCard.build || card.build;
+  const maxStack = liveCard.maxStack || card.maxStack || 1;
+  const desc = liveCard.desc || card.desc || '';
+  const stats = liveCard.stats || card.stats;
+
+  const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[rarity]) || { name: rarity, color: '#94a3b8' };
   const buildNames = {
     rapid: '⚡ 속사 머신건',
     crit: '💥 극치명타 몰열',
@@ -5286,13 +5297,13 @@ function showDeckTooltip(card, targetEl) {
     util: '🛡️ 유틸리티',
     spell: '📖 고대 주문서'
   };
-  const buildLabel = buildNames[card.build] || card.build;
-  const isMax = card.count >= (card.maxStack || 1);
-  const stackLabel = isMax ? 'MAX' : `중첩 ${card.count} / ${card.maxStack || 1}`;
+  const buildLabel = buildNames[build] || build;
+  const isMax = card.count >= maxStack;
+  const stackLabel = isMax ? 'MAX' : `중첩 ${card.count} / ${maxStack}`;
 
   // 누적 스탯 칩 계산
   let statsHtml = '';
-  if (card.stats && typeof card.stats === 'object') {
+  if (stats && typeof stats === 'object') {
     const chips = [];
     const statLabels = {
       sp: '주문력',
@@ -5301,7 +5312,7 @@ function showDeckTooltip(card, targetEl) {
       critDmg: '치명피해',
       goldBonus: '골드보너스'
     };
-    for (const [key, val] of Object.entries(card.stats)) {
+    for (const [key, val] of Object.entries(stats)) {
       const totalVal = typeof val === 'number' ? (val * card.count) : val;
       const unit = (key === 'sp') ? '' : '%';
       const sign = (typeof totalVal === 'number' && totalVal > 0) ? '+' : '';
@@ -5314,18 +5325,18 @@ function showDeckTooltip(card, targetEl) {
 
   tooltip.innerHTML = `
     <div class="vtt-header">
-      <span class="vtt-icon">${card.icon}</span>
+      <span class="vtt-icon">${icon}</span>
       <div class="vtt-title-box">
-        <span class="vtt-title">${card.title}</span>
+        <span class="vtt-title">${title}</span>
         <div class="vtt-meta-row">
-          <span class="vtt-rarity-pill ${card.rarity}">${rarityMeta.name}</span>
+          <span class="vtt-rarity-pill ${rarity}">${rarityMeta.name}</span>
           <span class="vtt-build-tag">${buildLabel}</span>
         </div>
       </div>
       <span class="vtt-stack-pill ${isMax ? 'is-max' : ''}">${stackLabel}</span>
     </div>
     <div class="vtt-divider"></div>
-    <div class="vtt-desc">${card.desc || ''}</div>
+    <div class="vtt-desc">${desc}</div>
     ${statsHtml}
   `;
 
@@ -5400,6 +5411,16 @@ function renderDeckStripUI() {
     slot.addEventListener('click', () => showDeckTooltip(c, slot));
 
     cardsEl.appendChild(slot);
+  });
+}
+
+// 전역 함수 등록 및 JSON 파일 비동기 로드 시 실시간 갱신 연동
+if (typeof window !== 'undefined') {
+  window.renderDeckStripUI = renderDeckStripUI;
+  window.addEventListener('deck-cards-updated', () => {
+    if (typeof renderDeckStripUI === 'function') {
+      renderDeckStripUI();
+    }
   });
 }
 
