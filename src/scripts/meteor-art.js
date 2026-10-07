@@ -271,9 +271,9 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   if (reduced || dt <= 0) return;
   m.trailClock = (m.trailClock || 0) + Math.min(0.08, dt);
   
-  // 60FPS 기준 틱당 파티클 방출 최적화 (연속 메테오 낙하 시에도 파티클 풀 고갈 차단)
-  const spawnInterval = 0.0075;
-  const count = Math.min(10, Math.floor(m.trailClock / spawnInterval));
+  // 60FPS 기준 틱당 파티클 방출 정예화 (다중 메테오 동시 투하 시에도 풀 고갈/조기 삭제 없이 매끄럽게 연결)
+  const spawnInterval = 0.008;
+  const count = Math.min(2, Math.floor(m.trailClock / spawnInterval));
   m.trailClock %= spawnInterval;
   if (count <= 0) return;
 
@@ -290,6 +290,16 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
   if (available < count && meteorCount > 0) {
     const toFree = Math.min(count, meteorCount);
     let removed = 0;
+    // 1차: 방금 생성된 파티클의 조기 삭제(증발)를 방지하기 위해, 충분히 성숙한(수명 45% 이상 지난) 오래된 꼬리 파티클부터 교체
+    for (let i = 0; i < pool.length && removed < toFree; i++) {
+      const pt = pool[i];
+      if (pt.meteorTrail && typeof pt.life === 'number' && typeof pt.maxLife === 'number' && (pt.life >= 0.12 || pt.life / pt.maxLife >= 0.45)) {
+        pool.splice(i, 1);
+        i--;
+        removed++;
+      }
+    }
+    // 충분히 성숙한 파티클이 부족하여 정리가 덜 된 경우, 가장 앞선 꼬리 파티클에서 안전 교체
     for (let i = 0; i < pool.length && removed < toFree; i++) {
       if (pool[i].meteorTrail) {
         pool.splice(i, 1);
@@ -298,6 +308,21 @@ function emitMeteorTrail(m, pose, dt, pool, reduced = false) {
       }
     }
     meteorCount -= removed;
+    available = Math.min(count, Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length));
+  }
+
+  // 만약 전체 풀(450)이 일반 파티클로 꽉 차서 메테오 꼬리를 스폰할 수 없는 경우, 오래된 일반 파티클 정리
+  if (available < count && pool.length + count > maxTotalParticles) {
+    const need = count - Math.max(0, available);
+    let freed = 0;
+    for (let i = 0; i < pool.length && freed < need && pool.length + count > maxTotalParticles; i++) {
+      const pt = pool[i];
+      if (!pt.meteorTrail && typeof pt.life === 'number' && typeof pt.maxLife === 'number' && pt.life / pt.maxLife >= 0.5) {
+        pool.splice(i, 1);
+        i--;
+        freed++;
+      }
+    }
     available = Math.min(count, Math.min(maxMeteorParticles - meteorCount, maxTotalParticles - pool.length));
   }
   if (available <= 0) return;

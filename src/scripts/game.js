@@ -1983,8 +1983,11 @@ function updateAndDrawVfx(dt) {
       const desiredBurst = reducedMeteor ? 6 : Math.round(30 * m.scale);
       if (particles.length + desiredBurst > 450) {
         let freed = 0;
+        // 비행 중인 다른 메테오의 생생한 꼬리는 보호하고, 이미 수명이 많이 지난 파티클을 우선 정리
         for (let pIdx = 0; pIdx < particles.length && freed < desiredBurst; pIdx++) {
-          if (particles[pIdx].meteorTrail) {
+          const pt = particles[pIdx];
+          const isOld = !pt.meteorTrail || (typeof pt.life === 'number' && typeof pt.maxLife === 'number' && pt.life / pt.maxLife >= 0.55);
+          if (isOld) {
             particles.splice(pIdx, 1);
             pIdx--;
             freed++;
