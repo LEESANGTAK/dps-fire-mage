@@ -5422,10 +5422,11 @@ body {
 
 .deck-strip-cards {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
+  max-height: 460px;
   gap: 6px;
-  max-width: 290px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 /* 뱀파이어 서바이버즈 아이템 슬롯 */

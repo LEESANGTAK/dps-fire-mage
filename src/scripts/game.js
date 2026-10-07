@@ -5318,19 +5318,22 @@ function showDeckTooltip(card, targetEl) {
 
   tooltip.classList.remove('hidden');
 
-  // 위치 계산 (타겟 슬롯 기준 바로 아래 또는 위)
+  // 위치 계산 (세로 슬롯 기준: 슬롯의 우측에 바로 배치하여 가림 방지)
   if (targetEl && targetEl.getBoundingClientRect) {
     const rect = targetEl.getBoundingClientRect();
     const ttWidth = 270;
-    let left = rect.left;
+    
+    // 기본은 슬롯 우측에 10px 띄워서 표시
+    let left = rect.right + 10;
     if (left + ttWidth > window.innerWidth - 12) {
-      left = window.innerWidth - ttWidth - 12;
+      // 오른쪽 화면을 넘어가면 슬롯 왼쪽으로 배치
+      left = Math.max(10, rect.left - ttWidth - 10);
     }
-    if (left < 10) left = 10;
 
-    let top = rect.bottom + 8;
-    if (top + 160 > window.innerHeight) {
-      top = Math.max(10, rect.top - 140);
+    let top = rect.top;
+    // 화면 하단을 넘어가면 위로 올리기
+    if (top + 180 > window.innerHeight) {
+      top = Math.max(10, window.innerHeight - 190);
     }
 
     tooltip.style.left = `${left}px`;
