@@ -37,6 +37,23 @@ def export_to_excel():
         if isinstance(cards, dict) and 'cards' in cards:
             cards = cards['cards']
 
+    # 기존 파일이 있다면 기획자님이 조절해 둔 열 너비를 읽어서 100% 보존
+    existing_widths_sheet1 = {}
+    existing_widths_sheet2 = {}
+    if os.path.exists(EXCEL_PATH):
+        try:
+            old_wb = openpyxl.load_workbook(EXCEL_PATH)
+            if 'RoguelikeCards' in old_wb.sheetnames:
+                for col_letter, col_dim in old_wb['RoguelikeCards'].column_dimensions.items():
+                    if col_dim.width is not None:
+                        existing_widths_sheet1[col_letter] = col_dim.width
+            if '📖 옵션_도움말_가이드' in old_wb.sheetnames:
+                for col_letter, col_dim in old_wb['📖 옵션_도움말_가이드'].column_dimensions.items():
+                    if col_dim.width is not None:
+                        existing_widths_sheet2[col_letter] = col_dim.width
+        except Exception:
+            pass
+
     wb = openpyxl.Workbook()
 
     # =========================================================================
@@ -45,7 +62,7 @@ def export_to_excel():
     ws = wb.active
     ws.title = "RoguelikeCards"
 
-    # 헤더 정의: (표시명, JSON 키 매핑, 열 너비, 헤더 메모 설명)
+    # 헤더 정의: (표시명, JSON 키 매핑, 기본 열 너비, 헤더 메모 설명)
     columns = [
         ("ID", "id", 20, "카드의 고유 시스템 ID입니다. 영문 소문자와 밑줄로 작성합니다.\n(예: rapid_haste_1)"),
         ("이름", "title", 18, "게임 내 카드 상단에 표시될 한글 이름입니다.\n(예: 화염의 손길)"),
@@ -72,15 +89,16 @@ def export_to_excel():
     border_thin = Side(border_style="thin", color="CCCCCC")
     cell_border = Border(left=border_thin, right=border_thin, top=border_thin, bottom=border_thin)
 
-    # 1. 헤더 작성 및 메모(Comment) 부착
-    for col_idx, (col_name, _, width, comment_text) in enumerate(columns, 1):
+    # 1. 헤더 작성 및 메모(Comment) 부착, 기획자 지정 열 너비 보존
+    for col_idx, (col_name, _, default_width, comment_text) in enumerate(columns, 1):
         cell = ws.cell(row=1, column=col_idx, value=col_name)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = center_align
         cell.border = cell_border
         cell.comment = Comment(comment_text, "DPS: Fire Mage 엔진", height=120, width=280)
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
+        col_letter = get_column_letter(col_idx)
+        ws.column_dimensions[col_letter].width = existing_widths_sheet1.get(col_letter, default_width)
 
     ws.row_dimensions[1].height = 30
 
@@ -330,14 +348,14 @@ def export_to_excel():
 
         current_r += 2  # 섹션 간 여백
 
-    # 가이드 시트 컬럼 너비 조정 (최대 폭 맞춤)
-    ws_guide.column_dimensions['A'].width = 24
-    ws_guide.column_dimensions['B'].width = 24
-    ws_guide.column_dimensions['C'].width = 30
-    ws_guide.column_dimensions['D'].width = 55
+    # 가이드 시트 컬럼 너비 조정 (기존 조절값 우선 보존)
+    ws_guide.column_dimensions['A'].width = existing_widths_sheet2.get('A', 24)
+    ws_guide.column_dimensions['B'].width = existing_widths_sheet2.get('B', 24)
+    ws_guide.column_dimensions['C'].width = existing_widths_sheet2.get('C', 30)
+    ws_guide.column_dimensions['D'].width = existing_widths_sheet2.get('D', 55)
 
     wb.save(EXCEL_PATH)
-    print(f"✨ [성공] 엑셀 파일(도움말 툴팁 + 가이드북 시트 포함) 생성 완료:")
+    print(f"✨ [성공] 엑셀 파일(기획자 커스텀 열 너비 100% 보존 완료):")
     print(f"   -> {EXCEL_PATH}")
 
 if __name__ == "__main__":
