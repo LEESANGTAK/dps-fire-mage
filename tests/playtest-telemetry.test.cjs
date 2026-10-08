@@ -17,34 +17,36 @@ test('Telemetry & Card Pool 무결성 검증', async (t) => {
     assert.ok(html.includes('id="btn-victory-export-telemetry"'), '승리 모달에 밸런스 로그 복사 버튼이 있어야 합니다.');
   });
 
-  await t.test('2. 카드 풀 확장 데이터 규격 검증 (총 29종, 일반 카드 풀 풍부화)', () => {
-    assert.equal(cardsJson.length, 29, '확장된 카드 풀은 총 29종이어야 합니다.');
-    
-    const commonCards = cardsJson.filter(c => c.rarity === 'common');
-    const rareCards = cardsJson.filter(c => c.rarity === 'rare');
-    const legendCards = cardsJson.filter(c => c.rarity === 'legendary');
+  await t.test('2. 카드 풀 구성 검증 (빌드별 등급 분포, 상위호환 중복 금지)', () => {
+    assert.equal(cardsJson.length, 27, '밸런스 패치 v2 카드 풀은 총 27종이어야 합니다.');
 
-    assert.ok(commonCards.length >= 15, `일반 카드는 최소 15종 이상이어야 합니다. (현재: ${commonCards.length}종)`);
-    assert.ok(rareCards.length >= 8, `희귀 카드는 최소 8종 이상이어야 합니다. (현재: ${rareCards.length}종)`);
-    assert.ok(legendCards.length >= 5, `전설 카드는 최소 5종 이상이어야 합니다. (현재: ${legendCards.length}종)`);
+    // 모든 빌드는 초반에 잡을 일반 카드와 빌드를 완성할 희귀/전설 카드를 함께 가져야 합니다.
+    for (const build of ['rapid', 'crit', 'summon', 'burn']) {
+      const cards = cardsJson.filter(c => c.build === build);
+      assert.ok(cards.some(c => c.rarity === 'common'), `${build} 빌드에 일반 카드가 있어야 합니다.`);
+      assert.ok(cards.some(c => c.rarity === 'rare'), `${build} 빌드에 희귀 카드가 있어야 합니다.`);
+      assert.ok(cards.some(c => c.rarity === 'legendary'), `${build} 빌드에 전설 카드가 있어야 합니다.`);
+    }
 
-    // 신규 추가된 일반 카드들 확인
-    const expectedNewIds = [
-      'common_ember_spark',
-      'common_pyro_flow',
-      'common_quick_cast',
-      'common_keen_eye',
-      'common_blazing_heat',
-      'common_flame_affinity',
-      'common_spirit_vitality',
-      'common_iron_will',
-      'common_bounty_hunter',
-      'common_cinder_spark'
-    ];
+    // 순수 스탯 카드끼리 모든 스탯이 같거나 높은 '완전 상위호환'이 있으면 선택지가 무의미해집니다.
+    const statCards = cardsJson.filter(c => c.stats && !c.mechanic && !c.spellKey);
+    for (const a of statCards) {
+      for (const b of statCards) {
+        if (a === b) continue;
+        const keys = new Set([...Object.keys(a.stats), ...Object.keys(b.stats)]);
+        const dominates = [...keys].every(k => (a.stats[k] || 0) >= (b.stats[k] || 0));
+        assert.ok(!dominates, `[${a.id}]가 [${b.id}]를 완전히 상위호환합니다.`);
+      }
+    }
 
-    expectedNewIds.forEach(id => {
-      assert.ok(cardsJson.some(c => c.id === id), `신규 일반 카드 [${id}]가 등록되어 있어야 합니다.`);
-    });
+    // 조건부 일시 파워업: 충전형과 대가형 카드가 모두 존재해야 합니다.
+    assert.ok(cardsJson.some(c => /_charge$/.test(c.mechanic || '')), '충전형 카드가 있어야 합니다.');
+    assert.ok(statCards.some(c => Object.values(c.stats).some(v => v < 0)), '이득과 손해가 함께 있는 대가형 카드가 있어야 합니다.');
+
+    // 쓸모없던 골드 카드와 자동 시전 카드는 카드 풀에서 제외되어야 합니다.
+    for (const id of ['util_gold_greed', 'common_bounty_hunter', 'spell_autocast']) {
+      assert.ok(!cardsJson.some(c => c.id === id), `[${id}]는 카드 풀에서 제거되어야 합니다.`);
+    }
   });
 
   await t.test('3. game.js 내 playtestTelemetry 객체 및 리포트 파싱 검증', () => {

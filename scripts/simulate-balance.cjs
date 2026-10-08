@@ -1,203 +1,208 @@
 /**
  * scripts/simulate-balance.cjs
- * 
- * DPS: Fire Mage 성장 곡선 및 밸런스 벤치마크 헤드리스 시뮬레이터
- * - 스테이지 1~20 전투 루프를 1,000회 몬테카를로 시뮬레이션
- * - 스테이지별 TTK(처치 시간), 초당 DPS, 카드 획득 분포(일반/희귀/전설) 통계 도출
- * - 주의: game.js 전투 코드를 실행하지 않는 간이 수식 모델이므로 절대 수치보다 곡선 비교 용도로 사용합니다.
+ *
+ * DPS: Fire Mage 실측형 밸런스 시뮬레이터
+ * - scripts/lib/headless-game.cjs로 실제 game.js 전투 코드를 그대로 실행합니다. (간이 수식 모델 아님)
+ * - 픽 전략(policy)별로 Stage 1~20 런을 반복하여 스테이지별 처치 시간, 총 런 시간, 보스 광폭화 실패율,
+ *   카드 픽 분포와 스킬별 피해 점유율을 집계합니다.
+ *
+ * 사용법: node scripts/simulate-balance.cjs [--runs 20] [--policy greedy|random|rapid|crit|summon|burn|all] [--seed 1]
+ *        node scripts/simulate-balance.cjs --calibrate [--runs 30] [--policy greedy]
+ *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
+ *                "목표 시간에 맞는 HP = 중앙값 DPS x 목표 시간"을 제안합니다.
  */
+const { createHeadlessGame } = require('./lib/headless-game.cjs');
 
-const { createDeckManager, CARD_POOL, RARITY } = require('../src/scripts/roguelike-deck.js');
+const args = process.argv.slice(2);
+const argValue = (name, fallback) => {
+  const i = args.indexOf(`--${name}`);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+};
+const RUNS = Number(argValue('runs', 20));
+const POLICY = argValue('policy', 'all');
+const BASE_SEED = Number(argValue('seed', 1));
+const CALIBRATE = args.includes('--calibrate');
+const FRAME = 1 / 30;
 
-// 1. 스테이지 몬스터 데이터 (game.js 기준)
-const STAGE_MONSTERS = [
-  { stage: 1, name: '초원 풀숲 슬라임', hp: 50, gold: 4, firstBonus: 2 },
-  { stage: 2, name: '푸른 늪지 슬라임', hp: 110, gold: 7, firstBonus: 4 },
-  { stage: 3, name: '들판 거대 들쥐', hp: 240, gold: 12, firstBonus: 8 },
-  { stage: 4, name: '고블린 정찰병', hp: 480, gold: 20, firstBonus: 14 },
-  { stage: 5, name: '붉은송곳니 군주', hp: 1000, gold: 35, firstBonus: 35 },
-  { stage: 6, name: '잿빛 숲 늑대', hp: 2400, gold: 52, firstBonus: 40 },
-  { stage: 7, name: '놀 야수사냥꾼', hp: 4000, gold: 80, firstBonus: 60 },
-  { stage: 8, name: '폐광 해골 광부', hp: 6600, gold: 125, firstBonus: 90 },
-  { stage: 9, name: '맹독 모래전갈', hp: 10800, gold: 190, firstBonus: 140 },
-  { stage: 10, name: '동굴 오우거 대족장', hp: 18500, gold: 300, firstBonus: 260 },
-  { stage: 11, name: '화염 비늘 도마뱀', hp: 29000, gold: 460, firstBonus: 350 },
-  { stage: 12, name: '심연 흡혈박쥐', hp: 46000, gold: 700, firstBonus: 500 },
-  { stage: 13, name: '고대 바위 파수꾼', hp: 74000, gold: 1050, firstBonus: 800 },
-  { stage: 14, name: '타락한 어둠마법사', hp: 118000, gold: 1600, firstBonus: 1200 },
-  { stage: 15, name: '붉은 화염 비룡', hp: 195000, gold: 2500, firstBonus: 2200 },
-  { stage: 16, name: '저주받은 기사단원', hp: 310000, gold: 3800, firstBonus: 3000 },
-  { stage: 17, name: '원한 서린 밴시', hp: 490000, gold: 5800, firstBonus: 4500 },
-  { stage: 18, name: '지하군주 거대거미', hp: 780000, gold: 8800, firstBonus: 7000 },
-  { stage: 19, name: '심연의 파멸수호병', hp: 1250000, gold: 13500, firstBonus: 11000 },
-  { stage: 20, name: '화염군주 라그나로스', hp: 2100000, gold: 22000, firstBonus: 25000 }
-];
+// 목표 처치 시간(초): 픽 전략 greedy의 중앙값 기준, 첫 클리어 약 13분 (일반 진행·카드 선택 포함 15분 내외)
+const TARGET_TTK = [9, 13, 16, 19, 45, 26, 28, 30, 32, 65, 34, 36, 38, 40, 75, 42, 44, 46, 48, 90];
+const STAGE_TIMEOUT_SEC = 1500;
 
-// 단일 런 시뮬레이션
-function simulateSingleRun() {
-  const deckManager = createDeckManager();
-  const state = {
-    currentStage: 1,
-    grimoires: {},
-    playerStatsBonus: {},
-    deckMechanics: {}
-  };
+const RARITY_SCORE = { legendary: 3, rare: 2, common: 1 };
 
-  const stageResults = [];
+// 카드 3장 중 하나를 고르는 전략
+const POLICIES = {
+  // 사람이 흔히 하는 선택: 주문서 우선 → 높은 등급 → 이미 모은 빌드와 같은 계열
+  greedy(choices, deck, pool, rand) {
+    const buildCount = {};
+    for (const [id, n] of Object.entries(deck)) {
+      const c = pool.find((x) => x.id === id);
+      if (c) buildCount[c.build] = (buildCount[c.build] || 0) + n;
+    }
+    return maxBy(choices, (c) => (c.spellKey ? 100 : 0) + RARITY_SCORE[c.rarity] * 10 + (buildCount[c.build] || 0) + rand() * 0.1);
+  },
+  // 아무 생각 없이 고르는 하한선
+  random(choices, deck, pool, rand) {
+    return choices[Math.floor(rand() * choices.length)];
+  }
+};
+// 특정 빌드에 올인하는 전략 (해당 빌드 카드 → 주문서 → 등급 순)
+for (const build of ['rapid', 'crit', 'summon', 'burn']) {
+  POLICIES[build] = (choices, deck, pool, rand) =>
+    maxBy(choices, (c) => (c.build === build ? 200 : 0) + (c.spellKey ? 50 : 0) + RARITY_SCORE[c.rarity] * 10 + rand() * 0.1);
+}
 
-  for (let sIdx = 0; sIdx < STAGE_MONSTERS.length; sIdx++) {
-    const stageData = STAGE_MONSTERS[sIdx];
-    const isBoss = (sIdx + 1) % 5 === 0;
+function maxBy(list, score) {
+  let best = list[0];
+  let bestScore = -Infinity;
+  for (const item of list) {
+    const s = score(item);
+    if (s > bestScore) { bestScore = s; best = item; }
+  }
+  return best;
+}
 
-    // 1. 현재 플레이어 스탯 계산
-    let totalSp = 10;
-    let totalCrit = 5;
-    let totalHaste = 0;
-    let totalCritDmg = 1.5;
+function simulateRun(policyName, seed) {
+  const g = createHeadlessGame({ seed });
+  const rand = g.context.Math.random;
+  const policy = POLICIES[policyName];
+  const pool = g.run('RoguelikeDeck.CARD_POOL');
+  const stages = [];
+  let stageStartPlay = 0;
+  let lastCleared = 0;
+  let reactTimer = 0;
+  let failedAt = null;
+  const st = g.run('state');
+  const calib = [];
+  let calibStage = 0;
+  let calibDamageStart = 0;
+  const totalDamage = () => Object.values(st.skillDamage).reduce((a, s) => a + s.dmg, 0);
 
-    // 카드 보너스 합산
-    totalSp += state.playerStatsBonus.sp || 0;
-    totalCrit += state.playerStatsBonus.crit || 0;
-    totalCrit = Math.min(100, totalCrit);
-    totalCritDmg += state.playerStatsBonus.critDmg || 0;
-    totalHaste += state.playerStatsBonus.haste || 0;
+  while (true) {
+    if (st.runFailed) { failedAt = st.currentStage; break; }
+    if (st.campaignCleared && st.isPaused) break;
 
-    const hasteMult = 1 + totalHaste / 100;
-
-    // 화염구 시전 시간 (초)
-    const isGatling = Boolean(state.deckMechanics && state.deckMechanics.gatlingMode);
-    const fireballCastTime = isGatling ? 0.3 : Math.max(0.4, 1.8 / hasteMult);
-    const fireballDamage = totalSp * 1.5;
-
-    // 초당 화염구 DPS
-    const critRate = totalCrit / 100;
-    const avgFireballHit = fireballDamage * (1 - critRate) + fireballDamage * totalCritDmg * critRate;
-    let dps = avgFireballHit / fireballCastTime;
-
-    // 분열 화염구 효과
-    if (state.deckMechanics && state.deckMechanics.splitFireball) {
-      dps += (avgFireballHit * 0.4 * 2 * state.deckMechanics.splitFireball) / fireballCastTime;
+    if (st.isPaused) {
+      const choices = g.run('deckManager.getCurrentChoices()');
+      if (choices.length > 0) {
+        const pick = policy(choices, g.run('deckManager.getActiveDeck()'), pool, rand);
+        g.run(`selectAwakeningCard(${JSON.stringify(pick.id)})`);
+      } else {
+        g.step(FRAME);
+      }
+      continue;
     }
 
-    // 소환수 DPS
-    const spirits = (state.deckMechanics && state.deckMechanics.extraSpirits) || 0;
-    if (spirits > 0) {
-      const spiritHit = totalSp * 0.45;
-      const spiritDps = (spiritHit / 1.3) * spirits;
-      dps += spiritDps;
+    // 자동 시전이 꺼져 있으면 사람처럼 0.25초 반응 지연으로 화염구를 누릅니다.
+    const c = st.combat;
+    if (!(st.grimoires.autocast && st.autoCast)) {
+      if (!c.castingSkill && c.gcdRemaining <= 0) {
+        reactTimer += FRAME;
+        if (reactTimer >= 0.25) { g.run("triggerSkill('fireball', true)"); reactTimer = 0; }
+      } else {
+        reactTimer = 0;
+      }
     }
 
-    // 보조 마법(불꽃 작렬, 메테오) DPS 간이 추산
-    if (state.grimoires.fireblast) {
-      dps += (totalSp * 2.2 * totalCritDmg) / 8.0;
-    }
-    if (state.grimoires.meteor) {
-      const meteorInterval = isGatling ? 2.5 : 5.0;
-      dps += (totalSp * 5.0 * (1 + (critRate * (totalCritDmg - 1)))) / meteorInterval;
-    }
-
-    // 처형인 효과 (체력 40% 이하 시 70% 증폭) -> 평균 약 28% DPS 증가
-    if (state.deckMechanics && state.deckMechanics.executionerMult) {
-      dps *= (1 + state.deckMechanics.executionerMult * 0.4);
+    // 보정 모드: 스테이지 시작 시 체력을 무한으로 바꾸고 목표 시간 동안의 DPS만 측정
+    if (CALIBRATE && calibStage !== st.currentStage && !st.monster.isDying) {
+      calibStage = st.currentStage;
+      st.monster.maxHp = 1e15;
+      st.monster.hp = 1e15;
+      st.combat.bossEnrageRem = null;
+      calibDamageStart = totalDamage();
     }
 
-    dps = Math.max(1, dps);
+    g.step(FRAME);
 
-    // TTK (처치 시간)
-    const ttk = stageData.hp / dps;
+    if (CALIBRATE && !st.monster.isDying && st.playTimeSec - stageStartPlay >= TARGET_TTK[st.currentStage - 1]) {
+      calib.push({ stage: st.currentStage, dps: (totalDamage() - calibDamageStart) / (st.playTimeSec - stageStartPlay) });
+      st.monster.hp = 0;
+      g.run('onMonsterKilled()');
+    }
 
-    stageResults.push({
-      stage: stageData.stage,
-      hp: stageData.hp,
-      dps: Math.round(dps),
-      ttk: Number(ttk.toFixed(2)),
-      deckSize: Object.values(deckManager.getActiveDeck()).reduce((a, b) => a + b, 0)
-    });
-
-    // 카드 3지선다 뽑기 & 무작위 1장 선택
-    const choices = deckManager.drawChoices(3, isBoss, state);
-    if (choices.length > 0) {
-      choices.sort((a, b) => {
-        const score = { [RARITY.LEGENDARY]: 3, [RARITY.RARE]: 2, [RARITY.COMMON]: 1 };
-        return (score[b.rarity] || 1) - (score[a.rarity] || 1);
-      });
-      deckManager.selectCard(choices[0].id, state);
+    if (st.highestClearedStage > lastCleared) {
+      lastCleared = st.highestClearedStage;
+      stages.push({ stage: lastCleared, ttk: st.playTimeSec - stageStartPlay });
+      stageStartPlay = st.playTimeSec;
+    } else if (st.playTimeSec - stageStartPlay > STAGE_TIMEOUT_SEC) {
+      failedAt = st.currentStage;
+      break;
     }
   }
 
-  // 획득한 카드 등급별 집계
-  const activeDeck = deckManager.getActiveDeck();
-  let commonCards = 0;
-  let rareCards = 0;
-  let legendCards = 0;
-
-  for (const [cardId, count] of Object.entries(activeDeck)) {
-    const cardDef = CARD_POOL.find(c => c.id === cardId);
-    if (!cardDef) continue;
-    if (cardDef.rarity === RARITY.COMMON) commonCards += count;
-    else if (cardDef.rarity === RARITY.RARE) rareCards += count;
-    else if (cardDef.rarity === RARITY.LEGENDARY) legendCards += count;
-  }
-
+  const dmg = {};
+  for (const [k, s] of Object.entries(st.skillDamage)) if (s.dmg > 0) dmg[k] = s.dmg;
   return {
-    stageResults,
-    cardCounts: { common: commonCards, rare: rareCards, legendary: legendCards }
+    stages,
+    calib,
+    failedAt,
+    totalSec: st.playTimeSec,
+    deck: g.run('deckManager.getActiveDeck()'),
+    dmg
   };
 }
 
-// 벤치마크 실행
-function runBenchmark(iterations = 1000) {
-  console.log(`\n======================================================`);
-  console.log(`🔥 DPS: Fire Mage 밸런스 시뮬레이터 (${iterations}회 몬테카를로 런)`);
-  console.log(`======================================================\n`);
+const quantile = (arr, q) => {
+  if (!arr.length) return NaN;
+  const s = [...arr].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor(q * s.length))];
+};
+const fmtSec = (sec) => (Number.isFinite(sec) ? `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}` : '-');
 
-  const stageAggregates = STAGE_MONSTERS.map(() => ({
-    ttks: [],
-    dpsList: []
-  }));
+function report(policyName) {
+  const runs = [];
+  for (let i = 0; i < RUNS; i++) runs.push(simulateRun(policyName, BASE_SEED + i));
 
-  let totalCommon = 0;
-  let totalRare = 0;
-  let totalLegend = 0;
-
-  for (let i = 0; i < iterations; i++) {
-    const run = simulateSingleRun();
-    totalCommon += run.cardCounts.common;
-    totalRare += run.cardCounts.rare;
-    totalLegend += run.cardCounts.legendary;
-
-    run.stageResults.forEach((sr, idx) => {
-      stageAggregates[idx].ttks.push(sr.ttk);
-      stageAggregates[idx].dpsList.push(sr.dps);
-    });
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) ===`);
+  console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
+  for (let stage = 1; stage <= 20; stage++) {
+    const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);
+    const reach = runs.filter((r) => r.stages.some((s) => s.stage >= stage) || (r.failedAt && r.failedAt >= stage)).length;
+    const boss = stage % 5 === 0 ? '👑' : '  ';
+    console.log(`${String(stage).padStart(2)}${boss} | ${quantile(ttks, 0.25).toFixed(1).padStart(6)} / ${quantile(ttks, 0.5).toFixed(1).padStart(6)} / ${quantile(ttks, 0.75).toFixed(1).padStart(6)} | ${Math.round((reach / RUNS) * 100)}%`);
   }
+  const cleared = runs.filter((r) => !r.failedAt);
+  const totals = cleared.map((r) => r.totalSec);
+  console.log(`클리어 ${cleared.length}/${RUNS}  런 시간 p25 ${fmtSec(quantile(totals, 0.25))} / 중앙 ${fmtSec(quantile(totals, 0.5))} / p75 ${fmtSec(quantile(totals, 0.75))}`);
+  const fails = runs.filter((r) => r.failedAt).map((r) => r.failedAt);
+  if (fails.length) console.log(`실패 스테이지: ${fails.sort((a, b) => a - b).join(', ')}`);
 
-  console.log(`[📊 스테이지별 평균 전투 지표]`);
-  console.log(`단계 | 몬스터 이름           | 체력       | 평균 DPS    | 평균 TTK   | 최단 TTK`);
-  console.log(`-----|-----------------------|------------|-------------|------------|---------`);
+  const share = {};
+  for (const r of runs) {
+    const total = Object.values(r.dmg).reduce((a, b) => a + b, 0) || 1;
+    for (const [k, v] of Object.entries(r.dmg)) share[k] = (share[k] || 0) + v / total / RUNS;
+  }
+  console.log('피해 점유율: ' + Object.entries(share).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}%`).join(' · '));
 
-  stageAggregates.forEach((agg, idx) => {
-    const m = STAGE_MONSTERS[idx];
-    const avgTtk = (agg.ttks.reduce((a, b) => a + b, 0) / iterations).toFixed(1);
-    const minTtk = Math.min(...agg.ttks).toFixed(1);
-    const avgDps = Math.round(agg.dpsList.reduce((a, b) => a + b, 0) / iterations);
-
-    const stagePad = String(m.stage).padStart(2, ' ');
-    const namePad = m.name.padEnd(12, ' ');
-    const hpPad = String(m.hp.toLocaleString()).padStart(10, ' ');
-    const dpsPad = String(avgDps.toLocaleString()).padStart(11, ' ');
-    const ttkPad = String(avgTtk + 's').padStart(10, ' ');
-    const minPad = String(minTtk + 's').padStart(8, ' ');
-
-    console.log(`${stagePad}   | ${namePad} | ${hpPad} | ${dpsPad} | ${ttkPad} | ${minPad}`);
-  });
-
-  const totalCards = totalCommon + totalRare + totalLegend;
-  console.log(`\n[🃏 런당 평균 카드 획득 분포 (전체 평균 ${(totalCards / iterations).toFixed(1)}장)]`);
-  console.log(`- 일반 (Common):     ${(totalCommon / iterations).toFixed(1)}장 (${((totalCommon / totalCards) * 100).toFixed(1)}%)`);
-  console.log(`- 희귀 (Rare):       ${(totalRare / iterations).toFixed(1)}장 (${((totalRare / totalCards) * 100).toFixed(1)}%)`);
-  console.log(`- 전설 (Legendary):  ${(totalLegend / iterations).toFixed(1)}장 (${((totalLegend / totalCards) * 100).toFixed(1)}%)`);
-  console.log(`======================================================\n`);
+  const picks = {};
+  for (const r of runs) for (const [id, n] of Object.entries(r.deck)) picks[id] = (picks[id] || 0) + n / RUNS;
+  console.log('런당 평균 보유: ' + Object.entries(picks).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(' · '));
+  return runs;
 }
 
-runBenchmark(1000);
+function calibrate(policyName) {
+  const runs = [];
+  for (let i = 0; i < RUNS; i++) runs.push(simulateRun(policyName, BASE_SEED + i));
+  console.log(`\n=== HP 보정: 전략 ${policyName} (${RUNS}회) ===`);
+  console.log('단계 | 목표(초) | DPS p25 / 중앙 / p75 | 제안 HP');
+  const suggested = [];
+  for (let stage = 1; stage <= 20; stage++) {
+    const dps = runs.map((r) => r.calib.find((c) => c.stage === stage)).filter(Boolean).map((c) => c.dps);
+    const hp = Math.round(quantile(dps, 0.5) * TARGET_TTK[stage - 1]);
+    suggested.push(hp);
+    console.log(`${String(stage).padStart(2)}${stage % 5 === 0 ? '👑' : '  '} | ${String(TARGET_TTK[stage - 1]).padStart(6)} | ${Math.round(quantile(dps, 0.25)).toLocaleString().padStart(8)} / ${Math.round(quantile(dps, 0.5)).toLocaleString().padStart(8)} / ${Math.round(quantile(dps, 0.75)).toLocaleString().padStart(8)} | ${hp.toLocaleString()}`);
+  }
+  console.log('제안 HP 배열: ' + JSON.stringify(suggested));
+}
+
+if (CALIBRATE) {
+  calibrate(POLICY === 'all' ? 'greedy' : POLICY);
+  process.exit(0);
+}
+
+const names = POLICY === 'all' ? Object.keys(POLICIES) : [POLICY];
+for (const name of names) {
+  if (!POLICIES[name]) { console.error(`알 수 없는 전략: ${name}`); process.exit(1); }
+  report(name);
+}

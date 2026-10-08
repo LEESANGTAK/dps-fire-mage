@@ -400,6 +400,98 @@ body {
 }
 
 /* Monster HP Bar Only (Positioned Directly Below Monster Image) */
+/* 충전형 카드의 스테이지 충전 배지 (스킬 버튼 좌하단, 스킬 이름 바로 위) */
+.skill-stage-charge {
+  position: absolute;
+  bottom: 17px;
+  left: 2px;
+  z-index: 4;
+  padding: 1px 5px;
+  border-radius: 9px;
+  border: 1px solid #67e8f9;
+  background: #0e5168;
+  color: #ecfeff;
+  font-size: 0.64rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  pointer-events: none;
+}
+
+.skill-stage-charge.charge-pop {
+  animation: chargePop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes chargePop {
+  from { transform: scale(0.6); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-stage-charge.charge-pop { animation: none; }
+}
+
+/* 페이즈 보스 광폭화 타이머: HP 바 바로 아래의 남은 시간 게이지 */
+.boss-enrage-timer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fde68a;
+  font-variant-numeric: tabular-nums;
+}
+
+.boss-enrage-timer .enrage-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: #3b2a24;
+  overflow: hidden;
+}
+
+.boss-enrage-timer .enrage-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fde047);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.boss-enrage-timer.danger {
+  color: #fecaca;
+  animation: enrageDangerPulse 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate;
+}
+
+.boss-enrage-timer.danger .enrage-fill {
+  background: linear-gradient(90deg, #b91c1c, #f97316);
+}
+
+@keyframes enrageDangerPulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); text-shadow: 0 0 8px #ef4444; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boss-enrage-timer.danger { animation: none; }
+}
+
+/* 광폭화 실패 결과창: 기록 비교·닫기 대신 새 런 시작만 제공 */
+.victory-modal-backdrop.defeat-mode .victory-modal-card {
+  border-color: #b91c1c;
+  box-shadow: 0 0 40px rgba(185, 28, 28, 0.45);
+}
+
+.victory-modal-backdrop.defeat-mode .victory-crown-badge {
+  background: linear-gradient(90deg, #7f1d1d, #b91c1c);
+}
+
+.victory-modal-backdrop.defeat-mode .speedrun-comparison-board,
+.victory-modal-backdrop.defeat-mode .victory-close-icon {
+  display: none;
+}
+
 .monster-hp-wrap {
   position: absolute;
   top: calc(100% + 6px);

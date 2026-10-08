@@ -6,47 +6,9 @@
     "rarity": "common",
     "build": "rapid",
     "maxStack": 5,
-    "desc": "화염구 시전 속도가 <b>+30%</b> 빨라지고 주문 공격력이 <b>+25</b> 증가합니다.",
+    "desc": "화염 마법 시전 속도가 <b>+20%</b> 빨라집니다.",
     "stats": {
-      "haste": 30,
-      "sp": 25
-    }
-  },
-  {
-    "id": "common_ember_spark",
-    "title": "작은 불씨",
-    "icon": "🔥",
-    "rarity": "common",
-    "build": "rapid",
-    "maxStack": 5,
-    "desc": "순수한 화염 마력이 깃들어 주문 공격력이 <b>+15</b> 증가합니다.",
-    "stats": {
-      "sp": 15
-    }
-  },
-  {
-    "id": "common_pyro_flow",
-    "title": "화염 순환",
-    "icon": "🌀",
-    "rarity": "common",
-    "build": "rapid",
-    "maxStack": 5,
-    "desc": "마력의 흐름이 원활해져 주문 공격력 <b>+8</b>, 시전 속도 <b>+8%</b>가 증가합니다.",
-    "stats": {
-      "sp": 8,
-      "haste": 8
-    }
-  },
-  {
-    "id": "common_quick_cast",
-    "title": "신속한 집중",
-    "icon": "⚡",
-    "rarity": "common",
-    "build": "rapid",
-    "maxStack": 5,
-    "desc": "화염 마법 시전 속도가 <b>+10%</b> 빨라집니다.",
-    "stats": {
-      "haste": 10
+      "haste": 20
     }
   },
   {
@@ -60,16 +22,29 @@
     "mechanic": "split_fireball"
   },
   {
-    "id": "rare_arcane_surge",
-    "title": "비전 급류",
-    "icon": "🌊",
+    "id": "rapid_overload",
+    "title": "과부하 시전",
+    "icon": "🌀",
     "rarity": "rare",
     "build": "rapid",
-    "maxStack": 3,
-    "desc": "마력이 솟구쳐 시전 속도가 <b>+15%</b>, 주문 공격력이 <b>+30</b> 증가합니다.",
+    "maxStack": 2,
+    "desc": "시전 속도가 <b>+45%</b> 빨라지지만, 주문력이 <b>-20%</b> 감소합니다.",
     "stats": {
-      "haste": 15,
-      "sp": 30
+      "haste": 45,
+      "spPct": -20
+    }
+  },
+  {
+    "id": "rapid_quickdraw",
+    "title": "속사 장전",
+    "icon": "🎇",
+    "rarity": "rare",
+    "build": "rapid",
+    "maxStack": 2,
+    "desc": "스테이지 시작마다 화염구를 <b>시전 없이 즉시 발사</b>하는 충전을 <b>4회</b> 얻습니다.",
+    "mechanic": "quickdraw_charge",
+    "mechanicParams": {
+      "charges": 4
     }
   },
   {
@@ -83,70 +58,61 @@
     "mechanic": "gatling_mode"
   },
   {
+    "id": "spell_fireblast",
+    "title": "주문서: 불꽃 작렬",
+    "icon": "💥",
+    "rarity": "common",
+    "build": "crit",
+    "maxStack": 1,
+    "spellKey": "fireblast",
+    "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다."
+  },
+  {
     "id": "crit_focus",
     "title": "타오르는 집중",
     "icon": "🎯",
     "rarity": "common",
     "build": "crit",
     "maxStack": 5,
-    "desc": "치명타 확률이 <b>+15%</b>, 치명타 피해량이 <b>+40%</b> 증가합니다.",
+    "desc": "치명타 확률이 <b>+10%</b> 증가합니다.",
     "stats": {
-      "crit": 15,
-      "critDmg": 0.4
+      "crit": 10
     }
   },
   {
-    "id": "common_keen_eye",
-    "title": "예리한 불꽃",
-    "icon": "🎯",
-    "rarity": "common",
-    "build": "crit",
-    "maxStack": 5,
-    "desc": "몬스터의 약점을 포착하여 치명타 확률이 <b>+5%</b>, 주문 공격력이 <b>+6</b> 증가합니다.",
-    "stats": {
-      "crit": 5,
-      "sp": 6
-    }
-  },
-  {
-    "id": "common_blazing_heat",
+    "id": "crit_heat",
     "title": "작열하는 열기",
-    "icon": "💥",
+    "icon": "🔥",
     "rarity": "common",
     "build": "crit",
     "maxStack": 5,
-    "desc": "치명타 피해량이 <b>+15%</b>, 주문 공격력이 <b>+8</b> 증가합니다.",
+    "desc": "치명타 피해량이 <b>+35%</b> 증가합니다.",
     "stats": {
-      "critDmg": 0.15,
-      "sp": 8
+      "critDmg": 35
     }
   },
   {
-    "id": "common_flame_affinity",
-    "title": "화염 친화",
-    "icon": "🔮",
-    "rarity": "common",
-    "build": "crit",
-    "maxStack": 5,
-    "desc": "치명타 확률이 <b>+4%</b>, 치명타 피해량이 <b>+10%</b> 증가합니다.",
-    "stats": {
-      "crit": 4,
-      "critDmg": 0.1
-    }
-  },
-  {
-    "id": "rare_ignite_catalyst",
-    "title": "작열 촉매",
-    "icon": "🩸",
+    "id": "crit_reckless",
+    "title": "무모한 일격",
+    "icon": "🗡️",
     "rarity": "rare",
     "build": "crit",
-    "maxStack": 3,
-    "desc": "치명타 확률이 <b>+7%</b>, 치명타 피해량이 <b>+25%</b>, 주문 공격력이 <b>+20</b> 증가합니다.",
+    "maxStack": 2,
+    "desc": "치명타 피해량이 <b>+80%</b> 증가하지만, 치명타 확률이 <b>-8%</b> 감소합니다.",
     "stats": {
-      "crit": 7,
-      "critDmg": 0.25,
-      "sp": 20
+      "critDmg": 80,
+      "crit": -8
     }
+  },
+  {
+    "id": "spell_meteor",
+    "title": "주문서: 메테오",
+    "icon": "☄️",
+    "rarity": "rare",
+    "build": "crit",
+    "maxStack": 1,
+    "spellKey": "meteor",
+    "desc": "하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다."
   },
   {
     "id": "crit_meteor_storm",
@@ -155,9 +121,34 @@
     "rarity": "rare",
     "build": "crit",
     "maxStack": 2,
-    "desc": "메테오의 재사용 대기시간이 <b>50% 감소</b>하고 피해량이 <b>+60%</b> 증가합니다.",
     "prerequisite": "has_meteor",
+    "desc": "메테오의 재사용 대기시간이 <b>50% 감소</b>하고 피해량이 <b>+60%</b> 증가합니다.",
     "mechanic": "meteor_buff"
+  },
+  {
+    "id": "crit_meteor_charge",
+    "title": "잠열 충전",
+    "icon": "🔋",
+    "rarity": "rare",
+    "build": "crit",
+    "maxStack": 2,
+    "prerequisite": "has_meteor",
+    "desc": "스테이지 시작마다 <b>메테오 피해 +150%</b> 충전을 <b>3회</b> 얻습니다.",
+    "mechanic": "meteor_charge",
+    "mechanicParams": {
+      "charges": 3,
+      "damageBonus": 1.5
+    }
+  },
+  {
+    "id": "spell_combustion",
+    "title": "주문서: 마력 폭주",
+    "icon": "🔥",
+    "rarity": "rare",
+    "build": "crit",
+    "maxStack": 1,
+    "spellKey": "combustion",
+    "desc": "<b>5초간 모든 마법이 100% 치명타</b>로 적중하고 시전 속도가 빨라지는 궁극기를 습득합니다."
   },
   {
     "id": "crit_crimson_frenzy",
@@ -166,14 +157,14 @@
     "rarity": "legendary",
     "build": "crit",
     "maxStack": 1,
-    "desc": "발화(마력 폭주) 지속 시간이 2배가 되며, 발화 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.",
     "prerequisite": "has_combustion",
+    "desc": "마력 폭주 지속 시간이 2배가 되며, 폭주 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.",
     "mechanic": "combustion_god"
   },
   {
     "id": "sum_spirit",
     "title": "화염 정령 소환",
-    "icon": "🔥",
+    "icon": "🧞",
     "rarity": "common",
     "build": "summon",
     "maxStack": 4,
@@ -181,16 +172,16 @@
     "mechanic": "extra_spirit"
   },
   {
-    "id": "common_spirit_vitality",
-    "title": "정령의 온기",
-    "icon": "🧚",
+    "id": "sum_fury",
+    "title": "정령의 분노",
+    "icon": "😤",
     "rarity": "common",
     "build": "summon",
     "maxStack": 5,
-    "desc": "소환수와의 교감으로 주문 공격력이 <b>+10</b>, 시전 속도가 <b>+6%</b> 증가합니다.",
+    "prerequisite": "has_summon",
+    "desc": "정령·불사조 등 <b>소환수 피해량이 +40%</b> 증가합니다.",
     "stats": {
-      "sp": 10,
-      "haste": 6
+      "spiritPct": 40
     }
   },
   {
@@ -200,9 +191,23 @@
     "rarity": "rare",
     "build": "summon",
     "maxStack": 1,
-    "desc": "마법사가 화염구를 발사할 때마다 <b>소환된 모든 정령이 동시에 협공 탄환</b>을 발사합니다.",
     "prerequisite": "has_summon",
+    "desc": "마법사가 화염구를 발사할 때마다 <b>소환된 모든 정령이 동시에 협공 탄환</b>을 발사합니다.",
     "mechanic": "synchronized_fire"
+  },
+  {
+    "id": "sum_pact",
+    "title": "정령 계약",
+    "icon": "🤝",
+    "rarity": "rare",
+    "build": "summon",
+    "maxStack": 1,
+    "prerequisite": "has_summon",
+    "desc": "소환수 피해량이 <b>+100%</b> 증가하지만, 마법사의 주문력이 <b>-25%</b> 감소합니다.",
+    "stats": {
+      "spiritPct": 100,
+      "spPct": -25
+    }
   },
   {
     "id": "sum_cinder_lord",
@@ -211,58 +216,70 @@
     "rarity": "legendary",
     "build": "summon",
     "maxStack": 1,
-    "desc": "소환수 1기당 마법사의 모든 주문 피해량이 <b>+30%</b> 증폭됩니다.",
     "prerequisite": "has_summon",
+    "desc": "소환수 1기당 마법사의 모든 주문 피해량이 <b>+30%</b> 증폭됩니다.",
     "mechanic": "cinder_lord"
   },
   {
-    "id": "util_gold_greed",
-    "title": "탐욕의 불길",
-    "icon": "💰",
+    "id": "burn_ignite",
+    "title": "맹렬한 화상",
+    "icon": "🩸",
     "rarity": "common",
-    "build": "utility",
-    "maxStack": 3,
-    "desc": "몬스터 처치 시 획득하는 골드가 <b>+60%</b> 증가합니다.",
-    "stats": {
-      "goldBonus": 0.6
-    }
-  },
-  {
-    "id": "common_iron_will",
-    "title": "마력 집중",
-    "icon": "✨",
-    "rarity": "common",
-    "build": "utility",
+    "build": "burn",
     "maxStack": 5,
-    "desc": "흐트러짐 없는 집중으로 주문 공격력이 <b>+20</b> 증가합니다.",
+    "desc": "화상·연소·불장판 등 <b>지속 피해량이 +45%</b> 증가합니다.",
     "stats": {
-      "sp": 20
+      "burnPct": 45
     }
   },
   {
-    "id": "common_bounty_hunter",
-    "title": "모험가의 주머니",
-    "icon": "🪙",
-    "rarity": "common",
-    "build": "utility",
-    "maxStack": 5,
-    "desc": "골드 획득량이 <b>+20%</b> 증가하고, 주문 공격력이 <b>+5</b> 증가합니다.",
-    "stats": {
-      "goldBonus": 0.2,
-      "sp": 5
-    }
-  },
-  {
-    "id": "common_cinder_spark",
-    "title": "잿더미 잔불",
+    "id": "spell_flame_patch",
+    "title": "주문서: 불장판",
     "icon": "🌋",
+    "rarity": "rare",
+    "build": "burn",
+    "maxStack": 1,
+    "spellKey": "flame_patch",
+    "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다."
+  },
+  {
+    "id": "burn_spread",
+    "title": "번지는 불길",
+    "icon": "♨️",
+    "rarity": "rare",
+    "build": "burn",
+    "maxStack": 2,
+    "prerequisite": "has_flame_patch",
+    "desc": "불장판 재사용 대기시간이 <b>30% 감소</b>하고 불장판 피해량이 <b>+50%</b> 증가합니다.",
+    "mechanic": "patch_boost",
+    "mechanicParams": {
+      "cooldownMult": 0.7,
+      "damageBonus": 0.5
+    }
+  },
+  {
+    "id": "burn_wildfire",
+    "title": "들불",
+    "icon": "🌋",
+    "rarity": "legendary",
+    "build": "burn",
+    "maxStack": 1,
+    "desc": "치명타가 남기는 <b>화상 피해가 2.5배</b>로 불어납니다.",
+    "mechanic": "wildfire",
+    "mechanicParams": {
+      "igniteRatioMult": 2.5
+    }
+  },
+  {
+    "id": "util_power",
+    "title": "마력 증폭",
+    "icon": "🔮",
     "rarity": "common",
     "build": "utility",
     "maxStack": 5,
-    "desc": "불꽃 잔재를 흡수하여 주문 공격력이 <b>+12</b>, 치명타 확률이 <b>+3%</b> 증가합니다.",
+    "desc": "주문력이 <b>+15%</b> 증가합니다.",
     "stats": {
-      "sp": 12,
-      "crit": 3
+      "spPct": 15
     }
   },
   {
@@ -279,64 +296,27 @@
     }
   },
   {
+    "id": "util_glass_cannon",
+    "title": "유리 대포",
+    "icon": "💎",
+    "rarity": "rare",
+    "build": "utility",
+    "maxStack": 2,
+    "desc": "주문력이 <b>+50%</b> 증가하지만, 시전 속도가 <b>-25%</b> 느려집니다.",
+    "stats": {
+      "spPct": 50,
+      "haste": -25
+    }
+  },
+  {
     "id": "util_phoenix_reborn",
     "title": "불사조의 가호",
     "icon": "🪶",
     "rarity": "legendary",
     "build": "utility",
     "maxStack": 1,
-    "desc": "치명타 적중 시 15% 확률로 모든 스킬의 쿨다운이 즉시 초기화됩니다.",
     "prerequisite": "has_any_spell",
+    "desc": "<b>불사조</b>가 함께 싸우며 확정 치명타로 협공하고, 치명타 적중 시 <b>15% 확률로 모든 스킬 쿨다운</b>이 초기화됩니다.",
     "mechanic": "phoenix_reset"
-  },
-  {
-    "id": "spell_autocast",
-    "title": "비전 마법진: 자동 시전",
-    "icon": "🪄",
-    "rarity": "common",
-    "build": "utility",
-    "maxStack": 1,
-    "desc": "발아래 마법진을 전개하여 습득한 마법을 쿨다운마다 <b>자동 연계 시전</b>합니다.",
-    "spellKey": "autocast"
-  },
-  {
-    "id": "spell_fireblast",
-    "title": "주문서: 불꽃 작렬",
-    "icon": "💥",
-    "rarity": "common",
-    "build": "crit",
-    "maxStack": 1,
-    "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다.",
-    "spellKey": "fireblast"
-  },
-  {
-    "id": "spell_meteor",
-    "title": "주문서: 메테오",
-    "icon": "☄️",
-    "rarity": "rare",
-    "build": "crit",
-    "maxStack": 1,
-    "desc": "하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다.",
-    "spellKey": "meteor"
-  },
-  {
-    "id": "spell_flame_patch",
-    "title": "주문서: 불장판",
-    "icon": "🌋",
-    "rarity": "rare",
-    "build": "rapid",
-    "maxStack": 1,
-    "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.",
-    "spellKey": "flame_patch"
-  },
-  {
-    "id": "spell_combustion",
-    "title": "주문서: 마력 폭주",
-    "icon": "🔥",
-    "rarity": "legendary",
-    "build": "crit",
-    "maxStack": 1,
-    "desc": "일정 시간 동안 <b>모든 마법 100% 확정 치명타 및 시전 속도 대폭 가속</b> 궁극기를 습득합니다.",
-    "spellKey": "combustion"
   }
 ]

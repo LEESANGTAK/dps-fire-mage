@@ -42,9 +42,10 @@
           "rapid",
           "crit",
           "summon",
+          "burn",
           "utility"
         ],
-        "description": "카드 빌드 성향 태그 (드롭다운 목록 제공):\n- rapid: ⚡ 속사 머신건\n- crit: 🎯 극치명 누킹\n- summon: 🔥 정령 군단\n- utility: ✨ 유틸리티"
+        "description": "카드 빌드 성향 태그 (드롭다운 목록 제공):\n- rapid: ⚡ 속사 머신건\n- crit: 🎯 극치명 누킹\n- summon: 🔥 정령 군단\n- burn: 🌋 연소 지대\n- utility: ✨ 유틸리티"
       },
       "maxStack": {
         "type": "integer",
@@ -58,27 +59,31 @@
       },
       "stats": {
         "type": "object",
-        "description": "카드 습득 시 플레이어 스탯에 자동 누적되는 보너스 수치 객체",
+        "description": "카드 습득 시 런 동안 누적되는 스탯 (모든 값은 정수 퍼센트, 대가형 손해는 음수)",
         "properties": {
-          "sp": {
+          "spPct": {
             "type": "number",
-            "description": "주문력 증가치 (Spell Power)"
+            "description": "주문력 % (기본 100에 곱해짐, 예: 15 = +15%)"
           },
           "haste": {
             "type": "number",
-            "description": "시전 속도 증가 % (예: 30 = +30%)"
+            "description": "시전 속도 % (예: 20 = +20%)"
           },
           "crit": {
             "type": "number",
-            "description": "치명타율 증가 %p (예: 15 = +15%)"
+            "description": "치명타 확률 %p (기본 5%, 예: 10 = +10%)"
           },
           "critDmg": {
             "type": "number",
-            "description": "치명타 피해 배율 가산 (예: 0.4 = +40%, 기본 150%에 더해짐)"
+            "description": "치명타 피해 % (기본 150%에 가산, 예: 35 = +35%)"
           },
-          "goldBonus": {
+          "burnPct": {
             "type": "number",
-            "description": "골드 획득 배율 가산 (예: 0.6 = +60%)"
+            "description": "화상·연소·불장판 지속 피해 % (예: 45 = +45%)"
+          },
+          "spiritPct": {
+            "type": "number",
+            "description": "정령·불사조 소환수 피해 % (예: 40 = +40%)"
           }
         },
         "additionalProperties": false
@@ -89,39 +94,43 @@
           "has_summon",
           "has_meteor",
           "has_combustion",
+          "has_flame_patch",
           "has_any_spell"
         ],
-        "description": "3지선다에 등장하기 위한 선행 조건 필터 (드롭다운 목록 제공):\n- has_summon: 화염 정령을 소환한 상태에서만 등장\n- has_meteor: 메테오를 습득한 상태에서만 등장\n- has_combustion: 마력 폭주를 습득한 상태에서만 등장\n- has_any_spell: 불꽃 작렬·메테오·마력 폭주·불장판 중 1개 이상 습득한 상태에서만 등장"
+        "description": "3지선다에 등장하기 위한 선행 조건 필터 (드롭다운 목록 제공):\n- has_summon: 화염 정령을 소환한 상태에서만 등장\n- has_meteor: 메테오를 습득한 상태에서만 등장\n- has_combustion: 마력 폭주를 습득한 상태에서만 등장\n- has_flame_patch: 불장판을 습득한 상태에서만 등장\n- has_any_spell: 불꽃 작렬·메테오·마력 폭주·불장판 중 1개 이상 습득한 상태에서만 등장"
       },
       "spellKey": {
         "type": "string",
         "enum": [
-          "autocast",
           "fireblast",
           "meteor",
           "combustion",
           "flame_patch"
         ],
-        "description": "고대 주문서 카드일 경우 해금할 스킬 키 (드롭다운 목록 제공):\n- autocast: 자동 시전 마법진\n- fireblast: 불꽃 작렬\n- meteor: 메테오\n- combustion: 마력 폭주\n- flame_patch: 불장판"
+        "description": "고대 주문서 카드일 경우 해금할 스킬 키 (드롭다운 목록 제공, 자동 시전은 기본 제공):\n- fireblast: 불꽃 작렬\n- meteor: 메테오\n- combustion: 마력 폭주\n- flame_patch: 불장판"
       },
       "mechanic": {
         "type": "string",
         "enum": [
           "split_fireball",
           "gatling_mode",
+          "quickdraw_charge",
           "meteor_buff",
+          "meteor_charge",
           "combustion_god",
           "extra_spirit",
           "synchronized_fire",
           "cinder_lord",
+          "patch_boost",
+          "wildfire",
           "executioner",
           "phoenix_reset"
         ],
-        "description": "특수 고유 메커니즘 키 (드롭다운 목록 제공):\n- split_fireball: 화염구 적중 시 불씨 2개 분열 (스택당 +2, 최대 6, 각 주문력 40%)\n- gatling_mode: 화염구 기본 시전·공통 대기 0.3초\n- meteor_buff: 메테오 습득 + 스택당 재사용 대기 50% 감소·피해 +60%\n- combustion_god: 마력 폭주 습득 + 지속시간 2배·폭주 중 모든 피해 2.5배\n- extra_spirit: 화염 정령 1기 추가 소환 (최대 4기)\n- synchronized_fire: 화염구 발사 때마다 모든 정령 동시 공격\n- cinder_lord: 소환수 1기당 모든 주문 피해 +30%\n- executioner: 적 체력 40% 이하 시 모든 피해 +executionerMult (기본 0.7)\n- phoenix_reset: 치명타 시 15% 확률로 모든 스킬 재사용 대기 초기화 + 2.4초마다 불사조 협공"
+        "description": "특수 고유 메커니즘 키 (충전형은 스테이지 시작마다 충전 보충):\n- split_fireball: 화염구 적중 시 불씨 분열\n- gatling_mode: 화염구 시전·공통 대기 0.3초\n- quickdraw_charge: (충전형) 즉시 발사 화염구 충전 {charges}\n- meteor_buff: 메테오 습득 + 재사용 대기 감소·피해 증가\n- meteor_charge: (충전형) 메테오 피해 증폭 충전 {charges, damageBonus}\n- combustion_god: 마력 폭주 습득 + 지속 2배·피해 2.5배\n- extra_spirit: 화염 정령 1기 추가 (최대 4기)\n- synchronized_fire: 화염구 발사 시 정령 협공\n- cinder_lord: 소환수 1기당 주문 피해 +30%\n- patch_boost: 불장판 강화 {cooldownMult, damageBonus}\n- wildfire: 화상 전환율 증폭 {igniteRatioMult}\n- executioner: 체력 40% 이하 적 피해 증가 {executionerMult}\n- phoenix_reset: 불사조 협공 + 치명타 시 쿨다운 초기화"
       },
       "mechanicParams": {
         "type": "object",
-        "description": "특수 메커니즘 세부 파라미터 객체 (예: {\"executionerMult\": 0.7})"
+        "description": "특수 메커니즘 세부 파라미터 객체 (예: {\"charges\": 3, \"damageBonus\": 1.5})"
       }
     },
     "additionalProperties": false

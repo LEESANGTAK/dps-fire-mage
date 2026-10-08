@@ -46,7 +46,8 @@ test('구형 UI 마크업과 전용 스타일이 숨김이 아니라 완전히 �
 });
 
 function loadStatsAndSave(state) {
-  const statsCode = gameSource.slice(gameSource.indexOf('function getPlayerStats('), gameSource.indexOf('function fmt('));
+  const statsCode = gameSource.slice(gameSource.indexOf('const BASE_SPELL_POWER'), gameSource.indexOf('function getCombustionDuration('))
+    + gameSource.slice(gameSource.indexOf('function getPlayerStats('), gameSource.indexOf('function fmt('));
   const saveCode = gameSource.slice(gameSource.indexOf('function saveGame('), gameSource.indexOf('function initEvents('));
   const storage = {};
   const restored = [];
@@ -64,28 +65,47 @@ function loadStatsAndSave(state) {
 function freshState() {
   return {
     gold: 0, currentStage: 1, highestClearedStage: 0, playTimeSec: 0, totalPlayTimeSec: 0, totalKills: 0,
-    campaignCleared: false, bestSpeedrunTime: null, autoCast: false,
+    campaignCleared: false, bestSpeedrunTime: null, bestReachedStage: 0, runFailed: false, autoCast: true,
     skillAuto: { fireball: true, fireblast: true, combustion: true, meteor: true, flame_patch: true },
     soundOn: true, bgmVolume: 0.4, sfxVolume: 0.8,
     playerStatsBonus: {}, deckMechanics: {}, spellOrder: ['fireball'],
     unfolded: { awakening: false, combatStats: false, hallOfFame: false },
-    grimoires: { autocast: false, fireblast: false, meteor: false, combustion: false, flame_patch: false },
+    grimoires: { fireblast: false, meteor: false, combustion: false, flame_patch: false },
     combat: { combustionRem: 0 },
     stats: { peakDps: 0, combustionHits: 0, combustionPyros: 0 }
   };
 }
 
-test('골드 보너스 카드(goldBonus)가 실제 골드 배율에 반영되어야 합니다', () => {
+test('각성 카드 % 스탯(주문력·가속·치명·지속 피해·소환수)이 실제 능력치에 반영되어야 합니다', () => {
   const state = freshState();
   const { context } = loadStatsAndSave(state);
-  assert.equal(vm.runInContext('getPlayerStats().goldMult', context), 1);
-  state.playerStatsBonus.goldBonus = 0.6 + 0.2;
-  assert.equal(vm.runInContext('getPlayerStats().goldMult', context), 1.8, '탐욕의 불길(+60%)과 현상금 사냥꾼(+20%)이 합산되어야 합니다.');
+  const base = vm.runInContext('getPlayerStats()', context);
+  assert.equal(base.sp, 100, '기본 주문력은 100이어야 합니다.');
+  assert.equal(base.crit, 5);
+  assert.equal(base.critDmg, 1.5);
 
-  // 카드 데이터의 골드 보너스 키가 게임이 읽는 키와 일치해야 합니다.
+  // 마력 증폭 x2(+30%) + 유리 대포(+50%, 가속 -25%) + 작열하는 열기(+30%) + 맹렬한 화상(+35%) + 정령의 분노(+40%)
+  Object.assign(state.playerStatsBonus, { spPct: 80, haste: -25, critDmg: 30, burnPct: 35, spiritPct: 40, crit: 8 });
+  const s = vm.runInContext('getPlayerStats()', context);
+  assert.equal(s.sp, 180, '주문력 %는 기본 주문력에 곱해져야 합니다.');
+  assert.equal(s.speedMult, 0.75, '대가형 카드의 가속 손해가 시전 속도에 반영되어야 합니다.');
+  assert.equal(s.critDmg, 1.8, '치명타 피해 %는 기본 150%에 가산되어야 합니다.');
+  assert.equal(s.crit, 13);
+  assert.equal(s.burnMult, 1.35);
+  assert.equal(s.spiritMult, 1.4);
+
+  // 대가형 손해가 누적돼도 주문력·가속이 0 이하로 붕괴하지 않아야 합니다.
+  Object.assign(state.playerStatsBonus, { spPct: -500, haste: -500 });
+  const floor = vm.runInContext('getPlayerStats()', context);
+  assert.ok(floor.sp > 0 && floor.speedMult > 0, '극단적 손해에서도 능력치 하한이 유지되어야 합니다.');
+
+  // 카드 데이터는 게임이 읽는 스탯 키만 사용해야 합니다. (오타·구형 키 방지)
+  const allowed = ['spPct', 'haste', 'crit', 'critDmg', 'burnPct', 'spiritPct'];
   const cards = JSON.parse(read('src/data/roguelike-cards.json'));
-  for (const card of cards.filter((c) => c.stats && Object.keys(c.stats).some((k) => /gold/i.test(k)))) {
-    assert.deepEqual(Object.keys(card.stats).filter((k) => /gold/i.test(k)), ['goldBonus'], `${card.id}의 골드 스탯 키는 goldBonus여야 합니다.`);
+  for (const card of cards) {
+    for (const key of Object.keys(card.stats || {})) {
+      assert.ok(allowed.includes(key), `${card.id}의 스탯 키 ${key}는 게임이 읽지 않는 키입니다.`);
+    }
   }
 });
 
@@ -108,7 +128,7 @@ test('구형 세이브를 불러와도 제거된 시스템 필드는 복원·재
   assert.equal(state.highestClearedStage, 20);
   assert.equal(state.bestSpeedrunTime, 812);
   assert.deepEqual(state.unfolded, { awakening: false, combatStats: false, hallOfFame: true });
-  assert.deepEqual(state.grimoires, { autocast: true, fireblast: false, meteor: true, combustion: false, flame_patch: false });
+  assert.deepEqual(state.grimoires, { fireblast: false, meteor: true, combustion: false, flame_patch: false });
   assert.equal(state.stats.peakDps, 4300);
   assert.equal(state.stats.totalDamage, undefined, '제거된 상세 딜로그 통계는 복원하지 않아야 합니다.');
   assert.equal(JSON.stringify(restored), JSON.stringify([{ sum_spirit: 1 }]), '각성 덱은 덱 관리자로 복원되어야 합니다.');

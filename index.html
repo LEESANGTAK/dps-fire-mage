@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0e14" />
   <title>DPS: Fire Mage</title>
-  <link rel="stylesheet" href="src/styles/styles.css?v=legacy-cleanup-1" />
-  <link rel="stylesheet" href="src/styles/art.css?v=legacy-cleanup-1" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=legacy-cleanup-1" />
+  <link rel="stylesheet" href="src/styles/styles.css?v=balance-v2-3" />
+  <link rel="stylesheet" href="src/styles/art.css?v=balance-v2-3" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=balance-v2-3" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -205,6 +205,12 @@
                     <span id="target-hp-pct">100%</span>
                   </div>
                 </div>
+                <!-- 페이즈 보스 광폭화 타이머 (보스전에서만 노출, 10초 이하 위험 점멸) -->
+                <div class="boss-enrage-timer hidden" id="boss-enrage-timer" title="광폭화까지 남은 시간 - 0초가 되면 런이 끝납니다">
+                  <span class="enrage-icon" aria-hidden="true">⏳</span>
+                  <div class="enrage-track"><i class="enrage-fill" id="boss-enrage-fill"></i></div>
+                  <span class="enrage-time" id="boss-enrage-time">0s</span>
+                </div>
               </div>
             </div>
           </div>
@@ -380,9 +386,9 @@
   <div id="deck-vampire-tooltip" class="deck-vampire-tooltip hidden" role="tooltip"></div>
   <script src="src/scripts/comic-assets.js?v=flame-patch-soft-6"></script>
   <script src="src/scripts/monster-motion.js?v=paper-monsters-3"></script>
-  <script src="src/scripts/skill-tooltips.js?v=legacy-cleanup-1"></script>
+  <script src="src/scripts/skill-tooltips.js?v=balance-v2-3"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
-  <script src="src/scripts/roguelike-deck.js?v=legacy-cleanup-1"></script>
-  <script src="src/scripts/game.js?v=legacy-cleanup-1"></script>
+  <script src="src/scripts/roguelike-deck.js?v=balance-v2-3"></script>
+  <script src="src/scripts/game.js?v=balance-v2-3"></script>
 </body>
 </html>

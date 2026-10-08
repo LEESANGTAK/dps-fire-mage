@@ -46,12 +46,20 @@ test('Step 4: 카드 선택 및 스탯/메커니즘 반영 검증', () => {
   const manager = createDeckManager();
   const fakeState = { gold: 100, playerStatsBonus: {}, deckMechanics: {} };
 
-  // 신속의 불꽃 (rapid_spark: haste +30, sp +25) 선택
+  // 수치는 카드 데이터에서 읽어 밸런스 조정과 무관하게 '누적 규칙'만 검증합니다.
+  const statOf = (id, key) => CARD_POOL.find(c => c.id === id).stats[key] || 0;
+
+  // 신속의 불꽃 (rapid_spark: 가속) 선택
   const res = manager.selectCard('rapid_spark', fakeState);
   assert.ok(res, '카드 선택이 성공해야 합니다.');
-  assert.equal(fakeState.playerStatsBonus.haste, 30, '시전 속도 30% 버프가 정상 적용되어야 합니다.');
-  assert.equal(fakeState.playerStatsBonus.sp, 25, '주문 공격력 25 버프가 정상 적용되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.haste, statOf('rapid_spark', 'haste'), '시전 속도 버프가 정상 적용되어야 합니다.');
   assert.equal(manager.getActiveDeck()['rapid_spark'], 1, '덱에 1장 등록되어야 합니다.');
+
+  // 대가형 카드는 이득과 손해가 함께 누적되어야 함 (과부하 시전: 가속 +, 주문력 -)
+  manager.selectCard('rapid_overload', fakeState);
+  assert.equal(fakeState.playerStatsBonus.haste, statOf('rapid_spark', 'haste') + statOf('rapid_overload', 'haste'), '대가형 카드의 가속 이득이 누적되어야 합니다.');
+  assert.ok(statOf('rapid_overload', 'spPct') < 0, '과부하 시전은 주문력 손해가 있는 대가형 카드여야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.spPct, statOf('rapid_overload', 'spPct'), '대가형 카드의 주문력 손해가 누적되어야 합니다.');
 
   // 분열 화염구 (rapid_split: splitFireball) 선택
   manager.selectCard('rapid_split', fakeState);
@@ -63,22 +71,24 @@ test('Step 5: 골드 리롤(Redraw) 비용 및 차감 검증', () => {
   const fakeState = { gold: 50 };
 
   manager.drawChoices(3, false);
-  assert.equal(manager.getRerollCost(), 10, '첫 리롤 비용은 10G여야 합니다.');
+  // 리롤 비용 = 기준 비용(현재 스테이지 처치 골드) x (1 + 이번 선택에서 리롤한 횟수)
+  assert.equal(manager.getRerollCost(10), 10, '첫 리롤 비용은 기준 비용과 같아야 합니다.');
+  assert.equal(manager.getRerollCost(300), 300, '후반 스테이지는 기준 비용이 커져 리롤 비용도 커져야 합니다.');
 
   // 1회차 리롤 성공
-  const reroll1 = manager.reroll(fakeState, false);
+  const reroll1 = manager.reroll(fakeState, false, 10);
   assert.ok(reroll1.success, '리롤이 성공해야 합니다.');
   assert.equal(fakeState.gold, 40, '10G가 차감되어 40G가 남아야 합니다.');
-  assert.equal(manager.getRerollCost(), 25, '다음 리롤 비용은 25G로 증가해야 합니다.');
+  assert.equal(manager.getRerollCost(10), 20, '다음 리롤 비용은 2배인 20G여야 합니다.');
 
   // 2회차 리롤 성공
-  const reroll2 = manager.reroll(fakeState, false);
+  const reroll2 = manager.reroll(fakeState, false, 10);
   assert.ok(reroll2.success);
-  assert.equal(fakeState.gold, 15, '25G가 차감되어 15G가 남아야 합니다.');
-  assert.equal(manager.getRerollCost(), 40, '다음 리롤 비용은 40G여야 합니다.');
+  assert.equal(fakeState.gold, 20, '20G가 차감되어 20G가 남아야 합니다.');
+  assert.equal(manager.getRerollCost(10), 30, '다음 리롤 비용은 3배인 30G여야 합니다.');
 
-  // 3회차 리롤 실패 (골드 부족: 15G < 40G)
-  const reroll3 = manager.reroll(fakeState, false);
+  // 3회차 리롤 실패 (골드 부족: 20G < 30G)
+  const reroll3 = manager.reroll(fakeState, false, 10);
   assert.equal(reroll3.success, false, '골드가 부족하여 리롤이 실패해야 합니다.');
 });
 
@@ -105,17 +115,21 @@ test('Step 7: 저장된 덱 복원(restoreDeck) 검증', () => {
   const manager = createDeckManager();
   const fakeState = { gold: 100, playerStatsBonus: {}, deckMechanics: {} };
 
-  const savedDeck = {
-    rapid_spark: 2, // haste +30 * 2 = +60, sp +25 * 2 = +50
-    crit_focus: 1   // crit +15, critDmg +0.4
-  };
+  const savedDeck = { rapid_spark: 2, crit_focus: 1, util_power: 2 };
+  const statOf = (id, key) => CARD_POOL.find(c => c.id === id).stats[key] || 0;
 
   manager.restoreDeck(savedDeck, fakeState);
   assert.equal(manager.getActiveDeck()['rapid_spark'], 2);
   assert.equal(manager.getActiveDeck()['crit_focus'], 1);
-  assert.equal(fakeState.playerStatsBonus.haste, 60, '복원 시 haste 스탯이 2중첩 반영되어야 합니다.');
-  assert.equal(fakeState.playerStatsBonus.sp, 50, '복원 시 sp 스탯이 정상 반영되어야 합니다.');
-  assert.equal(fakeState.playerStatsBonus.crit, 15, '복원 시 crit 스탯이 정상 반영되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.haste, statOf('rapid_spark', 'haste') * 2, '복원 시 haste 스탯이 2중첩 반영되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.spPct, statOf('util_power', 'spPct') * 2, '복원 시 주문력 % 스탯이 2중첩 반영되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.crit, statOf('crit_focus', 'crit'), '복원 시 crit 스탯이 정상 반영되어야 합니다.');
+
+  // file:// 실행용 내장 fallback 카드는 JSON 원본과 항상 같아야 합니다. (scripts/sync-card-fallback.cjs)
+  const json = JSON.parse(require('node:fs').readFileSync(path.join(__dirname, '../src/data/roguelike-cards.json'), 'utf8'));
+  const deckSource = require('node:fs').readFileSync(path.join(__dirname, '../src/scripts/roguelike-deck.js'), 'utf8');
+  const literal = deckSource.slice(deckSource.indexOf('const DEFAULT_CARDS_RAW = ') + 'const DEFAULT_CARDS_RAW = '.length, deckSource.indexOf('\n  ];\n') + 4);
+  assert.deepEqual(JSON.parse(literal), json, '내장 fallback 카드가 roguelike-cards.json과 다릅니다. node scripts/sync-card-fallback.cjs를 실행하세요.');
 });
 
 test('Step 8: HTML 마크업 무결성 (각성 모달 및 하단 덱 트레이) 검증', () => {
@@ -173,11 +187,12 @@ test('Step 10: 런타임 덱 획득 및 activeCards 리스트 연동 검증', ()
   assert.equal(activeCards[0].count, 1);
 });
 
-test('Step 11: 고대 마법 주문서 5종 카드 통합 및 중복 습득 방지 검증', () => {
+test('Step 11: 고대 마법 주문서 4종 카드 통합 및 중복 습득 방지 검증', () => {
   const manager = createDeckManager();
-  const spellIds = ['spell_autocast', 'spell_fireblast', 'spell_meteor', 'spell_flame_patch', 'spell_combustion'];
+  const spellIds = ['spell_fireblast', 'spell_meteor', 'spell_flame_patch', 'spell_combustion'];
+  assert.ok(!CARD_POOL.some(c => c.id === 'spell_autocast'), '자동 시전은 기본 제공 시스템이므로 카드 풀에 없어야 합니다.');
 
-  // 1. 5종 주문서가 CARD_POOL에 모두 등록되어 있고 maxStack이 1인지 검증
+  // 1. 4종 주문서가 CARD_POOL에 모두 등록되어 있고 maxStack이 1인지 검증
   for (const id of spellIds) {
     const card = CARD_POOL.find(c => c.id === id);
     assert.ok(card, `${id} 주문서 카드가 CARD_POOL에 존재해야 합니다.`);
@@ -195,10 +210,6 @@ test('Step 11: 고대 마법 주문서 5종 카드 통합 및 중복 습득 방�
 
   manager.selectCard('spell_fireblast', fakeState);
   assert.equal(fakeState.grimoires.fireblast, true, '불꽃 작렬 주문서 습득 시 grimoires.fireblast가 true여야 합니다.');
-
-  manager.selectCard('spell_autocast', fakeState);
-  assert.equal(fakeState.grimoires.autocast, true, '자동 시전 주문서 습득 시 grimoires.autocast가 true여야 합니다.');
-  assert.equal(fakeState.autoCast, true, '자동 시전이 즉시 활성화되어야 합니다.');
 
   manager.selectCard('spell_flame_patch', fakeState);
   assert.equal(fakeState.grimoires.flame_patch, true, '불장판 주문서 습득 시 grimoires.flame_patch가 true여야 합니다.');
@@ -242,9 +253,10 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
   // 1-0. 연쇄 몰열 카드는 카드 풀 전체에서 완전히 제외되었는지 확인
   assert.ok(!manager.CARD_POOL.some(c => c.id === 'crit_chain_streak'), '연쇄 몰열(crit_chain_streak) 카드는 카드 풀에서 완전히 제거되어야 합니다.');
 
-  // 1-1. 1-5 스테이지 이전 손 피로도 방지: 자동 시전은 초기 상태에서도 정상 등장해야 함을 검증
-  const earlyChoices = manager.drawChoices(3, false, { currentStage: 2, grimoires: {} });
-  assert.ok(earlyChoices.some(c => c.id === 'spell_autocast'), '1-5 스테이지 이전 초반에는 자동 시전 카드가 우선 제시되어야 합니다.');
+  // 1-1. 불장판 강화 카드는 불장판 습득 전에는 등장하지 않아야 함
+  const burnSpread = manager.CARD_POOL.find(c => c.id === 'burn_spread');
+  assert.equal(burnSpread.req({ grimoires: {} }, {}), false, '불장판이 없으면 번지는 불길이 등장하지 않아야 합니다.');
+  assert.equal(burnSpread.req({ grimoires: { flame_patch: true } }, {}), true, '불장판 습득 후에는 번지는 불길이 등장할 수 있어야 합니다.');
 
   // 2. 메테오(spell_meteor)를 획득한 후에는 메테오 강화 카드가 정상 등장하는지 검증
   //    (희귀 카드 1장의 추첨당 등장 확률이 약 3%이므로 1000회 추첨으로 우연한 실패를 배제)
@@ -279,7 +291,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   const rawJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   assert.ok(Array.isArray(rawJson), 'JSON 루트는 배열이어야 합니다.');
-  assert.equal(rawJson.length, 29, '일반/희귀 카드 풀 확장 후 총 29종의 정예 카드가 JSON에 정의되어 있어야 합니다.');
+  assert.equal(rawJson.length, 27, '밸런스 패치 v2 카드 풀은 총 27종이어야 합니다.');
   assert.ok(!rawJson.some(c => c.id === 'crit_chain_streak'), '연쇄 몰열 카드는 JSON에 존재하지 않아야 합니다.');
 
   // 동적 로더 및 실시간 반영 검증
@@ -294,8 +306,8 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
       rarity: 'legendary',
       build: 'rapid',
       maxStack: 1,
-      desc: '주문 공격력 <b>+999</b> 증가.',
-      stats: { sp: 999 }
+      desc: '주문력 <b>+999%</b> 증가.',
+      stats: { spPct: 999 }
     }
   ];
 
@@ -307,7 +319,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
   const manager = createDeckManager();
   const fakeState = { playerStatsBonus: {} };
   manager.selectCard('custom_designer_super_card', fakeState);
-  assert.equal(fakeState.playerStatsBonus.sp, 999, 'JSON에서 수정된 수치(+999 SP)가 즉시 인게임에 반영되어야 합니다.');
+  assert.equal(fakeState.playerStatsBonus.spPct, 999, 'JSON에서 수정된 수치(+999%)가 즉시 인게임에 반영되어야 합니다.');
 
   // 원본 JSON 데이터로 복원
   setCardPoolFromRaw(rawJson);
@@ -497,13 +509,13 @@ test('Step 19: 보상 모달(각성 창) 내 보유 골드 표시 실시간 동�
   manager.drawChoices(3, false);
 
   // 1회차: 비용 10G, 잔액 25G -> 성공, 잔액 15G
-  const r1 = manager.reroll(testState, false);
+  const r1 = manager.reroll(testState, false, 10);
   assert.equal(r1.success, true);
   assert.equal(testState.gold, 15);
-  assert.equal(manager.getRerollCost(), 25);
+  assert.equal(manager.getRerollCost(10), 20);
 
-  // 2회차: 비용 25G, 잔액 15G -> 골드 부족 실패, 잔액 15G 유지
-  const r2 = manager.reroll(testState, false);
+  // 2회차: 비용 20G, 잔액 15G -> 골드 부족 실패, 잔액 15G 유지
+  const r2 = manager.reroll(testState, false, 10);
   assert.equal(r2.success, false);
   assert.equal(testState.gold, 15);
 });
@@ -610,7 +622,7 @@ test('Step 23: 메테오 연속 낙하 시 파티클 지속 보장, 다시 도�
   // 2. 다시 도전하기(restartSpeedrunRun)의 완전 초기화 로직 검증
   assert.ok(gameSource.includes('function restartSpeedrunRun()'), 'restartSpeedrunRun 함수가 구현되어 있어야 합니다.');
   assert.ok(gameSource.includes("state.spellOrder = ['fireball'];"), '다시 도전하기 시 스킬 슬롯이 기본 화염구 1개로 초기화되어야 합니다.');
-  assert.ok(gameSource.includes('state.autoCast = false;'), '다시 도전하기 시 자동 시전이 초기화되어야 합니다.');
+  assert.ok(gameSource.includes('state.runFailed = false;'), '다시 도전하기 시 광폭화 실패 상태가 해제되어야 합니다.');
   assert.ok(gameSource.includes('state.playTimeSec = 0;'), '다시 도전하기 시 타이머가 0초로 초기화되어야 합니다.');
   assert.ok(gameSource.includes('restartSpeedrunRun();'), '재도전 버튼 클릭 시 restartSpeedrunRun이 호출되어야 합니다.');
 

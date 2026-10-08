@@ -18,7 +18,6 @@ test('Step 2: 스마트 세미오토(스킬별 개별 AUTO/OFF) 메커니즘 및
 
   // 개별 스킬 자동 판정 단위 검증
   const mockState = {
-    grimoires: { autocast: true },
     autoCast: true,
     skillAuto: {
       fireball: true,
@@ -29,7 +28,7 @@ test('Step 2: 스마트 세미오토(스킬별 개별 AUTO/OFF) 메커니즘 및
   };
 
   function testIsSkillAutoActive(skillKey) {
-    if (!mockState.grimoires.autocast || !mockState.autoCast) return false;
+    if (!mockState.autoCast) return false;
     if (!mockState.skillAuto) return true;
     return mockState.skillAuto[skillKey] !== false;
   }

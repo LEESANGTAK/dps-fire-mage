@@ -3,11 +3,11 @@ const assert=require('node:assert/strict'), fs=require('node:fs'), vm=require('n
 const {buildSkillDetails}=require('../src/scripts/skill-tooltips.js');
 const source=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
 const trigger=source.slice(source.indexOf('function triggerSkill('),source.indexOf('function runSmartAutoCast('));
-for(const stats of [{sp:100,speedMult:1,critDmg:1.5,cdr:0},{sp:317,speedMult:5,critDmg:2.4,cdr:.6}]) {
+for(const stats of [{sp:100,speedMult:1,critDmg:1.5,cdr:0,burnMult:1},{sp:317,speedMult:5,critDmg:2.4,cdr:.6,burnMult:1.35}]) {
  for(const skill of ['fireball','fireblast','combustion','meteor','flame_patch']) {
   const combat={castingSkill:null,gcdRemaining:0,fbCharges:2,fbMaxCharges:2,fbRechargeRem:0,critStreak:0,combustionCdRem:0,meteorCdRem:0,flamePatchCdRem:0};
   let rawDamage=null;
-  const context=vm.createContext({state:{combat,grimoires:{fireblast:true,combustion:true,meteor:true,flame_patch:true}},getPlayerStats:()=>stats,getCombustionDuration:()=>3.4,getTargetPos:()=>({x:0,y:0}),spawnParticles(){},dealDamage:(key,value)=>{rawDamage=value;},beginMageGesture(){},updateCastingLoopSound(){},updateBurningLoopSound(){},spawnFloatingText(){},playSound(){},playFireballSfx(){},shockwaves:[],launchMeteorVfx:callback=>callback()});
+  const context=vm.createContext({state:{combat,grimoires:{fireblast:true,combustion:true,meteor:true,flame_patch:true}},getPlayerStats:()=>stats,getCombustionDuration:()=>3.4,FIREBLAST_RECHARGE:8,getTargetPos:()=>({x:0,y:0}),spawnParticles(){},dealDamage:(key,value)=>{rawDamage=value;},beginMageGesture(){},updateCastingLoopSound(){},updateBurningLoopSound(){},spawnFloatingText(){},playSound(){},playFireballSfx(){},shockwaves:[],launchMeteorVfx:callback=>callback()});
   vm.runInContext(trigger,context);
   const detail=buildSkillDetails(skill,stats,combat,3.4);
   assert.ok(vm.runInContext(`triggerSkill('${skill}')`,context));
