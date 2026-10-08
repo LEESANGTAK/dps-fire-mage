@@ -4,66 +4,43 @@
  * DPS: Fire Mage 성장 곡선 및 밸런스 벤치마크 헤드리스 시뮬레이터
  * - 스테이지 1~20 전투 루프를 1,000회 몬테카를로 시뮬레이션
  * - 스테이지별 TTK(처치 시간), 초당 DPS, 카드 획득 분포(일반/희귀/전설) 통계 도출
+ * - 주의: game.js 전투 코드를 실행하지 않는 간이 수식 모델이므로 절대 수치보다 곡선 비교 용도로 사용합니다.
  */
 
 const { createDeckManager, CARD_POOL, RARITY } = require('../src/scripts/roguelike-deck.js');
 
 // 1. 스테이지 몬스터 데이터 (game.js 기준)
 const STAGE_MONSTERS = [
-  { stage: 1, name: '초원 풀숲 슬라임', hp: 50, timeLimit: 25, gold: 4, firstBonus: 2 },
-  { stage: 2, name: '푸른 늪지 슬라임', hp: 110, timeLimit: 25, gold: 7, firstBonus: 4 },
-  { stage: 3, name: '들판 거대 들쥐', hp: 240, timeLimit: 25, gold: 12, firstBonus: 8 },
-  { stage: 4, name: '고블린 정찰병', hp: 480, timeLimit: 25, gold: 20, firstBonus: 14 },
-  { stage: 5, name: '붉은송곳니 군주', hp: 1000, timeLimit: 28, gold: 35, firstBonus: 35 },
-  { stage: 6, name: '잿빛 숲 늑대', hp: 2400, timeLimit: 25, gold: 52, firstBonus: 40 },
-  { stage: 7, name: '놀 야수사냥꾼', hp: 4000, timeLimit: 25, gold: 80, firstBonus: 60 },
-  { stage: 8, name: '폐광 해골 광부', hp: 6600, timeLimit: 25, gold: 125, firstBonus: 90 },
-  { stage: 9, name: '맹독 모래전갈', hp: 10800, timeLimit: 25, gold: 190, firstBonus: 140 },
-  { stage: 10, name: '동굴 오우거 대족장', hp: 18500, timeLimit: 28, gold: 300, firstBonus: 260 },
-  { stage: 11, name: '화염 비늘 도마뱀', hp: 29000, timeLimit: 25, gold: 460, firstBonus: 350 },
-  { stage: 12, name: '심연 흡혈박쥐', hp: 46000, timeLimit: 25, gold: 700, firstBonus: 500 },
-  { stage: 13, name: '고대 바위 파수꾼', hp: 74000, timeLimit: 25, gold: 1050, firstBonus: 800 },
-  { stage: 14, name: '타락한 어둠마법사', hp: 118000, timeLimit: 25, gold: 1600, firstBonus: 1200 },
-  { stage: 15, name: '붉은 화염 비룡', hp: 195000, timeLimit: 30, gold: 2500, firstBonus: 2200 },
-  { stage: 16, name: '저주받은 기사단원', hp: 310000, timeLimit: 25, gold: 3800, firstBonus: 3000 },
-  { stage: 17, name: '원한 서린 밴시', hp: 490000, timeLimit: 25, gold: 5800, firstBonus: 4500 },
-  { stage: 18, name: '지하군주 거대거미', hp: 780000, timeLimit: 25, gold: 8800, firstBonus: 7000 },
-  { stage: 19, name: '심연의 파멸수호병', hp: 1250000, timeLimit: 25, gold: 13500, firstBonus: 11000 },
-  { stage: 20, name: '화염군주 라그나로스', hp: 2100000, timeLimit: 32, gold: 22000, firstBonus: 25000 }
-];
-
-// 장비 목록
-const EQUIPMENT_LIST = [
-  { id: 'oak_wand', baseCost: 8, costScale: 1.35, effect: (lv) => ({ sp: lv * 2 }) },
-  { id: 'ruby_ring', baseCost: 22, costScale: 1.38, effect: (lv) => ({ crit: lv * 1.5, sp: lv * 2 }) },
-  { id: 'swift_gloves', baseCost: 60, costScale: 1.4, effect: (lv) => ({ haste: lv * 3, sp: lv * 4 }) },
-  { id: 'flame_orb', baseCost: 160, costScale: 1.42, effect: (lv) => ({ critDmg: lv * 0.08, sp: lv * 9 }) },
-  { id: 'sunfire_staff', baseCost: 450, costScale: 1.45, effect: (lv) => ({ sp: lv * 22, crit: lv * 1.5 }) },
-  { id: 'chrono_watch', baseCost: 1250, costScale: 1.48, effect: (lv) => ({ cdr: lv * 0.03, haste: lv * 3, sp: lv * 55 }) },
-  { id: 'firelord_crown', baseCost: 3600, costScale: 1.5, effect: (lv) => ({ sp: lv * 140, critDmg: lv * 0.12 }) },
-  { id: 'arcane_grail', baseCost: 11000, baseCost: 11000, costScale: 1.55, effect: (lv) => ({ sp: lv * 380, bonusPct: lv * 0.06 }) }
+  { stage: 1, name: '초원 풀숲 슬라임', hp: 50, gold: 4, firstBonus: 2 },
+  { stage: 2, name: '푸른 늪지 슬라임', hp: 110, gold: 7, firstBonus: 4 },
+  { stage: 3, name: '들판 거대 들쥐', hp: 240, gold: 12, firstBonus: 8 },
+  { stage: 4, name: '고블린 정찰병', hp: 480, gold: 20, firstBonus: 14 },
+  { stage: 5, name: '붉은송곳니 군주', hp: 1000, gold: 35, firstBonus: 35 },
+  { stage: 6, name: '잿빛 숲 늑대', hp: 2400, gold: 52, firstBonus: 40 },
+  { stage: 7, name: '놀 야수사냥꾼', hp: 4000, gold: 80, firstBonus: 60 },
+  { stage: 8, name: '폐광 해골 광부', hp: 6600, gold: 125, firstBonus: 90 },
+  { stage: 9, name: '맹독 모래전갈', hp: 10800, gold: 190, firstBonus: 140 },
+  { stage: 10, name: '동굴 오우거 대족장', hp: 18500, gold: 300, firstBonus: 260 },
+  { stage: 11, name: '화염 비늘 도마뱀', hp: 29000, gold: 460, firstBonus: 350 },
+  { stage: 12, name: '심연 흡혈박쥐', hp: 46000, gold: 700, firstBonus: 500 },
+  { stage: 13, name: '고대 바위 파수꾼', hp: 74000, gold: 1050, firstBonus: 800 },
+  { stage: 14, name: '타락한 어둠마법사', hp: 118000, gold: 1600, firstBonus: 1200 },
+  { stage: 15, name: '붉은 화염 비룡', hp: 195000, gold: 2500, firstBonus: 2200 },
+  { stage: 16, name: '저주받은 기사단원', hp: 310000, gold: 3800, firstBonus: 3000 },
+  { stage: 17, name: '원한 서린 밴시', hp: 490000, gold: 5800, firstBonus: 4500 },
+  { stage: 18, name: '지하군주 거대거미', hp: 780000, gold: 8800, firstBonus: 7000 },
+  { stage: 19, name: '심연의 파멸수호병', hp: 1250000, gold: 13500, firstBonus: 11000 },
+  { stage: 20, name: '화염군주 라그나로스', hp: 2100000, gold: 22000, firstBonus: 25000 }
 ];
 
 // 단일 런 시뮬레이션
 function simulateSingleRun() {
   const deckManager = createDeckManager();
   const state = {
-    gold: 0,
     currentStage: 1,
     grimoires: {},
     playerStatsBonus: {},
-    deckMechanics: {},
-    items: {
-      oak_wand: 0,
-      ruby_ring: 0,
-      swift_gloves: 0,
-      flame_orb: 0,
-      sunfire_staff: 0,
-      chrono_watch: 0,
-      firelord_crown: 0,
-      arcane_grail: 0
-    },
-    skillMastery: {}
+    deckMechanics: {}
   };
 
   const stageResults = [];
@@ -72,39 +49,11 @@ function simulateSingleRun() {
     const stageData = STAGE_MONSTERS[sIdx];
     const isBoss = (sIdx + 1) % 5 === 0;
 
-    // 장비 업그레이드 (가능한 가장 싼 장비부터 순차 구매)
-    let boughtAny = true;
-    while (boughtAny) {
-      boughtAny = false;
-      for (const eq of EQUIPMENT_LIST) {
-        const lv = state.items[eq.id] || 0;
-        const cost = Math.round(eq.baseCost * Math.pow(eq.costScale, lv));
-        if (state.gold >= cost) {
-          state.gold -= cost;
-          state.items[eq.id] = lv + 1;
-          boughtAny = true;
-          break;
-        }
-      }
-    }
-
     // 1. 현재 플레이어 스탯 계산
     let totalSp = 10;
     let totalCrit = 5;
     let totalHaste = 0;
     let totalCritDmg = 1.5;
-
-    // 장비 효과 합산
-    for (const eq of EQUIPMENT_LIST) {
-      const lv = state.items[eq.id] || 0;
-      if (lv > 0) {
-        const eff = eq.effect(lv);
-        if (eff.sp) totalSp += eff.sp;
-        if (eff.crit) totalCrit += eff.crit;
-        if (eff.haste) totalHaste += eff.haste;
-        if (eff.critDmg) totalCritDmg += eff.critDmg;
-      }
-    }
 
     // 카드 보너스 합산
     totalSp += state.playerStatsBonus.sp || 0;
@@ -116,7 +65,7 @@ function simulateSingleRun() {
     const hasteMult = 1 + totalHaste / 100;
 
     // 화염구 시전 시간 (초)
-    const isGatling = Boolean(state.deckMechanics && state.deckMechanics.gatling);
+    const isGatling = Boolean(state.deckMechanics && state.deckMechanics.gatlingMode);
     const fireballCastTime = isGatling ? 0.3 : Math.max(0.4, 1.8 / hasteMult);
     const fireballDamage = totalSp * 1.5;
 
@@ -162,13 +111,8 @@ function simulateSingleRun() {
       hp: stageData.hp,
       dps: Math.round(dps),
       ttk: Number(ttk.toFixed(2)),
-      timeout: ttk > stageData.timeLimit,
       deckSize: Object.values(deckManager.getActiveDeck()).reduce((a, b) => a + b, 0)
     });
-
-    // 스테이지 클리어 보상 (골드 보너스 반영)
-    const goldBonus = 1 + (state.playerStatsBonus.goldBonus || 0);
-    state.gold += Math.round((stageData.gold + stageData.firstBonus) * goldBonus);
 
     // 카드 3지선다 뽑기 & 무작위 1장 선택
     const choices = deckManager.drawChoices(3, isBoss, state);
@@ -209,8 +153,7 @@ function runBenchmark(iterations = 1000) {
 
   const stageAggregates = STAGE_MONSTERS.map(() => ({
     ttks: [],
-    dpsList: [],
-    timeouts: 0
+    dpsList: []
   }));
 
   let totalCommon = 0;
@@ -226,20 +169,18 @@ function runBenchmark(iterations = 1000) {
     run.stageResults.forEach((sr, idx) => {
       stageAggregates[idx].ttks.push(sr.ttk);
       stageAggregates[idx].dpsList.push(sr.dps);
-      if (sr.timeout) stageAggregates[idx].timeouts++;
     });
   }
 
   console.log(`[📊 스테이지별 평균 전투 지표]`);
-  console.log(`단계 | 몬스터 이름           | 체력       | 평균 DPS    | 평균 TTK   | 최단 TTK | 제한시간 | 타임아웃률`);
-  console.log(`-----|-----------------------|------------|-------------|------------|----------|----------|-----------`);
+  console.log(`단계 | 몬스터 이름           | 체력       | 평균 DPS    | 평균 TTK   | 최단 TTK`);
+  console.log(`-----|-----------------------|------------|-------------|------------|---------`);
 
   stageAggregates.forEach((agg, idx) => {
     const m = STAGE_MONSTERS[idx];
     const avgTtk = (agg.ttks.reduce((a, b) => a + b, 0) / iterations).toFixed(1);
     const minTtk = Math.min(...agg.ttks).toFixed(1);
     const avgDps = Math.round(agg.dpsList.reduce((a, b) => a + b, 0) / iterations);
-    const timeoutRate = ((agg.timeouts / iterations) * 100).toFixed(1) + '%';
 
     const stagePad = String(m.stage).padStart(2, ' ');
     const namePad = m.name.padEnd(12, ' ');
@@ -247,10 +188,8 @@ function runBenchmark(iterations = 1000) {
     const dpsPad = String(avgDps.toLocaleString()).padStart(11, ' ');
     const ttkPad = String(avgTtk + 's').padStart(10, ' ');
     const minPad = String(minTtk + 's').padStart(8, ' ');
-    const limitPad = String(m.timeLimit + 's').padStart(8, ' ');
-    const timeoutPad = String(timeoutRate).padStart(9, ' ');
 
-    console.log(`${stagePad}   | ${namePad} | ${hpPad} | ${dpsPad} | ${ttkPad} | ${minPad} | ${limitPad} | ${timeoutPad}`);
+    console.log(`${stagePad}   | ${namePad} | ${hpPad} | ${dpsPad} | ${ttkPad} | ${minPad}`);
   });
 
   const totalCards = totalCommon + totalRare + totalLegend;

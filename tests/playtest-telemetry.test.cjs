@@ -12,9 +12,8 @@ test('Telemetry & Card Pool 무결성 검증', async (t) => {
   const gameJs = fs.readFileSync(gameJsPath, 'utf8');
   const cardsJson = JSON.parse(fs.readFileSync(cardsJsonPath, 'utf8'));
 
-  await t.test('1. UI 버튼 마크업 검증 (헤더, 상세 딜로그, 승리 모달)', () => {
+  await t.test('1. UI 버튼 마크업 검증 (헤더, 승리 모달)', () => {
     assert.ok(html.includes('id="btn-export-telemetry"'), '상단 헤더에 밸런스 로그 복사 버튼이 있어야 합니다.');
-    assert.ok(html.includes('id="btn-details-export-telemetry"'), '상세 전투 분석 모달에 밸런스 로그 복사 버튼이 있어야 합니다.');
     assert.ok(html.includes('id="btn-victory-export-telemetry"'), '승리 모달에 밸런스 로그 복사 버튼이 있어야 합니다.');
   });
 

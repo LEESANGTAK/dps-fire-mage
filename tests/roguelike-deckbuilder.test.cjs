@@ -140,7 +140,7 @@ test('Step 8: HTML 마크업 무결성 (각성 모달 및 하단 덱 트레이) 
   assert.ok(html.includes('id="deck-strip-cards"'), '장착된 덱 칩 목록 요소가 존재해야 합니다.');
 });
 
-test('Step 9: game.js 연동 무결성 (웨이브 클리어 호출, 일시정지, 승천 리셋) 검증', () => {
+test('Step 9: game.js 연동 무결성 (웨이브 클리어 호출, 일시정지, 다시 도전하기 덱 리셋) 검증', () => {
   const fs = require('node:fs');
   const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
 
@@ -154,8 +154,8 @@ test('Step 9: game.js 연동 무결성 (웨이브 클리어 호출, 일시정지
   // onMonsterKilled 내 triggerAwakeningSelection 호출 확인
   assert.ok(gameSource.includes('triggerAwakeningSelection(clearedStage'), '웨이브 클리어 시 triggerAwakeningSelection이 호출되어야 합니다.');
 
-  // doAscend 내 deckManager.resetDeck 호출 확인
-  assert.ok(gameSource.includes('deckManager.resetDeck(state)'), '승천 시 덱 리셋이 수행되어야 합니다.');
+  // restartSpeedrunRun 내 deckManager.resetDeck 호출 확인
+  assert.ok(gameSource.includes('deckManager.resetDeck(state)'), '다시 도전하기 시 덱 리셋이 수행되어야 합니다.');
 });
 
 test('Step 10: 런타임 덱 획득 및 activeCards 리스트 연동 검증', () => {
@@ -184,11 +184,10 @@ test('Step 11: 고대 마법 주문서 5종 카드 통합 및 중복 습득 방�
     assert.equal(card.maxStack, 1, `${id} 카드의 최대 중첩 수는 1이어야 합니다.`);
   }
 
-  // 2. 카드 선택 시 state.grimoires 및 스킬 트리 플래그 갱신 검증
+  // 2. 카드 선택 시 state.grimoires 플래그 갱신 검증
   const fakeState = {
     gold: 500,
     grimoires: {},
-    skillTree: {},
     autoCast: false,
     playerStatsBonus: {},
     deckMechanics: {}
@@ -202,8 +201,7 @@ test('Step 11: 고대 마법 주문서 5종 카드 통합 및 중복 습득 방�
   assert.equal(fakeState.autoCast, true, '자동 시전이 즉시 활성화되어야 합니다.');
 
   manager.selectCard('spell_flame_patch', fakeState);
-  assert.equal(fakeState.grimoires.flame_patch, true);
-  assert.ok(fakeState.skillTree.flame_patch >= 1, '불장판 스킬 트리가 1레벨 이상이어야 합니다.');
+  assert.equal(fakeState.grimoires.flame_patch, true, '불장판 주문서 습득 시 grimoires.flame_patch가 true여야 합니다.');
 
   manager.selectCard('spell_meteor', fakeState);
   assert.equal(fakeState.grimoires.meteor, true);
@@ -249,9 +247,10 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
   assert.ok(earlyChoices.some(c => c.id === 'spell_autocast'), '1-5 스테이지 이전 초반에는 자동 시전 카드가 우선 제시되어야 합니다.');
 
   // 2. 메테오(spell_meteor)를 획득한 후에는 메테오 강화 카드가 정상 등장하는지 검증
+  //    (희귀 카드 1장의 추첨당 등장 확률이 약 3%이므로 1000회 추첨으로 우연한 실패를 배제)
   manager.selectCard('spell_meteor', emptyState);
   let foundMeteorUpgrade = false;
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 1000; i++) {
     const choices = manager.drawChoices(3, false, emptyState);
     if (choices.some(c => c.id === 'crit_meteor_storm')) {
       foundMeteorUpgrade = true;
@@ -263,7 +262,7 @@ test('Step 12: 소환수 및 스킬 강화 카드 선행 조건(Prerequisite) �
   // 3. 화염 정령 소환(sum_spirit)을 1장 획득한 후에는 소환수 업그레이드 카드가 정상 등장할 수 있는지 검증
   manager.selectCard('sum_spirit', emptyState);
   let foundSummonUpgrade = false;
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 1000; i++) {
     const choices = manager.drawChoices(3, false, emptyState);
     if (choices.some(c => summonUpgradeIds.includes(c.id))) {
       foundSummonUpgrade = true;
@@ -389,12 +388,11 @@ test('Step 16: 화염 기관총 (rapid_gatling) 시전 시간 단축(0.3s) 및 �
   const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
   const { createDeckManager } = require('../src/scripts/roguelike-deck.js');
 
-  // 1. 카드 선택 시 gatling & gatlingMode 키 정상 활성화 검증
+  // 1. 카드 선택 시 gatlingMode 키 정상 활성화 검증
   const manager = createDeckManager();
   const fakeState = { deckMechanics: {}, playerStatsBonus: {} };
   manager.selectCard('rapid_gatling', fakeState);
   assert.equal(fakeState.deckMechanics.gatlingMode, true, 'gatlingMode가 true여야 합니다.');
-  assert.equal(fakeState.deckMechanics.gatling, true, '하위 호환성 gatling 키도 true여야 합니다.');
 
   // 2. game.js 소스 코드 수치 스펙 검증
   assert.ok(gameSource.includes('baseCast = isGatling ? 0.30 : 1.5'), '기관총 모드 시 기본 시전 시간이 0.30초여야 합니다.');
@@ -408,7 +406,7 @@ test('Step 16: 화염 기관총 (rapid_gatling) 시전 시간 단축(0.3s) 및 �
   const combat = { castingSkill: null, gcdRemaining: 0, castTotal: 0, castRemaining: 0, gcdTotal: 0 };
   const stats = { speedMult: 1.0, cdr: 0 };
   const context = vm.createContext({
-    state: { combat, deckMechanics: { gatling: true }, artifacts: {} },
+    state: { combat, deckMechanics: { gatlingMode: true } },
     getPlayerStats: () => stats,
     updateCastingLoopSound: () => {}
   });
@@ -521,7 +519,6 @@ test('Step 20: 모든 화염구 및 추가 생성 탄환의 마법봉 끝(Wand T
 
   // 2. launchProjectile 출발점 고정 및 발사 제스처 동기화 검증
   assert.ok(gameSource.includes('const start = getWandTipPos();'), '모든 투사체 발사 시 getWandTipPos를 출발점으로 삼아야 합니다.');
-  assert.ok(gameSource.includes("beginMageGesture('fireball')"), '추가 화염구 발사 시에도 마법봉을 뻗는 발사 제스처가 실행되어야 합니다.');
   assert.ok(gameSource.includes('const startSpreadY = Math.sign(offsetY)'), '추가 화염구는 발 쪽으로 떨어지지 않고 마법봉 끝에서 미세 부채꼴로 뻗어나가야 합니다.');
 
   // 3. 소환수 불사조 볼트의 발바닥 출발 제거 검증
@@ -548,40 +545,35 @@ test('Step 21: 정수(Essence) 재화 및 관련 UI(상단 알약, 마법 부여
   assert.ok(!gameSource.includes('chainHotStreak'), 'game.js에 연쇄 몰열(chainHotStreak) 로직이 남아있지 않아야 합니다.');
 });
 
-test('Step 22: 화염 정령 정상 시각화/골렘 소환 차단 & 결과창 스피드런 기록 비교 대시보드 및 재도전 검증', () => {
+test('Step 22: 화염 정령 덱 메커니즘 & 결과창 스피드런 기록 비교 대시보드 및 재도전 검증', () => {
   const fs = require('node:fs');
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   const css = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
   const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
   const { createDeckManager, CARD_POOL } = require('../src/scripts/roguelike-deck.js');
 
-  // 1. 화염 정령 소환 시 골렘 소환 차단 & fire_elem 정상 반영 검증
+  // 1. 화염 정령 소환 카드가 덱 메커니즘(spiritCount)에만 반영되는지 검증
   const manager = createDeckManager();
   const testState = {
-    skillTree: { fire_elem: 0, magma_golem: 0 },
     deckMechanics: {},
     playerStatsBonus: {}
   };
   manager.selectCard('sum_spirit', testState);
-  assert.equal(testState.skillTree.fire_elem, 1, 'sum_spirit 카드 획득 시 fire_elem 특성이 1이어야 합니다.');
-  assert.equal(testState.skillTree.magma_golem, 0, 'sum_spirit 카드 획득 시 용암 골렘(magma_golem)은 0이어야 합니다.');
   assert.equal(testState.deckMechanics.spiritCount, 1, 'spiritCount가 1이어야 합니다.');
+  assert.equal(testState.skillTree, undefined, '정령 카드는 제거된 특성 트리 상태를 만들지 않아야 합니다.');
 
   // 2. sum_spirit 2중첩 시 정령 편대 증가 검증
   manager.selectCard('sum_spirit', testState);
-  assert.equal(testState.skillTree.fire_elem, 2, 'sum_spirit 2회 획득 시 fire_elem이 2여야 합니다.');
   assert.equal(testState.deckMechanics.spiritCount, 2, 'spiritCount가 2여야 합니다.');
-  assert.equal(testState.skillTree.magma_golem, 0, '용암 골렘은 여전히 0이어야 합니다.');
 
-  // 3. 선행 조건(has_summon)이 골렘이 아닌 정령을 체크하는지 검증
+  // 3. 선행 조건(has_summon)이 정령 보유를 체크하는지 검증
   const summonCard = CARD_POOL.find(c => c.prerequisite === 'has_summon');
   assert.ok(summonCard, 'has_summon 선행 조건 카드가 존재해야 합니다.');
   assert.equal(summonCard.req(testState, manager.getActiveDeck()), true, '정령 보유 시 has_summon 조건이 충족되어야 합니다.');
 
   // 4. game.js 정령 렌더링/공격/스폰 및 세이브 복구 로직 검증
-  assert.ok(gameSource.includes('const elemLv = Math.max(state.skillTree.fire_elem || 0, (state.deckMechanics && state.deckMechanics.spiritCount) || 0);'), '정령 레벨이 deckMechanics.spiritCount를 포함하여 계산되어야 합니다.');
+  assert.ok(gameSource.includes('const elemLv = (state.deckMechanics && state.deckMechanics.spiritCount) || 0;'), '정령 수는 deckMechanics.spiritCount로 계산되어야 합니다.');
   assert.ok(gameSource.includes("else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();"), 'sum_spirit 카드 선택 시 스폰 연출이 트리거되어야 합니다.');
-  assert.ok(gameSource.includes('state.skillTree.magma_golem = 0;'), '정령 보유 시 골렘 오염을 방지/복구하는 로직이 있어야 합니다.');
 
   // 5. index.html 승천 결과 모달 UI 개편 검증
   assert.ok(html.includes('id="btn-speedrun-retry"'), '스피드런 재도전 버튼(#btn-speedrun-retry)이 존재해야 합니다.');
@@ -622,11 +614,11 @@ test('Step 23: 메테오 연속 낙하 시 파티클 지속 보장, 다시 도�
   assert.ok(gameSource.includes('state.playTimeSec = 0;'), '다시 도전하기 시 타이머가 0초로 초기화되어야 합니다.');
   assert.ok(gameSource.includes('restartSpeedrunRun();'), '재도전 버튼 클릭 시 restartSpeedrunRun이 호출되어야 합니다.');
 
-  // 3. 상단 구형 UI(불사조 승천, 심연의 규약, 깃털 알약, 유물 탭) 전면 비노출 검증
-  assert.ok(css.includes('#btn-ascend') && css.includes('#btn-heat-pacts') && css.includes('#pill-feathers') && css.includes('display: none !important;'), '불필요한 구형 승천/규약/깃털 UI가 CSS에서 영구 비노출 처리되어 있어야 합니다.');
-  assert.ok(html.includes('id="btn-ascend" style="display: none !important;"'), 'HTML 마크업에서도 btn-ascend가 비노출되어야 합니다.');
-  assert.ok(html.includes('id="btn-heat-pacts" style="display: none !important;"'), 'HTML 마크업에서도 btn-heat-pacts가 비노출되어야 합니다.');
-  assert.ok(html.includes('id="pill-feathers" style="display: none !important;"'), 'HTML 마크업에서도 pill-feathers가 비노출되어야 합니다.');
+  // 3. 구형 UI(불사조 승천, 심연의 규약, 깃털 알약, 유물 탭)는 숨김이 아니라 마크업·스타일에서 완전히 제거되어야 함
+  for (const id of ['btn-ascend', 'btn-heat-pacts', 'pill-feathers', 'tab-btn-artifacts']) {
+    assert.ok(!html.includes(`id="${id}"`), `구형 UI #${id}는 마크업에서 제거되어야 합니다.`);
+    assert.ok(!css.includes(`#${id}`), `구형 UI #${id} 스타일은 제거되어야 합니다.`);
+  }
 });
 
 

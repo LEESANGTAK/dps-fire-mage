@@ -14,55 +14,8 @@
         <!-- 플로팅 데미지 & 골드 레이어 -->
         <div class="fct-layer" id="fct-layer"></div>
 
-        <!-- 아레나 상단: 컴팩트 DPS 미터기 -->
-        <div class="dps-meter-panel" id="dps-meter-panel" title="클릭하여 상세 전투 분석(Details!) 열람">
-          <div class="dps-meter-left">
-            <div class="dps-stat-box">
-              <div class="dps-label-row">
-                <span class="dps-label">⚡ 현재 DPS</span>
-                <span class="fever-tag hidden" id="dps-fever-tag">🔥 FEVER</span>
-              </div>
-              <span class="dps-current-val" id="ui-current-dps">0 /초</span>
-            </div>
-          </div>
-
-          <div class="dps-breakdown-mini" id="skill-breakdown-bars">
-            <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
-          </div>
-
-          <button type="button" class="btn-meter-details" id="btn-open-details" title="와우 스타일 상세 딜미터기 리포트 열기">
-            📊 상세
-          </button>
-        </div>
-
-        <!-- 개발자 모드 치트 패널 (개발자 모드 활성화 시 노출) -->
-        <div class="dev-cheat-panel hidden" id="dev-cheat-panel">
-          <div class="dev-cheat-header">
-            <span class="dev-cheat-title">🛠️ 개발자 치트</span>
-          </div>
-          <div class="dev-cheat-actions">
-            <button type="button" class="dev-cheat-btn" id="btn-cheat-gold">
-              💰 즉시 골드 +10,000
-            </button>
-            <button type="button" class="dev-cheat-btn" id="btn-cheat-essence">
-              🔹 즉시 정수 +10,000
-            </button>
-            <button type="button" class="dev-cheat-btn" id="btn-cheat-sp">
-              🌟 즉시 스킬 포인트 +10,000
-            </button>
-            <button type="button" class="dev-cheat-btn dev-cheat-toggle" id="btn-cheat-always-crit">
-              <span>💥 모든 데미지 치명타</span>
-              <span class="dev-toggle-pill" id="ui-cheat-crit-state">OFF</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 / 우측 현상금 -->
+        <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 -->
         <div class="arena-top-stage-header" id="arena-top-stage-header">
-          <!-- 게임 갱신 대상은 유지하지만 중복 PHASE·진행 도트는 표시하지 않는다. -->
-          <div class="stage-center-info" id="stage-center-info" hidden aria-hidden="true">
-            <div id="ui-phase-num"></div><div id="ui-stage-num"></div><div id="ui-phase-dots"></div>
-          </div>
           <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
               <span class="dps-label">⏱️ 스피드런 시간</span>
               <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
@@ -76,31 +29,13 @@
 
           <!-- 페이즈 보스 전용 기믹 상태 뱃지 (기믹 활성 시 노출) -->
           <div class="boss-gimmick-badge hidden" id="boss-gimmick-badge"></div>
-
-          <!-- 순환형 미니 현상금 퀘스트 바 -->
-          <div class="bounty-bar" id="bounty-bar" title="현상금 목표를 달성하면 추가 골드와 정수를 획득합니다">
-            <span class="bounty-icon">🎯</span>
-            <span class="bounty-title" id="bounty-title">치명타 15회</span>
-            <div class="bounty-prog-wrap">
-              <div class="bounty-prog-fill" id="bounty-prog-fill" style="width: 0%;"></div>
-            </div>
-            <span class="bounty-prog-text" id="bounty-prog-text">0 / 15</span>
-            <span class="bounty-reward-pill" id="bounty-reward">💰 25 G · 🔹 1</span>
-          </div>
         </div>
 
-        <!-- 아레나 중앙: 좌측 [◀ 이전] ➔ 마법사 ➔ 몬스터 ➔ 우측 [다음 도전 ▶] -->
+        <!-- 아레나 중앙: 마법사 ➔ 몬스터 -->
         <div class="center-stage">
-          <!-- 좌측 이전 스테이지 버튼 -->
-          <div class="arena-side-nav left">
-            <button class="stage-nav-btn" id="btn-prev-stage" title="이전 몬스터로 이동">◀ 이전</button>
-          </div>
 
           <!-- 좌측 플레이어 마법사 -->
           <div class="caster-box" id="caster-box">
-            <!-- 캐릭터 이미지 왼쪽에 표시되는 획득 장비 목록 -->
-            <div class="caster-equipped-left" id="caster-equipped-left"><div class="caster-eq-slot"><span class="caster-eq-icon">🪄</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">💍</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">🧤</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">🔮</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">🔱</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">⏳</span><span class="caster-eq-lv">+1</span></div><div class="caster-eq-slot"><span class="caster-eq-icon">👑</span><span class="caster-eq-lv">+1</span></div></div>
-
             <div class="caster-avatar" id="caster-avatar">
               <!-- 발 아래 자동 시전 마법진 -->
               <div class="autocast-magic-circle hidden" id="autocast-magic-circle" aria-hidden="true">
@@ -122,14 +57,8 @@
                 </svg>
               </div>
               <div class="mage-art" id="mage-art" role="img" aria-label="화염 마법사" data-pose="idle"><canvas id="mage-pose-canvas" width="640" height="640" aria-hidden="true"></canvas><span class="mage-muzzle" id="mage-muzzle"></span></div>
-              <div class="casting-orb" id="casting-orb"></div>
               <div class="heat-sigils" id="heat-sigils" data-heat="1" aria-label="연속 치명타"><i></i><i></i></div>
             </div>
-            <div class="flame-evo-badge evo-tier-1" id="flame-evo-badge" title="주문 공격력과 장비 성장에 따라 화염 마법의 색상·크기·탄막이 5단계로 진화합니다 (클릭 시 진화 정보 확인)">
-              🟠 Lv.1 견습 불꽃
-            </div>
-            <!-- 기존 게임 갱신 대상은 유지하되 중복된 소환물 상태 표시는 노출하지 않는다. -->
-            <div class="summon-active-badges hidden" id="summon-active-badges" hidden aria-hidden="true"></div>
           </div>
 
           <!-- 우측 스테이지 몬스터 -->
@@ -156,17 +85,6 @@
             </div>
           </div>
 
-          <!-- 우측 다음 도전 버튼 -->
-          <div class="arena-side-nav right">
-            <button class="stage-nav-btn next-challenge has-badge-anchor" id="btn-next-stage" disabled>
-              <span id="btn-next-stage-text">다음 도전 ▶</span>
-              <span class="noti-badge hidden" id="badge-next-stage">!</span>
-            </button>
-            <label class="auto-advance-toggle" title="목표 DPS 달성 및 처치 완료 시 다음 도전으로 자동 진입합니다">
-              <input type="checkbox" id="chk-auto-advance" checked />
-              <span>⚡ 자동 진행</span>
-            </label>
-          </div>
         </div>
 
         <!-- 아레나 하단: 플레이어 시전바 & 스킬 액션바 -->

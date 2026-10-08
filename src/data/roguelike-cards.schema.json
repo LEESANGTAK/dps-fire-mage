@@ -5,7 +5,15 @@
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["id", "title", "icon", "rarity", "build", "maxStack", "desc"],
+    "required": [
+      "id",
+      "title",
+      "icon",
+      "rarity",
+      "build",
+      "maxStack",
+      "desc"
+    ],
     "properties": {
       "id": {
         "type": "string",
@@ -21,13 +29,22 @@
       },
       "rarity": {
         "type": "string",
-        "enum": ["common", "rare", "epic", "legendary"],
-        "description": "희귀도 등급 (선택 시 드롭다운 목록 제공:\n- common: 일반 (회색 테두리)\n- rare: 희귀 (파란색 테두리)\n- epic: 영웅 (보라색 테두리)\n- legendary: 전설 (황금색 테두리, 보스전 우대 가중치))"
+        "enum": [
+          "common",
+          "rare",
+          "legendary"
+        ],
+        "description": "희귀도 등급 (드롭다운 목록 제공):\n- common: 일반 (회색 테두리, 일반 웨이브 가중치 75)\n- rare: 희귀 (하늘색 테두리, 일반 21 / 보스 85)\n- legendary: 전설 (황금색 테두리, 일반 4 / 보스 15)"
       },
       "build": {
         "type": "string",
-        "enum": ["rapid", "crit", "pet", "util", "spell"],
-        "description": "카드 빌드 성향 태그 (드롭다운 목록 제공:\n- rapid: 속사/가속 빌드\n- crit: 극치명타/작열 빌드\n- pet: 불사조 정령 빌드\n- util: 생존 및 골드 유틸리티\n- spell: 고대 주문서 스킬 해금)"
+        "enum": [
+          "rapid",
+          "crit",
+          "summon",
+          "utility"
+        ],
+        "description": "카드 빌드 성향 태그 (드롭다운 목록 제공):\n- rapid: ⚡ 속사 머신건\n- crit: 🎯 극치명 누킹\n- summon: 🔥 정령 군단\n- utility: ✨ 유틸리티"
       },
       "maxStack": {
         "type": "integer",
@@ -49,19 +66,19 @@
           },
           "haste": {
             "type": "number",
-            "description": "가속도(시전 속도 및 글쿨 단축) 증가 %"
+            "description": "시전 속도 증가 % (예: 30 = +30%)"
           },
           "crit": {
             "type": "number",
-            "description": "치명타율 증가 %"
+            "description": "치명타율 증가 %p (예: 15 = +15%)"
           },
           "critDmg": {
             "type": "number",
-            "description": "치명타 피해량 증가 %"
+            "description": "치명타 피해 배율 가산 (예: 0.4 = +40%, 기본 150%에 더해짐)"
           },
           "goldBonus": {
             "type": "number",
-            "description": "골드 획득량 증가 %"
+            "description": "골드 획득 배율 가산 (예: 0.6 = +60%)"
           }
         },
         "additionalProperties": false
@@ -72,39 +89,39 @@
           "has_summon",
           "has_meteor",
           "has_combustion",
-          "has_fireblast",
-          "has_ice_barrier",
           "has_any_spell"
         ],
-        "description": "3지선다에 등장하기 위한 선행 조건 필터 (선택 시 드롭다운 제공:\n- has_summon: 불사조 소환수를 배운 상태에서만 등장\n- has_meteor: 유성낙하를 배운 상태에서만 등장\n- has_combustion: 발화를 배운 상태에서만 등장\n- has_fireblast: 화염작렬을 배운 상태에서만 등장\n- has_ice_barrier: 얼음보호막을 배운 상태에서만 등장\n- has_any_spell: 쿨다운 보조 마법(불꽃작렬, 메테오 등)을 1개 이상 배운 상태에서만 등장)"
+        "description": "3지선다에 등장하기 위한 선행 조건 필터 (드롭다운 목록 제공):\n- has_summon: 화염 정령을 소환한 상태에서만 등장\n- has_meteor: 메테오를 습득한 상태에서만 등장\n- has_combustion: 마력 폭주를 습득한 상태에서만 등장\n- has_any_spell: 불꽃 작렬·메테오·마력 폭주·불장판 중 1개 이상 습득한 상태에서만 등장"
       },
       "spellKey": {
         "type": "string",
         "enum": [
+          "autocast",
           "fireblast",
           "meteor",
           "combustion",
-          "summon",
-          "ice_barrier"
+          "flame_patch"
         ],
-        "description": "고대 주문서 카드일 경우 해금할 스킬 키 (선택 시 드롭다운 제공)"
+        "description": "고대 주문서 카드일 경우 해금할 스킬 키 (드롭다운 목록 제공):\n- autocast: 자동 시전 마법진\n- fireblast: 불꽃 작렬\n- meteor: 메테오\n- combustion: 마력 폭주\n- flame_patch: 불장판"
       },
       "mechanic": {
         "type": "string",
         "enum": [
-          "scorch_multiplier",
-          "ignite_spread",
-          "phoenix_flame",
-          "phoenix_feather_boost",
-          "pyro_echo",
-          "mana_surge",
-          "alchemy_gold"
+          "split_fireball",
+          "gatling_mode",
+          "meteor_buff",
+          "combustion_god",
+          "extra_spirit",
+          "synchronized_fire",
+          "cinder_lord",
+          "executioner",
+          "phoenix_reset"
         ],
-        "description": "특수 고유 메커니즘 키 (선택 시 드롭다운 제공:\n- scorch_multiplier: 불태우기 즉발 피해 배율 증가\n- ignite_spread: 도트 피해 강화\n- phoenix_flame: 소환수 초당 타격 주기 단축\n- phoenix_feather_boost: 소환수 공격력 증가\n- pyro_echo: 화염구 추가 메아리\n- mana_surge: 마력 쇄도\n- alchemy_gold: 골드 연금술)"
+        "description": "특수 고유 메커니즘 키 (드롭다운 목록 제공):\n- split_fireball: 화염구 적중 시 불씨 2개 분열 (스택당 +2, 최대 6, 각 주문력 40%)\n- gatling_mode: 화염구 기본 시전·공통 대기 0.3초\n- meteor_buff: 메테오 습득 + 스택당 재사용 대기 50% 감소·피해 +60%\n- combustion_god: 마력 폭주 습득 + 지속시간 2배·폭주 중 모든 피해 2.5배\n- extra_spirit: 화염 정령 1기 추가 소환 (최대 4기)\n- synchronized_fire: 화염구 발사 때마다 모든 정령 동시 공격\n- cinder_lord: 소환수 1기당 모든 주문 피해 +30%\n- executioner: 적 체력 40% 이하 시 모든 피해 +executionerMult (기본 0.7)\n- phoenix_reset: 치명타 시 15% 확률로 모든 스킬 재사용 대기 초기화 + 2.4초마다 불사조 협공"
       },
       "mechanicParams": {
         "type": "object",
-        "description": "특수 메커니즘 세부 파라미터 객체"
+        "description": "특수 메커니즘 세부 파라미터 객체 (예: {\"executionerMult\": 0.7})"
       }
     },
     "additionalProperties": false

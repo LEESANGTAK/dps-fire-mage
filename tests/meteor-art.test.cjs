@@ -75,7 +75,7 @@ assert.ok(generalPool.some(pt=>pt.meteorTrail&&pt.kind==='smoke'));
 vm.runInContext("spawnParticles(100,200,100,'#fff','#f00')",spawnContext);
 assert.equal(generalPool.length,450);
 assert.ok(generalPool.some(pt=>pt.meteorTrail),'일반 폭발이 기존 꼬리를 삭제하면 안 됩니다.');
-const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('const monsterShards = [];'));
+const debrisCode=game.slice(game.indexOf('const rockDebris = [];'),game.indexOf('function launchCustomProjectile('));
 const debrisContext=vm.createContext({});vm.runInContext(debrisCode,debrisContext);
 vm.runInContext('for(let i=0;i<30;i++)spawnMeteorRockDebris(100,200);',debrisContext);
 assert.equal(vm.runInContext('rockDebris.length',debrisContext),48);

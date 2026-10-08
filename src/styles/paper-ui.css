@@ -1,7 +1,6 @@
 /* 전투 UI: 종이 테두리와 그림자만 꾸미고 상태 신호의 레이어는 유지한다. */
 :root { --paper-edge: #a88a64; --paper-ink: #241b22; --paper-label: #efe1c6; }
 /* 전장 상단의 중앙은 시간만 남기고 진행·보상 정보는 좌우로 분산한다. */
-.combat-arena .stage-center-info { display: none !important; }
 .combat-arena .arena-top-stage-header { top: 12px; left: 16px; right: 16px; transform: none; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: start; gap: 8px 12px; }
 .arena-top-stage-header .arena-center-mission-wrap { grid-column: 2; grid-row: 1 / span 2; justify-self: center; align-items: center; display: flex; flex-direction: column; gap: 4px; pointer-events: auto; z-index: 15; }
 .arena-top-stage-header .speedrun-stat-box { justify-self: center; align-items: center; padding: 4px 10px; border: 1px solid #8b7055; border-radius: 3px; background: #241b22ed; box-shadow: 0 2px 0 #151119; }
@@ -10,12 +9,6 @@
 .arena-top-stage-header .monster-stage-mini { font-size: .88rem; }
 .arena-top-stage-header .monster-reward { font-size: .8rem; padding: 3px 6px; }
 .arena-top-stage-header .boss-gimmick-badge { grid-column: 1; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; }
-.arena-top-stage-header .bounty-bar { grid-column: 3; grid-row: 1 / span 2; justify-self: end; display: grid; grid-template-columns: auto minmax(0,1fr) auto; width: 100%; max-width: 280px; padding: 5px 8px; gap: 4px 6px; white-space: normal; border-radius: 4px; }
-.bounty-bar .bounty-icon { grid-column: 1; grid-row: 1; }
-.bounty-bar .bounty-title { grid-column: 2; grid-row: 1; }
-.bounty-bar .bounty-prog-text { grid-column: 3; grid-row: 1; }
-.bounty-bar .bounty-prog-wrap { grid-column: 1 / span 2; grid-row: 2; width: 100%; }
-.bounty-bar .bounty-reward-pill { grid-column: 3; grid-row: 2; white-space: nowrap; }
 
 /* 라그나로스 세계 멸망 저지 진척도 트래커 (Ragnaros Doom Tracker) */
 .ragnaros-doom-tracker { position: relative; width: 236px; padding: 5px 10px 7px 10px; background: #241b22ed; border: 1px solid #8b7055; border-radius: 4px; box-shadow: 0 2px 0 #151119; cursor: pointer; user-select: none; transition: border-color .16s ease-out, box-shadow .16s ease-out; }
@@ -58,9 +51,7 @@
   .arena-top-stage-header .speedrun-stat-box { padding: 3px 8px; }
   .ragnaros-doom-tracker { width: 180px; padding: 3px 6px; }
   .arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 2; gap: 5px; padding: 6px; flex-wrap: wrap; }
-  .arena-top-stage-header .bounty-bar { grid-column: 2; grid-row: 2; font-size: .62rem; }
   .arena-top-stage-header .boss-gimmick-badge { grid-column: 1; grid-row: 3; font-size: .6rem; }
-  .arena-top-stage-header .bounty-reward-pill { font-size: .55rem; padding: 2px 3px; }
 }
 .top-bar { background: #30282c; border-bottom: 2px solid #8b7055; box-shadow: 0 3px 0 #17131b; }
 .game-title { color: #f3d391; text-shadow: 0 2px #17131b; }
@@ -71,8 +62,6 @@
 .stat-pill .label { color: #cdbda6; }
 .stat-pill .value { text-shadow: none; }
 .top-bar .gold-pill { border-color: #b4934d; }
-.top-bar .essence-pill { border-color: #5b9caa; }
-.top-bar .feather-pill { border-color: #b26b4d; }
 .top-bar .btn-top { background: #3c3035; border-color: #8a7157; border-radius: 3px; box-shadow: 0 2px 0 #17131b; transition: transform .16s cubic-bezier(.16,1,.3,1), border-color .16s ease-out; }
 .top-bar .btn-top:hover { background: #49373a; border-color: #e8c48a; }
 .top-bar .btn-top:active { transform: translateY(2px); box-shadow: none; }
@@ -80,15 +69,11 @@
 .top-bar .btn-top.active { border-color: #57ba91; color: #b1f1cb; background: #24443b; }
 .paper-ui-icon { display: inline-block; width: 22px; height: 22px; flex-shrink: 0; vertical-align: middle; background-image: url('../../assets/art/paper-ui-stats-v1.png'); background-size: 300% 200%; border-radius: 2px; }
 .paper-ui-icon[data-paper-icon='gold'] { background-position: 0 0; }
-.paper-ui-icon[data-paper-icon='essence'] { background-position: 50% 0; }
-.paper-ui-icon[data-paper-icon='feather'] { background-position: 100% 0; }
 .paper-ui-icon[data-paper-icon='power'] { background-position: 0 100%; }
 .paper-ui-icon[data-paper-icon='crit'] { background-position: 50% 100%; }
 .paper-ui-icon[data-paper-icon='haste'] { background-position: 100% 100%; }
-.combat-arena .dps-meter-panel, .combat-arena .action-bar { background: #30262de8; border: 2px solid #a88a64; border-radius: 5px; box-shadow: 0 3px 0 #17131b, 0 5px 7px #0005; }
-.combat-arena .dps-meter-panel { border-color: #766149; }
-.combat-arena .caster-label, .combat-arena .monster-name-label, .combat-arena .arena-stage-reward-banner { background: #241b22ed; border: 1px solid #8b7055; border-radius: 3px; box-shadow: 0 2px 0 #151119; }
-.combat-arena .stage-nav-btn, .combat-arena .btn-meter-details { background: #3c3035; border-color: #8b7055; border-radius: 3px; }
+.combat-arena .action-bar { background: #30262de8; border: 2px solid #a88a64; border-radius: 5px; box-shadow: 0 3px 0 #17131b, 0 5px 7px #0005; }
+.combat-arena .monster-name-label, .combat-arena .arena-stage-reward-banner { background: #241b22ed; border: 1px solid #8b7055; border-radius: 3px; box-shadow: 0 2px 0 #151119; }
 .combat-arena .monster-hp-wrap, .combat-arena .castbar-wrapper { background: #201922; border: 2px solid #b39770; border-radius: 3px; box-shadow: 0 2px 0 #17131b; }
 .combat-arena .monster-hp-wrap.boss-frame { border-color: #f3be63; box-shadow: 0 2px 0 #17131b, 0 0 12px #ef97314d; }
 .combat-arena .hp-bar-fill { background: #b84d40; }
@@ -115,35 +100,22 @@
 .living-paused .wow-proc-svg .proc-beam-trail, .living-paused .wow-proc-svg .proc-beam-head { animation-play-state: paused; }
 /* 종이 배우의 실제 머리 높이와 발 원점을 기준으로 보조 정보를 배치한다. */
 .caster-avatar .heat-sigils { left: 50%; right: auto; top: auto; bottom: calc(100% + var(--actor-height, 150px) * .32 + 12px); transform: translateX(-50%); gap: 10px; }
-.caster-box .caster-equipped-left { top: auto; bottom: calc(100% + 14px); right: calc(100% + 14px); transform: none; pointer-events: auto; }
 /* 인라인 부모의 자동 크기에 100%를 적용하면 아이콘의 폭이 0이 될 수 있다. */
-.caster-eq-slot .caster-eq-icon { display: block; width: 26px; height: 26px; }
-.caster-eq-slot .caster-eq-icon .comic-icon { display: block; width: 100%; height: 100%; }
 .monster-box .debuff-row { top: auto; bottom: calc(100% + 46px); left: calc(100% + 46px); }
 .weakaura-container[data-monster-size='boss'] { left: 61%; }
 .weakaura-container[data-monster-size='boss'] .debuff-row { left: calc(50% + var(--monster-half-width, 63px) + 12px); width: 100px; max-width: 100px; white-space: normal; }
 .weakaura-container[data-monster-size='boss'] .debuff-chip { max-width: 100px; padding: 3px 5px; flex-wrap: wrap; }
 @media (max-width: 768px) {
-  .caster-box .caster-equipped-left { right: calc(100% + 7px); bottom: calc(100% + 10px); gap: 4px; }
-  .caster-equipped-left .caster-eq-slot { width: 26px; height: 26px; }
-  .caster-eq-slot .caster-eq-icon { width: 20px; height: 20px; }
   .monster-box .debuff-row { left: calc(50% + 42px); width: 68px; max-width: 68px; white-space: normal; gap: 4px; }
   .debuff-row .debuff-chip { max-width: 68px; padding: 3px 4px; font-size: .6rem; flex-wrap: wrap; gap: 2px; }
-  /* 좁은 화면에서는 이동 조작을 체력 아래 한 줄로 묶어 디버프 옆을 비운다. */
-  .combat-arena .arena-side-nav.right { top: calc(var(--floor-line) + 54px); transform: none; flex-direction: row; right: 8px; gap: 4px; }
-  .arena-side-nav.right .stage-nav-btn { padding: 3px 5px; font-size: .6rem; }
-  .arena-side-nav.right .auto-advance-toggle { padding: 3px 4px; font-size: .6rem; }
 }
 @media (max-width: 480px) {
   .weakaura-container[data-monster-size='boss'] { left: 52.5%; }
   .weakaura-container[data-monster-size='boss'] .debuff-row { width: 68px; max-width: 68px; }
-  .caster-box .caster-equipped-left { right: calc(100% - 1px); gap: 3px; }
-  .caster-equipped-left .caster-eq-slot { width: 22px; height: 22px; }
-  .caster-eq-slot .caster-eq-icon { width: 18px; height: 18px; }
   .caster-avatar .heat-sigils { left: 60%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .action-bar .skill-btn, .top-bar .btn-top { transition: none; }
-  .action-bar .skill-btn:hover, .action-bar .skill-btn:active, .action-bar .skill-btn.pressed { transform: none; }
+  .action-bar .skill-btn:hover, .action-bar .skill-btn:active { transform: none; }
   .wow-proc-svg .proc-beam-trail, .wow-proc-svg .proc-beam-head { animation: none; }
 }

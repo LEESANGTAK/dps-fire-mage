@@ -16,8 +16,7 @@
   border: 3px solid #806044;
   box-shadow: inset 0 0 0 2px #271c18, inset 0 0 65px #090b16, 0 8px 24px #0008;
 }
-.dps-meter-panel { background: linear-gradient(180deg, #211b23ee, #15141bd9); border-bottom-color: #72543a; }
-.stage-nav-btn, .btn-top, .auto-cast-btn {
+.btn-top, .auto-cast-btn {
   border-color: #77573e;
   background: linear-gradient(180deg, #403039, #231b25);
   box-shadow: inset 0 1px #b18a5140, 0 3px 5px #0005;
@@ -56,14 +55,12 @@
 .mage-art[data-pose] { width: var(--mage-width); aspect-ratio: 1; bottom: -1px; background: none; clip-path: none; transform: none; transition: filter .25s ease-out; z-index: 3; }
 #mage-pose-canvas { width: 100%; height: 100%; display: block; }
 .mage-muzzle { left: var(--muzzle-x, 97%); top: var(--muzzle-y, 66%); }
-.arena-side-nav, .flame-evo-badge { pointer-events: auto; }
-.caster-avatar.combustion-mode, .caster-avatar.cast-recoil { transform: none; }
+.caster-avatar.combustion-mode { transform: none; }
 .caster-avatar::before { content: ''; position: absolute; bottom: 9%; left: -15%; width: 130%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, #08070cb0, #4a3a5055 55%, transparent 72%); z-index: 0; }
 .dummy-avatar:has([data-art='slime'])::before { content: ''; position: absolute; bottom: 8%; width: 110%; height: 15%; border-radius: 50%; background: radial-gradient(ellipse, #09080bb0, transparent 72%); }
 .mage-muzzle { position: absolute; left: var(--muzzle-x, 97%); top: var(--muzzle-y, 66%); width: 1px; height: 1px; }
 .mage-art.motion-combustion { filter: drop-shadow(0 0 12px #ffad38aa); }
 .mage-art.motion-paused { transition: none; animation-play-state: paused; }
-.casting-orb { display: none; }
 .pyro-ready-mode .mage-art { filter: drop-shadow(0 0 10px #ff7515aa) drop-shadow(0 9px 5px #0008); }
 .combustion-mode .mage-art { filter: drop-shadow(0 0 16px #ffaf36bb) drop-shadow(0 0 4px #ffe5a3); }
 .heat-sigils { position: absolute; bottom: 0; display: flex; gap: 12px; z-index: 8; }
@@ -107,8 +104,6 @@
   .mage-art { --mage-width: 190%; left: -45%; bottom: 0; }
   .dummy-emoji[data-art='slime'] { width: 160px; height: 160px; }
   .action-bar { padding: 7px; }
-  .stage-center-info { flex-shrink: 0; width: max-content; white-space: nowrap; }
-  .dps-breakdown-mini { display: none; }
   .arena-top-stage-header { top: 64px; }
 }
 @media (max-width: 480px) {
@@ -117,11 +112,6 @@
   .mage-art { --mage-width: 200%; left: -50%; bottom: 0; }
   .dummy-avatar { width: 90px; height: 100px; right: 0; bottom: 0; }
   .dummy-emoji[data-art='slime'] { width: 130px; height: 130px; }
-  .arena-side-nav { top: 40%; }
-  .arena-side-nav.left { left: 8px; top: 8%; }
-  .arena-side-nav.left:has(button:disabled) { visibility: hidden; }
-  .arena-side-nav.right { right: 8px; }
-  .flame-evo-badge { font-size: .6rem; white-space: nowrap; }
   .monster-hp-wrap { width: 145px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -152,8 +142,6 @@
   .dummy-emoji[data-art='slime'] { --slime-size: 130px; width: var(--slime-size); height: var(--slime-size); }
   .caster-box { left: 26%; }
   .weakaura-container { left: 67%; width: 180px; }
-  .arena-side-nav { top: 49%; }
-  .arena-side-nav.left { top: 40%; }
 }
 
 /* 대기와 피격은 서로 다른 층에서 움직입니다. 원점은 항상 바닥입니다. */
@@ -230,37 +218,19 @@
 @font-face { font-family:'ComicRead';src:url('../../assets/fonts/NanumGothic-Regular.ttf') format('truetype');font-weight:400;font-display:swap; }
 :root { --bg-slot:#282127; --bg-panel-header:#34292c; --border-color:#695345; --text-main:#f1e2c9; --text-muted:#bbae9b; --mage-blue:#bea0d8; }
 body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
-.game-title,.stat-pill .value,.panel-title-row,.right-tab-btn,.skill-name,.skill-hotkey,.shop-title,.shop-buy-btn,.stage-nav-btn,.btn-top,.caster-label,.monster-name-label,.castbar-text,h1,h2,h3,.fct-crit {
+.game-title, .stat-pill .value, .skill-name, .skill-hotkey, .btn-top, .monster-name-label, .castbar-text, h1, h2, h3, .fct-crit {
   font-family:'ComicJua','Malgun Gothic',sans-serif;font-weight:400;letter-spacing:.01em;
 }
 .game-title { color:#ffe0a0;text-shadow:2px 2px #120e12; }
 .top-bar { background:#211b22;border-bottom:3px solid #0e0b10;box-shadow:0 2px 0 #78553e; }
 .stat-pill { background:#30272c;border:2px solid #120e14;border-radius:4px 8px 5px 7px;box-shadow:inset 0 1px #806348,2px 3px #0e0a10; }
 .stat-pill .label { font-size:.65rem;color:#c3b198;white-space:nowrap; }
-.shop-section,.equipped-panel,.infusion-header-box { border:2px solid #110d12;border-radius:6px 10px 7px 5px;background:#211b22;box-shadow:0 0 0 1px #73513c; }
-.panel-title-row { background:#3e3031;color:#edd5af;border-bottom:2px solid #151015; }
-.shop-card { background:#e1cfad;border:2px solid #251a21;border-radius:5px 8px 6px 4px;color:#392b2c;box-shadow:2px 3px #100c1280; }
-.shop-title { font-size:.9rem;color:#35232a; }
-.shop-desc { color:#635044;font-size:.68rem;line-height:1.4; }
-.shop-lv-tag { font-size:.7rem;font-weight:900;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;line-height:1.2;vertical-align:middle; }
-.shop-lv-tag.unowned { color:#8c786c !important;background:#35272a !important;border:1.5px solid #1a1215 !important; }
-.shop-lv-tag.upgraded { color:#4ade80 !important;background:#12281e !important;border:1.5px solid #064e3b !important;box-shadow:inset 0 1px #22c55e44,1px 1px 0 #100b11;text-shadow:0 1px 2px #000; }
-.caster-eq-lv { background:#12281e !important;border:1.5px solid #064e3b !important;color:#4ade80 !important;box-shadow:1px 1px 0 #100b11; }
-.section-sub,.total-power-tag { background:#251c22 !important;border:1.5px solid #4a3433 !important;color:#edd5af !important;padding:2px 8px;border-radius:99px; }
-.shop-card.affordable { background:#ecd8b0;border-color:#806038; }
-.shop-card.purchased-grimoire { opacity:.65;background:#a99a85;border-color:#282027; }
-.shop-icon { background:#30232b;border:2px solid #604330;border-radius:5px;box-shadow:inset 0 0 0 1px #cfa86755; }
-.shop-buy-btn,.stage-nav-btn,.right-tab-btn.active { color:#fff0cd;background:#9c4930;border:2px solid #28151d;box-shadow:inset 0 1px #e0a265,2px 3px #100b11;text-shadow:1px 1px #482327; }
-.shop-buy-btn.done-btn { background:#435345;color:#d5dec2; }
-.btn-top,.right-tab-btn,.auto-cast-btn { border:2px solid #100c12;border-radius:4px 7px 5px 6px;background:#4a3433;color:#e8cfab;box-shadow:inset 0 1px #997651,2px 3px #100b12; }
-.right-tab-btn.active { background:#98472e;color:#ffe5b3; }
+.btn-top, .auto-cast-btn { border:2px solid #100c12;border-radius:4px 7px 5px 6px;background:#4a3433;color:#e8cfab;box-shadow:inset 0 1px #997651,2px 3px #100b12; }
 .action-bar { border:3px solid #140f16;border-radius:7px 11px 6px 9px;box-shadow:0 0 0 1px #946441,3px 5px #0c0911;background:#3c292d; }
 .castbar-wrapper,.monster-hp-wrap { border:2px solid #171018;border-radius:5px;box-shadow:0 0 0 1px #986d49; }
 .hp-bar-fill { background:#b54539; }
-.shop-buy-btn:active,.btn-top:active,.right-tab-btn:active { transform:translateY(2px);box-shadow:inset 0 1px #997651; }
-.modal-content,.victory-modal-content,.wow-tooltip { background:#2d222b;border-color:#977047;color:#f2e1c4; }
+.btn-top:active { transform:translateY(2px);box-shadow:inset 0 1px #997651; }
 .comic-icon { display:inline-block;width:1.15em;height:1.15em;vertical-align:-.18em;background-repeat:no-repeat;background-size:400% 400%;background-image:url('../../assets/art/comic-equipment-atlas.png');flex-shrink:0; }
-.shop-icon .comic-icon,.inf-icon .comic-icon,.wow-node-icon .comic-icon,.caster-eq-icon .comic-icon { width:100%;height:100%;vertical-align:0; }
 .comic-icon[data-sheet='spell'] { background-image:url('../../assets/art/comic-skill-atlas.png');background-size:200% 200%; }
 .dummy-emoji[data-art='monster'] { position:absolute;bottom:0;font-size:0;flex-shrink:0;filter:drop-shadow(0 6px 4px #0007);background-repeat:no-repeat; }
 .dummy-avatar:has([data-art='monster']) { background:transparent;border-color:transparent;box-shadow:none; }
@@ -268,28 +238,14 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 
 .comic-vector { display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0; }
 .dummy-avatar:has([data-art='monster']):is(.crit-hit,.crit-left,.crit-right,.hit-fireblast,.knockback-pyro,.knockback-meteor) { box-shadow:none; }
-@media(max-width:768px) { .shop-title{font-size:.85rem}.shop-desc{font-size:.66rem}.stat-pill .label{font-size:.6rem} }
-
-.shop-card .shop-desc,.shop-card .shop-desc * { color:#635044 !important; }
+@media(max-width:768px) {.stat-pill .label{font-size:.6rem} }
 [data-skill='meteor'] .skill-icon,[data-skill='flame_patch'] .skill-icon {position:absolute;inset:0;border-radius:5px;font-size:0;background-image:url('../../assets/art/comic-equipment-atlas.png');background-size:400% 400%;}
 [data-skill='meteor'] .skill-icon {background-position:100% 100%;}
 [data-skill='flame_patch'] .skill-icon {background-image:url('../../assets/art/comic-skill-atlas.png');background-size:200% 200%;background-position:0 0;}
 
-/* 이미지로 치환한 특성 아이콘의 부모에도 명시적인 영역을 확보합니다. */
-.wow-node-icon { display:block;width:100%;height:100%; }
-.wow-tt-icon .comic-icon { width:100%;height:100%; }
+/* 이미지로 치환한 스킬 아이콘의 부모에도 명시적인 영역을 확보합니다. */
 [data-skill='meteor'] .skill-name,[data-skill='flame_patch'] .skill-name { position:absolute;bottom:0;left:0;right:0;padding:3px 0;background:#140e16ce;text-shadow:0 1px 2px #000; }
 
-/* 어두운 마법부여 카드에는 양피지 상점의 짙은 글자색을 적용하지 않습니다. */
-.infusion-card .shop-title { color:#fff0d5; }
-.infusion-card .shop-desc { color:#d8d1c5;font-size:.75rem;line-height:1.5; }
-.infusion-card.maxed-infusion { background:#29232b; }
-.inf-sub-hint { color:#cfc5b8; }
-.inf-buy-btn:disabled { color:#b8c4d3; }
-
-.comic-icon[data-sheet='essence'] { background:url('../../assets/art/comic-essence.png') center / contain no-repeat; }
-.flying-essence-orb { background:url('../../assets/art/comic-essence.png') center / contain no-repeat;border:0;box-shadow:none;border-radius:0;filter:drop-shadow(0 0 5px #4fc9ff80); }
-.flying-essence-orb::after { content:none; }
 .skill-charges { background:#140e16e6;border:1px solid #ad8150;border-radius:4px;padding:0 3px;bottom:16px; }
 .skill-tooltip { position:fixed;z-index:10000;width:min(300px,calc(100vw - 16px));padding:12px 14px;border:1px solid #b18a59;border-radius:8px;background:#211b25;color:#f0e5d2;box-shadow:0 6px 20px #0009;line-height:1.5;font-size:.78rem;animation:skill-tooltip-enter .14s cubic-bezier(.16,1,.3,1); }
 .skill-tooltip[hidden] { display:none; }
@@ -310,7 +266,6 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 
 /* 전투·정보보다 아래에 독립 배경을 둡니다. 입력은 기존 아레나가 처리합니다. */
 .arena-environment-canvas { position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0; }
-.combat-arena > .dps-meter-panel { position:relative;z-index:1; }
 .combat-arena[data-environment='meadow'] { border-color:#6e8261; }
 .combat-arena[data-environment='mine'] { border-color:#756e87; }
 .combat-arena[data-environment='ruins'] { border-color:#8a5948; }

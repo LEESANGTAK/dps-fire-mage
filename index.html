@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b0e14" />
   <title>DPS: Fire Mage</title>
-  <link rel="stylesheet" href="src/styles/styles.css?v=magic-circle-ground-2" />
-  <link rel="stylesheet" href="src/styles/art.css?v=paper-monsters-3" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=monster-size-4" />
+  <link rel="stylesheet" href="src/styles/styles.css?v=legacy-cleanup-1" />
+  <link rel="stylesheet" href="src/styles/art.css?v=legacy-cleanup-1" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=legacy-cleanup-1" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -19,13 +19,9 @@
     </div>
 
     <div class="stats-summary">
-      <div class="stat-pill gold-pill" id="pill-gold" title="몬스터 토벌 및 현상금으로 획득하며, 마도서 각성 카드 다시 뽑기(리롤)에 사용됩니다">
+      <div class="stat-pill gold-pill" id="pill-gold" title="몬스터 토벌로 획득하며, 마도서 각성 카드 다시 뽑기(리롤)에 사용됩니다">
         <span class="label"><i class="paper-ui-icon" data-paper-icon="gold" aria-hidden="true"></i> 골드</span>
         <span class="value" id="ui-gold">0</span>
-      </div>
-      <div class="stat-pill feather-pill unfold-hidden" id="pill-feathers" style="display: none !important;" title="불사조 승천으로 획득하는 영구 유물 재화입니다">
-        <span class="label"><i class="paper-ui-icon" data-paper-icon="feather" aria-hidden="true"></i> 깃털</span>
-        <span class="value" id="ui-feathers">0</span>
       </div>
       <div class="stat-pill">
         <span class="label"><i class="paper-ui-icon" data-paper-icon="power" aria-hidden="true"></i> 주문 공격력</span>
@@ -42,17 +38,7 @@
     </div>
 
     <div class="top-controls">
-      <button class="btn-top btn-ascend unfold-hidden has-badge-anchor" id="btn-ascend" style="display: none !important;" title="마지막 몬스터 처치 후 불사조로 승천하여 스킬 포인트와 영구 피해 배수를 획득합니다">
-        <span>🔥 불사조 승천</span>
-        <span class="noti-badge hidden" id="badge-ascend">!</span>
-      </button>
-      <button class="btn-top btn-heat unfold-hidden has-badge-anchor" id="btn-heat-pacts" style="display: none !important;" title="심연의 열기 규약을 활성화하여 난이도를 올리고 불사조 깃털 보너스를 획득합니다">
-        <span>🔥 심연의 규약</span>
-        <span class="heat-bonus-badge hidden" id="ui-heat-badge">+0%</span>
-      </button>
-      <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="대마법사 명예의 전당 기록 및 무한 심연 보너스를 확인합니다">🏆 명예의 전당</button>
-      <button class="btn-top btn-dev-mode" id="btn-dev-mode" title="개발용 치트 UI를 활성화하거나 닫습니다">🛠️ 개발자 모드</button>
-      <button class="btn-top" id="btn-unfold-all" title="모든 잠긴 UI와 시스템을 즉시 해금합니다">🔓 전체 해금</button>
+      <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="라그나로스 스피드런 기록을 확인합니다">🏆 명예의 전당</button>
       <div class="sound-menu-wrap" id="sound-menu-wrap">
         <button class="btn-top" id="btn-sound" title="BGM 및 효과음(SFX) 볼륨을 조절합니다">🔊 사운드</button>
         <div class="sound-popover hidden" id="sound-popover">
@@ -87,9 +73,9 @@
 
   <!-- 메인 2단 레이아웃 -->
   <main class="main-layout">
-    <!-- 좌측: 전투 아레나 & DPS 미터기 -->
+    <!-- 전투 아레나 -->
     <section class="combat-column">
-      <!-- 중앙 전투 아레나 (상단 DPS 미터기 + 상단 중앙 페이즈/스테이지 배너 + 좌우 이동 버튼 & 중앙 대결 + 하단 스킬바) -->
+      <!-- 중앙 전투 아레나 (상단 스피드런·스테이지 배너 + 중앙 대결 + 하단 스킬바) -->
       <div class="combat-arena" id="combat-arena">
         <canvas class="arena-environment-canvas" id="arena-environment-canvas" aria-hidden="true"></canvas>
         <div class="combustion-aura-bg" id="combustion-bg"></div>
@@ -106,52 +92,8 @@
         <!-- 플로팅 데미지 & 골드 레이어 -->
         <div class="fct-layer" id="fct-layer"></div>
 
-        <!-- 아레나 상단: 컴팩트 DPS 미터기 -->
-        <div class="dps-meter-panel" id="dps-meter-panel" title="클릭하여 상세 전투 분석(Details!) 열람">
-          <div class="dps-meter-left">
-            <div class="dps-stat-box">
-              <div class="dps-label-row">
-                <span class="dps-label">⚡ 현재 DPS</span>
-                <span class="fever-tag hidden" id="dps-fever-tag">🔥 FEVER</span>
-              </div>
-              <span class="dps-current-val" id="ui-current-dps">0 /초</span>
-            </div>
-          </div>
-
-          <div class="dps-breakdown-mini" id="skill-breakdown-bars">
-            <div class="empty-meter-hint">전투 시 피해량 비중이 표시됩니다.</div>
-          </div>
-
-          <button type="button" class="btn-meter-details" id="btn-open-details" title="와우 스타일 상세 딜미터기 리포트 열기">
-            📊 상세
-          </button>
-        </div>
-
-        <!-- 개발자 모드 치트 패널 (개발자 모드 활성화 시 노출) -->
-        <div class="dev-cheat-panel hidden" id="dev-cheat-panel">
-          <div class="dev-cheat-header">
-            <span class="dev-cheat-title">🛠️ 개발자 치트</span>
-          </div>
-          <div class="dev-cheat-actions">
-            <button type="button" class="dev-cheat-btn" id="btn-cheat-gold">
-              💰 즉시 골드 +10,000
-            </button>
-            <button type="button" class="dev-cheat-btn" id="btn-cheat-sp">
-              🌟 즉시 스킬 포인트 +10,000
-            </button>
-            <button type="button" class="dev-cheat-btn dev-cheat-toggle" id="btn-cheat-always-crit">
-              <span>💥 모든 데미지 치명타</span>
-              <span class="dev-toggle-pill" id="ui-cheat-crit-state">OFF</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 / 우측 현상금 -->
+        <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 -->
         <div class="arena-top-stage-header" id="arena-top-stage-header">
-          <!-- 게임 갱신 대상은 유지하지만 중복 PHASE·진행 도트는 표시하지 않는다. -->
-          <div class="stage-center-info" id="stage-center-info" hidden aria-hidden="true">
-            <div id="ui-phase-num"></div><div id="ui-stage-num"></div><div id="ui-phase-dots"></div>
-          </div>
           <!-- 중앙: 스피드런 타이머 & 라그나로스 멸망 저지 트래커 -->
           <div class="arena-center-mission-wrap">
             <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
@@ -206,17 +148,6 @@
 
           <!-- 페이즈 보스 전용 기믹 상태 뱃지 (기믹 활성 시 노출) -->
           <div class="boss-gimmick-badge hidden" id="boss-gimmick-badge"></div>
-
-          <!-- 순환형 미니 현상금 퀘스트 바 -->
-          <div class="bounty-bar" id="bounty-bar" title="현상금 목표를 달성하면 추가 골드를 획득하여 마도서 각성 카드를 리롤할 수 있습니다">
-            <span class="bounty-icon">🎯</span>
-            <span class="bounty-title" id="bounty-title">치명타 15회</span>
-            <div class="bounty-prog-wrap">
-              <div class="bounty-prog-fill" id="bounty-prog-fill" style="width: 0%;"></div>
-            </div>
-            <span class="bounty-prog-text" id="bounty-prog-text">0 / 15</span>
-            <span class="bounty-reward-pill" id="bounty-reward">💰 25 G</span>
-          </div>
         </div>
 
         <!-- 아레나 좌측 상단: 뱀파이어 서바이버즈 스타일 획득 덱 트레이 (Vampire Survivors Style Active Deck Tray) -->
@@ -225,18 +156,10 @@
           <span id="ui-deck-count" class="hidden">0</span>
         </div>
 
-        <!-- 아레나 중앙: 좌측 [◀ 이전] ➔ 마법사 ➔ 몬스터 ➔ 우측 [다음 도전 ▶] -->
+        <!-- 아레나 중앙: 마법사 ➔ 몬스터 -->
         <div class="center-stage">
-          <!-- 좌측 이전 스테이지 버튼 -->
-          <div class="arena-side-nav left">
-            <button class="stage-nav-btn" id="btn-prev-stage" title="이전 몬스터로 이동">◀ 이전</button>
-          </div>
-
           <!-- 좌측 플레이어 마법사 -->
           <div class="caster-box" id="caster-box">
-            <!-- 캐릭터 이미지 왼쪽에 표시되는 획득 장비 목록 -->
-            <div class="caster-equipped-left" id="caster-equipped-left"></div>
-
             <div class="caster-avatar" id="caster-avatar">
               <!-- 발 아래 자동 시전 마법진 -->
               <div class="autocast-magic-circle hidden" id="autocast-magic-circle" aria-hidden="true">
@@ -258,14 +181,8 @@
                 </svg>
               </div>
               <div class="mage-art" id="mage-art" role="img" aria-label="화염 마법사" data-pose="idle"><canvas id="mage-pose-canvas" width="640" height="640" aria-hidden="true"></canvas><span class="mage-muzzle" id="mage-muzzle"></span></div>
-              <div class="casting-orb" id="casting-orb"></div>
               <div class="heat-sigils" id="heat-sigils" aria-label="연속 치명타"><i></i><i></i></div>
             </div>
-            <div class="flame-evo-badge evo-tier-1" id="flame-evo-badge" title="주문 공격력과 장비 성장에 따라 화염 마법의 색상·크기·탄막이 5단계로 진화합니다 (클릭 시 진화 정보 확인)">
-              🟠 Lv.1 견습 불꽃
-            </div>
-            <!-- 기존 게임 갱신 대상은 유지하되 중복된 소환물 상태 표시는 노출하지 않는다. -->
-            <div class="summon-active-badges hidden" id="summon-active-badges" hidden aria-hidden="true"></div>
           </div>
 
           <!-- 우측 스테이지 몬스터 -->
@@ -290,18 +207,6 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- 우측 다음 도전 버튼 -->
-          <div class="arena-side-nav right">
-            <button class="stage-nav-btn next-challenge has-badge-anchor" id="btn-next-stage" disabled>
-              <span id="btn-next-stage-text">다음 도전 ▶</span>
-              <span class="noti-badge hidden" id="badge-next-stage">!</span>
-            </button>
-            <label class="auto-advance-toggle" title="목표 DPS 달성 및 처치 완료 시 다음 도전으로 자동 진입합니다">
-              <input type="checkbox" id="chk-auto-advance" checked />
-              <span>⚡ 자동 진행</span>
-            </label>
           </div>
         </div>
 
@@ -330,7 +235,6 @@
               <span class="skill-hotkey">1</span>
               <span class="skill-icon">🔥</span>
               <span class="skill-name">화염구</span>
-              <span class="pity-crit-badge hidden" id="badge-pity-crit" aria-hidden="true" style="display:none;"></span>
               <span class="noti-badge hidden" id="badge-skill-1">!</span>
               <div class="gcd-Overlay" id="gcd-1"></div>
               <div class="cd-overlay" id="cd-1"></div>
@@ -380,89 +284,6 @@
       </div>
     </section>
 
-    <!-- 우측: 언폴딩 [🛒 상점] / [🔮 마법 부여] / [🌳 스킬 트리] -->
-    <aside class="shop-column" id="shop-column">
-      <div class="right-mode-tabs" id="right-mode-tabs">
-        <button class="right-tab-btn active has-badge-anchor" id="tab-btn-shop" data-right-tab="shop">
-          <span>🛒 상점</span>
-          <span class="noti-badge hidden" id="badge-tab-shop">!</span>
-        </button>
-        <button class="right-tab-btn unfold-hidden has-badge-anchor" id="tab-btn-tree" data-right-tab="tree">
-          <span>🌳 스킬 트리</span>
-          <span class="sp-tab-badge" id="ui-tab-sp-badge">0 SP</span>
-          <span class="noti-badge hidden" id="badge-tab-tree">!</span>
-        </button>
-        <button class="right-tab-btn unfold-hidden has-badge-anchor" id="tab-btn-artifacts" style="display: none !important;" data-right-tab="artifacts">
-          <span>🪶 유물</span>
-          <span class="feather-tab-badge" id="ui-tab-feather-badge">0 🪶</span>
-          <span class="noti-badge hidden" id="badge-tab-artifacts">!</span>
-        </button>
-      </div>
-
-      <!-- 탭 1: 상점 뷰 -->
-      <div class="right-tab-pane active" id="pane-shop">
-        <!-- 초기 언폴딩 전 안내 카드 (첫 몬스터 처치 전) -->
-        <div class="unfold-sealed-card" id="unfold-sealed-shop">
-          <div class="sealed-icon">🔮</div>
-          <div class="sealed-title">봉인된 마법 연구소</div>
-          <div class="sealed-desc">
-            좌측의 <b>초원 풀숲 슬라임</b>에게<br />
-            <b>[1] 🔥 화염구</b>를 발사해 첫 토벌을 완료하면<br />
-            주문서 상점이 개방됩니다!
-          </div>
-        </div>
-
-        <div class="shop-section grimoire-section" id="grimoire-section">
-          <div class="panel-title-row">
-            <span>📜 주문서</span>
-            <span class="section-sub" id="grimoire-progress">0 / 5</span>
-          </div>
-          <div class="shop-list" id="grimoire-shop-list"></div>
-        </div>
-
-
-        <div class="shop-section item-section" id="item-section">
-          <div class="panel-title-row">
-            <span>⚔️ 장비 강화</span>
-            <span class="section-sub" id="ui-power-summary">주문 공격력 10</span>
-          </div>
-          <div class="shop-list" id="item-shop-list"></div>
-        </div>
-      </div>
-
-      <!-- 탭 2: 스킬 트리 뷰 -->
-      <div class="right-tab-pane" id="pane-tree">
-        <div class="skill-tree-header-box">
-          <div class="st-header-top">
-            <span class="st-title">🌟 소환수 & 특성 트리</span>
-            <span class="st-sp-box" id="ui-tree-sp-box">0 SP</span>
-          </div>
-          <div class="st-header-actions">
-            <button class="btn-top" id="btn-respec-tree">🔄 초기화</button>
-          </div>
-        </div>
-
-        <!-- 3대 빌드 키스톤 선택 카드 영역 -->
-        <div class="keystone-selector-box" id="keystone-selector-box"></div>
-
-        <div class="skill-tree-container" id="skill-tree-container"></div>
-      </div>
-
-      <!-- 탭 4: 불사조 유물 (승천 영구 아티팩트) 뷰 -->
-      <div class="right-tab-pane" id="pane-artifacts">
-        <div class="artifacts-header-box">
-          <div class="art-header-top">
-            <span class="art-title">🪶 불사조 영구 유물</span>
-            <span class="art-feather-box" id="ui-artifacts-feather-box">🪶 0 깃털</span>
-          </div>
-          <div class="art-sub-hint">
-            불사조 승천으로 획득한 🪶 깃털로 화염 마법의 룰과 고유 메커니즘을 영구히 변형합니다.
-          </div>
-        </div>
-
-        <div class="shop-list artifacts-list" id="artifacts-shop-list"></div>
-      </div>
-    </aside>
   </main>
 
   <!-- 골드 동전 곡선 비행 흡수 연출 전용 전체화면 오버레이 -->
@@ -502,11 +323,10 @@
 
       <div class="victory-stats-grid" id="victory-stats-grid"></div>
 
-      <!-- WarcraftLogs 감성 스킬 딜 지분 미니 바 및 상세 분석 링크 -->
+      <!-- WarcraftLogs 감성 스킬 딜 지분 미니 바 -->
       <div class="victory-logs-preview" id="victory-logs-preview">
         <div class="victory-logs-header">
           <span>📊 스킬 피해량 점유율 (WarcraftLogs)</span>
-          <button type="button" class="btn-top" id="btn-victory-view-details">🔍 상세 전투 로그</button>
         </div>
         <div class="victory-logs-bars" id="victory-logs-bars"></div>
       </div>
@@ -516,106 +336,6 @@
         <button class="victory-btn primary speedrun-retry-btn" id="btn-speedrun-retry">
           ⚡ 다시 스피드런 도전하기 (기록 갱신)
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 전투 상세 분석 리포트 (Details! Damage Meter) 모달 -->
-  <div class="details-modal-backdrop hidden" id="details-modal">
-    <div class="details-modal-card">
-      <div class="details-modal-header">
-        <div class="details-header-title">
-          <span>📊 전투 상세 분석 (Details!)</span>
-          <span class="details-parse-badge" id="details-parse-badge">🌟 99th Mythic</span>
-        </div>
-        <button type="button" class="details-close-btn" id="btn-details-close">✕</button>
-      </div>
-
-      <!-- 상단 핵심 스펙 지표 4개 그리드 -->
-      <div class="details-summary-grid">
-        <div class="details-summary-box">
-          <span class="details-box-label">⚡ 최고 순간 DPS</span>
-          <span class="details-box-val gold" id="details-peak-dps">0 /초</span>
-        </div>
-        <div class="details-summary-box">
-          <span class="details-box-label">💥 최대 단일 크리티컬</span>
-          <span class="details-box-val fire" id="details-biggest-crit">0</span>
-        </div>
-        <div class="details-summary-box">
-          <span class="details-box-label">🔥 발화 누적 피해량</span>
-          <span class="details-box-val orange" id="details-combustion-dmg">0</span>
-        </div>
-        <div class="details-summary-box">
-          <span class="details-box-label">🎯 전체 치명타율</span>
-          <span class="details-box-val cyan" id="details-crit-rate">0.0%</span>
-        </div>
-      </div>
-
-      <!-- 스킬별 점유율 리스트 -->
-      <div class="details-breakdown-section">
-        <div class="details-section-title">스킬별 피해량 점유율</div>
-        <div class="details-breakdown-list" id="details-breakdown-list"></div>
-      </div>
-
-      <!-- 하단 액션 버튼 -->
-      <div class="details-actions">
-        <button type="button" class="btn-top" id="btn-details-export-telemetry" title="현재까지의 스테이지별 처치 시간, DPS, 덱 로그를 클립보드에 복사">📋 밸런스 로그 복사</button>
-        <button type="button" class="btn-top" id="btn-details-reset">🔄 통계 리셋</button>
-        <button type="button" class="victory-btn primary" id="btn-details-ok">확인</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 심연의 열기(Heat) 규약 모달 -->
-  <div class="modal-backdrop hidden" id="modal-heat-pacts">
-    <div class="victory-modal-card heat-modal-card">
-      <div class="victory-modal-header">
-        <h2 class="victory-modal-title">🔥 심연의 열기(Heat) 규약</h2>
-        <p class="victory-modal-subtitle">몬스터의 난이도 제약을 걸어 승천 시 획득하는 🪶 깃털 보상을 대폭 증폭합니다!</p>
-      </div>
-
-      <div class="heat-bonus-summary">
-        <span>현재 총 깃털 보너스:</span>
-        <span class="heat-total-val" id="ui-heat-total-bonus">+0%</span>
-      </div>
-
-      <div class="heat-pacts-list">
-        <label class="heat-pact-card" data-pact="fast_tempo">
-          <input type="checkbox" id="chk-heat-fast-tempo">
-          <div class="heat-pact-info">
-            <div class="heat-pact-title-row">
-              <span class="heat-pact-name">⚡ 성난 템포 (Fast Tempo)</span>
-              <span class="heat-pact-badge">+25% 깃털</span>
-            </div>
-            <div class="heat-pact-desc">몬스터의 공격 주기 및 스킬 주기가 25% 가속됩니다.</div>
-          </div>
-        </label>
-
-        <label class="heat-pact-card" data-pact="iron_skin">
-          <input type="checkbox" id="chk-heat-iron-skin">
-          <div class="heat-pact-info">
-            <div class="heat-pact-title-row">
-              <span class="heat-pact-name">🛡️ 강철 살갗 (Iron Skin)</span>
-              <span class="heat-pact-badge">+35% 깃털</span>
-            </div>
-            <div class="heat-pact-desc">모든 몬스터의 최대 체력이 50% 증가합니다.</div>
-          </div>
-        </label>
-
-        <label class="heat-pact-card" data-pact="scorched_endure">
-          <input type="checkbox" id="chk-heat-scorched-endure">
-          <div class="heat-pact-info">
-            <div class="heat-pact-title-row">
-              <span class="heat-pact-name">🌋 화염 내성 (Scorched Endure)</span>
-              <span class="heat-pact-badge">+40% 깃털</span>
-            </div>
-            <div class="heat-pact-desc">화상 및 불장판의 도트 틱 간격이 20% 지연됩니다.</div>
-          </div>
-        </label>
-      </div>
-
-      <div class="victory-modal-actions">
-        <button type="button" class="victory-btn primary" id="btn-close-heat">규약 적용 및 닫기</button>
       </div>
     </div>
   </div>
@@ -660,9 +380,9 @@
   <div id="deck-vampire-tooltip" class="deck-vampire-tooltip hidden" role="tooltip"></div>
   <script src="src/scripts/comic-assets.js?v=flame-patch-soft-6"></script>
   <script src="src/scripts/monster-motion.js?v=paper-monsters-3"></script>
-  <script src="src/scripts/skill-tooltips.js?v=2"></script>
+  <script src="src/scripts/skill-tooltips.js?v=legacy-cleanup-1"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
-  <script src="src/scripts/roguelike-deck.js"></script>
-  <script src="src/scripts/game.js?v=meteor-trail-overflow-4"></script>
+  <script src="src/scripts/roguelike-deck.js?v=legacy-cleanup-1"></script>
+  <script src="src/scripts/game.js?v=legacy-cleanup-1"></script>
 </body>
 </html>

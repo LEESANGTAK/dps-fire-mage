@@ -229,7 +229,7 @@
       build: BUILD.UTILITY,
       maxStack: 3,
       desc: '몬스터 처치 시 획득하는 골드가 <b>+60%</b> 증가합니다.',
-      stats: { goldMult: 0.6 }
+      stats: { goldBonus: 0.6 }
     },
     {
       id: 'common_iron_will',
@@ -341,13 +341,11 @@
 
     // 1. 선행 조건(req) 인터프리터
     if (raw.prerequisite === 'has_summon') {
-      card.req = (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0) || Boolean(st && st.skillTree && st.skillTree.fire_elem > 0);
+      card.req = (st, deck) => (deck['sum_spirit'] || 0) > 0 || Boolean(st && st.deckMechanics && st.deckMechanics.extraSpirits > 0);
     } else if (raw.prerequisite === 'has_meteor') {
       card.req = (st, deck) => (deck['spell_meteor'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.meteor);
     } else if (raw.prerequisite === 'has_combustion') {
       card.req = (st, deck) => (deck['spell_combustion'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.combustion);
-    } else if (raw.prerequisite === 'has_fireblast') {
-      card.req = (st, deck) => (deck['spell_fireblast'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.fireblast);
     } else if (raw.prerequisite === 'has_any_spell') {
       card.req = (st, deck) => Boolean(
         (deck['spell_fireblast'] || 0) > 0 ||
@@ -385,10 +383,6 @@
           if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
           if (typeof updateAutoCastMagicCircle === 'function') updateAutoCastMagicCircle();
           if (typeof updateSkillAutoUI === 'function') updateSkillAutoUI();
-        } else if (raw.spellKey === 'flame_patch') {
-          state.skillTree = state.skillTree || {};
-          state.skillTree.flame_patch = Math.max(1, state.skillTree.flame_patch || 1);
-          if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
         } else {
           if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
         }
@@ -402,13 +396,8 @@
           case 'split_fireball':
             state.deckMechanics.splitFireball = (state.deckMechanics.splitFireball || 0) + 1;
             break;
-          case 'haste_stack':
-            state.deckMechanics.hasteStack = true;
-            state.deckMechanics.hasteMaxStacks = (state.deckMechanics.hasteMaxStacks || 0) + 2;
-            break;
           case 'gatling_mode':
             state.deckMechanics.gatlingMode = true;
-            state.deckMechanics.gatling = true; // game.js 및 모든 하위 호환성 100% 보장
             break;
           case 'meteor_buff':
             state.deckMechanics.meteorBuff = (state.deckMechanics.meteorBuff || 0) + 1;
@@ -423,14 +412,6 @@
           case 'extra_spirit':
             state.deckMechanics.extraSpirits = (state.deckMechanics.extraSpirits || 0) + 1;
             state.deckMechanics.spiritCount = state.deckMechanics.extraSpirits;
-            state.skillTree = state.skillTree || {};
-            state.skillTree.fire_elem = Math.max(state.skillTree.fire_elem || 0, state.deckMechanics.extraSpirits);
-            state.skillTree.magma_golem = 0; // 화염 정령 소환 시 골렘 소환 방지
-            break;
-          case 'spirit_frenzy':
-            state.deckMechanics.spiritDamageMult = (state.deckMechanics.spiritDamageMult || 1) * (p.spiritDamageMult || 1.4);
-            state.deckMechanics.spiritSpeedMult = (state.deckMechanics.spiritSpeedMult || 1) * (p.spiritSpeedMult || 1.5);
-            state.deckMechanics.summonHaste = state.deckMechanics.spiritSpeedMult;
             break;
           case 'synchronized_fire':
             state.deckMechanics.synchronizedFire = true;
@@ -644,10 +625,6 @@
       if (gameState) {
         gameState.playerStatsBonus = {};
         gameState.deckMechanics = {};
-        if (gameState.skillTree) {
-          gameState.skillTree.fire_elem = 0;
-          gameState.skillTree.magma_golem = 0;
-        }
       }
     }
 

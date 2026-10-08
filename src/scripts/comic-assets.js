@@ -1,7 +1,7 @@
 /* UI의 장식 이모지를 이미지 아이콘으로 바꾸되 버튼의 텍스트와 동작은 유지합니다. */
 const comicIconMap = {
  '🪄':0,'💍':1,'🧤':2,'🔮':3,'🔱':4,'⏳':5,'👑':6,'🏆':7,'📜':8,'📖':8,'🤖':8,'💰':9,'🪙':9,'💎':10,'👁️':11,'✨':11,'🦅':12,'🗿':13,'⚡':14,'☄️':'meteor',
- '🔥':'s0','💥':'s1','🌋':'s2','☀️':'combustion','🩸':'s0','🟠':'s0','🔵':10,'🔹':'essence','🧞':'fire-elemental','♨️':'flame-patch'
+ '🔥':'s0','💥':'s1','🌋':'s2','☀️':'combustion','🩸':'s0','🟠':'s0','🔵':10,'🧞':'fire-elemental','♨️':'flame-patch'
 };
 const comicVectorMap = {
  '🛒':'M5 8h14l-1 12H6z M8 8V5h8v3',
@@ -22,7 +22,7 @@ const comicTokens = Object.keys({...comicIconMap,...comicVectorMap}).sort((a,b)=
 const comicTokenPattern = new RegExp(comicTokens.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'gu');
 function comicIconHTML(token) {
  const dedicated = comicIconMap[token];
- if(['essence','fire-elemental','flame-patch','combustion','meteor'].includes(dedicated)) return `<span class="comic-icon" data-sheet="${dedicated}" aria-hidden="true"></span>`;
+ if(['fire-elemental','flame-patch','combustion','meteor'].includes(dedicated)) return `<span class="comic-icon" data-sheet="${dedicated}" aria-hidden="true"></span>`;
  if(comicVectorMap[token]) return `<svg class="comic-vector" viewBox="0 0 24 24" aria-hidden="true"><path d="${comicVectorMap[token]}"/></svg>`;
  const key=comicIconMap[token];if(key===undefined)return token;
  const spell=typeof key==='string';const index=spell?Number(key.slice(1)):key;const cols=spell?2:4;

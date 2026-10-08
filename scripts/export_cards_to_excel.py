@@ -62,17 +62,17 @@ def export_to_excel():
         ("ID", "id", 20, "카드의 고유 시스템 ID입니다. 영문 소문자와 밑줄로 작성합니다.\n(예: rapid_haste_1)"),
         ("이름", "title", 18, "게임 내 카드 상단에 표시될 한글 이름입니다.\n(예: 화염의 손길)"),
         ("아이콘", "icon", 8, "카드 대표 이모지 또는 아이콘 문자입니다.\n(예: ⚡, ☄️, 🔥, 🦅, 📖)"),
-        ("희귀도(rarity)", "rarity", 18, "희귀도 등급 (드롭다운 제공):\n- common: 일반 (회색)\n- rare: 희귀 (하늘색)\n- epic: 영웅 (보라색)\n- legendary: 전설 (황금색, 보스전 우대)"),
-        ("빌드(build)", "build", 16, "카드의 빌드 분류 태그 (드롭다운 제공):\n- rapid: 속사/가속 머신건\n- crit: 극치명타 몰열 누킹\n- pet: 불사조 정령 군단\n- util: 생존/골드 유틸\n- spell: 고대 주문서 해금"),
+        ("희귀도(rarity)", "rarity", 18, "희귀도 등급 (드롭다운 제공):\n- common: 일반 (회색)\n- rare: 희귀 (하늘색)\n- legendary: 전설 (황금색, 보스전 우대)"),
+        ("빌드(build)", "build", 16, "카드의 빌드 분류 태그 (드롭다운 제공):\n- rapid: ⚡ 속사 머신건\n- crit: 🎯 극치명 누킹\n- summon: 🔥 정령 군단\n- utility: ✨ 유틸리티"),
         ("최대중첩", "maxStack", 10, "한 런(Run)에서 최대로 습득 가능한 횟수입니다.\n이 횟수만큼 습득하면 이후 3지선다 추첨 풀에서 자동 제외됩니다. (보통 1~5)"),
         ("설명(desc)", "desc", 42, "게임 내 카드 본문에 표시될 효과 설명문입니다.\n강조할 수치는 <b>+25%</b> 태그로 감싸면 굵게 표시됩니다."),
         ("주문력(sp)", "stats.sp", 12, "습득 시 플레이어의 주문력(Spell Power)에 영구 가산됩니다."),
         ("가속도(haste)", "stats.haste", 12, "습득 시 플레이어의 가속도(% 단위)에 가산되어 시전 및 글쿨이 빨라집니다."),
         ("치명타(crit)", "stats.crit", 12, "습득 시 플레이어의 치명타율(% 단위)에 가산됩니다."),
-        ("치명피해(critDmg)", "stats.critDmg", 14, "습득 시 치명타 피해 배율(% 단위)에 가산됩니다."),
-        ("골드보너스(goldBonus)", "stats.goldBonus", 16, "습득 시 몬스터 처치 골드 획득 배율(% 단위)에 가산됩니다."),
-        ("선행조건(prerequisite)", "prerequisite", 24, "3지선다에 등장하기 위한 선행 조건 (드롭다운 제공):\n- has_summon: 소환수 보유 시에만 등장\n- has_meteor: 메테오 습득 시에만 등장\n- has_combustion: 발화 습득 시에만 등장\n- has_any_spell: 쿨다운 스킬 습득 시에만 등장\n- (빈칸): 조건 없이 항상 등장"),
-        ("해금스킬(spellKey)", "spellKey", 20, "고대 주문서 카드 습득 시 액션바에 해금할 스킬 키 (드롭다운 제공):\n- fireblast, meteor, combustion, summon, ice_barrier"),
+        ("치명피해(critDmg)", "stats.critDmg", 14, "습득 시 치명타 피해 배율에 가산됩니다.\n배율 단위로 입력합니다. (예: 0.4 = +40%)"),
+        ("골드보너스(goldBonus)", "stats.goldBonus", 16, "습득 시 몬스터 처치 골드 획득 배율에 가산됩니다.\n배율 단위로 입력합니다. (예: 0.6 = +60%)"),
+        ("선행조건(prerequisite)", "prerequisite", 24, "3지선다에 등장하기 위한 선행 조건 (드롭다운 제공):\n- has_summon: 화염 정령 보유 시에만 등장\n- has_meteor: 메테오 습득 시에만 등장\n- has_combustion: 마력 폭주 습득 시에만 등장\n- has_any_spell: 쿨다운 스킬 습득 시에만 등장\n- (빈칸): 조건 없이 항상 등장"),
+        ("해금스킬(spellKey)", "spellKey", 20, "고대 주문서 카드 습득 시 액션바에 해금할 스킬 키 (드롭다운 제공):\n- autocast, fireblast, meteor, combustion, flame_patch"),
         ("특수기믹(mechanic)", "mechanic", 24, "시스템에 내장된 특수 고유 로직 키입니다.\n자세한 키 목록과 기능은 하단의 [📖 옵션_도움말_가이드] 시트를 참고하세요."),
         ("기믹파라미터(JSON)", "mechanicParams", 22, "특수 기믹에 전달할 세부 JSON 수치입니다.\n(예: {\"executionerMult\": 0.7})")
     ]
@@ -172,47 +172,47 @@ def export_to_excel():
 
     # 3. 데이터 유효성 검사 (드롭다운 enum 설정 + 셀 클릭 시 안내 툴팁 InputMessage 설정)
     # (1) rarity 드롭다운 (D열 = col 4)
-    dv_rarity = DataValidation(type="list", formula1='"common,rare,epic,legendary"', allow_blank=False)
-    dv_rarity.error = "희귀도는 common, rare, epic, legendary 중에서 선택해주세요."
+    dv_rarity = DataValidation(type="list", formula1='"common,rare,legendary"', allow_blank=False)
+    dv_rarity.error = "희귀도는 common, rare, legendary 중에서 선택해주세요."
     dv_rarity.errorTitle = "유효하지 않은 희귀도"
     dv_rarity.promptTitle = "[희귀도(rarity) 옵션 안내]"
-    dv_rarity.prompt = "• common: 일반 (회색 테두리)\n• rare: 희귀 (파란색 테두리)\n• epic: 영웅 (보라색 테두리)\n• legendary: 전설 (황금 테두리, 보스전 우대)"
+    dv_rarity.prompt = "• common: 일반 (회색 테두리)\n• rare: 희귀 (하늘색 테두리)\n• legendary: 전설 (황금 테두리, 보스전 우대)"
     dv_rarity.showInputMessage = True
     ws.add_data_validation(dv_rarity)
     dv_rarity.add(f"D2:D{total_rows + 50}")
 
     # (2) build 드롭다운 (E열 = col 5)
-    dv_build = DataValidation(type="list", formula1='"rapid,crit,pet,util,spell"', allow_blank=False)
-    dv_build.error = "빌드는 rapid, crit, pet, util, spell 중에서 선택해주세요."
+    dv_build = DataValidation(type="list", formula1='"rapid,crit,summon,utility"', allow_blank=False)
+    dv_build.error = "빌드는 rapid, crit, summon, utility 중에서 선택해주세요."
     dv_build.errorTitle = "유효하지 않은 빌드"
     dv_build.promptTitle = "[빌드(build) 분류 안내]"
-    dv_build.prompt = "• rapid: 속사/가속 화염구 난사\n• crit: 극치명타 몰열 메테오 누킹\n• pet: 불사조 정령 군단\n• util: 생존력 및 골드 유틸\n• spell: 고대 주문서 스킬 해금"
+    dv_build.prompt = "• rapid: 속사/가속 화염구 난사\n• crit: 극치명타 몰열 메테오 누킹\n• summon: 화염 정령 군단\n• utility: 처형·골드·쿨다운 등 범용 효과"
     dv_build.showInputMessage = True
     ws.add_data_validation(dv_build)
     dv_build.add(f"E2:E{total_rows + 50}")
 
     # (3) prerequisite 드롭다운 (M열 = col 13)
-    dv_prereq = DataValidation(type="list", formula1='"has_summon,has_meteor,has_combustion,has_fireblast,has_ice_barrier,has_any_spell"', allow_blank=True)
+    dv_prereq = DataValidation(type="list", formula1='"has_summon,has_meteor,has_combustion,has_any_spell"', allow_blank=True)
     dv_prereq.error = "선행조건 목록에서 선택하거나 빈칸으로 두세요."
     dv_prereq.errorTitle = "유효하지 않은 선행조건"
     dv_prereq.promptTitle = "[선행조건(prerequisite) 안내]"
-    dv_prereq.prompt = "해당 조건이 달성되어야만 3지선다에 등장합니다:\n• has_summon: 소환수 보유 시\n• has_meteor: 메테오 습득 시\n• has_combustion: 발화 습득 시\n• has_any_spell: 쿨다운 보조 마법 1개 이상 습득 시\n• (빈칸): 조건 없이 항상 등장"
+    dv_prereq.prompt = "해당 조건이 달성되어야만 3지선다에 등장합니다:\n• has_summon: 화염 정령 보유 시\n• has_meteor: 메테오 습득 시\n• has_combustion: 마력 폭주 습득 시\n• has_any_spell: 쿨다운 보조 마법 1개 이상 습득 시\n• (빈칸): 조건 없이 항상 등장"
     dv_prereq.showInputMessage = True
     ws.add_data_validation(dv_prereq)
     dv_prereq.add(f"M2:M{total_rows + 50}")
 
     # (4) spellKey 드롭다운 (N열 = col 14)
-    dv_spell = DataValidation(type="list", formula1='"fireblast,meteor,combustion,summon,ice_barrier,autocast"', allow_blank=True)
+    dv_spell = DataValidation(type="list", formula1='"autocast,fireblast,meteor,combustion,flame_patch"', allow_blank=True)
     dv_spell.error = "해금스킬 키 목록에서 선택하거나 빈칸으로 두세요."
     dv_spell.errorTitle = "유효하지 않은 스킬 키"
     dv_spell.promptTitle = "[해금스킬(spellKey) 안내]"
-    dv_spell.prompt = "주문서 카드 습득 시 액션바에 해금할 스킬:\n• fireblast: 불꽃 작렬\n• meteor: 유성낙하\n• combustion: 발화\n• summon: 불사조 소환\n• ice_barrier: 얼음 보호막\n• autocast: 자동 시전 마법진"
+    dv_spell.prompt = "주문서 카드 습득 시 액션바에 해금할 스킬:\n• autocast: 자동 시전 마법진\n• fireblast: 불꽃 작렬\n• meteor: 메테오\n• combustion: 마력 폭주\n• flame_patch: 불장판"
     dv_spell.showInputMessage = True
     ws.add_data_validation(dv_spell)
     dv_spell.add(f"N2:N{total_rows + 50}")
 
     # (5) mechanic 드롭다운 (O열 = col 15)
-    dv_mech = DataValidation(type="list", formula1='"split_fireball,haste_stack,gatling_mode,chain_hot_streak,meteor_buff,combustion_god,extra_spirit,spirit_frenzy,synchronized_fire,cinder_lord,executioner,phoenix_reset"', allow_blank=True)
+    dv_mech = DataValidation(type="list", formula1='"split_fireball,gatling_mode,meteor_buff,combustion_god,extra_spirit,synchronized_fire,cinder_lord,executioner,phoenix_reset"', allow_blank=True)
     dv_mech.error = "특수기믹 키 목록에서 선택하거나 빈칸으로 두세요."
     dv_mech.errorTitle = "유효하지 않은 기믹 키"
     dv_mech.promptTitle = "[특수기믹(mechanic) 안내]"
@@ -252,23 +252,21 @@ def export_to_excel():
             "headers": ["값 (Enum)", "한글 명칭", "시각 효과 / 테두리", "게임 내 등장 규칙"],
             "col_widths": [18, 14, 22, 45],
             "rows": [
-                ["common", "일반", "회색/슬레이트 테두리", "기본 등장 확률이 가장 높으며 주로 기본 스탯 강화 제공"],
-                ["rare", "희귀", "하늘색 테두리", "중간 확률로 등장하며 빌드의 핵심 시너지 카드 구성"],
-                ["epic", "영웅", "보라색 테두리", "낮은 확률로 등장하며 빌드를 완성하는 강력한 위력 제공"],
-                ["legendary", "전설", "황금빛 테두리", "매우 희귀하게 등장하며 보스 웨이브 클리어 시 우대 확률 적용"]
+                ["common", "일반", "회색/슬레이트 테두리", "일반 웨이브 가중치 75, 보스 웨이브에서는 등장하지 않음"],
+                ["rare", "희귀", "하늘색 테두리", "일반 웨이브 가중치 21, 보스 웨이브 가중치 85"],
+                ["legendary", "전설", "황금빛 테두리", "일반 웨이브 가중치 4, 보스 웨이브 가중치 15"]
             ]
         },
         {
             "title": "2. 빌드 성향 (build) 가이드",
-            "desc": "카드가 어떤 전투 플레이스타일을 지향하는지 분류하는 태그입니다.",
-            "headers": ["값 (Enum)", "한글 명칭", "주요 컨셉", "핵심 메커니즘"],
-            "col_widths": [18, 14, 25, 45],
+            "desc": "카드가 어떤 전투 플레이스타일을 지향하는지 분류하는 태그입니다. 각성 카드에 빌드 배지로 표시됩니다.",
+            "headers": ["값 (Enum)", "카드 배지", "주요 컨셉", "대표 카드 / 메커니즘"],
+            "col_widths": [18, 16, 25, 45],
             "rows": [
-                ["rapid", "속사 머신건", "화염구 난사 및 극한의 가속도", "시전 속도 단축, 화염구 분열, 게틀링 연속 발사"],
-                ["crit", "극치명타 몰열", "몰아치는 열기 누킹 및 메테오", "확정 치명타 연계, 노코스트 메테오 투하, 발화 피버"],
-                ["pet", "정령 군단", "불사조 소환수 소환 및 군단 지휘", "소환수 추가 소환, 소환수 공격 속도/피해량 증폭, 일제 사격"],
-                ["util", "유틸리티", "생존 및 경제적 보상 극대화", "처형인 추가 피해, 골드 획득량 대폭 증가, 쿨다운 초기화"],
-                ["spell", "고대 주문서", "새로운 마법 스킬 습득", "액션바에 새로운 스킬 슬롯 해금 및 자동 시전 마법진 전개"]
+                ["rapid", "⚡ 속사 머신건", "화염구 난사 및 시전 가속", "시전 속도·주문력 강화, 분열 화염구, 화염 기관총, 불장판"],
+                ["crit", "🎯 극치명 누킹", "몰아치는 열기 및 메테오 폭딜", "치명타 강화, 불꽃 작렬, 메테오, 마력 폭주 및 강화"],
+                ["summon", "🔥 정령 군단", "화염 정령 소환 및 협공", "정령 추가 소환, 일제 협공 사격, 잿더미 군단장"],
+                ["utility", "✨ 유틸리티", "범용 강화 및 경제", "처형인, 골드 보너스, 쿨다운 초기화, 자동 시전 마법진"]
             ]
         },
         {
@@ -278,25 +276,23 @@ def export_to_excel():
             "col_widths": [20, 25, 55],
             "rows": [
                 ["(빈칸)", "조건 없음", "처음부터 누구나 언제든 획득 가능한 기본 카드"],
-                ["has_summon", "불사조 소환수 보유 시", "소환수가 없는데 소환수 강화 카드가 나와서 선택지를 낭비하는 현상 방지"],
-                ["has_meteor", "유성낙하(메테오) 습득 시", "메테오를 배우지 않은 상태에서 메테오 강화 카드가 뜨는 현상 방지"],
-                ["has_combustion", "발화(Combustion) 습득 시", "발화 스킬을 배운 상태에서만 '발화의 화신' 등의 카드가 등장"],
-                ["has_fireblast", "화염 작렬 습득 시", "화염 작렬 스킬 보유자에게만 전용 강화 카드 제공"],
-                ["has_any_spell", "쿨다운 보조 마법 1개 이상 습득 시", "쿨다운 스킬이 없는데 '자동 시전'이나 '쿨다운 초기화' 카드가 떠서 무용지물이 되는 현상 방지"]
+                ["has_summon", "화염 정령 보유 시", "정령이 없는데 소환수 강화 카드가 나와서 선택지를 낭비하는 현상 방지"],
+                ["has_meteor", "메테오 습득 시", "메테오를 배우지 않은 상태에서 메테오 강화 카드가 뜨는 현상 방지"],
+                ["has_combustion", "마력 폭주 습득 시", "마력 폭주를 배운 상태에서만 '진홍의 마력 폭주' 등의 카드가 등장"],
+                ["has_any_spell", "쿨다운 스킬 1개 이상 습득 시", "불꽃 작렬·메테오·마력 폭주·불장판이 없는데 '쿨다운 초기화' 카드가 떠서 무용지물이 되는 현상 방지"]
             ]
         },
         {
             "title": "4. 고대 주문서 해금 스킬 (spellKey) 가이드",
-            "desc": "build가 'spell'인 카드를 획득했을 때 즉시 플레이어에게 해금해 줄 스킬 식별자입니다.",
+            "desc": "주문서 카드를 획득했을 때 즉시 플레이어에게 해금해 줄 스킬 식별자입니다. 이미 습득한 주문서는 3지선다에 다시 등장하지 않습니다.",
             "headers": ["값 (Enum)", "해금되는 스킬명", "스킬 유형", "스킬 효과 요약"],
             "col_widths": [18, 18, 18, 45],
             "rows": [
-                ["autocast", "비전 마법진 (자동 시전)", "패시브 마법진", "발아래 마법진 전개, 쿨다운마다 배운 스킬 자동 연계 시전"],
-                ["fireblast", "불꽃 작렬", "보조 즉발기", "시전 중에도 즉시 발사되는 100% 확정 치명타 마법"],
-                ["meteor", "유성낙하 (메테오)", "광역 궁극기", "거대 운석 투하, 치명타 2연속(몰열) 시 즉시 노코스트 시전"],
-                ["combustion", "발화", "버프 극딜기", "10초간 모든 마법 치명타 100% 확정 및 마력 폭주"],
-                ["summon", "불사조 정령", "전투 소환수", "항시 함께 전투하며 목표를 지속 공격하는 소환수 소환"],
-                ["ice_barrier", "얼음 보호막", "생존 방어기", "최대 체력의 40% 보호막 생성 및 상태이상 방어"]
+                ["autocast", "자동 시전 마법진", "패시브 마법진", "발아래 마법진 전개, 습득한 스킬을 쿨다운마다 자동 연계 시전"],
+                ["fireblast", "불꽃 작렬", "보조 즉발기", "시전 중에도 즉시 발사되는 100% 확정 치명타 마법 (2회 충전)"],
+                ["meteor", "메테오", "강타기", "주문력 320% 운석 투하 및 6초 연소, 치명타 2연속(몰열) 시 즉시 노코스트 시전"],
+                ["combustion", "마력 폭주", "버프 극딜기", "2초간 모든 마법 치명타 100% 확정 및 시전 속도 +20%"],
+                ["flame_patch", "불장판", "지속 피해기", "몬스터 발밑에 7초간 화염 지대 생성, 0.5초마다 주문력 40% 피해"]
             ]
         },
         {
@@ -305,31 +301,28 @@ def export_to_excel():
             "headers": ["기믹 키 (mechanic)", "효과 명칭", "동작 메커니즘 설명", "기믹 파라미터 예시 (JSON)"],
             "col_widths": [22, 18, 48, 28],
             "rows": [
-                ["split_fireball", "화염구 2갈래 분열", "화염구 시전 시 탄환이 2개로 갈라져 2번 타격합니다.", "없음 (단독 발동)"],
-                ["haste_stack", "가속도 중첩 버프", "화염구 적중 시마다 가속도가 5%씩 최대 5중첩까지 증가합니다.", "없음"],
-                ["gatling_mode", "게틀링 머신건 모드", "연속 시전 시 화염구 시전 시간이 0.4초까지 극한으로 단축됩니다.", "없음"],
-                ["chain_hot_streak", "연쇄 몰아치는 열기", "몰열 메테오 투하 시 지정된 확률로 몰열이 즉시 재발동합니다.", "{\"chainHotStreak\": 0.4}"],
-                ["meteor_buff", "거대 운석 폭격", "메테오의 낙하 반경과 피해량이 2배로 증가합니다.", "없음"],
-                ["combustion_god", "발화의 절대자", "발화 유지 시간이 5초 증가하고 치명타 피해가 50% 추가 증가합니다.", "없음"],
-                ["extra_spirit", "정령 군단 추가 소환", "소환할 수 있는 정령의 수가 +1 증가하여 동시 출격합니다.", "없음"],
-                ["spirit_frenzy", "정령 광란의 축제", "정령의 공격 속도와 공격력이 대폭 증가합니다.", "{\"spiritDamageMult\": 1.4, \"spiritSpeedMult\": 1.5}"],
-                ["synchronized_fire", "일제 사격 연계", "마법사가 스킬을 시전할 때 소환수도 동일한 방향으로 동시 사격합니다.", "없음"],
-                ["cinder_lord", "불씨의 군주", "소환수 주변에 항시 불길이 피어올라 적에게 도트 피해를 입힙니다.", "없음"],
-                ["executioner", "처형인의 일격", "적 체력이 40% 이하일 때 가하는 모든 피해량이 증가합니다.", "{\"executionerMult\": 0.7}"],
-                ["phoenix_reset", "불사조의 가호", "치명타 적중 시 15% 확률로 모든 스킬의 쿨다운이 즉시 리셋됩니다.", "없음"]
+                ["split_fireball", "분열 화염구", "화염구 적중 시 작은 불씨가 분열되어 추가 타격합니다. (스택당 2개, 최대 6개, 각 주문력 40%)", "없음"],
+                ["gatling_mode", "화염 기관총", "화염구 기본 시전 시간과 공통 대기 시간이 0.3초로 단축됩니다. (최소 0.12초)", "없음"],
+                ["meteor_buff", "태양석 메테오", "메테오를 습득시키고, 스택당 재사용 대기 50% 감소(최소 4초)·피해 +60%가 적용됩니다.", "없음"],
+                ["combustion_god", "진홍의 마력 폭주", "마력 폭주를 습득시키고, 지속시간 2배·폭주 중 모든 피해 2.5배가 적용됩니다.", "없음"],
+                ["extra_spirit", "화염 정령 소환", "화염 정령을 1기 추가 소환합니다. (최대 4기, 1.3초마다 주문력 45% x 정령 수 피해)", "없음"],
+                ["synchronized_fire", "일제 협공 사격", "마법사가 화염구를 발사할 때마다 모든 정령이 동시에 협공합니다.", "없음"],
+                ["cinder_lord", "잿더미 군단장", "소환수 1기당 마법사의 모든 주문 피해가 +30% 증폭됩니다.", "없음"],
+                ["executioner", "처형인의 불꽃", "적 체력이 40% 이하일 때 모든 피해량이 executionerMult만큼 증가합니다. (스택 시 합산)", "{\"executionerMult\": 0.7}"],
+                ["phoenix_reset", "불사조의 가호", "치명타 적중 시 15% 확률로 모든 스킬의 재사용 대기가 초기화되고, 2.4초마다 불사조가 확정 치명타로 협공합니다.", "없음"]
             ]
         },
         {
             "title": "6. 스탯 (stats) 컬럼 가이드",
-            "desc": "카드 습득 시 플레이어의 기본 능력치에 영구 누적되는 스탯 항목입니다.",
+            "desc": "카드 습득 시 플레이어의 기본 능력치에 런(Run) 동안 누적되는 스탯 항목입니다.",
             "headers": ["열 이름", "스탯 키", "단위 및 계산 방식", "인게임 효과"],
             "col_widths": [18, 14, 20, 50],
             "rows": [
-                ["주문력(sp)", "sp", "정수 (절대값)", "모든 스킬(화염구, 메테오, 불꽃작렬)의 기본 피해량에 직접 가산"],
-                ["가속도(haste)", "haste", "% (백분율)", "시전 바 진행 속도 증가 및 글로벌 쿨다운(GCD) 단축"],
-                ["치명타(crit)", "crit", "% (백분율)", "모든 공격의 치명타 발생 확률 증가 (몰열 2연속 발동에 핵심 기여)"],
-                ["치명피해(critDmg)", "critDmg", "% (백분율)", "치명타 발생 시 기본 150% 피해량에 추가 가산"],
-                ["골드보너스(goldBonus)", "goldBonus", "% (백분율)", "몬스터 처치 및 보스 격파 시 드롭되는 골드 획득량 증가"]
+                ["주문력(sp)", "sp", "정수 (절대값, 기본 10)", "모든 스킬(화염구, 메테오, 불꽃 작렬 등)의 기본 피해량에 직접 가산"],
+                ["가속도(haste)", "haste", "% (예: 30 = +30%)", "시전 바 진행 속도 증가 및 공통 대기 시간(GCD) 단축"],
+                ["치명타(crit)", "crit", "%p (예: 15 = +15%, 기본 5%)", "모든 공격의 치명타 발생 확률 증가 (몰열 2연속 발동에 핵심 기여)"],
+                ["치명피해(critDmg)", "critDmg", "배율 (예: 0.4 = +40%)", "치명타 발생 시 기본 150% 피해 배율에 가산"],
+                ["골드보너스(goldBonus)", "goldBonus", "배율 (예: 0.6 = +60%)", "몬스터 처치 골드 획득량 증가 (골드는 각성 카드 다시 뽑기에 사용)"]
             ]
         }
     ]
