@@ -86,6 +86,10 @@ function spawnMaterialDeath(stage, boss) {
   // 즉시 재생성되는 다음 몬스터와 별도의 잔상으로 여운을 남깁니다.
   while (arena.querySelectorAll('.material-death').length >= 3) removeDeathGhost(arena.querySelector('.material-death'));
   const ghost = buildDeathVisual(source, rect, base, p.death);
+  // 잔상이 연출을 넘겨받는 순간 원본은 숨깁니다. 다음 스테이지 로드 전까지 같은 자리에 멀쩡한 원화가 남아
+  // 소각/낙하 잔상과 겹쳐 두 장처럼 보이는 문제를 막습니다(loadStage에서 해제).
+  const actor = document.getElementById('dummy-avatar');
+  if (actor && actor.dataset) actor.dataset.dead = 'true';
   if (p.death === 'burn') {
     // 아래층부터 불테두리(발광) → 그을림 → 원화 순으로 겹칩니다. 세 층의 마스크 경계가 조금씩 어긋나
     // 타오르는 경계에 실루엣 모양의 불띠와 탄 자국이 생깁니다.

@@ -1844,6 +1844,9 @@ function loadStage(stageNum) {
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
   state.monster.isDying = false;
+  // 사망 잔상 동안 숨겨 둔 원본 몬스터를 새 스테이지 몬스터로 다시 노출합니다.
+  const dummyAvatar = document.getElementById('dummy-avatar');
+  if (dummyAvatar && dummyAvatar.dataset) delete dummyAvatar.dataset.dead;
   if (data.isPhaseBoss) {
     state.currentBossFightStartTime = performance.now() / 1000;
   } else {

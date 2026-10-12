@@ -39,6 +39,7 @@ for (const stage of [3,5,8,9,13,16,17,20,21,25]) {
   assert.equal(actor.style['--hit-squash'],'0','종이 원화는 젤리처럼 늘어나지 않아야 합니다.');
   vm.runInContext(`spawnMaterialDeath(${stage},true)`,context);
   const ghost=arena.children.at(-1);
+  assert.equal(actor.dataset.dead,'true','사망 잔상이 재생되는 동안 원본 몬스터는 숨겨 두 장으로 겹쳐 보이지 않아야 합니다.');
   assert.equal(ghost.style.clipPath,'none');
   assert.equal(ghost.children[0].style.clipPath,source.style.clipPath,'사망 외곽 접힘과 별도로 원화 윤곽을 보존해야 합니다.');
   if (ghost.dataset.death==='burn') {

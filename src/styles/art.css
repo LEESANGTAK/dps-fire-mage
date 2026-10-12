@@ -306,6 +306,8 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 @keyframes paper-dissolve {0%{opacity:1;transform:none} 28%{opacity:.85;transform:rotate(-3deg)} 62%{opacity:.5;transform:translateY(-8px) rotate(6deg)} 100%{opacity:0;transform:translateY(-16px) rotate(9deg)}}
 @keyframes paper-extinguish {0%{opacity:1;transform:none} 25%{opacity:.9;transform:rotate(-3deg)} 65%{opacity:.45;transform:rotate(12deg) scaleY(.5)} 100%{opacity:0;transform:rotate(15deg) scaleY(.08)}}
 .living-paused .material-death {animation-play-state:paused!important;}
+/* 사망 잔상이 재생되는 동안 원본은 숨겨 잔상만 타오르게 합니다(loadStage에서 해제). */
+.dummy-avatar[data-dead='true'] .dummy-emoji {visibility:hidden;}
 /* 발끝→정수리 소각(생물형 사망). 원화·그을림·불테두리 세 층의 마스크 경계를 조금씩 어긋나게 해
    실루엣 모양의 불띠와 탄 자국이 함께 타오르게 합니다. 종이 배우의 steps() 끊김보다 우선합니다. */
 .burn-layer, .burn-glow { position:absolute; pointer-events:none; z-index:5; display:flex; align-items:center; justify-content:center; line-height:1; background-size:contain; background-repeat:no-repeat; background-position:center; }
