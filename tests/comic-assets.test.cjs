@@ -1,7 +1,7 @@
 /* 스테이지 전환 시 슬라임 복원과 심연 이미지 선택을 검증합니다. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
-const actor={dataset:{},style:{},textContent:'🐀'};
-const context=vm.createContext({document:{getElementById:id=>id==='dummy-emoji'?actor:{clientHeight:126},addEventListener(){}},console});
+const actor={dataset:{},style:{},textContent:'🐀',children:[],appendChild(c){this.children.push(c);},replaceChildren(){this.children=[];}};
+const context=vm.createContext({document:{getElementById:id=>id==='dummy-emoji'?actor:{clientHeight:126},addEventListener(){},createElement:()=>({style:{},setAttribute(){}})},console});
 const readScript = name => fs.readFileSync(path.join(__dirname, '../src/scripts', name), 'utf8');
 vm.runInContext(readScript('comic-monster-frames.js')+readScript('paper-monster-frames.js')+readScript('comic-assets.js'),context);
 assert.match(vm.runInContext("comicIconHTML('🧞')",context),/data-sheet="fire-elemental"/,'불의 정령은 화염 스킬 아틀라스와 다른 전용 이미지로 표시해야 합니다');
@@ -27,8 +27,13 @@ vm.runInContext('configureComicMonster(19)',context);
 assert.ok(parseFloat(actor.style.height)>earlyHeight*1.5,'후반 몬스터는 초반보다 커야 합니다');
 const normalHeight=parseFloat(actor.style.height);
 vm.runInContext('configureComicMonster(20)',context);
-assert.ok(parseFloat(actor.style.height)>normalHeight*1.4,'라그나로스는 직전 일반 몬스터보다 확실히 커야 합니다');
-assert.ok(parseFloat(actor.style.height)>=126*2.5,'라그나로스는 마법사보다 큰 보스 실루엣을 가져야 합니다');
+assert.ok(parseFloat(actor.style.height)>normalHeight*1.4,'최종 보스는 직전 일반 몬스터보다 확실히 커야 합니다');
+assert.ok(parseFloat(actor.style.height)>=126*2.5,'최종 보스는 마법사보다 큰 보스 실루엣을 가져야 합니다');
+assert.deepEqual(actor.children.map(c=>c.className),['boss-heart-core'],'최종 보스만 가슴에 불의 심장을 하나 가집니다');
+assert.equal(actor.children[0].style.left,'52%');
+vm.runInContext('configureComicMonster(19)',context);
+assert.equal(actor.children.length,0,'일반 몬스터에는 불의 심장이 없습니다');
+vm.runInContext('configureComicMonster(20)',context);
 vm.runInContext('configureComicMonster(1000)',context);
 assert.ok(parseFloat(actor.style.height)<=126*2.8,'무한 심연에서도 크기에 상한이 있어야 합니다');
 // 좁은 화면에서는 비율과 접지를 유지하면서 원화를 화면 안에 제한한다.

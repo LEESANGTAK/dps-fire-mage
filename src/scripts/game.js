@@ -1,10 +1,13 @@
 /**
  * DPS: Fire Mage - 로그라이크 덱빌딩 스피드런
  * - Stage 1 ~ 20을 몬스터 1회 처치마다 자동 진행하며, 웨이브 클리어 시 마도서 각성 카드 3지선다 선택
- * - 런 단위 성장은 각성 카드 덱이 전담하고, Stage 20 라그나로스 토벌 시간을 스피드런 기록으로 남김
+ * - 런 단위 성장은 각성 카드 덱이 전담하고, Stage 20 최종 보스 토벌 시간을 스피드런 기록으로 남김
  */
 
 const SAVE_KEY = 'MAGE_SLAYER_STAGE_SAVE_V7';
+
+// 최종 보스 이름은 이곳에서만 정의합니다. 화면 문구(HTML의 .final-boss-name 포함)는 모두 이 값을 따릅니다.
+const FINAL_BOSS = { name: '이그나르크', title: '잿불의 폭군 이그나르크' };
 
 // ==========================================
 // 1. 스테이지 몬스터 데이터베이스 (5스테이지 = 1페이즈)
@@ -35,8 +38,8 @@ const STAGE_MONSTERS = [
   { stage: 16, name: '저주받은 기사단원', emoji: '⚔️', hp: 54400, gold: 3800, firstBonus: 3000 },
   { stage: 17, name: '원한 서린 밴시', emoji: '👻', hp: 69000, gold: 5800, firstBonus: 4500 },
   { stage: 18, name: '지하군주 거대거미', emoji: '🕷️', hp: 92000, gold: 8800, firstBonus: 7000 },
-  { stage: 19, name: '심연의 파멸수호병', emoji: '👿', hp: 109000, gold: 13500, firstBonus: 11000 },
-  { stage: 20, name: '화염군주 라그나로스', emoji: '🔥', hp: 225000, gold: 22000, firstBonus: 25000, enrage: 270 }
+  { stage: 19, name: '심연의 파멸 집행자', emoji: '👿', hp: 109000, gold: 13500, firstBonus: 11000 },
+  { stage: 20, name: FINAL_BOSS.title, emoji: '🔥', hp: 225000, gold: 22000, firstBonus: 25000, enrage: 270 }
 ];
 
 const FINAL_STAGE = STAGE_MONSTERS.length;
@@ -201,7 +204,7 @@ const state = {
     combustionPyros: 0
   },
 
-  // 최종 보스(Stage 20 라그나로스) 불의 심장 보호막 상태
+  // 최종 보스(Stage 20) 불의 심장 보호막 상태
   bossGimmick: {
     shield: 0,
     maxShield: 0,
@@ -1867,7 +1870,7 @@ function loadStage(stageNum) {
   state.combat.bossEnrageRem = data.isPhaseBoss ? data.enrage : null;
   state.bestReachedStage = Math.max(state.bestReachedStage || 0, state.currentStage);
 
-  // 라그나로스 불의 심장 보호막 상태 초기화
+  // 최종 보스 불의 심장 보호막 상태 초기화
   state.bossGimmick = {
     shield: 0,
     maxShield: 0,
@@ -1894,8 +1897,8 @@ function onMonsterKilled() {
 
   const data = getStageData(state.currentStage);
   const isFirstClear = state.currentStage > state.highestClearedStage;
-  const isRagnarosKill = state.currentStage === FINAL_STAGE;
-  const isFirstRagnarosKill = isRagnarosKill && !state.campaignCleared;
+  const isFinalBossKill = state.currentStage === FINAL_STAGE;
+  const isFirstFinalBossKill = isFinalBossKill && !state.campaignCleared;
   let totalGold = data.gold;
 
   state.totalKills = (state.totalKills || 0) + 1;
@@ -1933,7 +1936,7 @@ function onMonsterKilled() {
 
   state.gold += totalGold;
 
-  if (isRagnarosKill) {
+  if (isFinalBossKill) {
     state.campaignCleared = true;
     const curTime = state.playTimeSec || 0;
     state.stats = state.stats || {};
@@ -1945,7 +1948,7 @@ function onMonsterKilled() {
     if (isNewRecord) {
       state.bestSpeedrunTime = curTime;
       triggerSpeedrunRecordFlash();
-      spawnFloatingText(`🏆 라그나로스 스피드런 신기록! (${formatSpeedrunTime(curTime)})`, 'fct-crit', -90, { isBig: true });
+      spawnFloatingText(`🏆 ${FINAL_BOSS.name} 스피드런 신기록! (${formatSpeedrunTime(curTime)})`, 'fct-crit', -90, { isBig: true });
     }
   }
 
@@ -1972,12 +1975,12 @@ function onMonsterKilled() {
 
   playtestTelemetry.onStageDefeat(state.currentStage);
 
-  if (isRagnarosKill) {
-    // 하스스톤 스타일 라그나로스 대폭발 & 드라마틱 여운 (Breathing Room)
+  if (isFinalBossKill) {
+    // 최종 보스 대폭발 & 드라마틱 여운 (Breathing Room)
     state.isPaused = true;
     playSound('proc');
     spawnFloatingText(
-      isFirstRagnarosKill ? '👑 화염군주 라그나로스 최초 토벌!' : '👑 화염군주 라그나로스 토벌 완료!',
+      isFirstFinalBossKill ? `👑 ${FINAL_BOSS.title} 최초 토벌!` : `👑 ${FINAL_BOSS.title} 토벌 완료!`,
       'fct-crit',
       -60,
       { isBig: true }
@@ -1985,7 +1988,7 @@ function onMonsterKilled() {
 
     // 1.3초간 보스 파괴 연출과 진동 여운을 감상할 충분한 호흡을 둔 뒤 스피드런 결과 모달 개방!
     setTimeout(() => {
-      openVictoryModal(isFirstRagnarosKill);
+      openVictoryModal(isFirstFinalBossKill);
     }, 1300);
 
     saveGame();
@@ -2020,11 +2023,11 @@ let lastDotShiverTime = 0;
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false, isCombustionCast = false) {
   const isCombustingEffective = Boolean((state.combat && state.combat.combustionRem > 0) || isCombustionCast);
 
-  // 3-1. 최종 보스(Stage 20 라그나로스) 전용 기믹 판정
+  // 3-1. 최종 보스(Stage 20) 전용 기믹 판정
   // (일반 몬스터 및 중간 보스 기믹은 로그라이크 덱빌딩 코어 루프와 스피드런 집중을 위해 전면 배제)
   const bg = state.bossGimmick;
   if (state.currentStage === FINAL_STAGE && bg && bg.shield > 0) {
-    // Phase 4 라그나로스: 불의 심장 보호막 우선 흡수
+    // Phase 4 최종 보스: 불의 심장 보호막 우선 흡수
     bg.shield -= Math.round(rawDamage);
     if (bg.shield <= 0) {
       bg.shield = 0;
@@ -2781,7 +2784,7 @@ function checkAndTriggerUnfolds(silent = false) {
     triggerUnfoldPop('pill-haste');
   }
 
-  // 3. Stage 20(화염군주 라그나로스) 클리어 시: 상단 명예의 전당(스피드런 기록) 버튼 개방
+  // 3. Stage 20(최종 보스) 클리어 시: 상단 명예의 전당(스피드런 기록) 버튼 개방
   if (!u.hallOfFame && state.campaignCleared) {
     u.hallOfFame = true;
     changed = true;
@@ -2933,34 +2936,34 @@ function updateStageUI() {
 
   updateBossGimmick(0);
   updateNotificationBadges();
-  updateRagnarosProgressUI();
+  updateDoomProgressUI();
 }
 
 // ==========================================
-// 15-A. 라그나로스 세계 멸망 저지 진척도 UI 시스템
+// 15-A. 최종 보스 세계 멸망 저지 진척도 UI 시스템
 // ==========================================
-function updateRagnarosProgressUI(stageNum) {
+function updateDoomProgressUI(stageNum) {
   const currentStage = Math.max(1, Math.min(FINAL_STAGE, stageNum !== undefined ? stageNum : state.currentStage));
-  const trackerEl = document.getElementById('ragnaros-doom-tracker');
+  const trackerEl = document.getElementById('doom-tracker');
   if (!trackerEl) return;
 
   const pct = Math.min(100, Math.round((currentStage / FINAL_STAGE) * 100));
   const isFinalBattle = currentStage === FINAL_STAGE;
 
   // 1. 스테이지 텍스트 갱신
-  const stageDispEl = document.getElementById('ragnaros-stage-display');
+  const stageDispEl = document.getElementById('doom-stage-display');
   if (stageDispEl) {
     stageDispEl.textContent = isFinalBattle
-      ? `STAGE ${FINAL_STAGE} / ${FINAL_STAGE} (🔥최종 결전!)`
+      ? `🔥 최종 결전 ${FINAL_STAGE}/${FINAL_STAGE}`
       : `STAGE ${currentStage} / ${FINAL_STAGE}`;
   }
 
   // 2. 게이지 바 & 마법사 핀 위치 동기화
-  const fillEl = document.getElementById('ragnaros-track-fill');
+  const fillEl = document.getElementById('doom-track-fill');
   if (fillEl) {
     fillEl.style.width = `${pct}%`;
   }
-  const casterPinEl = document.getElementById('ragnaros-caster-pin');
+  const casterPinEl = document.getElementById('doom-caster-pin');
   if (casterPinEl) {
     casterPinEl.style.left = `${pct}%`;
   }
@@ -2974,10 +2977,10 @@ function updateRagnarosProgressUI(stageNum) {
   if (p3Pin) p3Pin.classList.toggle('cleared', currentStage > 15);
 
   // 4. 스토리 툴팁 내 남은 여정 텍스트 갱신
-  const remainEl = document.getElementById('ragnaros-remain-text');
+  const remainEl = document.getElementById('doom-remain-text');
   if (remainEl) {
     remainEl.textContent = isFinalBattle
-      ? `🔥 불의 군주 강림! 지금 세계를 구원하십시오!`
+      ? `🔥 ${FINAL_BOSS.name} 강림! 지금 세계를 구원하십시오!`
       : `남은 여정: ${FINAL_STAGE - currentStage} 스테이지`;
   }
 
@@ -2995,7 +2998,7 @@ function triggerSpeedrunRecordFlash() {
 }
 
 // ==========================================
-// 15-B. 최종 보스(라그나로스) 불의 심장 보호막 기믹
+// 15-B. 최종 보스 불의 심장 보호막 기믹
 // ==========================================
 function updateBossGimmick(dt) {
   const bg = state.bossGimmick;
@@ -3003,8 +3006,15 @@ function updateBossGimmick(dt) {
   const stage = state.currentStage;
   const badge = document.getElementById('boss-gimmick-badge');
 
-  // 최종 보스(Stage 20 라그나로스) 불의 심장 보호막만 최종 관문으로 유지
+  // 최종 보스(Stage 20) 불의 심장 보호막만 최종 관문으로 유지
   // (일반 몬스터 및 중간 보스는 덱 시너지 집중을 위해 불필요한 기믹 배지 완전 제거)
+  // 보호막이 펼쳐진 동안 가슴의 불의 심장이 빠르게 고동쳐 파괴 대상을 눈으로 알려줍니다.
+  const actor = document.getElementById('dummy-avatar');
+  const heartState = stage === FINAL_STAGE && bg.shield > 0 ? 'shield' : '';
+  if (actor && actor.dataset && (actor.dataset.heart || '') !== heartState) {
+    if (heartState) actor.dataset.heart = heartState; else delete actor.dataset.heart;
+  }
+
   if (stage === FINAL_STAGE) {
     if (bg.shield > 0) {
       bg.shieldTimer -= dt;
@@ -3019,7 +3029,7 @@ function updateBossGimmick(dt) {
         state.monster.hp = Math.min(state.monster.maxHp, state.monster.hp + Math.round(state.monster.maxHp * 0.1));
         triggerArenaShake('lg');
         playSound('meteor_impact');
-        spawnFloatingText('⚠️ 보호막 폭발! 라그나로스 체력 회복!', 'fct-normal', -35);
+        spawnFloatingText(`⚠️ 보호막 폭발! ${FINAL_BOSS.name} 체력 회복!`, 'fct-normal', -35);
       }
     } else {
       if (state.monster.hp <= state.monster.maxHp * 0.3 && !bg.shieldTriggered && !state.monster.isDying) {
@@ -3039,7 +3049,7 @@ function updateBossGimmick(dt) {
 }
 
 // ==========================================
-// 16. Stage 20(화염군주 라그나로스) 토벌 스피드런 결과 모달
+// 16. Stage 20(최종 보스) 토벌 스피드런 결과 모달
 // ==========================================
 function formatSpeedrunTime(sec) {
   const total = Math.max(0, Math.floor(sec || 0));
@@ -3419,10 +3429,10 @@ function openVictoryModal(isFirstVictory = false) {
   document.getElementById('victory-crown-badge').textContent = '👑 VICTORY · SPEEDRUN COMPLETE';
   document.getElementById('btn-speedrun-retry').textContent = '⚡ 다시 스피드런 도전하기 (기록 갱신)';
   if (isFirstVictory) {
-    titleEl.textContent = '👑 화염군주 라그나로스 최초 토벌 완료!';
+    titleEl.textContent = `👑 ${FINAL_BOSS.title} 최초 토벌 완료!`;
     subEl.textContent = '불타는 심연의 지배자를 물리쳤습니다! 다시 도전해 스피드런 기록을 단축해 보세요.';
   } else {
-    titleEl.textContent = '🏆 라그나로스 스피드런 기록실';
+    titleEl.textContent = `🏆 ${FINAL_BOSS.name} 스피드런 기록실`;
     subEl.textContent = '새 런을 시작해 더 빠른 토벌 기록에 도전하세요!';
   }
 
@@ -3468,7 +3478,7 @@ function openVictoryModal(isFirstVictory = false) {
       }
     } else if (isNewRec && !prevBest) {
       diffBannerEl.classList.add('record');
-      diffTextEl.innerHTML = `🌟 <b>라그나로스 최초 토벌 기록 수립!</b> 다시 도전하여 기록을 단축해보세요!`;
+      diffTextEl.innerHTML = `🌟 <b>${FINAL_BOSS.name} 최초 토벌 기록 수립!</b> 다시 도전하여 기록을 단축해보세요!`;
       if (resultTagEl) {
         resultTagEl.textContent = '🌟 FIRST CLEAR';
         resultTagEl.style.background = '#d97706';
@@ -3511,7 +3521,7 @@ function openVictoryModal(isFirstVictory = false) {
     </div>
   `;
 
-  // WarcraftLogs 스킬별 누적 딜 지분 미니 바 렌더링
+  // 스킬별 누적 딜 지분 미니 바 렌더링
   const logsBarsEl = document.getElementById('victory-logs-bars');
   if (logsBarsEl) {
     const skillsArr = Object.values(state.skillDamage).filter((s) => s.dmg > 0);
@@ -4351,12 +4361,17 @@ function initEvents() {
   // 로그라이크 마도서 각성 모달 이벤트 초기화
   initAwakeningModalEvents();
 
-  // 라그나로스 토벌 트래커 및 스토리 툴팁 이벤트 초기화
-  initRagnarosTrackerEvents();
+  // 최종 보스 토벌 트래커 및 스토리 툴팁 이벤트 초기화
+  initDoomTrackerEvents();
 }
 
-function initRagnarosTrackerEvents() {
-  const trackerEl = document.getElementById('ragnaros-doom-tracker');
+// HTML 정적 문구 속 최종 보스 이름을 FINAL_BOSS 한 곳의 정의와 동기화합니다.
+function applyFinalBossNames() {
+  document.querySelectorAll('.final-boss-name').forEach((el) => { el.textContent = FINAL_BOSS.name; });
+}
+
+function initDoomTrackerEvents() {
+  const trackerEl = document.getElementById('doom-tracker');
   if (!trackerEl) return;
 
   trackerEl.addEventListener('click', (e) => {
@@ -4380,6 +4395,7 @@ function initRagnarosTrackerEvents() {
 // 20. 초기화 실행
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
+  applyFinalBossNames();
   loadGame();
   const environmentCanvas = document.getElementById('arena-environment-canvas');
   const arena = document.getElementById('combat-arena');
@@ -4396,7 +4412,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updatePityCritBadgeUI();
   updateSkillAutoUI();
   renderDeckStripUI();
-  updateRagnarosProgressUI(state.currentStage);
+  updateDoomProgressUI(state.currentStage);
   updateNotificationBadges();
   if (state.runFailed) {
     state.isPaused = true;

@@ -12,13 +12,13 @@ test('Step 1: 발화(마력 폭주) 피버 모드 및 피치업 연출 검증', 
   assert.ok(/arenaArt\.classList\.toggle\('fever-mode', c\.combustionRem > 0\)/.test(gameJsContent), '발화 중에는 전장 전체에 피버 모드가 적용되어야 합니다.');
 });
 
-test('Step 3: 최종 보스(라그나로스) 불의 심장 보호막 기믹 및 일반 몬스터 기믹 배제 검증', () => {
+test('Step 3: 최종 보스 불의 심장 보호막 기믹 및 일반 몬스터 기믹 배제 검증', () => {
   assert.ok(gameJsContent.includes('updateBossGimmick'), '보스 기믹 갱신 함수가 구현되어 있어야 합니다.');
   assert.ok(gameJsContent.includes('boss-gimmick-badge'), '보스 기믹 뱃지 연동이 포함되어 있어야 합니다.');
 
-  // Stage 20 라그나로스 불의 심장 실드 유지 검증
-  assert.ok(gameJsContent.includes('shieldTimer'), '라그나로스 광폭화 보호막 타이머가 구현되어 있어야 합니다.');
-  assert.ok(gameJsContent.includes('불의 심장'), '라그나로스 불의 심장 기믹이 구현되어 있어야 합니다.');
+  // Stage 20 최종 보스 불의 심장 실드 유지 검증
+  assert.ok(gameJsContent.includes('shieldTimer'), '최종 보스 광폭화 보호막 타이머가 구현되어 있어야 합니다.');
+  assert.ok(gameJsContent.includes('불의 심장'), '최종 보스 불의 심장 기믹이 구현되어 있어야 합니다.');
 
   // 일반 몬스터 및 중간 보스 기믹 배제 검증 (스피드런 쾌감 집중)
   assert.ok(!gameJsContent.includes('바위 갑옷 (피해 35% 감소)'), '오우거 바위 갑옷 감소 페널티가 제거되어 있어야 합니다.');

@@ -13,7 +13,7 @@ document.querySelector('#preview-pose').addEventListener('change', drawLayoutMag
 function showLayoutMonster() {
   const stage = Number(document.querySelector('#preview-monster').value);
   configureComicMonster(stage);
-  document.querySelector('#monster-name-label').textContent = stage === 20 ? '화염군주 라그나로스' : stage === 4 ? '고블린 정찰병' : '심연의 파멸수호병';
+  document.querySelector('#monster-name-label').textContent = stage === 20 ? '잿불의 폭군 이그나르크' : stage === 4 ? '고블린 정찰병' : '심연의 파멸 집행자';
   document.querySelector('#target-stage-tag').textContent = `STAGE ${Math.ceil(stage / 5)}-${(stage - 1) % 5 + 1}`;
 }
 document.querySelector('#preview-monster').addEventListener('change', showLayoutMonster);

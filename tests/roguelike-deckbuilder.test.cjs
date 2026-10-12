@@ -367,7 +367,7 @@ test('Step 14: 뱀파이어 서바이버즈 스타일 좌상단 덱 슬롯 및 �
   assert.ok(card.stats && card.stats.haste, '스탯 정보가 포함되어 있어야 합니다.');
 });
 
-test('Step 15: 라그나로스 세계관/스토리 및 파멸 저지 진척도 UI 무결성 검증', () => {
+test('Step 15: 최종 보스 세계관/스토리 및 파멸 저지 진척도 UI 무결성 검증', () => {
   const fs = require('node:fs');
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
@@ -375,24 +375,31 @@ test('Step 15: 라그나로스 세계관/스토리 및 파멸 저지 진척도 U
 
   // 1. HTML 마크업 검증 (진척도 게이지, 마법사/보스 핀, 스토리 툴팁)
   assert.ok(html.includes('class="arena-center-mission-wrap"'), '중앙 미션 래퍼가 존재해야 합니다.');
-  assert.ok(html.includes('id="ragnaros-doom-tracker"'), '라그나로스 멸망 저지 트래커 요소가 존재해야 합니다.');
-  assert.ok(html.includes('id="ragnaros-stage-display"'), '스테이지 진행도 텍스트 요소가 존재해야 합니다.');
-  assert.ok(html.includes('id="ragnaros-track-fill"'), '게이지 바 채우기 요소가 존재해야 합니다.');
-  assert.ok(html.includes('id="ragnaros-caster-pin"'), '마법사 위치 핀이 존재해야 합니다.');
+  assert.ok(html.includes('id="doom-tracker"'), '최종 보스 멸망 저지 트래커 요소가 존재해야 합니다.');
+  assert.ok(html.includes('id="doom-stage-display"'), '스테이지 진행도 텍스트 요소가 존재해야 합니다.');
+  assert.ok(html.includes('id="doom-track-fill"'), '게이지 바 채우기 요소가 존재해야 합니다.');
+  assert.ok(html.includes('id="doom-caster-pin"'), '마법사 위치 핀이 존재해야 합니다.');
   assert.ok(html.includes('id="doom-story-tooltip"'), '스토리 툴팁 요소가 존재해야 합니다.');
 
   // 2. 세계관/스토리 대사 정확도 검증
-  const expectedStory = '불의 군주 라그나로스가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 라그나로스를 물리쳐 이 세상을 구해 주게나!';
-  assert.ok(html.includes(expectedStory), '요청된 세계관/스토리 대사가 HTML 툴팁에 정확히 반영되어 있어야 합니다.');
+  const bossName = '<span class="final-boss-name">이그나르크</span>';
+  const expectedStory = `잿불의 폭군 ${bossName}가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 ${bossName}를 물리쳐 이 세상을 구해 주게나!`;
+  assert.ok(html.includes(expectedStory), '세계관/스토리 대사가 HTML 툴팁에 정확히 반영되어 있어야 합니다.');
+  // 블리자드 IP(라그나로스·아제로스 등)가 화면 문구와 코드에 남아 있으면 안 됩니다.
+  for (const banned of ['라그나로스', 'Ragnaros', '아제로스', 'Azeroth', 'WarcraftLogs', '파멸수호병']) {
+    assert.ok(!html.includes(banned) && !gameSource.includes(banned), `${banned} 표기가 남아 있으면 안 됩니다.`);
+  }
+  // HTML 속 보스 이름은 FINAL_BOSS 정의와 일치해야 합니다(실행 시 applyFinalBossNames가 동기화).
+  assert.ok(gameSource.includes("const FINAL_BOSS = { name: '이그나르크'"), 'FINAL_BOSS 이름 정의가 HTML 기본 문구와 일치해야 합니다.');
 
   // 3. game.js 연동 무결성 검증
-  assert.ok(gameSource.includes('function updateRagnarosProgressUI('), 'updateRagnarosProgressUI 함수가 정의되어 있어야 합니다.');
-  assert.ok(gameSource.includes('updateRagnarosProgressUI()'), 'updateStageUI 내에서 updateRagnarosProgressUI가 호출되어야 합니다.');
-  assert.ok(gameSource.includes('function initRagnarosTrackerEvents('), 'initRagnarosTrackerEvents 함수가 정의되어 있어야 합니다.');
+  assert.ok(gameSource.includes('function updateDoomProgressUI('), 'updateDoomProgressUI 함수가 정의되어 있어야 합니다.');
+  assert.ok(gameSource.includes('updateDoomProgressUI()'), 'updateStageUI 내에서 updateDoomProgressUI가 호출되어야 합니다.');
+  assert.ok(gameSource.includes('function initDoomTrackerEvents('), 'initDoomTrackerEvents 함수가 정의되어 있어야 합니다.');
 
   // 4. paper-ui.css 스타일링 무결성 검증
   assert.ok(paperCss.includes('.arena-center-mission-wrap'), '중앙 미션 래퍼 스타일이 정의되어 있어야 합니다.');
-  assert.ok(paperCss.includes('.ragnaros-doom-tracker'), '라그나로스 트래커 스타일이 정의되어 있어야 합니다.');
+  assert.ok(paperCss.includes('.doom-tracker'), '최종 보스 트래커 스타일이 정의되어 있어야 합니다.');
   assert.ok(paperCss.includes('.doom-story-tooltip'), '스토리 툴팁 스타일이 정의되어 있어야 합니다.');
   assert.ok(paperCss.includes('.doom-boss-pin.pin-final'), '최종 보스 핀 스타일이 정의되어 있어야 합니다.');
 });

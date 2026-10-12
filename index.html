@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#0b0e14" />
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="src/styles/styles.css?v=balance-v2-3" />
-  <link rel="stylesheet" href="src/styles/art.css?v=balance-v2-3" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=balance-v2-3" />
+  <link rel="stylesheet" href="src/styles/art.css?v=final-boss-1" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=final-boss-1" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -38,7 +38,7 @@
     </div>
 
     <div class="top-controls">
-      <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="라그나로스 스피드런 기록을 확인합니다">🏆 명예의 전당</button>
+      <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="최종 보스 스피드런 기록을 확인합니다">🏆 명예의 전당</button>
       <div class="sound-menu-wrap" id="sound-menu-wrap">
         <button class="btn-top" id="btn-sound" title="BGM 및 효과음(SFX) 볼륨을 조절합니다">🔊 사운드</button>
         <div class="sound-popover hidden" id="sound-popover">
@@ -94,32 +94,32 @@
 
         <!-- 전장 상단: 좌측 스테이지·보스 기믹 / 중앙 스피드런 -->
         <div class="arena-top-stage-header" id="arena-top-stage-header">
-          <!-- 중앙: 스피드런 타이머 & 라그나로스 멸망 저지 트래커 -->
+          <!-- 중앙: 스피드런 타이머 & 최종 보스 멸망 저지 트래커 -->
           <div class="arena-center-mission-wrap">
-            <div class="dps-stat-box speedrun-stat-box" title="Stage 20 라그나로스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
+            <div class="dps-stat-box speedrun-stat-box" title="Stage 20 최종 보스 토벌까지의 스피드런 경과 시간 (빠를수록 높은 랭킹)">
               <span class="dps-label">⏱️ 스피드런 시간</span>
               <span class="dps-req-val speedrun-val" id="ui-speedrun-timer">00:00</span>
             </div>
 
-            <!-- 라그나로스 세계 멸망 저지 진척도 UI -->
-            <div class="ragnaros-doom-tracker" id="ragnaros-doom-tracker" tabindex="0" role="region" aria-label="라그나로스 토벌 진척도" title="클릭하거나 마우스를 올리면 세계관 스토리를 확인할 수 있습니다">
+            <!-- 최종 보스 세계 멸망 저지 진척도 UI -->
+            <div class="doom-tracker" id="doom-tracker" tabindex="0" role="region" aria-label="최종 보스 토벌 진척도" title="클릭하거나 마우스를 올리면 세계관 스토리를 확인할 수 있습니다">
               <div class="doom-tracker-top">
                 <span class="doom-tracker-title">
-                  <span class="doom-flame-icon">🔥</span> 라그나로스 토벌
+                  <span class="doom-flame-icon">🔥</span> <span class="final-boss-name">이그나르크</span> 토벌
                 </span>
-                <span class="doom-tracker-stage" id="ragnaros-stage-display">STAGE 1 / 20</span>
+                <span class="doom-tracker-stage" id="doom-stage-display">STAGE 1 / 20</span>
                 <span class="doom-story-hint-icon">📜</span>
               </div>
               <div class="doom-track-wrapper">
                 <div class="doom-track-rail">
-                  <div class="doom-track-fill" id="ragnaros-track-fill" style="width: 5%;"></div>
+                  <div class="doom-track-fill" id="doom-track-fill" style="width: 5%;"></div>
                   <!-- 보스 체크포인트 핀 (Stage 5, 10, 15, 20) -->
                   <div class="doom-boss-pin pin-p1" style="left: 25%;" title="Phase 1 보스 (Stage 5)">👑</div>
                   <div class="doom-boss-pin pin-p2" style="left: 50%;" title="Phase 2 보스 (Stage 10)">👑</div>
                   <div class="doom-boss-pin pin-p3" style="left: 75%;" title="Phase 3 보스 (Stage 15)">👑</div>
-                  <div class="doom-boss-pin pin-final" style="left: 100%;" title="불의 군주 라그나로스 (Stage 20)">🌋</div>
+                  <div class="doom-boss-pin pin-final" style="left: 100%;" title="최종 보스 (Stage 20)">🌋</div>
                   <!-- 플레이어 위치 핀 -->
-                  <div class="doom-caster-pin" id="ragnaros-caster-pin" style="left: 5%;" title="현재 마법사 위치">🧙‍♂️</div>
+                  <div class="doom-caster-pin" id="doom-caster-pin" style="left: 5%;" title="현재 마법사 위치">🧙‍♂️</div>
                 </div>
               </div>
 
@@ -127,13 +127,13 @@
               <div class="doom-story-tooltip" id="doom-story-tooltip" role="tooltip">
                 <div class="doom-story-header">
                   <span class="story-emblem">🌋</span>
-                  <strong>불의 군주의 파멸 저지</strong>
+                  <strong>잿불의 폭군 저지</strong>
                 </div>
                 <div class="doom-story-body">
-                  <p class="story-quote">"불의 군주 라그나로스가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 라그나로스를 물리쳐 이 세상을 구해 주게나!"</p>
+                  <p class="story-quote">"잿불의 폭군 <span class="final-boss-name">이그나르크</span>가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 <span class="final-boss-name">이그나르크</span>를 물리쳐 이 세상을 구해 주게나!"</p>
                   <div class="story-status-info">
                     <span class="story-dest">목표: <strong>Stage 20</strong> 심연의 제단</span>
-                    <span class="story-remain" id="ragnaros-remain-text">남은 여정: 19 스테이지</span>
+                    <span class="story-remain" id="doom-remain-text">남은 여정: 19 스테이지</span>
                   </div>
                 </div>
               </div>
@@ -295,20 +295,20 @@
   <!-- 골드 동전 곡선 비행 흡수 연출 전용 전체화면 오버레이 -->
   <div class="coin-fx-layer" id="coin-fx-layer"></div>
 
-  <!-- 4단계: Stage 20(화염군주 라그나로스) 토벌 시 스피드런 결과 & 재도전 모달 -->
+  <!-- 4단계: Stage 20(최종 보스) 토벌 시 스피드런 결과 & 재도전 모달 -->
   <div class="victory-modal-backdrop hidden" id="victory-modal">
     <div class="victory-modal-card">
       <button type="button" class="victory-close-icon" id="btn-victory-close" title="닫기">✕</button>
       <div class="victory-crown-badge" id="victory-crown-badge">👑 VICTORY · SPEEDRUN COMPLETE</div>
-      <h2 class="victory-title" id="victory-modal-title">화염군주 라그나로스 토벌 완료!</h2>
+      <h2 class="victory-title" id="victory-modal-title">잿불의 폭군 <span class="final-boss-name">이그나르크</span> 토벌 완료!</h2>
       <p class="victory-subtitle" id="victory-modal-subtitle">
-        불타는 심연의 지배자를 물리치고 아제로스 최고의 대마법사 반열에 올랐습니다!
+        불타는 심연의 지배자를 물리치고 세상 최고의 대마법사 반열에 올랐습니다!
       </p>
 
       <!-- 스피드런 이번 기록 vs 최단시간 비교 보드 -->
       <div class="speedrun-comparison-board" id="speedrun-comparison-board">
         <div class="speedrun-board-header">
-          <span>⏱️ 라그나로스 스피드런 공식 기록</span>
+          <span>⏱️ <span class="final-boss-name">이그나르크</span> 스피드런 공식 기록</span>
           <span class="speedrun-badge-tag" id="speedrun-result-tag">⚡ RECORD</span>
         </div>
         <div class="speedrun-times-grid">
@@ -329,10 +329,10 @@
 
       <div class="victory-stats-grid" id="victory-stats-grid"></div>
 
-      <!-- WarcraftLogs 감성 스킬 딜 지분 미니 바 -->
+      <!-- 딜 미터기 감성 스킬 딜 지분 미니 바 -->
       <div class="victory-logs-preview" id="victory-logs-preview">
         <div class="victory-logs-header">
-          <span>📊 스킬 피해량 점유율 (WarcraftLogs)</span>
+          <span>📊 스킬 피해량 점유율</span>
         </div>
         <div class="victory-logs-bars" id="victory-logs-bars"></div>
       </div>
@@ -381,14 +381,14 @@
   <script src="src/scripts/paper-art.js?v=paper-monsters-3"></script>
   <script src="src/scripts/mage-motion.js?v=paper-monsters-3"></script>
   <script src="src/scripts/comic-monster-frames.js?v=comic-ui-2"></script>
-  <script src="src/scripts/paper-monster-frames.js?v=paper-monsters-3"></script>
+  <script src="src/scripts/paper-monster-frames.js?v=final-boss-1"></script>
   <div id="skill-tooltip" class="skill-tooltip" role="tooltip" hidden></div>
   <div id="deck-vampire-tooltip" class="deck-vampire-tooltip hidden" role="tooltip"></div>
-  <script src="src/scripts/comic-assets.js?v=flame-patch-soft-6"></script>
-  <script src="src/scripts/monster-motion.js?v=paper-monsters-3"></script>
+  <script src="src/scripts/comic-assets.js?v=final-boss-1"></script>
+  <script src="src/scripts/monster-motion.js?v=final-boss-1"></script>
   <script src="src/scripts/skill-tooltips.js?v=balance-v2-3"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
   <script src="src/scripts/roguelike-deck.js?v=balance-v2-3"></script>
-  <script src="src/scripts/game.js?v=balance-v2-3"></script>
+  <script src="src/scripts/game.js?v=final-boss-1"></script>
 </body>
 </html>

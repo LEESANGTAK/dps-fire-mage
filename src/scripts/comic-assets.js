@@ -75,6 +75,8 @@ function configureComicMonster(stage){
  el.style.backgroundImage=`url('${frame.sheet || 'assets/art/comic-monsters-clean.png'}')`;
  el.style.backgroundSize=`${(frame.size || COMIC_MONSTER_SIZE)[0]*scale}px ${(frame.size || COMIC_MONSTER_SIZE)[1]*scale}px`;
  el.style.backgroundPosition=`${-frame.x*scale}px ${-frame.y*scale}px`;
+ // 최종 보스의 불의 심장: 원화와 함께 피격 반동을 받도록 원화 요소 안에 둡니다.
+ if(frame.core && document.createElement){const core=document.createElement('span');core.className='boss-heart-core';core.setAttribute('aria-hidden','true');core.style.left=`${frame.core.x*100}%`;core.style.top=`${frame.core.y*100}%`;el.appendChild(core);}
 }
 if(typeof window!=='undefined')window.addEventListener('resize',()=>{const el=document.getElementById('dummy-emoji');if(el && el.dataset.monsterStage)configureComicMonster(Number(el.dataset.monsterStage));});
 if(typeof document!=='undefined'){

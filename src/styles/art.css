@@ -306,6 +306,16 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 @keyframes paper-dissolve {0%{opacity:1;transform:none} 28%{opacity:.85;transform:rotate(-3deg)} 62%{opacity:.5;transform:translateY(-8px) rotate(6deg)} 100%{opacity:0;transform:translateY(-16px) rotate(9deg)}}
 @keyframes paper-extinguish {0%{opacity:1;transform:none} 25%{opacity:.9;transform:rotate(-3deg)} 65%{opacity:.45;transform:rotate(12deg) scaleY(.5)} 100%{opacity:0;transform:rotate(15deg) scaleY(.08)}}
 .living-paused .material-death {animation-play-state:paused!important;}
+/* 최종 보스 가슴의 불의 심장. 두 번 뛰는 고동(쿵-쿵)과 오버슈트로 살아 있는 핵을 표현하고,
+   보호막 중에는 더 크고 빠르게 뛰어 파괴 대상을 알립니다. */
+.boss-heart-core { position:absolute; width:15%; aspect-ratio:1; translate:-50% -50%; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
+  background:radial-gradient(circle, #fffbe6 0 14%, #ffd54a 28%, #ff7a1a 48%, rgba(255,90,0,0) 70%);
+  animation:boss-heart-beat 1.6s cubic-bezier(.34,1.56,.64,1) infinite; }
+.dummy-avatar[data-heart='shield'] .boss-heart-core { width:21%; animation-duration:.72s; filter:saturate(1.4) brightness(1.25);
+  box-shadow:0 0 0 2px #ffe08a99, 0 0 18px 6px #ff6a0099; }
+@keyframes boss-heart-beat { 0%{scale:.84;opacity:.72} 12%{scale:1.08;opacity:1} 22%{scale:.93} 32%{scale:1.03;opacity:.95} 62%,100%{scale:.84;opacity:.72} }
+.living-paused .boss-heart-core {animation-play-state:paused;}
+@media(prefers-reduced-motion:reduce) { .boss-heart-core {animation:none;} }
 /* 사망 잔상이 재생되는 동안 원본은 숨겨 잔상만 타오르게 합니다(loadStage에서 해제). */
 .dummy-avatar[data-dead='true'] .dummy-emoji {visibility:hidden;}
 /* 발끝→정수리 소각(생물형 사망). 원화·그을림·불테두리 세 층의 마스크 경계를 조금씩 어긋나게 해
