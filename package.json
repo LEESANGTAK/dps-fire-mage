@@ -1,19 +1,55 @@
 {
   "name": "dps-fire-mage",
+  "productName": "DPS Fire Mage",
   "version": "1.0.0",
-  "description": "DPS: Fire Mage - MMORPG 화염 마법사 딜사이클 손맛의 로그라이크 덱빌딩 스피드런 웹게임",
+  "private": true,
+  "description": "DPS: Fire Mage - 화염 마법사 딜사이클 손맛의 로그라이크 덱빌딩 스피드런",
+  "main": "electron/main.cjs",
   "scripts": {
-    "test": "node --test tests/*.test.cjs",
+    "test": "node tests/run-all.cjs",
     "simulate": "node scripts/simulate-balance.cjs",
     "sync-card-fallback": "node scripts/sync-card-fallback.cjs",
     "sync-cards": "py -3 scripts/sync_excel_to_cards.py",
-    "export-cards": "py -3 scripts/export_cards_to_excel.py"
+    "export-cards": "py -3 scripts/export_cards_to_excel.py",
+    "desktop": "electron .",
+    "desktop:smoke": "electron . --smoke-test",
+    "dist:win": "electron-builder --win dir"
   },
   "keywords": [
     "fire-mage",
     "game",
     "dps"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "Tak",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.takgames.dpsfiremage",
+    "productName": "DPS Fire Mage",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "src/**/*",
+      "assets/**/*",
+      "!assets/art/concepts/**",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
 }

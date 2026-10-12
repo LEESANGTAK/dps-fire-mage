@@ -55,7 +55,7 @@ function loadStatsAndSave(state) {
     state,
     FINAL_STAGE: 20,
     SAVE_KEY: 'TEST_SAVE',
-    localStorage: { getItem: (k) => storage[k] ?? null, setItem: (k, v) => { storage[k] = v; } },
+    saveStorage: { read: (k) => storage[k] ?? null, write: (k, v) => { storage[k] = v; } },
     deckManager: { getActiveDeck: () => ({ util_gold_greed: 1 }), restoreDeck: (deck) => restored.push(deck) }
   });
   vm.runInContext(statsCode + saveCode, context);

@@ -21,3 +21,7 @@ $RECYCLE.BIN/
 *.njsproj
 *.sln
 *.sw?
+
+# 의존성·데스크톱 빌드 산출물
+node_modules/
+dist/

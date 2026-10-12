@@ -4130,14 +4130,14 @@ function saveGame() {
       spellOrder: state.spellOrder || ['fireball'],
       activeDeck: deckManager ? deckManager.getActiveDeck() : {}
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    saveStorage.write(SAVE_KEY, JSON.stringify(payload));
   } catch (e) {}
 }
 
 // 저장 데이터는 현재 시스템에 필요한 필드만 복원하고, 제거된 구형 시스템 필드는 무시합니다.
 function loadGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = saveStorage.read(SAVE_KEY);
     if (!raw) return;
     const data = JSON.parse(raw);
     if (Array.isArray(data.spellOrder)) state.spellOrder = [...data.spellOrder];
@@ -4353,7 +4353,7 @@ function initEvents() {
 
   document.getElementById('btn-reset-save').addEventListener('click', () => {
     if (confirm('처음부터 다시 시작하시겠습니까?')) {
-      localStorage.removeItem(SAVE_KEY);
+      saveStorage.remove(SAVE_KEY);
       location.reload();
     }
   });
