@@ -128,7 +128,10 @@ test('Step 7: 저장된 덱 복원(restoreDeck) 검증', () => {
   // file:// 실행용 내장 fallback 카드는 JSON 원본과 항상 같아야 합니다. (scripts/sync-card-fallback.cjs)
   const json = JSON.parse(require('node:fs').readFileSync(path.join(__dirname, '../src/data/roguelike-cards.json'), 'utf8'));
   const deckSource = require('node:fs').readFileSync(path.join(__dirname, '../src/scripts/roguelike-deck.js'), 'utf8');
-  const literal = deckSource.slice(deckSource.indexOf('const DEFAULT_CARDS_RAW = ') + 'const DEFAULT_CARDS_RAW = '.length, deckSource.indexOf('\n  ];\n') + 4);
+  const startIdx = deckSource.indexOf('const DEFAULT_CARDS_RAW = ') + 'const DEFAULT_CARDS_RAW = '.length;
+  const match = deckSource.slice(startIdx).match(/\r?\n  \];/);
+  assert.ok(match, 'DEFAULT_CARDS_RAW 종료 지점을 찾을 수 있어야 합니다.');
+  const literal = deckSource.slice(startIdx, startIdx + match.index + match[0].length - 1);
   assert.deepEqual(JSON.parse(literal), json, '내장 fallback 카드가 roguelike-cards.json과 다릅니다. node scripts/sync-card-fallback.cjs를 실행하세요.');
 });
 

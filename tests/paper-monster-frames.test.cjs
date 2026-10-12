@@ -41,8 +41,20 @@ for (const stage of [3,5,8,9,13,16,17,20,21,25]) {
   const ghost=arena.children.at(-1);
   assert.equal(ghost.style.clipPath,'none');
   assert.equal(ghost.children[0].style.clipPath,source.style.clipPath,'사망 외곽 접힘과 별도로 원화 윤곽을 보존해야 합니다.');
+  if (ghost.dataset.death==='burn') {
+    assert.equal(ghost.burnLayers.length,2,'소각은 불테두리·그을림 보조 층을 겹칩니다.');
+    const [glowWrap,char]=ghost.burnLayers;
+    assert.equal(glowWrap.children[0].children[0].style.clipPath,source.style.clipPath,'불테두리도 원화 윤곽을 따라야 합니다.');
+    assert.equal(char.children[0].style.clipPath,source.style.clipPath,'그을림도 원화 윤곽을 따라야 합니다.');
+    assert.equal(ghost.style['--burn-dur'],'1.3s','보스 소각은 더 긴 여운을 줍니다.');
+    assert.ok(arena.children.indexOf(char)<arena.children.indexOf(ghost),'보조 층은 원화 아래에 깔립니다.');
+  }
 }
 assert.ok(pool.length<=48);
+assert.ok(pool.some(pt=>pt.life<0),'소각 불씨는 경계 높이에 맞춰 지연 방출됩니다.');
+const burnGhost=arena.children.find(el=>el.dataset&&el.dataset.death==='burn'&&el.burnLayers);
+vm.runInContext('removeDeathGhost',context)(burnGhost);
+assert.ok(burnGhost.burnLayers.every(layer=>layer.isConnected===false),'본체 정리 시 보조 층도 함께 제거됩니다.');
 const lastGhost=arena.children.at(-1),retire=timers.at(-1);
 paused=true;clock=1500;retire();
 assert.notEqual(lastGhost.isConnected,false,'모달 중 안전 정리 타이머로 잔상이 사라지면 안 됩니다.');
@@ -50,4 +62,4 @@ paused=false;clock=1550;retire();
 assert.notEqual(lastGhost.isConnected,false,'정지 시간은 사망 잔상의 수명에 더하지 않습니다.');
 clock=2700;retire();
 assert.equal(lastGhost.isConnected,false);
-console.log('종이 몬스터 20원화·심연 선택·피격 탄성 차단·사망 윤곽 보존 검증 통과');
+console.log('종이 몬스터 20원화·심연 선택·피격 탄성 차단·사망 윤곽 보존·소각 층 검증 통과');

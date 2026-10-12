@@ -1181,6 +1181,8 @@ function updateAndDrawVfx(dt) {
     // 보상 선택 중 운석과 꼬리의 시간축을 함께 멈춰 잔상이 증발하지 않게 합니다.
     const particleDt = pt.meteorTrail ? meteorDt : dt;
     pt.life += particleDt;
+    // 음수 life는 방출 대기 시간입니다(소각 경계를 따라 순차적으로 피어오르는 불씨 등).
+    if (pt.life < 0) continue;
     if (pt.life >= pt.maxLife) {
       particles.splice(i, 1);
       continue;
