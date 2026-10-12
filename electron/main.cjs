@@ -1,15 +1,28 @@
 /* DPS: Fire Mage 데스크톱(Steam) 실행 진입점.
  * 웹 빌드(index.html)를 그대로 띄우고, 세이브만 localStorage 대신 사용자 폴더의 파일로 저장합니다.
- * --smoke-test: 창을 숨긴 채 게임을 띄워 부팅·세이브 왕복을 검증하고 결과(JSON)를 출력한 뒤 종료합니다. */
+ * --smoke-test: 창을 숨긴 채 게임을 띄워 부팅·세이브 왕복·초기화 버튼·외부 이동 차단을 검증하고 결과(JSON)를 출력한 뒤 종료합니다. */
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const { fileURLToPath } = require('node:url');
 const { createSaveStore } = require('./save-store.cjs');
 
 const APP_DIR_NAME = 'DPS Fire Mage';
 const ROOT = path.join(__dirname, '..');
 const INDEX_FILE = path.join(ROOT, 'index.html');
 const smokeTest = process.argv.includes('--smoke-test');
+
+// 쿼리·해시와 무관하게 게임 진입 파일(index.html)을 가리키는 file: 주소인지 판정합니다.
+function isGamePage(url) {
+  try {
+    const target = new URL(url);
+    if (target.protocol !== 'file:') return false;
+    const normalize = (p) => (process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p));
+    return normalize(fileURLToPath(target)) === normalize(INDEX_FILE);
+  } catch (e) {
+    return false;
+  }
+}
 
 // Steam 자동 클라우드가 고정 경로를 가리킬 수 있도록 세이브 위치를 앱 이름과 무관하게 고정합니다.
 // Windows: %APPDATA%/DPS Fire Mage/saves
@@ -49,9 +62,9 @@ function createWindow() {
   win.setMenu(null);
 
   // 게임 밖으로의 이동과 새 창을 막고, 외부 링크는 기본 브라우저로 엽니다.
-  const indexUrl = `file://${INDEX_FILE.replace(/\\/g, '/')}`;
+  // 게임 자신의 새로고침(초기화 버튼 등)도 will-navigate를 거치므로, 문자열이 아니라 실제 파일 경로로 비교합니다.
   win.webContents.on('will-navigate', (event, url) => {
-    if (!decodeURI(url).startsWith(decodeURI(indexUrl))) event.preventDefault();
+    if (!isGamePage(url)) event.preventDefault();
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
@@ -118,6 +131,24 @@ async function runSmokeTest(win) {
     await new Promise((resolve) => setTimeout(resolve, 800));
     result.steps.restoredGold = await win.webContents.executeJavaScript('state.gold');
     if (result.steps.restoredGold !== 4242) return fail('새로고침 후 세이브가 복원되지 않았습니다.');
+
+    // 초기화 버튼: 확인 창을 수락한 것으로 두고 실제 버튼을 눌러, 새로고침 후 처음 상태로 돌아오는지 확인합니다.
+    // 게임 스스로의 새로고침(location.reload)은 will-navigate 차단을 거치므로, 막히면 시간 초과로 실패시킵니다.
+    const reloaded = new Promise((resolve) => win.webContents.once('did-finish-load', () => resolve(true)));
+    await win.webContents.executeJavaScript("window.confirm = () => true; document.getElementById('btn-reset-save').click();");
+    if (!await Promise.race([reloaded, new Promise((resolve) => setTimeout(() => resolve(false), 5000))])) {
+      return fail('초기화 후 게임 새로고침이 차단되었습니다.');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    saveStore.flushSync();
+    result.steps.afterReset = await win.webContents.executeJavaScript('({ gold: state.gold, stage: state.currentStage })');
+    if (result.steps.afterReset.gold === 4242) return fail('초기화 버튼을 눌러도 세이브가 지워지지 않았습니다.');
+
+    // 게임 밖 주소로의 이동은 계속 막혀야 합니다.
+    await win.webContents.executeJavaScript("location.href = 'https://example.com/'; 0");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    result.steps.externalBlocked = isGamePage(win.webContents.getURL());
+    if (!result.steps.externalBlocked) return fail('외부 주소로 이동이 차단되지 않았습니다.');
 
     result.steps.consoleErrors = consoleErrors;
     if (consoleErrors.length) return fail('콘솔 오류가 있습니다.');
