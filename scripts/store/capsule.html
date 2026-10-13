@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Steam Capsule</title>
+<!-- Steam 캡슐 임시본 템플릿. render-capsules.cjs가 ?layout=&w=&h= 로 열어 규격 크기 그대로 촬영합니다.
+     기존 게임 원화(전장·마법사·화염구·최종 보스)만 조합하며, 정식 키아트가 나오면 교체합니다. -->
+<style>
+  @font-face { font-family: 'Jua'; src: url('../../assets/fonts/Jua-Regular.ttf') format('truetype'); }
+  :root { --w: 920px; --h: 430px; }
+  html, body { margin: 0; width: var(--w); height: var(--h); overflow: hidden; background: transparent; }
+  .stage { position: relative; width: var(--w); height: var(--h); overflow: hidden; background: #160d10; }
+  .bg { position: absolute; inset: 0; background: url('../../assets/art/paper-arena-citadel.png') center 38% / cover no-repeat; filter: saturate(1.1) brightness(.62); }
+  /* 가장자리를 어둡게, 중앙 아래를 용암빛으로 데워 인물과 로고가 배경에서 떨어져 보이게 합니다. */
+  .shade { position: absolute; inset: 0; background:
+      radial-gradient(ellipse 70% 60% at 50% 78%, rgba(255,110,20,.32), transparent 70%),
+      radial-gradient(ellipse 120% 90% at 50% 45%, transparent 45%, rgba(10,4,6,.85) 100%); }
+  .sprite { position: absolute; background-repeat: no-repeat; }
+  .mage { filter: drop-shadow(0 calc(var(--u) * 1.2) calc(var(--u) * 1.4) rgba(0,0,0,.6)); }
+  .boss { filter: drop-shadow(0 0 calc(var(--u) * 3) rgba(255,90,0,.55)) drop-shadow(0 calc(var(--u) * 1.5) calc(var(--u) * 2) rgba(0,0,0,.7)); }
+  .heart { position: absolute; border-radius: 50%; mix-blend-mode: screen;
+    background: radial-gradient(circle, #fffbe6 0 14%, #ffd54a 28%, #ff7a1a 48%, rgba(255,90,0,0) 70%); }
+  .fireball { filter: drop-shadow(0 0 calc(var(--u) * 2.5) rgba(255,150,30,.8)); }
+  .embers { position: absolute; inset: 0; pointer-events: none; }
+  .ember { position: absolute; border-radius: 50%; background: radial-gradient(circle, #fff1b8 0 30%, #ff8a1a 60%, transparent 70%); }
+
+  /* 타이틀 로고: 종이 단면처럼 크림색 바깥 테두리 + 진갈색 잉크 테두리 + 불꽃 그라데이션 */
+  .logo { position: absolute; z-index: 5; isolation: isolate; display: flex; flex-direction: column; align-items: center; line-height: .86; font-family: 'Jua', sans-serif; text-align: center; white-space: nowrap; }
+  .logo .row { position: relative; display: block; }
+  .logo .row span { display: block; }
+  .logo .fill { background: linear-gradient(180deg, #fff6c2 0%, #ffd23a 38%, #ff8a14 70%, #e8430c 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo .ink { position: absolute; inset: 0; color: #2a120c; -webkit-text-stroke: calc(var(--fs) * .16) #2a120c; z-index: -1; }
+  .logo .paper { position: absolute; inset: 0; color: #f4e3c3; -webkit-text-stroke: calc(var(--fs) * .27) #f4e3c3; z-index: -2;
+    filter: drop-shadow(0 calc(var(--fs) * .07) 0 #7a2a12) drop-shadow(0 calc(var(--fs) * .12) calc(var(--fs) * .1) rgba(0,0,0,.65)); }
+  .logo .dps { --fs: var(--fs-dps); font-size: var(--fs-dps); letter-spacing: .02em; }
+  .logo .sub { --fs: var(--fs-sub); font-size: var(--fs-sub); letter-spacing: .04em; margin-top: calc(var(--fs-sub) * .12); }
+  .logo .sub .fill { background: linear-gradient(180deg, #ffffff 0%, #fff0d0 55%, #ffc98a 100%); -webkit-background-clip: text; background-clip: text; }
+  .logo-only .stage { background: transparent; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage"></div>
+<script>
+// 원화 시트 좌표(paper-art.js / paper-monster-frames.js와 같은 값)
+const SHEETS = {
+  mage: { url: '../../assets/art/paper-mage-poses.png', size: [1254, 1254], box: [132, 715, 493, 414], tip: [576, 892] }, // release(시전) 자세, tip=지팡이 보주
+  boss: { url: '../../assets/art/paper-monsters-boss.png', size: [1536, 1024], box: [1090, 509, 427, 455], core: [.52, .49] },
+  fireball: { url: '../../assets/art/comic-fireball.png', size: [1536, 1024], box: [120, 320, 1300, 400] }
+};
+const q = new URLSearchParams(location.search);
+const W = Number(q.get('w') || 920), H = Number(q.get('h') || 430), layout = q.get('layout') || 'wide';
+document.documentElement.style.setProperty('--w', W + 'px');
+document.documentElement.style.setProperty('--h', H + 'px');
+const u = Math.min(W, H) / 100; // 공용 단위
+document.documentElement.style.setProperty('--u', u + 'px');
+const stage = document.getElementById('stage');
+
+function sprite(kind, x, y, height, flip = false) {
+  const s = SHEETS[kind], [bx, by, bw, bh] = s.box, k = height / bh;
+  const el = document.createElement('div');
+  el.className = `sprite ${kind}`;
+  Object.assign(el.style, { left: x + 'px', top: y + 'px', width: bw * k + 'px', height: height + 'px',
+    backgroundImage: `url('${s.url}')`, backgroundSize: `${s.size[0] * k}px ${s.size[1] * k}px`, backgroundPosition: `${-bx * k}px ${-by * k}px`,
+    transform: flip ? 'scaleX(-1)' : '' });
+  stage.appendChild(el);
+  if (kind === 'boss') {
+    const heart = document.createElement('div');
+    heart.className = 'heart';
+    const d = bw * k * .2;
+    Object.assign(heart.style, { width: d + 'px', height: d + 'px', left: x + bw * k * s.core[0] - d / 2 + 'px', top: y + height * s.core[1] - d / 2 + 'px' });
+    stage.appendChild(heart);
+  }
+  // 지팡이 끝(보주) 좌표: 화염구를 여기서 출발시킵니다.
+  const tip = s.tip ? { x: x + (s.tip[0] - bx) * k, y: y + (s.tip[1] - by) * k } : null;
+  return { w: bw * k, h: height, tip };
+}
+// 화염구 꼬리를 보주 바로 앞에 붙여, 지팡이에서 막 발사된 것처럼 배치합니다.
+function fireballFrom(tip, height) {
+  const b = SHEETS.fireball.box, k = height / b[3];
+  return sprite('fireball', tip.x - b[2] * k * .08, tip.y - height * .52, height);
+}
+function logo(cx, cy, dpsSize, subSize) {
+  const el = document.createElement('div');
+  el.className = 'logo';
+  el.style.setProperty('--fs-dps', dpsSize + 'px');
+  el.style.setProperty('--fs-sub', subSize + 'px');
+  const row = (cls, text) => `<div class="row ${cls}"><span class="paper">${text}</span><span class="ink">${text}</span><span class="fill">${text}</span></div>`;
+  el.innerHTML = row('dps', 'DPS') + row('sub', 'FIRE MAGE');
+  stage.appendChild(el);
+  const r = el.getBoundingClientRect();
+  el.style.left = cx - r.width / 2 + 'px';
+  el.style.top = cy - r.height / 2 + 'px';
+}
+function embers(count, seed = 7) {
+  const box = document.createElement('div');
+  box.className = 'embers';
+  let s = seed;
+  const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < count; i++) {
+    const e = document.createElement('div');
+    e.className = 'ember';
+    const d = u * (0.6 + rand() * 1.6);
+    Object.assign(e.style, { width: d + 'px', height: d + 'px', left: rand() * W + 'px', top: H * (0.15 + rand() * 0.8) + 'px', opacity: .5 + rand() * .5 });
+    box.appendChild(e);
+  }
+  stage.appendChild(box);
+}
+function backdrop() {
+  stage.insertAdjacentHTML('beforeend', '<div class="bg"></div><div class="shade"></div>');
+}
+
+const LAYOUTS = {
+  // 가로형(헤더·메인·라이브러리 헤더): 왼쪽 마법사가 오른쪽 보스에게 화염구를 날리고, 가운데 위에 로고
+  wide() {
+    backdrop(); embers(Math.round(W / 30));
+    const m = sprite('mage', W * .03, H * .38, H * .62);
+    const b = sprite('boss', W * .64, H * .2, H * .86);
+    fireballFrom(m.tip, H * .17);
+    logo(W * .47, H * .3, H * .3, H * .16);
+  },
+  // 작은 캡슐: 로고가 주인공. 마법사와 보스는 양 끝에서 살짝만 보입니다.
+  small() {
+    backdrop();
+    sprite('mage', -W * .02, H * .2, H * .86);
+    sprite('boss', W * .79, H * .02, H * 1.05);
+    logo(W * .5, H * .5, H * .44, H * .24);
+  },
+  // 세로형(세로 캡슐·라이브러리 캡슐): 위에 로고, 아래에서 마법사와 보스가 대치
+  tall() {
+    backdrop(); embers(Math.round(H / 28), 11);
+    sprite('boss', W * .38, H * .36, H * .5);
+    const m = sprite('mage', W * .02, H * .6, H * .36);
+    fireballFrom(m.tip, H * .09);
+    logo(W * .5, H * .17, W * .25, W * .13);
+  },
+  // 라이브러리 히어로: 글자 없이 전장만. 가운데는 Steam이 로고를 얹으므로 비워 둡니다.
+  hero() {
+    backdrop(); embers(60, 5);
+    sprite('mage', W * .1, H * .42, H * .55);
+    sprite('boss', W * .73, H * .14, H * .82);
+  },
+  // 라이브러리 로고: 투명 배경 로고만
+  logo() {
+    document.body.classList.add('logo-only');
+    stage.style.background = 'transparent';
+    logo(W * .5, H * .5, H * .5, H * .27);
+  }
+};
+document.fonts.load(`10px Jua`).then(() => {
+  LAYOUTS[layout]();
+  return Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
+}).then(() => setTimeout(() => { document.title = 'READY'; }, 300));
+</script>
+</body>
+</html>
