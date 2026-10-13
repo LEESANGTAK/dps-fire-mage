@@ -37,6 +37,7 @@ ipcMain.on('save:read', (event, key) => {
 ipcMain.on('save:write', (event, key, value) => {
   try { saveStore.write(key, value); } catch (e) { console.error('[main] 세이브 거부', e.message); }
 });
+ipcMain.on('app:is-packaged', (event) => { event.returnValue = app.isPackaged; });
 ipcMain.on('save:remove', (event, key) => {
   try { saveStore.remove(key); event.returnValue = true; } catch (e) { event.returnValue = false; }
 });
@@ -111,11 +112,14 @@ async function runSmokeTest(win) {
       hasState: typeof state === 'object',
       desktop: typeof saveStorage === 'object' && saveStorage.isDesktop,
       scriptsLoaded: typeof configureComicMonster === 'function' && typeof getPaperMonsterFrame === 'function',
-      stage: state.currentStage
+      stage: state.currentStage,
+      telemetryButton: Boolean(document.getElementById('btn-export-telemetry'))
     })`);
     result.steps.boot = page;
     if (!page.hasState || !page.scriptsLoaded) return fail('게임 스크립트가 로드되지 않았습니다.');
     if (!page.desktop) return fail('데스크톱 세이브 저장소가 연결되지 않았습니다.');
+    // 개발용 밸런스 로그 버튼은 배포 빌드에서만 사라져야 합니다.
+    if (page.telemetryButton === app.isPackaged) return fail(`밸런스 로그 버튼 노출이 빌드 종류와 맞지 않습니다(배포=${app.isPackaged}).`);
 
     // 세이브 왕복: 골드를 바꿔 저장 → 디스크 파일 확인 → 새로고침 후 복원 확인
     await win.webContents.executeJavaScript('state.gold = 4242; saveGame();');

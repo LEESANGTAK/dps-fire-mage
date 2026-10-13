@@ -8,7 +8,8 @@
 .arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 1; justify-self: start; max-width: 100%; padding: 7px 10px; gap: 8px; }
 .arena-top-stage-header .monster-stage-mini { font-size: .88rem; }
 .arena-top-stage-header .monster-reward { font-size: .8rem; padding: 3px 6px; }
-.arena-top-stage-header .boss-gimmick-badge { grid-column: 1; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; }
+/* 보스 기믹 배지는 왼쪽 덱 아이콘 줄(.deck-strip-container, 고정 위치)과 겹치지 않도록 비어 있는 오른쪽 위에 둡니다. */
+.arena-top-stage-header .boss-gimmick-badge { grid-column: 3; grid-row: 1; justify-self: end; max-width: 100%; white-space: normal; }
 
 /* 최종 보스 세계 멸망 저지 진척도 트래커 (Doom Tracker) */
 .doom-tracker { position: relative; width: 236px; padding: 5px 10px 7px 10px; background: #241b22ed; border: 1px solid #8b7055; border-radius: 4px; box-shadow: 0 2px 0 #151119; cursor: pointer; user-select: none; transition: border-color .16s ease-out, box-shadow .16s ease-out; }
@@ -51,7 +52,7 @@
   .arena-top-stage-header .speedrun-stat-box { padding: 3px 8px; }
   .doom-tracker { width: 180px; padding: 3px 6px; }
   .arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 2; gap: 5px; padding: 6px; flex-wrap: wrap; }
-  .arena-top-stage-header .boss-gimmick-badge { grid-column: 1; grid-row: 3; font-size: .6rem; }
+  .arena-top-stage-header .boss-gimmick-badge { grid-column: 1 / -1; grid-row: 3; justify-self: center; font-size: .6rem; }
 }
 .top-bar { background: #30282c; border-bottom: 2px solid #8b7055; box-shadow: 0 3px 0 #17131b; }
 .game-title { color: #f3d391; text-shadow: 0 2px #17131b; }
@@ -119,3 +120,16 @@
   .action-bar .skill-btn:hover, .action-bar .skill-btn:active { transform: none; }
   .wow-proc-svg .proc-beam-trail, .wow-proc-svg .proc-beam-head { animation: none; }
 }
+/* 각성 카드 종이 아이콘(3×2 시트). 같은 원화를 쓰는 카드는 tone으로 구분합니다:
+   cursed=대가형(보라), blaze=강화(밝은 불꽃), charge=충전형(푸른 불), crimson=전설·처형(진홍), ruby=보라 원화를 진홍으로(진홍의 마력 폭주). */
+.paper-card-icon { display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; border-radius: 18%; background-repeat: no-repeat; background-size: 300% 200%; box-shadow: inset 0 0 0 1px #0006, 0 2px 0 #0005; }
+.paper-card-icon[data-sheet='skills'] { background-image: url('../../assets/art/paper-ui-skills-v1.png'); }
+.paper-card-icon[data-sheet='stats'] { background-image: url('../../assets/art/paper-ui-stats-v1.png'); }
+.paper-card-icon[data-tone='cursed'] { filter: hue-rotate(235deg) saturate(.85) brightness(.95); }
+.paper-card-icon[data-tone='blaze'] { filter: saturate(1.35) brightness(1.15) contrast(1.05); box-shadow: inset 0 0 0 1px #0006, 0 0 6px #ff9a3a99; }
+.paper-card-icon[data-tone='charge'] { filter: hue-rotate(170deg) saturate(1.1) brightness(1.05); }
+.paper-card-icon[data-tone='ruby'] { filter: hue-rotate(80deg) saturate(1.6) brightness(1.05); box-shadow: inset 0 0 0 1px #0006, 0 0 7px #ff2a2a88; }
+.paper-card-icon[data-tone='crimson'] { filter: hue-rotate(-18deg) saturate(1.7) brightness(.92); box-shadow: inset 0 0 0 1px #0006, 0 0 7px #ff2a2a88; }
+.card-icon .paper-card-icon { width: 64px; height: 64px; }
+.vampire-deck-icon .paper-card-icon { width: 24px; height: 24px; border-radius: 3px; }
+.vtt-icon .paper-card-icon { width: 30px; height: 30px; }

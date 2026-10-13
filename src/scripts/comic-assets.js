@@ -28,6 +28,24 @@ function comicIconHTML(token) {
  const spell=typeof key==='string';const index=spell?Number(key.slice(1)):key;const cols=spell?2:4;
  return `<span class="comic-icon" aria-hidden="true" data-sheet="${spell?'spell':'equipment'}" style="background-position:${index%cols/(cols-1)*100}% ${Math.floor(index/cols)/(cols-1)*100}%"></span>`;
 }
+// 각성 카드 아이콘: 시스템 이모지 대신 종이 원화 아이콘 시트(3×2)를 카드 ID로 고릅니다.
+// 카드 데이터(엑셀·JSON)의 icon 이모지는 그대로 두고, 화면에서만 종이 아이콘으로 바꿔 그립니다.
+// tone은 같은 원화를 쓰는 카드끼리 대가형·전설 등을 색으로 구분합니다.
+const PAPER_CARD_ICONS = {
+ rapid_spark:['stats',5], rapid_split:['skills',0], rapid_overload:['stats',5,'cursed'], rapid_quickdraw:['skills',0,'charge'], rapid_gatling:['skills',0,'blaze'],
+ spell_fireblast:['skills',1], crit_focus:['stats',4], crit_heat:['skills',1,'blaze'], crit_reckless:['stats',4,'cursed'],
+ spell_meteor:['skills',2], crit_meteor_storm:['skills',2,'blaze'], crit_meteor_charge:['skills',2,'charge'],
+ spell_combustion:['skills',3], crit_crimson_frenzy:['skills',3,'ruby'],
+ sum_spirit:['skills',5], sum_fury:['skills',5,'blaze'], sum_volley:['skills',5,'charge'], sum_pact:['skills',5,'cursed'], sum_cinder_lord:['skills',5,'crimson'],
+ burn_ignite:['stats',2,'blaze'], spell_flame_patch:['skills',4], burn_spread:['skills',4,'charge'], burn_wildfire:['skills',4,'crimson'],
+ util_power:['stats',3], util_executioner:['stats',4,'crimson'], util_glass_cannon:['stats',1], util_phoenix_reborn:['stats',2]
+};
+function paperCardIconHTML(card) {
+ const entry = card && PAPER_CARD_ICONS[card.id];
+ if(!entry) return (card && card.icon) || '🃏';
+ const [sheet,index,tone] = entry;
+ return `<span class="paper-card-icon" data-sheet="${sheet}"${tone?` data-tone="${tone}"`:''} style="background-position:${index%3*50}% ${Math.floor(index/3)*100}%" aria-hidden="true"></span>`;
+}
 function decorateComicUI(root) {
  if(!root || (root.nodeType!==1 && root.nodeType!==3))return;
  if(root.nodeType===1 && root.closest('script,style,canvas,.dummy-emoji,.material-death,.comic-icon,.comic-vector,.skill-icon'))return;

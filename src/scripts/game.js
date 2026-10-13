@@ -3094,6 +3094,7 @@ function showDeckTooltip(card, targetEl) {
     rapid: '⚡ 속사 머신건',
     crit: '🎯 극치명 누킹',
     summon: '🔥 정령 군단',
+    burn: '♨️ 화상 확산',
     utility: '✨ 유틸리티'
   };
   const buildLabel = buildNames[build] || build;
@@ -3104,18 +3105,18 @@ function showDeckTooltip(card, targetEl) {
   let statsHtml = '';
   if (stats && typeof stats === 'object') {
     const chips = [];
+    // 카드 스탯은 모두 정수 퍼센트입니다(밸런스 패치 v2).
     const statLabels = {
-      sp: '주문력',
-      haste: '가속도',
+      spPct: '주문력',
+      haste: '시전 속도',
       crit: '치명타율',
-      critDmg: '치명피해',
-      goldBonus: '골드보너스'
+      critDmg: '치명 피해',
+      spiritPct: '소환수 피해',
+      burnPct: '지속 피해'
     };
     for (const [key, val] of Object.entries(stats)) {
-      // 치명피해·골드보너스는 배율(0.6 = +60%)로 저장되므로 백분율로 환산해 표시
-      const isRatio = key === 'critDmg' || key === 'goldBonus';
-      const totalVal = typeof val === 'number' ? Math.round(val * card.count * (isRatio ? 100 : 1) * 10) / 10 : val;
-      const unit = (key === 'sp') ? '' : '%';
+      const totalVal = typeof val === 'number' ? val * card.count : val;
+      const unit = '%';
       const sign = (typeof totalVal === 'number' && totalVal > 0) ? '+' : '';
       chips.push(`<span class="vtt-stat-chip">${statLabels[key] || key} ${sign}${totalVal}${unit} (누적)</span>`);
     }
@@ -3126,7 +3127,7 @@ function showDeckTooltip(card, targetEl) {
 
   tooltip.innerHTML = `
     <div class="vtt-header">
-      <span class="vtt-icon">${icon}</span>
+      <span class="vtt-icon">${paperCardIconHTML(liveCard)}</span>
       <div class="vtt-title-box">
         <span class="vtt-title">${title}</span>
         <div class="vtt-meta-row">
@@ -3206,7 +3207,7 @@ function renderDeckStripUI() {
     const badgeHtml = badgeText ? `<span class="vampire-deck-badge ${isMax ? 'is-max' : ''}">${badgeText}</span>` : '';
 
     slot.innerHTML = `
-      <span class="vampire-deck-icon">${c.icon}</span>
+      <span class="vampire-deck-icon">${paperCardIconHTML(c)}</span>
       ${badgeHtml}
     `;
 
@@ -3287,6 +3288,7 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
       if (card.build === RoguelikeDeck.BUILD.RAPID) buildBadgeText = '⚡ 속사 머신건';
       else if (card.build === RoguelikeDeck.BUILD.CRIT) buildBadgeText = '🎯 극치명 누킹';
       else if (card.build === RoguelikeDeck.BUILD.SUMMON) buildBadgeText = '🔥 정령 군단';
+      else if (card.build === RoguelikeDeck.BUILD.BURN) buildBadgeText = '♨️ 화상 확산';
       else if (card.build === RoguelikeDeck.BUILD.UTILITY) buildBadgeText = '✨ 유틸리티';
     }
 
@@ -3294,7 +3296,7 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
       <div class="awakening-card ${rarityClass}" data-card-id="${card.id}">
         <div class="card-rarity-badge">${rarityMeta.name}</div>
         ${stackBadge}
-        <div class="card-icon">${card.icon}</div>
+        <div class="card-icon">${paperCardIconHTML(card)}</div>
         <div class="card-name">${card.title}</div>
         <div class="card-build-tag">${buildBadgeText}</div>
         <div class="card-desc">${card.desc}</div>
@@ -4341,6 +4343,10 @@ function initEvents() {
   window.addEventListener('keydown', unlockBgmOnInteract);
 
   // 플레이테스트 밸런스 텔레메트리 클립보드 복사 이벤트
+  // 밸런스 로그(플레이테스트 텔레메트리)는 웹 플레이테스트와 개발 실행용입니다. Steam 배포 빌드에서는 버튼을 없앱니다.
+  if (window.desktopApp && window.desktopApp.isPackaged) {
+    ['btn-export-telemetry', 'btn-victory-export-telemetry'].forEach((id) => document.getElementById(id)?.remove());
+  }
   const exportTelemetryBtn = document.getElementById('btn-export-telemetry');
   if (exportTelemetryBtn) {
     exportTelemetryBtn.addEventListener('click', () => playtestTelemetry.copyToClipboard());
