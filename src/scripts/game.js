@@ -48,12 +48,28 @@ function getStageData(stageNum) {
   const stage = Math.max(1, Math.min(FINAL_STAGE, stageNum));
   const phase = Math.ceil(stage / 5);
   const stepInPhase = ((stage - 1) % 5) + 1;
+  const base = STAGE_MONSTERS[stage - 1];
+  const isPhaseBoss = stepInPhase === 5;
+  // 업화 단계: 체력·광폭화 시간 배율(meta-progression.js의 표)
+  const mods = getInfernoModifiers(currentInfernoLevel());
   return {
-    ...STAGE_MONSTERS[stage - 1],
+    ...base,
+    hp: Math.round(base.hp * (isPhaseBoss ? mods.bossHpMult : mods.hpMult)),
+    enrage: base.enrage ? Math.round(base.enrage * (stage >= INFERNO_ENRAGE_FROM_STAGE ? mods.enrageMult : 1)) : base.enrage,
     phase,
     stepInPhase,
-    isPhaseBoss: stepInPhase === 5
+    isPhaseBoss
   };
+}
+
+// state가 만들어지기 전(스크립트 로드 중)에도 안전하게 이번 런의 업화 단계를 읽습니다.
+function currentInfernoLevel() {
+  try { return state.infernoLevel || 0; } catch (e) { return 0; }
+}
+
+// 각성 카드 선택지 수: 보스 웨이브는 항상 3장, 일반 웨이브는 업화 5단계부터 2장.
+function getAwakeningChoiceCount(isBossWave) {
+  return isBossWave ? 3 : getInfernoModifiers(currentInfernoLevel()).normalChoices;
 }
 
 // ==========================================
@@ -91,6 +107,11 @@ const state = {
   bestSpeedrunTime: null,
   bestReachedStage: 0,
   runFailed: false,
+  // 클리어 후 콘텐츠: 이번 런의 업화 단계, 영구 진행(숙련도·해금·단계별 기록), 이번 런 숙련도 지급 여부
+  infernoLevel: 0,
+  meta: normalizeMeta(null),
+  lockedCards: getLockedCardIds(0),
+  runRewarded: false,
   autoCast: true,
   isPaused: false,
   skillAuto: {
@@ -1930,6 +1951,7 @@ function onMonsterKilled() {
 
   if (isFinalBossKill) {
     state.campaignCleared = true;
+    awardRunMastery(true);
     const curTime = state.playTimeSec || 0;
     state.stats = state.stats || {};
     state.stats.lastSpeedrunTime = curTime;
@@ -1939,6 +1961,7 @@ function onMonsterKilled() {
     state.stats.isNewSpeedrunRecord = isNewRecord;
     if (isNewRecord) {
       state.bestSpeedrunTime = curTime;
+      state.meta.bestTimes[state.infernoLevel] = curTime;
       triggerSpeedrunRecordFlash();
       spawnFloatingText(tr('🏆 {boss} 스피드런 신기록! ({time})', { boss: FINAL_BOSS.name, time: formatSpeedrunTime(curTime) }), 'fct-crit', -90, { isBig: true });
     }
@@ -2906,6 +2929,7 @@ function updateStageUI() {
   document.getElementById('target-stage-tag').textContent = data.isPhaseBoss
     ? `👑 BOSS [STAGE ${data.phase}-${data.stepInPhase}]`
     : `STAGE ${data.phase}-${data.stepInPhase}`;
+  if (typeof updateInfernoBadge === 'function') updateInfernoBadge();
 
   // 몬스터 이미지와 그 아래 몬스터 이름 표시
   const monsterArt = document.getElementById('dummy-emoji');
@@ -3026,7 +3050,7 @@ function updateBossGimmick(dt) {
     } else {
       if (state.monster.hp <= state.monster.maxHp * 0.3 && !bg.shieldTriggered && !state.monster.isDying) {
         bg.shieldTriggered = true;
-        bg.shield = Math.round(state.monster.maxHp * 0.12);
+        bg.shield = Math.round(state.monster.maxHp * 0.12 * getInfernoModifiers(state.infernoLevel).shieldMult);
         bg.maxShield = bg.shield;
         bg.shieldTimer = 10.0;
         triggerArenaShake('lg');
@@ -3253,7 +3277,7 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
       : tr('고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!');
   }
 
-  const choices = deckManager.drawChoices(3, isBossWave, state);
+  const choices = deckManager.drawChoices(getAwakeningChoiceCount(isBossWave), isBossWave, state);
   renderAwakeningChoicesUI(choices, isBossWave);
   updateRerollButtonUI();
 
@@ -3333,9 +3357,9 @@ function selectAwakeningCard(cardId) {
   }
 }
 
-// 리롤 기준 비용 = 방금 처치한 스테이지의 기본 처치 골드 (최소 10G)
+// 리롤 기준 비용 = 방금 처치한 스테이지의 기본 처치 골드 (최소 10G) × 업화 단계 배율
 function getRerollBaseCost() {
-  return Math.max(10, getStageData(state.currentStage).gold);
+  return Math.round(Math.max(10, getStageData(state.currentStage).gold) * getInfernoModifiers(state.infernoLevel).rerollMult);
 }
 
 function updateRerollButtonUI() {
@@ -3366,7 +3390,7 @@ function updateRerollButtonUI() {
 
 function handleAwakeningReroll() {
   if (!deckManager) return;
-  const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost());
+  const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost(), getAwakeningChoiceCount(isCurrentAwakeningBoss));
   if (!result.success) {
     spawnFloatingText(tr('💰 리롤에 필요한 골드가 부족합니다!'), 'fct-normal', -40);
     return;
@@ -3417,6 +3441,13 @@ function openVictoryModal(isFirstVictory = false) {
   const titleEl = document.getElementById('victory-modal-title');
   const subEl = document.getElementById('victory-modal-subtitle');
   if (!modal || !grid) return;
+
+  // 마도서 숙련도 연출과 새 런 설정(meta-ui.js). 패배 창도 이 함수를 거쳐 같은 영역을 씁니다.
+  if (typeof renderRunProgress === 'function') {
+    renderRunProgress();
+    renderRunSetup();
+    initRunSetupEvents();
+  }
 
   const stats = getPlayerStats();
   modal.classList.remove('defeat-mode');
@@ -3552,6 +3583,28 @@ function openVictoryModal(isFirstVictory = false) {
   }
 }
 
+// 런이 끝날 때(최종 보스 토벌·광폭화 실패) 한 번만 숙련도를 지급하고,
+// 해금된 최고 단계로 최종 보스를 쓰러뜨렸다면 다음 업화 단계를 엽니다. 결과창이 lastRun으로 연출합니다.
+function awardRunMastery(finalKilled) {
+  const meta = state.meta;
+  if (state.runRewarded) return meta.lastRun;
+  const xpBefore = meta.xp;
+  const gained = getRunMasteryXp({ clearedStage: state.highestClearedStage, finalKilled, infernoLevel: state.infernoLevel, finalStage: FINAL_STAGE });
+  meta.xp = xpBefore + gained;
+  const had = new Set(getUnlocksAt(xpBefore).map((u) => `${u.type}:${u.id}`));
+  const newUnlocks = getUnlocksAt(meta.xp).filter((u) => !had.has(`${u.type}:${u.id}`)).map((u) => ({ type: u.type, id: u.id }));
+  let newInferno = null;
+  if (finalKilled && state.infernoLevel >= meta.infernoUnlocked && meta.infernoUnlocked < INFERNO_MAX) {
+    meta.infernoUnlocked += 1;
+    meta.infernoSelected = meta.infernoUnlocked; // 새로 열린 단계를 다음 런 기본값으로 둡니다.
+    newInferno = meta.infernoUnlocked;
+  }
+  meta.lastRun = { gained, xpBefore, xpAfter: meta.xp, newUnlocks, newInferno, infernoLevel: state.infernoLevel, shown: false };
+  state.runRewarded = true;
+  state.lockedCards = getLockedCardIds(meta.xp);
+  return meta.lastRun;
+}
+
 function failRunByEnrage() {
   if (state.runFailed) return;
   state.runFailed = true;
@@ -3560,6 +3613,7 @@ function failRunByEnrage() {
   triggerArenaShake('lg');
   playSound('monster_destroy', 0.7);
   spawnFloatingText(tr('💀 광폭화! 런 실패'), 'fct-crit', -60, { isBig: true });
+  awardRunMastery(false);
   saveGame();
 
   // 패배 순간을 1.2초간 인지할 여운을 둔 뒤 결과창 개방
@@ -3627,13 +3681,20 @@ function restartSpeedrunRun() {
   closeVictoryModal();
   state.isPaused = false;
 
-  // 1. 스피드런 및 스테이지 진행도 완전 초기화 (역대 최단시간 bestSpeedrunTime은 보존)
+  // 1. 스피드런 및 스테이지 진행도 완전 초기화 (단계별 최단시간은 meta.bestTimes에 보존)
   state.currentStage = 1;
   state.highestClearedStage = 0;
   state.gold = 0;
   state.playTimeSec = 0;
   state.campaignCleared = false;
   state.runFailed = false;
+
+  // 업화 단계·해금 카드·단계별 최고 기록: 결과창에서 고른 값으로 새 런을 엽니다.
+  const meta = state.meta;
+  state.infernoLevel = Math.min(meta.infernoSelected, meta.infernoUnlocked);
+  state.lockedCards = getLockedCardIds(meta.xp);
+  state.bestSpeedrunTime = meta.bestTimes[state.infernoLevel] ?? null;
+  state.runRewarded = false;
 
   // 2. 주문서 완전 초기화 (기본 화염구 1개로 시작, 자동 시전 설정은 플레이어 선택 유지)
   state.grimoires = {
@@ -3658,6 +3719,13 @@ function restartSpeedrunRun() {
   }
   state.playerStatsBonus = {};
   state.deckMechanics = {};
+
+  // 숙련도로 연 시작 주문서를 고른 경우 첫 스테이지부터 그 주문을 들고 시작합니다.
+  const startCard = meta.startSpell && START_SPELL_CARDS[meta.startSpell];
+  if (startCard && deckManager) {
+    deckManager.selectCard(startCard, state);
+    renderDeckStripUI();
+  }
 
   // 4. 런 단위 전투 기록 초기화 (결과창 · 밸런스 로그가 이번 런만 집계하도록)
   state.stats = { peakDps: 0, combustionHits: 0, combustionPyros: 0 };
@@ -4112,6 +4180,9 @@ function saveGame() {
       bestSpeedrunTime: state.bestSpeedrunTime || null,
       bestReachedStage: state.bestReachedStage || 0,
       runFailed: state.runFailed,
+      infernoLevel: state.infernoLevel,
+      runRewarded: state.runRewarded,
+      meta: state.meta,
       bossClearTimes: state.bossClearTimes,
       autoCast: state.autoCast,
       skillAuto: state.skillAuto,
@@ -4146,6 +4217,12 @@ function loadGame() {
     if (typeof data.bestSpeedrunTime === 'number') state.bestSpeedrunTime = data.bestSpeedrunTime;
     if (typeof data.bestReachedStage === 'number') state.bestReachedStage = data.bestReachedStage;
     if (typeof data.runFailed === 'boolean') state.runFailed = data.runFailed;
+    // 영구 진행: 구형 세이브의 bestSpeedrunTime은 0단계 기록으로 옮깁니다.
+    state.meta = normalizeMeta(data.meta, data.bestSpeedrunTime);
+    state.infernoLevel = Math.min(clampInferno(data.infernoLevel), state.meta.infernoUnlocked);
+    state.runRewarded = data.runRewarded === true;
+    state.lockedCards = getLockedCardIds(state.meta.xp);
+    state.bestSpeedrunTime = state.meta.bestTimes[state.infernoLevel] ?? null;
     if (data.bossClearTimes) state.bossClearTimes = Object.assign({}, data.bossClearTimes);
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (data.skillAuto) Object.assign(state.skillAuto, data.skillAuto);

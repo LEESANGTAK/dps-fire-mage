@@ -247,6 +247,28 @@ const I18N_EN = {
   '도달 스테이지': 'Stage reached',
   '보스 남은 체력': 'Boss health left',
   '최고 도달 기록': 'Best stage reached',
-  '이번 런 시간': 'Run time'
+  '이번 런 시간': 'Run time',
+
+  // 클리어 후 콘텐츠: 마도서 숙련도·업화 단계
+  '마도서 숙련도': 'Grimoire Mastery',
+  '다음 해금': 'Next unlock',
+  '모든 해금 완료': 'Everything unlocked',
+  '영구 해금': 'Permanent unlock',
+  '전설 카드': 'Legendary card',
+  '시작 주문서': 'Starting grimoire',
+  '없음': 'None',
+  '업화 단계': 'Inferno Level',
+  '업화 {n}단계': 'Inferno {n}',
+  '기본 난이도': 'Base difficulty',
+  '이 단계 최고 기록': 'Best time at this level',
+  '기록 없음': 'No record',
+  '몬스터 체력 +15%': 'Monster health +15%',
+  '10스테이지 이후 보스 광폭화 시간 -10%': 'Boss enrage timer -10% (stage 10+)',
+  '카드 다시 뽑기 비용 +50%': 'Card redraw cost +50%',
+  '보스 체력 +20%': 'Boss health +20%',
+  '일반 웨이브 각성 카드 선택지 3장 → 2장': 'Normal wave card choices: 3 → 2',
+  '10스테이지 이후 보스 광폭화 시간 -10% 추가': 'Boss enrage timer -10% more (stage 10+)',
+  '최종 보스 불의 심장 보호막 +50%': "Final boss Heart of Fire shield +50%",
+  '모든 몬스터 체력 +20% 추가': 'All monster health +20% more'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

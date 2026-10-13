@@ -133,3 +133,56 @@
 .card-icon .paper-card-icon { width: 64px; height: 64px; }
 .vampire-deck-icon .paper-card-icon { width: 24px; height: 24px; border-radius: 3px; }
 .vtt-icon .paper-card-icon { width: 30px; height: 30px; }
+
+/* ===== 클리어 후 콘텐츠 (meta-ui.js) =====
+   숙련도 막대는 부드러운 감속으로 차고, 해금 칩·획득 경험치는 오버슈트로 튀어나옵니다. 모션 감소 설정에서는 즉시 표시합니다. */
+.run-progress { margin: -6px 0 16px; padding: 10px 12px; border: 1px solid #8b7055; border-radius: 10px; background: #1b1519e8; text-align: left; box-shadow: inset 0 1px 0 #ffffff12; }
+.rp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.rp-title { font-size: .82rem; color: #f3d391; font-weight: 700; }
+.rp-level { display: inline-block; margin-left: 4px; color: #fff4dc; }
+.rp-level.rp-level-up { animation: rpPop .55s cubic-bezier(0.34, 1.56, 0.64, 1); color: #fde68a; text-shadow: 0 0 8px #f59e0b; }
+.rp-gain { font-size: .8rem; font-weight: 800; color: #86efac; animation: rpPop .5s cubic-bezier(0.34, 1.56, 0.64, 1) .35s both; }
+.rp-bar { position: relative; height: 10px; border-radius: 99px; background: #0d0a0e; border: 1px solid #5c4636; overflow: hidden; }
+.rp-fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #b45309, #f59e0b 60%, #fde68a); box-shadow: 0 0 8px #f59e0b99; }
+.rp-next { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .74rem; color: #cbbfae; }
+.rp-next-icon .paper-card-icon { width: 26px; height: 26px; }
+.rp-next-text { flex: 1; min-width: 0; }
+.rp-next-text small, .rp-unlock-text small { display: block; font-size: .66rem; color: #9b8f7f; }
+.rp-next-xp { font-variant-numeric: tabular-nums; color: #f3d391; white-space: nowrap; }
+.rp-done { color: #fde68a; }
+.rp-unlocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px; margin-top: 7px; }
+.rp-unlocks:empty { display: none; }
+.rp-unlock { display: flex; align-items: center; gap: 9px; padding: 6px 9px; border-radius: 8px; border: 1px solid #f59e0b; background: linear-gradient(90deg, #3b2412, #1f1712); box-shadow: 0 0 12px #f59e0b55; animation: rpUnlock .6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.rp-unlock-icon .paper-card-icon { width: 34px; height: 34px; }
+.rp-unlock-text b { color: #fff4dc; font-size: .82rem; }
+.rp-unlock-inferno { border-color: #ef4444; background: linear-gradient(90deg, #3f1414, #1f1212); box-shadow: 0 0 14px #ef444466; }
+.rp-flame { font-size: 1.5rem; }
+@keyframes rpPop { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes rpUnlock { 0% { transform: translateY(8px) scale(.85); opacity: 0; } 65% { transform: translateY(-2px) scale(1.04); opacity: 1; } 100% { transform: none; } }
+
+.run-setup { margin: 4px 0 12px; padding: 10px 12px; border: 1px dashed #8b7055; border-radius: 10px; background: #17121ae0; text-align: left; }
+.rs-row { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.rs-row + .rs-row, .rs-best + .rs-row { margin-top: 9px; }
+.rs-label { width: 100%; font-size: .74rem; font-weight: 700; color: #f3d391; margin-bottom: 2px; }
+.rs-pip { min-width: 30px; height: 30px; padding: 0 4px; border-radius: 7px; border: 1px solid #5c4636; background: #241b22; color: #f1e2c9; font-size: .85rem; cursor: pointer; transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .2s; }
+.rs-pip.open { opacity: .55; }
+.rs-pip.lit { opacity: 1; border-color: #f59e0b; background: #3b2412; box-shadow: 0 0 8px #f59e0b66; }
+.rs-pip.locked { opacity: .3; cursor: not-allowed; }
+.rs-pip:not(:disabled):hover { transform: translateY(-2px) scale(1.08); }
+.rs-rules { margin: 7px 0 0; padding-left: 18px; font-size: .7rem; color: #cbbfae; line-height: 1.5; }
+.rs-rules .rs-rule-new { color: #fca5a5; font-weight: 700; }
+.rs-best { margin-top: 5px; font-size: .72rem; color: #cbbfae; }
+.rs-best b { color: #fde68a; font-variant-numeric: tabular-nums; }
+.rs-spell { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #5c4636; background: #241b22; color: #cbbfae; cursor: pointer; display: grid; place-items: center; transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.rs-spell .paper-card-icon { width: 32px; height: 32px; box-shadow: none; }
+.rs-spell.on { border-color: #f59e0b; box-shadow: 0 0 10px #f59e0b88; background: #3b2412; }
+.rs-spell:hover { transform: translateY(-2px) scale(1.06); }
+
+/* 전투 화면 업화 배지: 스테이지 표시 옆의 작은 불꽃 */
+.inferno-badge { display: inline-flex; align-items: center; padding: 1px 6px; margin-left: 2px; border-radius: 99px; border: 1px solid #ef4444; background: #3f1414; color: #fecaca; font-size: .74rem; font-weight: 800; box-shadow: 0 0 8px #ef444466; }
+.inferno-badge[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-gain, .rp-unlock, .rp-level.rp-level-up { animation: none; }
+  .rs-pip, .rs-spell { transition: none; }
+}

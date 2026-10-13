@@ -21,6 +21,8 @@ function jsKeys() {
     for (const m of source.matchAll(/\b(?:tr|t)\(\s*(['`])((?:\\.|(?!\1).)*?)\1/g)) {
       if (KO.test(m[2])) keys.add(m[2].replace(/\\'/g, "'"));
     }
+    // 표 데이터의 화면 문구(meta-progression.js 업화 규칙 text)는 tr(rule.text)로 번역됩니다.
+    if (file === 'meta-progression.js') for (const m of source.matchAll(/\btext:\s*'([^']*)'/g)) keys.add(m[1]);
   }
   return keys;
 }

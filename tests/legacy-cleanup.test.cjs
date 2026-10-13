@@ -58,7 +58,7 @@ function loadStatsAndSave(state) {
     saveStorage: { read: (k) => storage[k] ?? null, write: (k, v) => { storage[k] = v; } },
     deckManager: { getActiveDeck: () => ({ util_gold_greed: 1 }), restoreDeck: (deck) => restored.push(deck) }
   });
-  vm.runInContext(statsCode + saveCode, context);
+  vm.runInContext(read('src/scripts/meta-progression.js') + statsCode + saveCode, context);
   return { context, storage, restored };
 }
 

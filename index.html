@@ -143,6 +143,7 @@
 
           <div class="arena-stage-reward-banner" id="arena-stage-banner">
             <span class="monster-stage-mini" id="target-stage-tag">STAGE 1-1</span>
+            <span class="inferno-badge" id="inferno-badge" hidden>🔥0</span>
             <span class="banner-sep">|</span>
             <span class="monster-reward" id="target-reward">💰 4 G</span>
           </div>
@@ -306,6 +307,9 @@
         불타는 심연의 지배자를 물리치고 세상 최고의 대마법사 반열에 올랐습니다!
       </p>
 
+      <!-- 마도서 숙련도: 실패해도 쌓이는 영구 진행과 해금 연출 (meta-ui.js) -->
+      <div class="run-progress" id="run-progress" hidden></div>
+
       <!-- 스피드런 이번 기록 vs 최단시간 비교 보드 -->
       <div class="speedrun-comparison-board" id="speedrun-comparison-board">
         <div class="speedrun-board-header">
@@ -337,6 +341,9 @@
         </div>
         <div class="victory-logs-bars" id="victory-logs-bars"></div>
       </div>
+
+      <!-- 새 런 설정: 업화 단계·시작 주문서 (해금된 뒤에만 표시) -->
+      <div class="run-setup" id="run-setup" hidden></div>
 
       <div class="victory-actions speedrun-actions">
         <button type="button" class="btn-top" id="btn-victory-export-telemetry" title="스피드런 런 동안의 상세 밸런스 로그를 복사합니다">📋 밸런스 로그 복사</button>
@@ -391,8 +398,10 @@
   <script src="src/scripts/monster-motion.js?v=final-boss-1"></script>
   <script src="src/scripts/skill-tooltips.js?v=i18n-1"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
-  <script src="src/scripts/roguelike-deck.js?v=i18n-1"></script>
+  <script src="src/scripts/roguelike-deck.js?v=meta-1"></script>
   <script src="src/scripts/save-storage.js?v=desktop-save-1"></script>
-  <script src="src/scripts/game.js?v=i18n-1"></script>
+  <script src="src/scripts/meta-progression.js?v=meta-1"></script>
+  <script src="src/scripts/meta-ui.js?v=meta-1"></script>
+  <script src="src/scripts/game.js?v=meta-1"></script>
 </body>
 </html>

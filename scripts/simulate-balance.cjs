@@ -8,6 +8,8 @@
  *
  * 사용법: node scripts/simulate-balance.cjs [--runs 20] [--policy greedy|random|rapid|crit|summon|burn|all] [--seed 1]
  *        node scripts/simulate-balance.cjs --calibrate [--runs 30] [--policy greedy]
+ *        클리어 후 콘텐츠: [--level 0~8] [--locked] [--start fireblast|meteor|combustion|flame_patch]
+ *          --level 업화 단계, --locked 숙련도 0(전설 카드 잠김, 첫 런 조건), --start 시작 주문서
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
  *                "목표 시간에 맞는 HP = 중앙값 DPS x 목표 시간"을 제안합니다.
  */
@@ -22,6 +24,10 @@ const RUNS = Number(argValue('runs', 20));
 const POLICY = argValue('policy', 'all');
 const BASE_SEED = Number(argValue('seed', 1));
 const CALIBRATE = args.includes('--calibrate');
+// 클리어 후 콘텐츠: --level 업화 단계(0~8), --locked 숙련도 0(첫 런처럼 전설 카드 잠김), --start 시작 주문서
+const LEVEL = Number(argValue('level', 0));
+const LOCKED = args.includes('--locked');
+const START_SPELL = argValue('start', '');
 const FRAME = 1 / 30;
 
 // 목표 처치 시간(초): 픽 전략 greedy의 중앙값 기준, 첫 클리어 약 13분 (일반 진행·카드 선택 포함 15분 내외)
@@ -73,6 +79,12 @@ function simulateRun(policyName, seed) {
   let reactTimer = 0;
   let failedAt = null;
   const st = g.run('state');
+  // 런 조건: 업화 단계·카드 잠금·시작 주문서를 실제 게임의 새 런과 같은 경로(restartSpeedrunRun)로 적용합니다.
+  st.meta.infernoUnlocked = LEVEL;
+  st.meta.infernoSelected = LEVEL;
+  st.meta.xp = LOCKED ? 0 : 1e9;
+  st.meta.startSpell = START_SPELL || null;
+  g.run('restartSpeedrunRun()');
   const calib = [];
   let calibStage = 0;
   let calibDamageStart = 0;
@@ -153,8 +165,10 @@ const fmtSec = (sec) => (Number.isFinite(sec) ? `${Math.floor(sec / 60)}:${Strin
 function report(policyName) {
   const runs = [];
   for (let i = 0; i < RUNS; i++) runs.push(simulateRun(policyName, BASE_SEED + i));
+  // --verbose: 런마다 시드·총 시간·돌파 스테이지·실패 위치를 출력합니다.
+  if (args.includes('--verbose')) runs.forEach((r, i) => console.log(`  run seed ${BASE_SEED + i}: ${fmtSec(r.totalSec)} · 돌파 ${r.stages.length} · 실패 ${r.failedAt ?? '-'} · 스테이지별(초) ${r.stages.map((s) => Math.round(s.ttk)).join(' ')}`));
 
-  console.log(`\n=== 전략: ${policyName} (${RUNS}회) ===`);
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''} ===`);
   console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
   for (let stage = 1; stage <= 20; stage++) {
     const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);

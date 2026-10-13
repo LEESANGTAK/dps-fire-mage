@@ -599,6 +599,8 @@
         const currentCount = activeDeck[card.id] || 0;
         if (currentCount >= card.maxStack) return false;
         if (card.spellKey && st && st.grimoires && st.grimoires[card.spellKey]) return false;
+        // 마도서 숙련도로 아직 열지 못한 카드(meta-progression.js)
+        if (st && Array.isArray(st.lockedCards) && st.lockedCards.includes(card.id)) return false;
         if (typeof card.req === 'function') {
           if (!card.req(st, activeDeck)) return false;
         }
@@ -665,7 +667,7 @@
     }
 
     // 리롤 수행 (골드 차감 성공 시)
-    function reroll(gameState, isBossWave = false, baseCost = 10) {
+    function reroll(gameState, isBossWave = false, baseCost = 10, count = 3) {
       const cost = getRerollCost(baseCost);
       if ((gameState.gold || 0) < cost) {
         return { success: false, reason: typeof tr === 'function' ? tr('골드가 부족합니다.') : '골드가 부족합니다.' };
@@ -673,7 +675,7 @@
 
       gameState.gold -= cost;
       rerollCount++;
-      const newChoices = drawChoices(3, isBossWave, gameState);
+      const newChoices = drawChoices(count, isBossWave, gameState);
 
       return {
         success: true,
