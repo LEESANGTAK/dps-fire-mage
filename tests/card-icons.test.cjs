@@ -35,6 +35,6 @@ assert.ok(!/isRatio/.test(game), '치명 피해를 배율로 보고 100배 하�
 
 // 4. 화상 빌드 카드도 빌드 이름표를 가집니다.
 assert.ok(game.includes("RoguelikeDeck.BUILD.BURN"), '각성 카드에 화상 빌드 이름표가 있어야 합니다.');
-assert.ok(/burn: '♨️ 화상 확산'/.test(game), '덱 툴팁에 화상 빌드 이름표가 있어야 합니다.');
+assert.ok(game.includes("burn: tr('♨️ 화상 확산')"), '덱 툴팁에 화상 빌드 이름표가 있어야 합니다.');
 
 console.log(`각성 카드 ${cardIds.length}종 종이 아이콘 지정·이모지 제거, 덱 툴팁 스탯 ${statKeys.size}종 표기, 화상 빌드 이름표 검증 통과`);

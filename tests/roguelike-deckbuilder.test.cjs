@@ -390,7 +390,7 @@ test('Step 15: 최종 보스 세계관/스토리 및 파멸 저지 진척도 UI 
     assert.ok(!html.includes(banned) && !gameSource.includes(banned), `${banned} 표기가 남아 있으면 안 됩니다.`);
   }
   // HTML 속 보스 이름은 FINAL_BOSS 정의와 일치해야 합니다(실행 시 applyFinalBossNames가 동기화).
-  assert.ok(gameSource.includes("const FINAL_BOSS = { name: '이그나르크'"), 'FINAL_BOSS 이름 정의가 HTML 기본 문구와 일치해야 합니다.');
+  assert.ok(gameSource.includes("const FINAL_BOSS = { name: tr('이그나르크')"), 'FINAL_BOSS 이름 정의가 HTML 기본 문구와 일치해야 합니다.');
 
   // 3. game.js 연동 무결성 검증
   assert.ok(gameSource.includes('function updateDoomProgressUI('), 'updateDoomProgressUI 함수가 정의되어 있어야 합니다.');

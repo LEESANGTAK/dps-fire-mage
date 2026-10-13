@@ -7,38 +7,38 @@
 const SAVE_KEY = 'MAGE_SLAYER_STAGE_SAVE_V7';
 
 // 최종 보스 이름은 이곳에서만 정의합니다. 화면 문구(HTML의 .final-boss-name 포함)는 모두 이 값을 따릅니다.
-const FINAL_BOSS = { name: '이그나르크', title: '잿불의 폭군 이그나르크' };
+const FINAL_BOSS = { name: tr('이그나르크'), title: tr('잿불의 폭군 이그나르크') };
 
 // ==========================================
 // 1. 스테이지 몬스터 데이터베이스 (5스테이지 = 1페이즈)
 // ==========================================
 const STAGE_MONSTERS = [
   // PHASE 1 (Stage 1 ~ 5)
-  { stage: 1, name: '초원 풀숲 슬라임', emoji: '🟢', hp: 500, gold: 4, firstBonus: 2 },
-  { stage: 2, name: '푸른 늪지 슬라임', emoji: '🔵', hp: 1050, gold: 7, firstBonus: 4 },
-  { stage: 3, name: '들판 거대 들쥐', emoji: '🐀', hp: 1800, gold: 12, firstBonus: 8 },
-  { stage: 4, name: '고블린 정찰병', emoji: '👺', hp: 2750, gold: 20, firstBonus: 14 },
-  { stage: 5, name: '붉은송곳니 군주', emoji: '🐗', hp: 8200, gold: 35, firstBonus: 35, enrage: 110 },
+  { stage: 1, name: tr('초원 풀숲 슬라임'), emoji: '🟢', hp: 500, gold: 4, firstBonus: 2 },
+  { stage: 2, name: tr('푸른 늪지 슬라임'), emoji: '🔵', hp: 1050, gold: 7, firstBonus: 4 },
+  { stage: 3, name: tr('들판 거대 들쥐'), emoji: '🐀', hp: 1800, gold: 12, firstBonus: 8 },
+  { stage: 4, name: tr('고블린 정찰병'), emoji: '👺', hp: 2750, gold: 20, firstBonus: 14 },
+  { stage: 5, name: tr('붉은송곳니 군주'), emoji: '🐗', hp: 8200, gold: 35, firstBonus: 35, enrage: 110 },
 
   // PHASE 2 (Stage 6 ~ 10)
-  { stage: 6, name: '잿빛 숲 늑대', emoji: '🐺', hp: 5700, gold: 52, firstBonus: 40 },
-  { stage: 7, name: '놀 야수사냥꾼', emoji: '🏹', hp: 7550, gold: 80, firstBonus: 60 },
-  { stage: 8, name: '폐광 해골 광부', emoji: '💀', hp: 9350, gold: 125, firstBonus: 90 },
-  { stage: 9, name: '맹독 모래전갈', emoji: '🦂', hp: 11800, gold: 190, firstBonus: 140 },
-  { stage: 10, name: '동굴 오우거 대족장', emoji: '👹', hp: 28500, gold: 300, firstBonus: 260, enrage: 160 },
+  { stage: 6, name: tr('잿빛 숲 늑대'), emoji: '🐺', hp: 5700, gold: 52, firstBonus: 40 },
+  { stage: 7, name: tr('놀 야수사냥꾼'), emoji: '🏹', hp: 7550, gold: 80, firstBonus: 60 },
+  { stage: 8, name: tr('폐광 해골 광부'), emoji: '💀', hp: 9350, gold: 125, firstBonus: 90 },
+  { stage: 9, name: tr('맹독 모래전갈'), emoji: '🦂', hp: 11800, gold: 190, firstBonus: 140 },
+  { stage: 10, name: tr('동굴 오우거 대족장'), emoji: '👹', hp: 28500, gold: 300, firstBonus: 260, enrage: 160 },
 
   // PHASE 3 (Stage 11 ~ 15)
-  { stage: 11, name: '화염 비늘 도마뱀', emoji: '🦎', hp: 18600, gold: 460, firstBonus: 350 },
-  { stage: 12, name: '심연 흡혈박쥐', emoji: '🦇', hp: 23000, gold: 700, firstBonus: 500 },
-  { stage: 13, name: '고대 바위 파수꾼', emoji: '🗿', hp: 27800, gold: 1050, firstBonus: 800 },
-  { stage: 14, name: '타락한 어둠마법사', emoji: '🧙', hp: 33000, gold: 1600, firstBonus: 1200 },
-  { stage: 15, name: '붉은 화염 비룡', emoji: '🐉', hp: 75000, gold: 2500, firstBonus: 2200, enrage: 210 },
+  { stage: 11, name: tr('화염 비늘 도마뱀'), emoji: '🦎', hp: 18600, gold: 460, firstBonus: 350 },
+  { stage: 12, name: tr('심연 흡혈박쥐'), emoji: '🦇', hp: 23000, gold: 700, firstBonus: 500 },
+  { stage: 13, name: tr('고대 바위 파수꾼'), emoji: '🗿', hp: 27800, gold: 1050, firstBonus: 800 },
+  { stage: 14, name: tr('타락한 어둠마법사'), emoji: '🧙', hp: 33000, gold: 1600, firstBonus: 1200 },
+  { stage: 15, name: tr('붉은 화염 비룡'), emoji: '🐉', hp: 75000, gold: 2500, firstBonus: 2200, enrage: 210 },
 
   // PHASE 4 (Stage 16 ~ 20)
-  { stage: 16, name: '저주받은 기사단원', emoji: '⚔️', hp: 54400, gold: 3800, firstBonus: 3000 },
-  { stage: 17, name: '원한 서린 밴시', emoji: '👻', hp: 69000, gold: 5800, firstBonus: 4500 },
-  { stage: 18, name: '지하군주 거대거미', emoji: '🕷️', hp: 92000, gold: 8800, firstBonus: 7000 },
-  { stage: 19, name: '심연의 파멸 집행자', emoji: '👿', hp: 109000, gold: 13500, firstBonus: 11000 },
+  { stage: 16, name: tr('저주받은 기사단원'), emoji: '⚔️', hp: 54400, gold: 3800, firstBonus: 3000 },
+  { stage: 17, name: tr('원한 서린 밴시'), emoji: '👻', hp: 69000, gold: 5800, firstBonus: 4500 },
+  { stage: 18, name: tr('지하군주 거대거미'), emoji: '🕷️', hp: 92000, gold: 8800, firstBonus: 7000 },
+  { stage: 19, name: tr('심연의 파멸 집행자'), emoji: '👿', hp: 109000, gold: 13500, firstBonus: 11000 },
   { stage: 20, name: FINAL_BOSS.title, emoji: '🔥', hp: 225000, gold: 22000, firstBonus: 25000, enrage: 270 }
 ];
 
@@ -188,13 +188,13 @@ const state = {
 
   dpsHistory: [],
   skillDamage: {
-    fireball: { name: '🔥 화염구', dmg: 0, hits: 0, crits: 0, color: '#f97316' },
-    fireblast: { name: '💥 불꽃 작렬', dmg: 0, hits: 0, crits: 0, color: '#fbbf24' },
-    ignite: { name: '🩸 화상 (도트)', dmg: 0, hits: 0, crits: 0, color: '#ff8000' },
-    meteor: { name: '☄️ 메테오', dmg: 0, hits: 0, crits: 0, color: '#a855f7' },
-    flame_patch: { name: '♨️ 불장판', dmg: 0, hits: 0, crits: 0, color: '#fb923c' },
-    summon_elem: { name: '🔥 불의 정령', dmg: 0, hits: 0, crits: 0, color: '#fb7185' },
-    summon_phoenix: { name: '🦅 불사조', dmg: 0, hits: 0, crits: 0, color: '#facc15' }
+    fireball: { name: tr('🔥 화염구'), dmg: 0, hits: 0, crits: 0, color: '#f97316' },
+    fireblast: { name: tr('💥 불꽃 작렬'), dmg: 0, hits: 0, crits: 0, color: '#fbbf24' },
+    ignite: { name: tr('🩸 화상 (도트)'), dmg: 0, hits: 0, crits: 0, color: '#ff8000' },
+    meteor: { name: tr('☄️ 메테오'), dmg: 0, hits: 0, crits: 0, color: '#a855f7' },
+    flame_patch: { name: tr('♨️ 불장판'), dmg: 0, hits: 0, crits: 0, color: '#fb923c' },
+    summon_elem: { name: tr('🔥 불의 정령'), dmg: 0, hits: 0, crits: 0, color: '#fb7185' },
+    summon_phoenix: { name: tr('🦅 불사조'), dmg: 0, hits: 0, crits: 0, color: '#facc15' }
   },
 
   // 스피드런 결과창 전투 기록
@@ -241,17 +241,9 @@ function getPlayerStats() {
   };
 }
 
+// 큰 수 표기: 한국어는 만·억, 영어는 K·M 단위(i18n.js의 I18N.formatNumber).
 function fmt(num) {
-  if (num < 1000) return Math.round(num).toLocaleString('ko-KR');
-  if (num < 10000) return num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const units = ['', '만', '억', '조', '경'];
-  let unitIdx = 0;
-  let val = num;
-  while (val >= 10000 && unitIdx < units.length - 1) {
-    val /= 10000;
-    unitIdx++;
-  }
-  return `${val.toFixed(val >= 100 ? 1 : 2)}${units[unitIdx]}`;
+  return I18N.formatNumber(num);
 }
 
 // ==========================================
@@ -282,8 +274,8 @@ fireballCastAudio.loop = true;
 fireballCastAudio.volume = 0.58;
 
 const BGM_TRACKS = [
-  { title: '선술집의 변덕 A', src: 'assets/sounds/bgm/Tavern Whimsy.mp3' },
-  { title: '선술집의 변덕 B', src: 'assets/sounds/bgm/Tavern Whimsy (1).mp3' }
+  { title: tr('선술집의 변덕 A'), src: 'assets/sounds/bgm/Tavern Whimsy.mp3' },
+  { title: tr('선술집의 변덕 B'), src: 'assets/sounds/bgm/Tavern Whimsy (1).mp3' }
 ];
 const bgmAudios = [];
 let currentBgmIndex = -1;
@@ -504,32 +496,32 @@ function updateSoundUI() {
 
   const soundBtn = document.getElementById('btn-sound');
   if (soundBtn) {
-    soundBtn.textContent = isAllMuted ? '🔇 음소거' : '🔊 사운드';
+    soundBtn.textContent = isAllMuted ? tr('🔇 음소거') : tr('🔊 사운드');
   }
 
   const muteAllBtn = document.getElementById('btn-sound-mute-all');
   if (muteAllBtn) {
-    muteAllBtn.textContent = state.soundOn ? '🔊 켜짐' : '🔇 음소거됨';
+    muteAllBtn.textContent = state.soundOn ? tr('🔊 켜짐') : tr('🔇 음소거됨');
     muteAllBtn.classList.toggle('muted', !state.soundOn);
   }
 
   const bgmSlider = document.getElementById('slider-bgm-vol');
   const bgmValEl = document.getElementById('ui-bgm-vol-val');
   if (bgmSlider) bgmSlider.value = String(bgmPct);
-  if (bgmValEl) bgmValEl.textContent = state.soundOn ? `${bgmPct}%` : '음소거';
+  if (bgmValEl) bgmValEl.textContent = state.soundOn ? `${bgmPct}%` : tr('음소거');
 
   const sfxSlider = document.getElementById('slider-sfx-vol');
   const sfxValEl = document.getElementById('ui-sfx-vol-val');
   if (sfxSlider) sfxSlider.value = String(sfxPct);
-  if (sfxValEl) sfxValEl.textContent = state.soundOn ? `${sfxPct}%` : '음소거';
+  if (sfxValEl) sfxValEl.textContent = state.soundOn ? `${sfxPct}%` : tr('음소거');
 
   const bgmTrackTitleEl = document.getElementById('ui-bgm-title');
   if (bgmTrackTitleEl) {
     if (currentBgmIndex >= 0 && currentBgmIndex < BGM_TRACKS.length) {
       bgmTrackTitleEl.textContent = `🎲 ${BGM_TRACKS[currentBgmIndex].title}`;
-      bgmTrackTitleEl.title = `현재 트랙: ${BGM_TRACKS[currentBgmIndex].title} (${currentBgmIndex + 1}/${BGM_TRACKS.length})`;
+      bgmTrackTitleEl.title = tr('현재 트랙: {title} ({n}/{total})', { title: BGM_TRACKS[currentBgmIndex].title, n: currentBgmIndex + 1, total: BGM_TRACKS.length });
     } else {
-      bgmTrackTitleEl.textContent = '🎲 랜덤 재생';
+      bgmTrackTitleEl.textContent = tr('🎲 랜덤 재생');
     }
   }
 }
@@ -921,7 +913,7 @@ function drawSummonsAndAuras(dt) {
       if (sIdx === 0) {
         ctx.font = 'bold 10px Pretendard, sans-serif';
         ctx.fillStyle = '#fed7aa';
-        ctx.fillText(elemLv > 1 ? `불의 정령 x${elemLv}` : `불의 정령`, 0, Math.round(24 * cfg.scale));
+        ctx.fillText(elemLv > 1 ? tr('불의 정령 x{n}', { n: elemLv }) : tr('불의 정령'), 0, Math.round(24 * cfg.scale));
       }
 
       ctx.restore();
@@ -1913,7 +1905,7 @@ function onMonsterKilled() {
       if (duration < prevBest) {
         state.bossClearTimes[state.currentStage] = duration;
         // 보스 토벌 신기록 경신 연출 (단축 축하 팡파르)
-        spawnFloatingText(`⚡ 보스 기록 단축! -${diff.toFixed(2)}초 (${duration.toFixed(2)}s)`, 'fct-crit', -70, { isBig: true });
+        spawnFloatingText(tr('⚡ 보스 기록 단축! -{diff}초 ({dur}s)', { diff: diff.toFixed(2), dur: duration.toFixed(2) }), 'fct-crit', -70, { isBig: true });
         triggerSpeedrunRecordFlash();
         playSound('proc', 1.25);
       }
@@ -1929,7 +1921,7 @@ function onMonsterKilled() {
     totalGold += data.firstBonus;
 
     if (data.isPhaseBoss) {
-      spawnFloatingText('👑 보스 격파!', 'fct-proc', -60);
+      spawnFloatingText(tr('👑 보스 격파!'), 'fct-proc', -60);
       playSound('proc');
     }
   }
@@ -1948,7 +1940,7 @@ function onMonsterKilled() {
     if (isNewRecord) {
       state.bestSpeedrunTime = curTime;
       triggerSpeedrunRecordFlash();
-      spawnFloatingText(`🏆 ${FINAL_BOSS.name} 스피드런 신기록! (${formatSpeedrunTime(curTime)})`, 'fct-crit', -90, { isBig: true });
+      spawnFloatingText(tr('🏆 {boss} 스피드런 신기록! ({time})', { boss: FINAL_BOSS.name, time: formatSpeedrunTime(curTime) }), 'fct-crit', -90, { isBig: true });
     }
   }
 
@@ -1980,7 +1972,7 @@ function onMonsterKilled() {
     state.isPaused = true;
     playSound('proc');
     spawnFloatingText(
-      isFirstFinalBossKill ? `👑 ${FINAL_BOSS.title} 최초 토벌!` : `👑 ${FINAL_BOSS.title} 토벌 완료!`,
+      isFirstFinalBossKill ? tr('👑 {boss} 최초 토벌!', { boss: FINAL_BOSS.title }) : tr('👑 {boss} 토벌 완료!', { boss: FINAL_BOSS.title }),
       'fct-crit',
       -60,
       { isBig: true }
@@ -2002,7 +1994,7 @@ function onMonsterKilled() {
       loadStage(clearedStage + 1);
       const nextData = getStageData(state.currentStage);
       spawnFloatingText(
-        nextData.isPhaseBoss ? '👑 보스 구역 자동 진입!' : '🚀 다음 도전 자동 진입!',
+        nextData.isPhaseBoss ? tr('👑 보스 구역 자동 진입!') : tr('🚀 다음 도전 자동 진입!'),
         'fct-proc',
         -50
       );
@@ -2034,7 +2026,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       bg.shieldTimer = 0;
       triggerArenaShake('lg');
       playSound('meteor_impact');
-      spawnFloatingText('💥 불의 심장 파괴! 화염 역류!', 'fct-crit', -50, { isBig: true });
+      spawnFloatingText(tr('💥 불의 심장 파괴! 화염 역류!'), 'fct-crit', -50, { isBig: true });
       rawDamage *= 1.5;
     }
   }
@@ -2210,7 +2202,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       state.combat.meteorCdRem = 0;
       state.combat.combustionCdRem = 0;
       state.combat.flamePatchCdRem = 0;
-      spawnFloatingText('🪶 불사조의 가호! 전 스킬 쿨다운 초기화!', 'fct-proc', -55, { isBig: true, anchor: 'caster' });
+      spawnFloatingText(tr('🪶 불사조의 가호! 전 스킬 쿨다운 초기화!'), 'fct-proc', -55, { isBig: true, anchor: 'caster' });
       playSound('proc');
     }
   }
@@ -2611,14 +2603,14 @@ function toggleSkillAuto(skillKey) {
   playSound('item_select');
   const isAuto = state.skillAuto[skillKey];
   const nameMap = {
-    fireball: '화염구',
-    fireblast: '불꽃 작렬',
-    meteor: '메테오',
-    combustion: '마력 폭주',
-    flame_patch: '불장판'
+    fireball: tr('화염구'),
+    fireblast: tr('불꽃 작렬'),
+    meteor: tr('메테오'),
+    combustion: tr('마력 폭주'),
+    flame_patch: tr('불장판')
   };
   const skillName = nameMap[skillKey] || skillKey;
-  spawnFloatingText(`${skillName}: ${isAuto ? '🤖 자동' : '✋ 수동'}`, isAuto ? 'fct-normal' : 'fct-crit', -35, { anchor: 'caster' });
+  spawnFloatingText(`${skillName}: ${isAuto ? tr('🤖 자동') : tr('✋ 수동')}`, isAuto ? 'fct-normal' : 'fct-crit', -35, { anchor: 'caster' });
   updateSkillAutoUI();
   saveGame();
 }
@@ -2639,7 +2631,7 @@ function updateSkillAutoUI() {
     if (!badge) {
       badge = document.createElement('span');
       badge.className = 'skill-auto-badge';
-      badge.setAttribute('title', '자동/수동 전환 (클릭 또는 우클릭)');
+      badge.setAttribute('title', tr('자동/수동 전환 (클릭 또는 우클릭)'));
       badge.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -2650,8 +2642,8 @@ function updateSkillAutoUI() {
     if (badge) {
       badge.classList.toggle('is-auto', isAuto);
       badge.classList.toggle('is-manual', !isAuto);
-      badge.textContent = isAuto ? 'AUTO' : '수동';
-      badge.setAttribute('aria-label', `${isAuto ? '자동' : '수동'} 시전 모드`);
+      badge.textContent = isAuto ? 'AUTO' : tr('수동');
+      badge.setAttribute('aria-label', isAuto ? tr('자동 시전 모드') : tr('수동 시전 모드'));
     }
     btn.classList.toggle('manual-mode-active', !isAuto);
   }
@@ -2771,7 +2763,7 @@ function checkAndTriggerUnfolds(silent = false) {
     u.awakening = true;
     changed = true;
     if (!silent) {
-      showUnfoldToast('🔥 마도서 각성 시스템 개방!', '웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!');
+      showUnfoldToast(tr('🔥 마도서 각성 시스템 개방!'), tr('웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!'));
     }
   }
 
@@ -2810,11 +2802,11 @@ function applyUnfoldedVisibility() {
 }
 
 const SPELL_ACTION_CONFIG = {
-  fireball: { id: 'skill-1', icon: '🔥', name: '화염구' },
-  fireblast: { id: 'skill-2', icon: '💥', name: '불꽃 작렬' },
-  meteor: { id: 'skill-3', icon: '☄️', name: '메테오' },
-  combustion: { id: 'skill-4', icon: '☀️', name: '마력 폭주' },
-  flame_patch: { id: 'skill-6', icon: '♨️', name: '불장판' }
+  fireball: { id: 'skill-1', icon: '🔥', name: tr('화염구') },
+  fireblast: { id: 'skill-2', icon: '💥', name: tr('불꽃 작렬') },
+  meteor: { id: 'skill-3', icon: '☄️', name: tr('메테오') },
+  combustion: { id: 'skill-4', icon: '☀️', name: tr('마력 폭주') },
+  flame_patch: { id: 'skill-6', icon: '♨️', name: tr('불장판') }
 };
 
 function getActiveSpellList() {
@@ -2876,10 +2868,10 @@ function updateSkillActionBarVisibility() {
   if (autoBtn) {
     if (state.autoCast) {
       autoBtn.className = 'auto-cast-btn active has-badge-anchor';
-      if (autoBtnText) autoBtnText.textContent = '🤖 자동: ON';
+      if (autoBtnText) autoBtnText.textContent = tr('🤖 자동: ON');
     } else {
       autoBtn.className = 'auto-cast-btn has-badge-anchor';
-      if (autoBtnText) autoBtnText.textContent = '🤖 자동: OFF';
+      if (autoBtnText) autoBtnText.textContent = tr('🤖 자동: OFF');
     }
   }
 
@@ -2954,7 +2946,7 @@ function updateDoomProgressUI(stageNum) {
   const stageDispEl = document.getElementById('doom-stage-display');
   if (stageDispEl) {
     stageDispEl.textContent = isFinalBattle
-      ? `🔥 최종 결전 ${FINAL_STAGE}/${FINAL_STAGE}`
+      ? tr('🔥 최종 결전 {n}/{n}', { n: FINAL_STAGE })
       : `STAGE ${currentStage} / ${FINAL_STAGE}`;
   }
 
@@ -2980,8 +2972,8 @@ function updateDoomProgressUI(stageNum) {
   const remainEl = document.getElementById('doom-remain-text');
   if (remainEl) {
     remainEl.textContent = isFinalBattle
-      ? `🔥 ${FINAL_BOSS.name} 강림! 지금 세계를 구원하십시오!`
-      : `남은 여정: ${FINAL_STAGE - currentStage} 스테이지`;
+      ? tr('🔥 {boss} 강림! 지금 세계를 구원하십시오!', { boss: FINAL_BOSS.name })
+      : tr('남은 여정: {n} 스테이지', { n: FINAL_STAGE - currentStage });
   }
 
   // 5. 20스테이지 최종 보스전 강조 발광
@@ -3021,7 +3013,7 @@ function updateBossGimmick(dt) {
       if (badge) {
         badge.classList.remove('hidden');
         badge.classList.add('gimmick-shield');
-        badge.textContent = `🌋 용암 보호막 (${fmt(bg.shield)} / ${Math.max(0, bg.shieldTimer).toFixed(1)}s)`;
+        badge.textContent = tr('🌋 용암 보호막 ({hp} / {sec}s)', { hp: fmt(bg.shield), sec: Math.max(0, bg.shieldTimer).toFixed(1) });
       }
       if (bg.shieldTimer <= 0) {
         bg.shield = 0;
@@ -3029,7 +3021,7 @@ function updateBossGimmick(dt) {
         state.monster.hp = Math.min(state.monster.maxHp, state.monster.hp + Math.round(state.monster.maxHp * 0.1));
         triggerArenaShake('lg');
         playSound('meteor_impact');
-        spawnFloatingText(`⚠️ 보호막 폭발! ${FINAL_BOSS.name} 체력 회복!`, 'fct-normal', -35);
+        spawnFloatingText(tr('⚠️ 보호막 폭발! {boss} 체력 회복!', { boss: FINAL_BOSS.name }), 'fct-normal', -35);
       }
     } else {
       if (state.monster.hp <= state.monster.maxHp * 0.3 && !bg.shieldTriggered && !state.monster.isDying) {
@@ -3039,7 +3031,7 @@ function updateBossGimmick(dt) {
         bg.shieldTimer = 10.0;
         triggerArenaShake('lg');
         playSound('proc');
-        spawnFloatingText('🌋 불의 심장 전개! 10초 내 보호막을 파괴하세요!', 'fct-crit', -50, { isBig: true });
+        spawnFloatingText(tr('🌋 불의 심장 전개! 10초 내 보호막을 파괴하세요!'), 'fct-crit', -50, { isBig: true });
       }
       if (badge && bg.shield <= 0) badge.classList.add('hidden');
     }
@@ -3064,9 +3056,9 @@ function formatPlayTime(sec) {
   const mins = Math.floor((totalSec % 3600) / 60);
   const secs = totalSec % 60;
   if (hrs > 0) {
-    return `${hrs}시간 ${mins}분 ${secs}초`;
+    return tr('{h}시간 {m}분 {s}초', { h: hrs, m: mins, s: secs });
   }
-  return `${mins}분 ${secs}초`;
+  return tr('{m}분 {s}초', { m: mins, s: secs });
 }
 
 // ==========================================
@@ -3081,25 +3073,25 @@ function showDeckTooltip(card, targetEl) {
 
   // 최신 CARD_POOL에서 실시간 카드 정보 동기화 (F5 및 엑셀 수정 실시간 반영)
   const liveCard = (deckManager && deckManager.CARD_POOL.find(c => c.id === card.id)) || card;
-  const title = liveCard.title || card.title;
+  const title = cardText(liveCard, 'title') || cardText(card, 'title');
   const icon = liveCard.icon || card.icon;
   const rarity = liveCard.rarity || card.rarity;
   const build = liveCard.build || card.build;
   const maxStack = liveCard.maxStack || card.maxStack || 1;
-  const desc = liveCard.desc || card.desc || '';
+  const desc = cardText(liveCard, 'desc') || cardText(card, 'desc');
   const stats = liveCard.stats || card.stats;
 
   const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[rarity]) || { name: rarity, color: '#94a3b8' };
   const buildNames = {
-    rapid: '⚡ 속사 머신건',
-    crit: '🎯 극치명 누킹',
-    summon: '🔥 정령 군단',
-    burn: '♨️ 화상 확산',
-    utility: '✨ 유틸리티'
+    rapid: tr('⚡ 속사 머신건'),
+    crit: tr('🎯 극치명 누킹'),
+    summon: tr('🔥 정령 군단'),
+    burn: tr('♨️ 화상 확산'),
+    utility: tr('✨ 유틸리티')
   };
   const buildLabel = buildNames[build] || build;
   const isMax = card.count >= maxStack;
-  const stackLabel = isMax ? 'MAX' : `중첩 ${card.count} / ${maxStack}`;
+  const stackLabel = isMax ? 'MAX' : tr('중첩 {n} / {max}', { n: card.count, max: maxStack });
 
   // 누적 스탯 칩 계산
   let statsHtml = '';
@@ -3107,18 +3099,18 @@ function showDeckTooltip(card, targetEl) {
     const chips = [];
     // 카드 스탯은 모두 정수 퍼센트입니다(밸런스 패치 v2).
     const statLabels = {
-      spPct: '주문력',
-      haste: '시전 속도',
-      crit: '치명타율',
-      critDmg: '치명 피해',
-      spiritPct: '소환수 피해',
-      burnPct: '지속 피해'
+      spPct: tr('주문력'),
+      haste: tr('시전 속도'),
+      crit: tr('치명타율'),
+      critDmg: tr('치명 피해'),
+      spiritPct: tr('소환수 피해'),
+      burnPct: tr('지속 피해')
     };
     for (const [key, val] of Object.entries(stats)) {
       const totalVal = typeof val === 'number' ? val * card.count : val;
       const unit = '%';
       const sign = (typeof totalVal === 'number' && totalVal > 0) ? '+' : '';
-      chips.push(`<span class="vtt-stat-chip">${statLabels[key] || key} ${sign}${totalVal}${unit} (누적)</span>`);
+      chips.push(`<span class="vtt-stat-chip">${statLabels[key] || key} ${sign}${totalVal}${unit} ${tr('(누적)')}</span>`);
     }
     if (chips.length > 0) {
       statsHtml = `<div class="vtt-stats">${chips.join('')}</div>`;
@@ -3247,18 +3239,18 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   if (tagEl) {
     const phase = Math.floor((stageNum - 1) / 5) + 1;
     const wave = ((stageNum - 1) % 5) + 1;
-    tagEl.textContent = isBossWave ? `👑 STAGE ${stageNum} 보스 돌파 특별 보상` : `STAGE ${phase}-${wave} 돌파 보상`;
+    tagEl.textContent = isBossWave ? tr('👑 STAGE {n} 보스 돌파 특별 보상', { n: stageNum }) : tr('STAGE {phase}-{wave} 돌파 보상', { phase, wave });
     tagEl.className = isBossWave ? 'awakening-wave-tag boss' : 'awakening-wave-tag';
   }
 
   if (titleEl) {
-    titleEl.textContent = isBossWave ? '👑 마도서 대각성 (Greater Awakening)' : '🔥 마도서 각성 (Grimoire Awakening)';
+    titleEl.textContent = isBossWave ? tr('👑 마도서 대각성 (Greater Awakening)') : tr('🔥 마도서 각성 (Grimoire Awakening)');
   }
 
   if (subEl) {
     subEl.textContent = isBossWave
-      ? '강력한 페이즈 보스를 물리치고 최고위 마력이 개방되었습니다! (희귀/전설 카드 확정 출현)'
-      : '고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!';
+      ? tr('강력한 페이즈 보스를 물리치고 최고위 마력이 개방되었습니다! (희귀/전설 카드 확정 출현)')
+      : tr('고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!');
   }
 
   const choices = deckManager.drawChoices(3, isBossWave, state);
@@ -3279,17 +3271,17 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
 
   container.innerHTML = choices.map((card) => {
     const rarityClass = `rarity-${card.rarity}`;
-    const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: '일반' };
+    const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: tr('일반') };
     const currentCount = activeDeck[card.id] || 0;
-    const stackBadge = currentCount > 0 ? `<div class="card-stack-badge">보유: ${currentCount}/${card.maxStack}</div>` : '';
+    const stackBadge = currentCount > 0 ? `<div class="card-stack-badge">${tr('보유: {n}/{max}', { n: currentCount, max: card.maxStack })}</div>` : '';
 
-    let buildBadgeText = '특수';
+    let buildBadgeText = tr('특수');
     if (typeof RoguelikeDeck !== 'undefined') {
-      if (card.build === RoguelikeDeck.BUILD.RAPID) buildBadgeText = '⚡ 속사 머신건';
-      else if (card.build === RoguelikeDeck.BUILD.CRIT) buildBadgeText = '🎯 극치명 누킹';
-      else if (card.build === RoguelikeDeck.BUILD.SUMMON) buildBadgeText = '🔥 정령 군단';
-      else if (card.build === RoguelikeDeck.BUILD.BURN) buildBadgeText = '♨️ 화상 확산';
-      else if (card.build === RoguelikeDeck.BUILD.UTILITY) buildBadgeText = '✨ 유틸리티';
+      if (card.build === RoguelikeDeck.BUILD.RAPID) buildBadgeText = tr('⚡ 속사 머신건');
+      else if (card.build === RoguelikeDeck.BUILD.CRIT) buildBadgeText = tr('🎯 극치명 누킹');
+      else if (card.build === RoguelikeDeck.BUILD.SUMMON) buildBadgeText = tr('🔥 정령 군단');
+      else if (card.build === RoguelikeDeck.BUILD.BURN) buildBadgeText = tr('♨️ 화상 확산');
+      else if (card.build === RoguelikeDeck.BUILD.UTILITY) buildBadgeText = tr('✨ 유틸리티');
     }
 
     return `
@@ -3297,9 +3289,9 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
         <div class="card-rarity-badge">${rarityMeta.name}</div>
         ${stackBadge}
         <div class="card-icon">${paperCardIconHTML(card)}</div>
-        <div class="card-name">${card.title}</div>
+        <div class="card-name">${cardText(card, 'title')}</div>
         <div class="card-build-tag">${buildBadgeText}</div>
-        <div class="card-desc">${card.desc}</div>
+        <div class="card-desc">${cardText(card, 'desc')}</div>
       </div>
     `;
   }).join('');
@@ -3320,7 +3312,7 @@ function selectAwakeningCard(cardId) {
   const card = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find((c) => c.id === cardId) : null;
   playSound('fireball_impact');
   if (card) {
-    spawnFloatingText(`✨ [${card.title}] 각성 획득!`, 'fct-proc', -60, { isBig: true });
+    spawnFloatingText(tr('✨ [{card}] 각성 획득!', { card: cardText(card, 'title') }), 'fct-proc', -60, { isBig: true });
   }
 
   if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
@@ -3376,7 +3368,7 @@ function handleAwakeningReroll() {
   if (!deckManager) return;
   const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost());
   if (!result.success) {
-    spawnFloatingText('💰 리롤에 필요한 골드가 부족합니다!', 'fct-normal', -40);
+    spawnFloatingText(tr('💰 리롤에 필요한 골드가 부족합니다!'), 'fct-normal', -40);
     return;
   }
 
@@ -3429,23 +3421,23 @@ function openVictoryModal(isFirstVictory = false) {
   const stats = getPlayerStats();
   modal.classList.remove('defeat-mode');
   document.getElementById('victory-crown-badge').textContent = '👑 VICTORY · SPEEDRUN COMPLETE';
-  document.getElementById('btn-speedrun-retry').textContent = '⚡ 다시 스피드런 도전하기 (기록 갱신)';
+  document.getElementById('btn-speedrun-retry').textContent = tr('⚡ 다시 스피드런 도전하기 (기록 갱신)');
   if (isFirstVictory) {
-    titleEl.textContent = `👑 ${FINAL_BOSS.title} 최초 토벌 완료!`;
-    subEl.textContent = '불타는 심연의 지배자를 물리쳤습니다! 다시 도전해 스피드런 기록을 단축해 보세요.';
+    titleEl.textContent = tr('👑 {boss} 최초 토벌 완료!', { boss: FINAL_BOSS.title });
+    subEl.textContent = tr('불타는 심연의 지배자를 물리쳤습니다! 다시 도전해 스피드런 기록을 단축해 보세요.');
   } else {
-    titleEl.textContent = `🏆 ${FINAL_BOSS.name} 스피드런 기록실`;
-    subEl.textContent = '새 런을 시작해 더 빠른 토벌 기록에 도전하세요!';
+    titleEl.textContent = tr('🏆 {boss} 스피드런 기록실', { boss: FINAL_BOSS.name });
+    subEl.textContent = tr('새 런을 시작해 더 빠른 토벌 기록에 도전하세요!');
   }
 
   const lastDur = state.stats?.lastBossKillDuration;
   const lastDiff = state.stats?.lastBossKillDiff;
-  let durStr = '측정 없음';
+  let durStr = tr('측정 없음');
   if (typeof lastDur === 'number' && lastDur > 0) {
     if (typeof lastDiff === 'number' && lastDiff > 0.1) {
-      durStr = `${lastDur.toFixed(1)}초 <span style="color:#4ade80; font-weight:800;">(-${lastDiff.toFixed(1)}초 단축! ⚡)</span>`;
+      durStr = `${tr('{n}초', { n: lastDur.toFixed(1) })} <span style="color:#4ade80; font-weight:800;">${tr('(-{n}초 단축! ⚡)', { n: lastDiff.toFixed(1) })}</span>`;
     } else {
-      durStr = `${lastDur.toFixed(1)}초`;
+      durStr = tr('{n}초', { n: lastDur.toFixed(1) });
     }
   }
 
@@ -3473,14 +3465,14 @@ function openVictoryModal(isFirstVictory = false) {
     if (isNewRec && prevBest && prevBest > curSpeedrun) {
       const diffSec = (prevBest - curSpeedrun).toFixed(1);
       diffBannerEl.classList.add('record');
-      diffTextEl.innerHTML = `🎉 <b>스피드런 신기록 수립!</b> 이전 최단시간보다 <b>-${diffSec}초</b> 단축! ⚡`;
+      diffTextEl.innerHTML = tr('🎉 <b>스피드런 신기록 수립!</b> 이전 최단시간보다 <b>-{n}초</b> 단축! ⚡', { n: diffSec });
       if (resultTagEl) {
         resultTagEl.textContent = '👑 NEW RECORD';
         resultTagEl.style.background = '#ea580c';
       }
     } else if (isNewRec && !prevBest) {
       diffBannerEl.classList.add('record');
-      diffTextEl.innerHTML = `🌟 <b>${FINAL_BOSS.name} 최초 토벌 기록 수립!</b> 다시 도전하여 기록을 단축해보세요!`;
+      diffTextEl.innerHTML = tr('🌟 <b>{boss} 최초 토벌 기록 수립!</b> 다시 도전하여 기록을 단축해보세요!', { boss: FINAL_BOSS.name });
       if (resultTagEl) {
         resultTagEl.textContent = '🌟 FIRST CLEAR';
         resultTagEl.style.background = '#d97706';
@@ -3488,7 +3480,7 @@ function openVictoryModal(isFirstVictory = false) {
     } else {
       const diffSec = Math.max(0, curSpeedrun - bestSpeedrun).toFixed(1);
       diffBannerEl.classList.add('slower');
-      diffTextEl.innerHTML = `⏱️ 역대 최단시간 대비 <b>+${diffSec}초</b> 지연 (다음 회차에서 기록 갱신에 도전하세요!)`;
+      diffTextEl.innerHTML = tr('⏱️ 역대 최단시간 대비 <b>+{n}초</b> 지연 (다음 회차에서 기록 갱신에 도전하세요!)', { n: diffSec });
       if (resultTagEl) {
         resultTagEl.textContent = '⚡ CHALLENGE';
         resultTagEl.style.background = '#475569';
@@ -3498,27 +3490,27 @@ function openVictoryModal(isFirstVictory = false) {
 
   grid.innerHTML = `
     <div class="victory-stat-item">
-      <span class="victory-stat-label">보스 처치 시간</span>
+      <span class="victory-stat-label">${tr('보스 처치 시간')}</span>
       <span class="victory-stat-val cyan">${durStr}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">발화 중 몰열 메테오</span>
-      <span class="victory-stat-val gold">☄️ ${state.stats?.combustionPyros || 0}회 폭딜</span>
+      <span class="victory-stat-label">${tr('발화 중 몰열 메테오')}</span>
+      <span class="victory-stat-val gold">${tr('☄️ {n}회 폭딜', { n: state.stats?.combustionPyros || 0 })}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">최고 달성 DPS</span>
-      <span class="victory-stat-val gold">${fmt(state.stats?.peakDps || 0)} /초</span>
+      <span class="victory-stat-label">${tr('최고 달성 DPS')}</span>
+      <span class="victory-stat-val gold">${tr('{n} /초', { n: fmt(state.stats?.peakDps || 0) })}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">최종 주문 공격력</span>
+      <span class="victory-stat-label">${tr('최종 주문 공격력')}</span>
       <span class="victory-stat-val cyan">${fmt(stats.sp)}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">누적 토벌 몬스터</span>
-      <span class="victory-stat-val">${fmt(state.totalKills || 0)} 마리</span>
+      <span class="victory-stat-label">${tr('누적 토벌 몬스터')}</span>
+      <span class="victory-stat-val">${tr('{n} 마리', { n: fmt(state.totalKills || 0) })}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">누적 원정 시간</span>
+      <span class="victory-stat-label">${tr('누적 원정 시간')}</span>
       <span class="victory-stat-val">${formatPlayTime(state.totalPlayTimeSec || state.playTimeSec)}</span>
     </div>
   `;
@@ -3538,13 +3530,13 @@ function openVictoryModal(isFirstVictory = false) {
         return `
           <div class="victory-log-bar-row">
             <div class="victory-log-bar-fill" style="width:${pct}%; background:${s.color};"></div>
-            <span>${s.name} (${hits}타 · 크리 ${critPct}%)</span>
+            <span>${s.name} ${tr('({hits}타 · 크리 {pct}%)', { hits, pct: critPct })}</span>
             <span style="color:#fbbf24;">${fmt(s.dmg)} (${pct}%)</span>
           </div>
         `;
       }).join('');
     } else {
-      logsBarsEl.innerHTML = '<div style="color:#64748b; font-size:0.75rem; text-align:center;">전투 기록 집계 중...</div>';
+      logsBarsEl.innerHTML = `<div style="color:#64748b; font-size:0.75rem; text-align:center;">${tr('전투 기록 집계 중...')}</div>`;
     }
   }
 
@@ -3567,7 +3559,7 @@ function failRunByEnrage() {
   playtestTelemetry.onRunFailed(state.currentStage);
   triggerArenaShake('lg');
   playSound('monster_destroy', 0.7);
-  spawnFloatingText('💀 광폭화! 런 실패', 'fct-crit', -60, { isBig: true });
+  spawnFloatingText(tr('💀 광폭화! 런 실패'), 'fct-crit', -60, { isBig: true });
   saveGame();
 
   // 패배 순간을 1.2초간 인지할 여운을 둔 뒤 결과창 개방
@@ -3584,35 +3576,35 @@ function openDefeatModal() {
   const data = getStageData(state.currentStage);
   const hpLeftPct = state.monster.maxHp > 0 ? Math.ceil((state.monster.hp / state.monster.maxHp) * 100) : 0;
   const bestStage = getStageData(Math.max(1, state.bestReachedStage || state.currentStage));
-  document.getElementById('victory-crown-badge').textContent = '💀 DEFEAT · 보스 광폭화';
-  document.getElementById('victory-modal-title').textContent = `${data.name} 광폭화`;
-  document.getElementById('victory-modal-subtitle').textContent = `STAGE ${data.phase}-${data.stepInPhase} 보스를 제한 시간 안에 쓰러뜨리지 못했습니다. 새 런에서 다른 빌드를 시도해 보세요!`;
-  document.getElementById('btn-speedrun-retry').textContent = '⚡ 새 런 시작';
+  document.getElementById('victory-crown-badge').textContent = tr('💀 DEFEAT · 보스 광폭화');
+  document.getElementById('victory-modal-title').textContent = tr('{boss} 광폭화', { boss: data.name });
+  document.getElementById('victory-modal-subtitle').textContent = tr('STAGE {phase}-{step} 보스를 제한 시간 안에 쓰러뜨리지 못했습니다. 새 런에서 다른 빌드를 시도해 보세요!', { phase: data.phase, step: data.stepInPhase });
+  document.getElementById('btn-speedrun-retry').textContent = tr('⚡ 새 런 시작');
 
   grid.innerHTML = `
     <div class="victory-stat-item">
-      <span class="victory-stat-label">도달 스테이지</span>
+      <span class="victory-stat-label">${tr('도달 스테이지')}</span>
       <span class="victory-stat-val cyan">STAGE ${data.phase}-${data.stepInPhase} 👑</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">보스 남은 체력</span>
+      <span class="victory-stat-label">${tr('보스 남은 체력')}</span>
       <span class="victory-stat-val gold">${hpLeftPct}%</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">최고 도달 기록</span>
+      <span class="victory-stat-label">${tr('최고 도달 기록')}</span>
       <span class="victory-stat-val gold">STAGE ${bestStage.phase}-${bestStage.stepInPhase}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">최고 달성 DPS</span>
-      <span class="victory-stat-val gold">${fmt(state.stats?.peakDps || 0)} /초</span>
+      <span class="victory-stat-label">${tr('최고 달성 DPS')}</span>
+      <span class="victory-stat-val gold">${tr('{n} /초', { n: fmt(state.stats?.peakDps || 0) })}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">이번 런 시간</span>
+      <span class="victory-stat-label">${tr('이번 런 시간')}</span>
       <span class="victory-stat-val">${formatSpeedrunTime(state.playTimeSec)}</span>
     </div>
     <div class="victory-stat-item">
-      <span class="victory-stat-label">누적 토벌 몬스터</span>
-      <span class="victory-stat-val">${fmt(state.totalKills || 0)} 마리</span>
+      <span class="victory-stat-label">${tr('누적 토벌 몬스터')}</span>
+      <span class="victory-stat-val">${tr('{n} 마리', { n: fmt(state.totalKills || 0) })}</span>
     </div>
   `;
 }
@@ -3710,7 +3702,7 @@ function restartSpeedrunRun() {
   spawnParticles(casterCenter.x, casterCenter.y, 36, '#fef08a', '#ea580c', 1.8);
   triggerArenaShake('md');
 
-  spawnFloatingText('⚡ 스피드런 새 런 시작! (Stage 1-1 · 타이머 00:00)', 'fct-proc', -55, { isBig: true });
+  spawnFloatingText(tr('⚡ 스피드런 새 런 시작! (Stage 1-1 · 타이머 00:00)'), 'fct-proc', -55, { isBig: true });
 
   loadStage(1);
   checkAndTriggerUnfolds(true);
@@ -3955,7 +3947,7 @@ function updateLiveHUD() {
   const heatSigils = document.getElementById('heat-sigils');
   heatSigils.hidden = !state.grimoires.meteor;
   heatSigils.dataset.heat = String(c.critStreak);
-  heatSigils.setAttribute('aria-label', `연속 치명타 ${c.critStreak}회`);
+  heatSigils.setAttribute('aria-label', tr('연속 치명타 {n}회', { n: c.critStreak }));
   document.getElementById('skill-2').classList.toggle('art-followup', Boolean(state.grimoires.meteor && c.critStreak === 1 && c.fbCharges > 0));
   document.getElementById('skill-4').classList.toggle('art-active', c.combustionRem > 0);
 
@@ -3971,35 +3963,35 @@ function updateLiveHUD() {
     const progress = ((c.castTotal - c.castRemaining) / c.castTotal) * 100;
     castFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
     if (c.castingSkill === 'meteor') {
-      castName.textContent = '☄️ 메테오 시전 중';
+      castName.textContent = tr('☄️ 메테오 시전 중');
     } else if (isMeteorReady) {
-      castName.textContent = isGatlingActive ? '⚡ 화염 기관총 (☄️메테오 장전됨!)' : '🔥 화염구 (☄️메테오 장전됨!)';
+      castName.textContent = isGatlingActive ? tr('⚡ 화염 기관총 (☄️메테오 장전됨!)') : tr('🔥 화염구 (☄️메테오 장전됨!)');
     } else if (isGatlingActive) {
-      castName.textContent = '⚡ 화염 기관총 난사!';
+      castName.textContent = tr('⚡ 화염 기관총 난사!');
     } else {
-      castName.textContent = '🔥 화염구';
+      castName.textContent = tr('🔥 화염구');
     }
     castTime.textContent = isGatlingActive ? `${c.castRemaining.toFixed(2)}s` : `${c.castRemaining.toFixed(1)}s`;
   } else if (state.grimoires.meteor && c.critStreak === 2) {
     castFill.style.width = '100%';
-    castName.textContent = '☄️ 메테오 준비 완료!';
-    castTime.textContent = '즉시 발사!';
+    castName.textContent = tr('☄️ 메테오 준비 완료!');
+    castTime.textContent = tr('즉시 발사!');
   } else {
     castFill.style.width = '0%';
-    castName.textContent = state.autoCast ? '🤖 자동 시전 중' : '대기 중';
+    castName.textContent = state.autoCast ? tr('🤖 자동 시전 중') : tr('대기 중');
     castTime.textContent = '';
   }
 
   const buffRow = document.getElementById('player-buffs');
   let buffsHtml = '';
   if (c.combustionRem > 0) {
-    buffsHtml += `<div class="buff-chip combustion">☀️ 마력 폭주 (${c.combustionRem.toFixed(1)}s)</div>`;
+    buffsHtml += `<div class="buff-chip combustion">${tr('☀️ 마력 폭주 ({sec}s)', { sec: c.combustionRem.toFixed(1) })}</div>`;
   }
   buffRow.innerHTML = buffsHtml;
 
   // 충전형 카드의 남은 충전은 해당 스킬 버튼 위 배지로 표시
-  setStageChargeBadge('skill-1', c.quickdrawCharges, '🎇', '속사 장전: 시전 없이 즉시 발사');
-  setStageChargeBadge('skill-3', c.meteorCharges, '🔋', '잠열 충전: 메테오 피해 증폭');
+  setStageChargeBadge('skill-1', c.quickdrawCharges, '🎇', tr('속사 장전: 시전 없이 즉시 발사'));
+  setStageChargeBadge('skill-3', c.meteorCharges, '🔋', tr('잠열 충전: 메테오 피해 증폭'));
 
   const enrageEl = document.getElementById('boss-enrage-timer');
   if (enrageEl) {
@@ -4016,13 +4008,13 @@ function updateLiveHUD() {
   const debuffRow = document.getElementById('target-debuffs');
   let debuffHtml = '';
   if (c.igniteRem > 0 && c.ignitePool >= 5) {
-    debuffHtml += `<div class="debuff-chip">🩸 화상 ${fmt(c.ignitePool * stats.burnMult)} (${c.igniteRem.toFixed(1)}s)</div>`;
+    debuffHtml += `<div class="debuff-chip">${tr('🩸 화상 {dmg} ({sec}s)', { dmg: fmt(c.ignitePool * stats.burnMult), sec: c.igniteRem.toFixed(1) })}</div>`;
   }
   if (c.flamePatchRem > 0) {
-    debuffHtml += `<div class="debuff-chip">🔥 불장판 (${c.flamePatchRem.toFixed(1)}s)</div>`;
+    debuffHtml += `<div class="debuff-chip">${tr('🔥 불장판 ({sec}s)', { sec: c.flamePatchRem.toFixed(1) })}</div>`;
   }
   if (c.meteorBurnRem > 0) {
-    debuffHtml += `<div class="debuff-chip">☄️ 연소 (${c.meteorBurnRem.toFixed(1)}s)</div>`;
+    debuffHtml += `<div class="debuff-chip">${tr('☄️ 연소 ({sec}s)', { sec: c.meteorBurnRem.toFixed(1) })}</div>`;
   }
   debuffRow.innerHTML = debuffHtml;
 
@@ -4082,7 +4074,7 @@ function setStageChargeBadge(btnId, count, icon, label) {
     const text = `${icon}${count}`;
     if (badge.textContent !== text) {
       badge.textContent = text;
-      badge.setAttribute('aria-label', `${label} ${count}회`);
+      badge.setAttribute('aria-label', tr('{label} {n}회', { label, n: count }));
       // 충전이 소모될 때마다 작게 튕기는 피드백
       badge.classList.remove('charge-pop');
       void badge.offsetWidth;
@@ -4358,7 +4350,7 @@ function initEvents() {
   }
 
   document.getElementById('btn-reset-save').addEventListener('click', () => {
-    if (confirm('처음부터 다시 시작하시겠습니까?')) {
+    if (confirm(tr('처음부터 다시 시작하시겠습니까?'))) {
       saveStorage.remove(SAVE_KEY);
       location.reload();
     }

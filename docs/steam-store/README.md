@@ -2,7 +2,7 @@
 
 | 자료 | 위치 | 상태 |
 | --- | --- | --- |
-| 스크린샷 6장 (1920×1080) | `screenshots/` | ✅ 한국어 화면. 영어 번역 후 같은 장면을 다시 찍어 교체 |
+| 스크린샷 6장 (1920×1080) | `screenshots/` (한국어), `screenshots-en/` (영어) | ✅ Steam 스토어의 언어별 스크린샷 칸에 각각 올립니다 |
 | 캡슐·라이브러리 이미지 8종 | `capsules/` | ⚠️ 기존 원화 조합 임시본. 출시 전 전용 키아트로 교체 권장 |
 | 소개문 (한/영) | `store-description.md` | 초안 |
 | 콘텐츠 설문 답변 | `content-survey.md` | 초안. ⚠️ 사운드 출처 확인 후 제출 |
@@ -27,6 +27,7 @@
 ```
 npx electron scripts/store/capture-screenshots.cjs          # → dist/store-capture/ (장면마다 여러 프레임)
 npx electron scripts/store/capture-screenshots.cjs --only=03 # 특정 장면만
+npx electron scripts/store/capture-screenshots.cjs --lang=en # 영어 화면 → dist/store-capture-en/
 npx electron scripts/store/render-capsules.cjs               # → dist/store-capsules/
 ```
 

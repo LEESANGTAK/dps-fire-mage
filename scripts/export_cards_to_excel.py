@@ -89,8 +89,9 @@ def export_to_excel():
     else:
         # 열 구성이 바뀐 구형 엑셀은 데이터·너비를 새 구성으로 다시 작성
         ws.delete_rows(1, ws.max_row)
+        # 너비 항목을 지워 기본값으로 되돌립니다(openpyxl 3.1부터 width=None 대입은 오류).
         for col_letter in list(ws.column_dimensions.keys()):
-            ws.column_dimensions[col_letter].width = None
+            del ws.column_dimensions[col_letter]
 
     header_font = Font(name="Malgun Gothic", size=11, bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")

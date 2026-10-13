@@ -38,6 +38,7 @@
     </div>
 
     <div class="top-controls">
+      <button type="button" class="btn-top" id="btn-lang" title="언어 변경 / Change language">🌐 English</button>
       <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="최종 보스 스피드런 기록을 확인합니다">🏆 명예의 전당</button>
       <div class="sound-menu-wrap" id="sound-menu-wrap">
         <button class="btn-top" id="btn-sound" title="BGM 및 효과음(SFX) 볼륨을 조절합니다">🔊 사운드</button>
@@ -130,9 +131,9 @@
                   <strong>잿불의 폭군 저지</strong>
                 </div>
                 <div class="doom-story-body">
-                  <p class="story-quote">"잿불의 폭군 <span class="final-boss-name">이그나르크</span>가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 <span class="final-boss-name">이그나르크</span>를 물리쳐 이 세상을 구해 주게나!"</p>
+                  <p class="story-quote" data-i18n-html>"잿불의 폭군 <span class="final-boss-name">이그나르크</span>가 세계를 멸망 시키려 하고 있네!<br>최대한 빨리 <span class="final-boss-name">이그나르크</span>를 물리쳐 이 세상을 구해 주게나!"</p>
                   <div class="story-status-info">
-                    <span class="story-dest">목표: <strong>Stage 20</strong> 심연의 제단</span>
+                    <span class="story-dest" data-i18n-html>목표: <strong>Stage 20</strong> 심연의 제단</span>
                     <span class="story-remain" id="doom-remain-text">남은 여정: 19 스테이지</span>
                   </div>
                 </div>
@@ -300,7 +301,7 @@
     <div class="victory-modal-card">
       <button type="button" class="victory-close-icon" id="btn-victory-close" title="닫기">✕</button>
       <div class="victory-crown-badge" id="victory-crown-badge">👑 VICTORY · SPEEDRUN COMPLETE</div>
-      <h2 class="victory-title" id="victory-modal-title">잿불의 폭군 <span class="final-boss-name">이그나르크</span> 토벌 완료!</h2>
+      <h2 class="victory-title" id="victory-modal-title" data-i18n-html>잿불의 폭군 <span class="final-boss-name">이그나르크</span> 토벌 완료!</h2>
       <p class="victory-subtitle" id="victory-modal-subtitle">
         불타는 심연의 지배자를 물리치고 세상 최고의 대마법사 반열에 올랐습니다!
       </p>
@@ -308,7 +309,7 @@
       <!-- 스피드런 이번 기록 vs 최단시간 비교 보드 -->
       <div class="speedrun-comparison-board" id="speedrun-comparison-board">
         <div class="speedrun-board-header">
-          <span>⏱️ <span class="final-boss-name">이그나르크</span> 스피드런 공식 기록</span>
+          <span data-i18n-html>⏱️ <span class="final-boss-name">이그나르크</span> 스피드런 공식 기록</span>
           <span class="speedrun-badge-tag" id="speedrun-result-tag">⚡ RECORD</span>
         </div>
         <div class="speedrun-times-grid">
@@ -376,6 +377,8 @@
     </div>
   </div>
 
+  <script src="src/scripts/i18n-en.js?v=i18n-1"></script>
+  <script src="src/scripts/i18n.js?v=i18n-1"></script>
   <script src="src/scripts/meteor-art.js?v=meteor-trail-overflow-4"></script>
   <script src="src/scripts/combat-art.js?v=fireball-flame-color-1"></script>
   <script src="src/scripts/paper-art.js?v=paper-monsters-3"></script>
@@ -386,10 +389,10 @@
   <div id="deck-vampire-tooltip" class="deck-vampire-tooltip hidden" role="tooltip"></div>
   <script src="src/scripts/comic-assets.js?v=card-icons-1"></script>
   <script src="src/scripts/monster-motion.js?v=final-boss-1"></script>
-  <script src="src/scripts/skill-tooltips.js?v=balance-v2-3"></script>
+  <script src="src/scripts/skill-tooltips.js?v=i18n-1"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
-  <script src="src/scripts/roguelike-deck.js?v=balance-v2-3"></script>
+  <script src="src/scripts/roguelike-deck.js?v=i18n-1"></script>
   <script src="src/scripts/save-storage.js?v=desktop-save-1"></script>
-  <script src="src/scripts/game.js?v=card-icons-1"></script>
+  <script src="src/scripts/game.js?v=i18n-1"></script>
 </body>
 </html>

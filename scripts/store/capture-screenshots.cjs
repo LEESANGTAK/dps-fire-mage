@@ -8,11 +8,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 
 const ROOT = path.join(__dirname, '..', '..');
-const OUT = path.resolve(process.argv.find((a, i) => i > 1 && !a.startsWith('-') && !a.endsWith('.cjs')) || path.join(ROOT, 'dist', 'store-capture'));
+// --lang=en 이면 영어 화면으로 찍습니다(기본 한국어). 출력 폴더도 언어별로 나눕니다.
+const LANG = (process.argv.find((a) => a.startsWith('--lang=')) || '').slice(7) === 'en' ? 'en' : 'ko';
+const OUT = path.resolve(process.argv.find((a, i) => i > 1 && !a.startsWith('-') && !a.endsWith('.cjs')) || path.join(ROOT, 'dist', LANG === 'en' ? 'store-capture-en' : 'store-capture'));
+
 const WIDTH = 1920, HEIGHT = 1080, ZOOM = 1.5;
 
-// 스토어 화면에 개발용 도구(밸런스 로그 버튼)는 노출하지 않습니다.
-const HIDE_DEV_UI = "['btn-export-telemetry','btn-victory-export-telemetry'].forEach((id) => document.getElementById(id)?.style.setProperty('display','none'));";
+// 스토어 화면에 개발용 도구(밸런스 로그 버튼)와 언어 전환 버튼은 노출하지 않습니다.
+const HIDE_DEV_UI = "['btn-export-telemetry','btn-victory-export-telemetry','btn-lang'].forEach((id) => document.getElementById(id)?.style.setProperty('display','none'));";
 
 const midRunDeck = { spell_fireblast: 1, spell_meteor: 1, spell_combustion: 1, spell_flame_patch: 1, sum_spirit: 1, crit_focus: 2, crit_heat: 1, burn_ignite: 1, util_power: 1 };
 const allSpells = { fireblast: true, meteor: true, combustion: true, flame_patch: true };
@@ -50,7 +53,7 @@ async function shoot(win, scene) {
   win.loadFile(path.join(ROOT, 'index.html'));
   await done;
   done = loaded();
-  await win.webContents.executeJavaScript(`localStorage.setItem(SAVE_KEY, ${JSON.stringify(JSON.stringify(scene.save))}); location.reload(); 0`);
+  await win.webContents.executeJavaScript(`localStorage.setItem(SAVE_KEY, ${JSON.stringify(JSON.stringify(scene.save))}); localStorage.setItem(I18N_LANG_KEY, ${JSON.stringify(LANG)}); location.reload(); 0`);
   await done;
   win.webContents.setZoomFactor(ZOOM);
   await win.webContents.executeJavaScript(HIDE_DEV_UI);

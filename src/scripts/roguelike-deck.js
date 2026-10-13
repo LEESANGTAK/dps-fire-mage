@@ -22,9 +22,9 @@
 
   // 등급별 스타일/라벨 메타
   const RARITY_META = {
-    [RARITY.COMMON]: { name: '일반', color: '#94a3b8', border: '#475569', bg: 'rgba(30, 41, 59, 0.9)', badge: '#64748b' },
-    [RARITY.RARE]: { name: '희귀', color: '#38bdf8', border: '#0284c7', bg: 'rgba(12, 74, 110, 0.9)', badge: '#0369a1' },
-    [RARITY.LEGENDARY]: { name: '전설', color: '#fbbf24', border: '#d97706', bg: 'rgba(120, 53, 15, 0.9)', badge: '#b45309' }
+    [RARITY.COMMON]: { name: typeof tr === 'function' ? tr('일반') : '일반', color: '#94a3b8', border: '#475569', bg: 'rgba(30, 41, 59, 0.9)', badge: '#64748b' },
+    [RARITY.RARE]: { name: typeof tr === 'function' ? tr('희귀') : '희귀', color: '#38bdf8', border: '#0284c7', bg: 'rgba(12, 74, 110, 0.9)', badge: '#0369a1' },
+    [RARITY.LEGENDARY]: { name: typeof tr === 'function' ? tr('전설') : '전설', color: '#fbbf24', border: '#d97706', bg: 'rgba(120, 53, 15, 0.9)', badge: '#b45309' }
   };
 
   // 빌드 카테고리
@@ -46,6 +46,8 @@
       "build": "rapid",
       "maxStack": 5,
       "desc": "화염 마법 시전 속도가 <b>+20%</b> 빨라집니다.",
+      "title_en": "Swift Flame",
+      "desc_en": "Fire spell cast speed <b>+20%</b>.",
       "stats": {
         "haste": 20
       }
@@ -58,6 +60,8 @@
       "build": "rapid",
       "maxStack": 3,
       "desc": "화염구 적중 시 <b>2개의 작은 불씨</b>로 분열되어 추가 타격합니다 (각각 40% 피해).",
+      "title_en": "Splitting Fireball",
+      "desc_en": "Fireball splits into <b>2 small embers</b> on hit for extra strikes (40% damage each).",
       "mechanic": "split_fireball"
     },
     {
@@ -68,9 +72,11 @@
       "build": "rapid",
       "maxStack": 2,
       "desc": "시전 속도가 <b>+45%</b> 빨라지지만, 주문력이 <b>-20%</b> 감소합니다.",
+      "title_en": "Overload Casting",
+      "desc_en": "Cast speed <b>+45%</b>, but Spell Power <b>-20%</b>.",
       "stats": {
-        "haste": 45,
-        "spPct": -20
+        "spPct": -20,
+        "haste": 45
       }
     },
     {
@@ -81,6 +87,8 @@
       "build": "rapid",
       "maxStack": 2,
       "desc": "스테이지 시작마다 화염구를 <b>시전 없이 즉시 발사</b>하는 충전을 <b>4회</b> 얻습니다.",
+      "title_en": "Quickdraw",
+      "desc_en": "Gain <b>4</b> charges at the start of each stage that <b>fire a Fireball instantly, with no cast time</b>.",
       "mechanic": "quickdraw_charge",
       "mechanicParams": {
         "charges": 4
@@ -94,6 +102,8 @@
       "build": "rapid",
       "maxStack": 1,
       "desc": "화염구의 기본 시전 시간이 <b>0.3초</b>로 극도로 단축되며 기관총처럼 난사됩니다.",
+      "title_en": "Flame Gatling",
+      "desc_en": "Fireball base cast time drops to <b>0.3s</b> — fire it like a machine gun.",
       "mechanic": "gatling_mode"
     },
     {
@@ -103,8 +113,10 @@
       "rarity": "common",
       "build": "crit",
       "maxStack": 1,
-      "spellKey": "fireblast",
-      "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다."
+      "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다.",
+      "title_en": "Grimoire: Fire Blast",
+      "desc_en": "Learn <b>[Fire Blast], an instant spell that always crits</b> and fires even while casting.",
+      "spellKey": "fireblast"
     },
     {
       "id": "crit_focus",
@@ -114,6 +126,8 @@
       "build": "crit",
       "maxStack": 5,
       "desc": "치명타 확률이 <b>+10%</b> 증가합니다.",
+      "title_en": "Burning Focus",
+      "desc_en": "Critical strike chance <b>+10%</b>.",
       "stats": {
         "crit": 10
       }
@@ -126,6 +140,8 @@
       "build": "crit",
       "maxStack": 5,
       "desc": "치명타 피해량이 <b>+35%</b> 증가합니다.",
+      "title_en": "Searing Heat",
+      "desc_en": "Critical damage <b>+35%</b>.",
       "stats": {
         "critDmg": 35
       }
@@ -138,9 +154,11 @@
       "build": "crit",
       "maxStack": 2,
       "desc": "치명타 피해량이 <b>+80%</b> 증가하지만, 치명타 확률이 <b>-8%</b> 감소합니다.",
+      "title_en": "Reckless Strike",
+      "desc_en": "Critical damage <b>+80%</b>, but critical strike chance <b>-8%</b>.",
       "stats": {
-        "critDmg": 80,
-        "crit": -8
+        "crit": -8,
+        "critDmg": 80
       }
     },
     {
@@ -150,8 +168,10 @@
       "rarity": "rare",
       "build": "crit",
       "maxStack": 1,
-      "spellKey": "meteor",
-      "desc": "하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다."
+      "desc": "하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다.",
+      "title_en": "Grimoire: Meteor",
+      "desc_en": "Call down a giant meteor. After 2 crits in a row (Heating Up), it <b>drops instantly at no cost</b>.",
+      "spellKey": "meteor"
     },
     {
       "id": "crit_meteor_storm",
@@ -160,8 +180,10 @@
       "rarity": "rare",
       "build": "crit",
       "maxStack": 2,
-      "prerequisite": "has_meteor",
       "desc": "메테오의 재사용 대기시간이 <b>50% 감소</b>하고 피해량이 <b>+60%</b> 증가합니다.",
+      "title_en": "Sunstone Meteor",
+      "desc_en": "Meteor cooldown <b>-50%</b> and Meteor damage <b>+60%</b>.",
+      "prerequisite": "has_meteor",
       "mechanic": "meteor_buff"
     },
     {
@@ -171,8 +193,10 @@
       "rarity": "rare",
       "build": "crit",
       "maxStack": 2,
-      "prerequisite": "has_meteor",
       "desc": "스테이지 시작마다 <b>메테오 피해 +150%</b> 충전을 <b>3회</b> 얻습니다.",
+      "title_en": "Latent Heat",
+      "desc_en": "Gain <b>3</b> charges of <b>+150% Meteor damage</b> at the start of each stage.",
+      "prerequisite": "has_meteor",
       "mechanic": "meteor_charge",
       "mechanicParams": {
         "charges": 3,
@@ -186,8 +210,10 @@
       "rarity": "rare",
       "build": "crit",
       "maxStack": 1,
-      "spellKey": "combustion",
-      "desc": "<b>5초간 모든 마법이 100% 치명타</b>로 적중하고 시전 속도가 빨라지는 궁극기를 습득합니다."
+      "desc": "<b>5초간 모든 마법이 100% 치명타</b>로 적중하고 시전 속도가 빨라지는 궁극기를 습득합니다.",
+      "title_en": "Grimoire: Combustion",
+      "desc_en": "Learn an ultimate: for <b>5s, every spell crits 100%</b> and you cast faster.",
+      "spellKey": "combustion"
     },
     {
       "id": "crit_crimson_frenzy",
@@ -196,8 +222,10 @@
       "rarity": "legendary",
       "build": "crit",
       "maxStack": 1,
-      "prerequisite": "has_combustion",
       "desc": "마력 폭주 지속 시간이 2배가 되며, 폭주 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.",
+      "title_en": "Crimson Combustion",
+      "desc_en": "Combustion lasts twice as long, and all damage during it is <b>amplified by 150%</b>.",
+      "prerequisite": "has_combustion",
       "mechanic": "combustion_god"
     },
     {
@@ -208,6 +236,8 @@
       "build": "summon",
       "maxStack": 4,
       "desc": "플레이어 옆에 지속 화염 공격을 퍼붓는 <b>화염 정령 1기</b>를 소환합니다 (최대 4기).",
+      "title_en": "Summon Fire Spirit",
+      "desc_en": "Summon <b>1 Fire Spirit</b> that pours fire beside you (up to 4).",
       "mechanic": "extra_spirit"
     },
     {
@@ -217,11 +247,13 @@
       "rarity": "common",
       "build": "summon",
       "maxStack": 5,
-      "prerequisite": "has_summon",
       "desc": "정령·불사조 등 <b>소환수 피해량이 +40%</b> 증가합니다.",
+      "title_en": "Spirit Fury",
+      "desc_en": "<b>Summon damage +40%</b> (Fire Spirits, Phoenix).",
       "stats": {
         "spiritPct": 40
-      }
+      },
+      "prerequisite": "has_summon"
     },
     {
       "id": "sum_volley",
@@ -230,8 +262,10 @@
       "rarity": "rare",
       "build": "summon",
       "maxStack": 1,
-      "prerequisite": "has_summon",
       "desc": "마법사가 화염구를 발사할 때마다 <b>소환된 모든 정령이 동시에 협공 탄환</b>을 발사합니다.",
+      "title_en": "Synchronized Volley",
+      "desc_en": "Every time you cast Fireball, <b>all summoned spirits fire a volley at once</b>.",
+      "prerequisite": "has_summon",
       "mechanic": "synchronized_fire"
     },
     {
@@ -241,12 +275,14 @@
       "rarity": "rare",
       "build": "summon",
       "maxStack": 1,
-      "prerequisite": "has_summon",
       "desc": "소환수 피해량이 <b>+100%</b> 증가하지만, 마법사의 주문력이 <b>-25%</b> 감소합니다.",
+      "title_en": "Spirit Pact",
+      "desc_en": "Summon damage <b>+100%</b>, but your Spell Power <b>-25%</b>.",
       "stats": {
-        "spiritPct": 100,
-        "spPct": -25
-      }
+        "spPct": -25,
+        "spiritPct": 100
+      },
+      "prerequisite": "has_summon"
     },
     {
       "id": "sum_cinder_lord",
@@ -255,8 +291,10 @@
       "rarity": "legendary",
       "build": "summon",
       "maxStack": 1,
-      "prerequisite": "has_summon",
       "desc": "소환수 1기당 마법사의 모든 주문 피해량이 <b>+30%</b> 증폭됩니다.",
+      "title_en": "Cinder Warlord",
+      "desc_en": "All your spell damage <b>+30%</b> per active summon.",
+      "prerequisite": "has_summon",
       "mechanic": "cinder_lord"
     },
     {
@@ -267,6 +305,8 @@
       "build": "burn",
       "maxStack": 5,
       "desc": "화상·연소·불장판 등 <b>지속 피해량이 +45%</b> 증가합니다.",
+      "title_en": "Fierce Ignite",
+      "desc_en": "<b>Damage over time +45%</b> (Ignite, Meteor burn, Flame Patch).",
       "stats": {
         "burnPct": 45
       }
@@ -278,8 +318,10 @@
       "rarity": "rare",
       "build": "burn",
       "maxStack": 1,
-      "spellKey": "flame_patch",
-      "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다."
+      "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.",
+      "title_en": "Grimoire: Flame Patch",
+      "desc_en": "Create a lasting fire zone under the monster that deals <b>heavy burning damage over time</b>.",
+      "spellKey": "flame_patch"
     },
     {
       "id": "burn_spread",
@@ -288,8 +330,10 @@
       "rarity": "rare",
       "build": "burn",
       "maxStack": 2,
-      "prerequisite": "has_flame_patch",
       "desc": "불장판 재사용 대기시간이 <b>30% 감소</b>하고 불장판 피해량이 <b>+50%</b> 증가합니다.",
+      "title_en": "Spreading Blaze",
+      "desc_en": "Flame Patch cooldown <b>-30%</b> and Flame Patch damage <b>+50%</b>.",
+      "prerequisite": "has_flame_patch",
       "mechanic": "patch_boost",
       "mechanicParams": {
         "cooldownMult": 0.7,
@@ -304,6 +348,8 @@
       "build": "burn",
       "maxStack": 1,
       "desc": "치명타가 남기는 <b>화상 피해가 2.5배</b>로 불어납니다.",
+      "title_en": "Wildfire",
+      "desc_en": "Ignite left by critical strikes deals <b>2.5x damage</b>.",
       "mechanic": "wildfire",
       "mechanicParams": {
         "igniteRatioMult": 2.5
@@ -317,6 +363,8 @@
       "build": "utility",
       "maxStack": 5,
       "desc": "주문력이 <b>+15%</b> 증가합니다.",
+      "title_en": "Arcane Amplify",
+      "desc_en": "Spell Power <b>+15%</b>.",
       "stats": {
         "spPct": 15
       }
@@ -329,6 +377,8 @@
       "build": "utility",
       "maxStack": 2,
       "desc": "체력이 40% 이하인 적에게 입히는 모든 피해량이 <b>+70%</b> 증가합니다.",
+      "title_en": "Executioner's Flame",
+      "desc_en": "All damage to enemies at or below 40% health <b>+70%</b>.",
       "mechanic": "executioner",
       "mechanicParams": {
         "executionerMult": 0.7
@@ -342,6 +392,8 @@
       "build": "utility",
       "maxStack": 2,
       "desc": "주문력이 <b>+50%</b> 증가하지만, 시전 속도가 <b>-25%</b> 느려집니다.",
+      "title_en": "Glass Cannon",
+      "desc_en": "Spell Power <b>+50%</b>, but cast speed <b>-25%</b>.",
       "stats": {
         "spPct": 50,
         "haste": -25
@@ -354,8 +406,10 @@
       "rarity": "legendary",
       "build": "utility",
       "maxStack": 1,
-      "prerequisite": "has_any_spell",
       "desc": "<b>불사조</b>가 함께 싸우며 확정 치명타로 협공하고, 치명타 적중 시 <b>15% 확률로 모든 스킬 쿨다운</b>이 초기화됩니다.",
+      "title_en": "Phoenix's Blessing",
+      "desc_en": "A <b>Phoenix</b> fights at your side with guaranteed crits, and your crits have a <b>15% chance to reset all skill cooldowns</b>.",
+      "prerequisite": "has_any_spell",
       "mechanic": "phoenix_reset"
     }
   ];
@@ -614,7 +668,7 @@
     function reroll(gameState, isBossWave = false, baseCost = 10) {
       const cost = getRerollCost(baseCost);
       if ((gameState.gold || 0) < cost) {
-        return { success: false, reason: '골드가 부족합니다.' };
+        return { success: false, reason: typeof tr === 'function' ? tr('골드가 부족합니다.') : '골드가 부족합니다.' };
       }
 
       gameState.gold -= cost;
@@ -652,6 +706,8 @@
           build: card ? card.build : BUILD.UTILITY,
           maxStack: card ? (card.maxStack || 1) : 1,
           desc: card ? (card.desc || '') : '',
+          title_en: card ? card.title_en : undefined,
+          desc_en: card ? card.desc_en : undefined,
           stats: card ? card.stats : null,
           mechanic: card ? card.mechanic : null,
           spellKey: card ? card.spellKey : null

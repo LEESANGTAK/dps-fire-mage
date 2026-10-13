@@ -78,6 +78,11 @@ def sync_excel_to_json():
             "maxStack": max_stack,
             "desc": str(cell(row_idx, 'desc') or '').strip()
         }
+        # 영문 표기는 채워진 경우에만 저장합니다(비우면 게임이 한글로 대체 표시).
+        for key in ('title_en', 'desc_en'):
+            val = cell(row_idx, key)
+            if val and str(val).strip():
+                card[key] = str(val).strip()
 
         stats = {}
         for _, key, _, _ in CARD_COLUMNS:
