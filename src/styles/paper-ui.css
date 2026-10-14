@@ -189,7 +189,8 @@
 
 /* 스펠 큐: 시전 중 눌러 예약된 스킬 버튼. 접수됐다는 것을 맥박처럼 뛰는 고리로 알려줍니다. */
 .action-bar .skill-btn.skill-queued { border-color: #fde68a; box-shadow: 0 0 0 2px #fde68a, 0 0 12px #f59e0b; animation: skillQueued .6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate; }
-@keyframes skillQueued { from { transform: scale(1); } to { transform: scale(1.06); } }
+/* transform 대신 개별 scale 속성을 써서, 드래그 중 떠오르기 변환(인라인 transform)을 덮어쓰지 않게 합니다. */
+@keyframes skillQueued { from { scale: 1; } to { scale: 1.06; } }
 @media (prefers-reduced-motion: reduce) { .action-bar .skill-btn.skill-queued { animation: none; } }
 
 /* 열기(몰아치는 열기)를 채우는 치명타 숫자: 붉은색. 등장 순간의 흰 섬광도 붉은 기운을 띱니다. */
@@ -217,7 +218,7 @@
 
 /* 액션 바 슬롯 드래그 앤 드롭(action-bar-drag.js): 집은 슬롯은 떠올라 포인터를 따라오고, 놓으면 탄력 있게 내려앉습니다. */
 .action-bar .skill-btn:not(.hidden-slot) { touch-action: none; cursor: grab; }
-.action-bar .skill-btn.slot-dragging { position: relative; z-index: 20; cursor: grabbing; transition: none !important; border-color: #fde68a; box-shadow: 0 14px 18px #000b, 0 0 0 2px #fde68a, 0 0 14px #f59e0b88; }
+.action-bar .skill-btn.slot-dragging { position: relative; z-index: 20; cursor: grabbing; transition: none !important; animation: none !important; border-color: #fde68a; box-shadow: 0 14px 18px #000b, 0 0 0 2px #fde68a, 0 0 14px #f59e0b88; }
 .action-bar.slot-drag-active .skill-btn:not(.slot-dragging) { filter: brightness(.85); }
 .action-bar.slot-drag-active { cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) { .action-bar .skill-btn.slot-dragging { box-shadow: 0 0 0 2px #fde68a; } }
