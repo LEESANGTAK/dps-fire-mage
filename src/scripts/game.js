@@ -204,7 +204,11 @@ const state = {
     phoenixRecoil: 0,
     animTime: 0,
 
-    wasOnCd: { 2: false, 3: false, 4: false, 6: false }
+    wasOnCd: { 2: false, 3: false, 4: false, 6: false },
+
+    // 스펠 큐: 시전·공통 대기 중에 누른 수동 스킬(화염구·메테오)과 누른 뒤 지난 시간
+    queuedSkill: null,
+    queuedAge: 0
   },
 
   dpsHistory: [],
@@ -2578,6 +2582,58 @@ function finishCast(skillKey) {
   }
 }
 
+// 스펠 큐(MMO식 입력 예약): 다른 시전·공통 대기 중에 누른 수동 스킬을 버리지 않고 기억했다가,
+// 현재 시전이 끝나는 즉시 자동 시전보다 먼저 발동합니다. 화염구 자동·메테오 수동 조합에서
+// 자동 화염구가 시전 틈을 계속 차지해 메테오 단축키가 먹지 않던 문제를 막습니다.
+const SPELL_QUEUE_WINDOW = 3.0; // 초. 이보다 오래 기다린 입력은 버립니다(가장 긴 시전보다 깁니다).
+
+function requestManualSkill(skillKey) {
+  const c = state.combat;
+  if (triggerSkill(skillKey, true)) {
+    if (c.queuedSkill === skillKey) clearQueuedSkill();
+    return true;
+  }
+  // 시전·공통 대기 때문에만 막힌 경우에 예약합니다(쿨타임·미습득은 예약하지 않음).
+  const blockedByCast = Boolean(c.castingSkill) || c.gcdRemaining > 0;
+  const ready = skillKey === 'fireball' || (skillKey === 'meteor' && state.grimoires.meteor && c.meteorCdRem <= 0);
+  if (blockedByCast && ready) {
+    c.queuedSkill = skillKey;
+    c.queuedAge = 0;
+    setQueuedSkillUI(skillKey);
+  }
+  return false;
+}
+
+function processQueuedSkill(dt) {
+  const c = state.combat;
+  if (!c.queuedSkill) return;
+  c.queuedAge += dt;
+  if (c.queuedAge > SPELL_QUEUE_WINDOW) {
+    clearQueuedSkill();
+    return;
+  }
+  if (c.castingSkill || c.gcdRemaining > 0) return;
+  const skill = c.queuedSkill;
+  clearQueuedSkill();
+  triggerSkill(skill, true);
+}
+
+function clearQueuedSkill() {
+  state.combat.queuedSkill = null;
+  state.combat.queuedAge = 0;
+  setQueuedSkillUI(null);
+}
+
+// 예약된 스킬 버튼에 고리를 둘러 입력이 접수됐음을 보여줍니다.
+function setQueuedSkillUI(skillKey) {
+  if (typeof document === 'undefined' || !document.querySelectorAll) return;
+  document.querySelectorAll('.skill-btn.skill-queued').forEach((btn) => btn.classList.remove('skill-queued'));
+  if (skillKey) {
+    const btn = document.querySelector(`.skill-btn[data-skill="${skillKey}"]`);
+    if (btn) btn.classList.add('skill-queued');
+  }
+}
+
 function isSkillAutoActive(skillKey) {
   if (!state.autoCast) return false;
   if (!state.skillAuto) return true;
@@ -3744,6 +3800,7 @@ function restartSpeedrunRun() {
   // 6. 전투 상태 초기화
   state.combat.castingSkill = null;
   state.combat.castRemaining = 0;
+  clearQueuedSkill();
   state.combat.gcdRemaining = 0;
   state.combat.critStreak = 0;
   state.combat.streakTimer = 0;
@@ -3956,6 +4013,7 @@ function gameLoop(nowMs) {
   try {
     updateCastingLoopSound();
     updateBurningLoopSound();
+    processQueuedSkill(dt);
     runSmartAutoCast();
     updateMageMotion(dt, false);
     updateAndDrawVfx(dt);
@@ -4255,16 +4313,16 @@ function initEvents() {
   initSkillTooltips();
   document.getElementById('dummy-avatar').addEventListener('click', () => {
     if (state.grimoires.meteor && state.combat.critStreak === 2) {
-      triggerSkill('meteor', true);
+      requestManualSkill('meteor');
     } else {
-      triggerSkill('fireball', true);
+      requestManualSkill('fireball');
     }
   });
 
   document.querySelectorAll('.skill-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const skill = btn.getAttribute('data-skill');
-      triggerSkill(skill, true);
+      requestManualSkill(skill);
     });
     btn.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -4282,7 +4340,7 @@ function initEvents() {
       const slotIndex = parseInt(keyMatch[1], 10) - 1;
       const activeSpells = getActiveSpellList();
       if (slotIndex >= 0 && slotIndex < activeSpells.length) {
-        triggerSkill(activeSpells[slotIndex], true);
+        requestManualSkill(activeSpells[slotIndex]);
         return;
       }
     }
@@ -4296,7 +4354,7 @@ function initEvents() {
     };
     const skill = map[e.code] || map[`Digit${e.key}`];
     if (skill) {
-      triggerSkill(skill, true);
+      requestManualSkill(skill);
     }
   });
 
