@@ -205,3 +205,12 @@
   100% { scale: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .heat-sigils i.heat-absorb { animation: none; } }
+/* 두 칸이 모두 찬 순간(메테오 준비): 두 문양이 함께 크게 고동치며 불꽃 고리를 냅니다. */
+.heat-sigils.heat-ready-burst i { animation: heatReadyBurst .5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.heat-sigils.heat-ready-burst i:nth-child(2) { animation-delay: .05s; }
+@keyframes heatReadyBurst {
+  0% { scale: 1; }
+  40% { scale: 1.75; box-shadow: 0 0 0 4px #ffb199, 0 0 22px #ff3b30; }
+  100% { scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .heat-sigils.heat-ready-burst i { animation: none; } }

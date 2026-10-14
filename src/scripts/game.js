@@ -167,6 +167,9 @@ const state = {
 
     critStreak: 0,
     streakTimer: 0,
+    // 열기 2스택 판정 후 두 번째 붉은 숫자가 문양에 닿기 전까지는 메테오 즉시 시전을 보류합니다(인과 순서 연출).
+    meteorArmPending: false,
+    meteorArmedAge: 0,
     combustionRem: 0,
     fireballCombustionSnapshot: false,
 
@@ -1270,7 +1273,10 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   // 화면 내 과도한 DOM 누적으로 인한 프레임 드랍 방지
   while (floatingTexts.length >= 45) {
     const oldest = floatingTexts.shift();
-    if (oldest && oldest.heatSigil !== null && oldest.heatSigil !== undefined) setHeatSigilAwaiting(oldest.heatSigil, false);
+    if (oldest && oldest.heatSigil !== null && oldest.heatSigil !== undefined) {
+      setHeatSigilAwaiting(oldest.heatSigil, false);
+      if (oldest.heatSigil === 1) armMeteorInstant(false);
+    }
     if (oldest && oldest.el) oldest.el.remove();
   }
 
@@ -1404,6 +1410,7 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   applyFloatingTextTransform(item);
   layer.appendChild(el);
   floatingTexts.push(item);
+  return item;
 }
 
 function applyFloatingTextTransform(f) {
@@ -1661,7 +1668,7 @@ function updateFlyingCoins(dt) {
 }
 
 // 열기 치명타 숫자 흡수 타이밍(초): 도장 찍기(0~0.27) 후 읽을 시간을 주고, 짧게 움츠렸다가 가속하며 문양으로 날아갑니다.
-const HEAT_ABSORB = { windup: 0.5, fly: 0.6, end: 0.95 };
+const HEAT_ABSORB = { windup: 0.35, fly: 0.43, end: 0.75 };
 
 function prefersReducedMotion() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1689,6 +1696,7 @@ function getHeatSigilPos(index) {
 // 숫자가 문양에 닿는 순간: 문양 점등 + 찌그러졌다 튀는 흡수 반동 + 붉은 불씨
 function onHeatSigilAbsorbed(f) {
   setHeatSigilAwaiting(f.heatSigil, false);
+  if (f.heatSigil === 1) armMeteorInstant(false);
   const sigil = getHeatSigilEl(f.heatSigil);
   if (sigil) {
     sigil.classList.remove('heat-absorb');
@@ -2283,13 +2291,14 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     }
   }
 
+  let heatTextItem = null;
   if (isDotTick || skillKey === 'ignite') {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-dot', 5);
   } else if (isCrit) {
     // 몰아치는 열기를 채우는 치명타(0→1, 1→2)는 붉은 숫자로 띄운 뒤 해당 열기 문양으로 빨려 들어갑니다.
     // 열기 판정 자체는 아래에서 즉시 갱신하고, 문양의 점등만 숫자가 도착할 때까지 미룹니다(연출 전용).
     const heatSigil = canTriggerStreak && state.grimoires.meteor && state.combat.critStreak < 2 ? state.combat.critStreak : null;
-    spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8, { isBig: isBigSkill, heatSigil });
+    heatTextItem = spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8, { isBig: isBigSkill, heatSigil });
     if (!isDotTick && skillKey !== 'meteor') {
       // 연속 치명타(몰아치는 열기) 콤보 피치 빌드업:
       // 1타 크리: 1.0 (예열) ➔ 2타 크리: 1.15 (몰열 완성 쾌감)
@@ -2343,8 +2352,13 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       } else if (state.combat.critStreak === 1) {
         state.combat.critStreak = 2;
         state.combat.streakTimer = 12.0;
-        playSound('proc');
-        triggerReadyFlash('skill-3');
+        // 열기 판정은 지금 확정하되, 두 번째 붉은 숫자가 문양에 닿을 때 '메테오 준비'를 켭니다.
+        if (heatTextItem && heatTextItem.heatSigil === 1) {
+          state.combat.meteorArmPending = true;
+        } else {
+          state.combat.meteorArmPending = true;
+          armMeteorInstant(true);
+        }
       }
     } else if (skillKey === 'fireball') {
       if (state.combat.critStreak === 1) {
@@ -2555,12 +2569,14 @@ function triggerSkill(skillKey, isManual = false) {
   if (skillKey === 'meteor') {
     if (!state.grimoires.meteor) return false;
     // 몰열은 일반 쿨타임과 화염구 시전을 방해하지 않는 즉시 연계입니다.
-    if (c.critStreak === 2) {
+    if (isMeteorInstantReady()) {
       c.critStreak = 0;
       c.streakTimer = 0;
       releaseMeteor(isManual);
       return true;
     }
+    // 두 번째 열기 숫자가 날아가는 중이면 곧 즉시 시전이 되므로 느린 일반 시전을 시작하지 않습니다.
+    if (c.meteorArmPending) return false;
     if (c.meteorCdRem > 0 || c.castingSkill || c.gcdRemaining > 0) return false;
     c.castingSkill = 'meteor';
     c.castTotal = Math.max(0.7, 2.5 / stats.speedMult);
@@ -2657,7 +2673,7 @@ function finishCast(skillKey) {
     }
 
     // 화염구 시전 완료 직후 몰열(치명타 2연속)이 켜져 있고 자동 시전이 켜져 있다면 지체 없이 메테오 즉시 발사 연계!
-    if (state.combat.critStreak === 2 && isSkillAutoActive('meteor') && state.grimoires.meteor) {
+    if (isMeteorInstantReady() && state.combat.meteorArmedAge >= METEOR_AUTO_BEAT && isSkillAutoActive('meteor')) {
       triggerSkill('meteor');
     }
   } else if (skillKey === 'meteor') {
@@ -2673,6 +2689,34 @@ function finishCast(skillKey) {
   }
 }
 
+// 메테오 준비 완료가 보인 뒤 자동 시전이 쏘기까지의 숨(초). '두 칸이 찼다 → 준비 → 발사'를 눈으로 따라가게 합니다.
+const METEOR_AUTO_BEAT = 0.3;
+
+// 메테오 즉시 시전 가능 = 열기 2스택 판정 + 두 번째 붉은 숫자의 문양 도착(무장)
+function isMeteorInstantReady() {
+  const c = state.combat;
+  return Boolean(state.grimoires.meteor && c.critStreak === 2 && !c.meteorArmPending);
+}
+
+// 무장 순간: 준비 효과음·버튼 섬광·열기 문양 두 칸 동시 발광. skipBeat=true면 자동 시전도 바로 쏩니다(날아가는 숫자가 없을 때).
+function armMeteorInstant(skipBeat) {
+  const c = state.combat;
+  if (!c.meteorArmPending || c.critStreak !== 2) {
+    c.meteorArmPending = false;
+    return;
+  }
+  c.meteorArmPending = false;
+  c.meteorArmedAge = skipBeat ? METEOR_AUTO_BEAT : 0;
+  playSound('proc');
+  triggerReadyFlash('skill-3');
+  const sigils = typeof document !== 'undefined' ? document.getElementById('heat-sigils') : null;
+  if (sigils && sigils.classList) {
+    sigils.classList.remove('heat-ready-burst');
+    void sigils.offsetWidth;
+    sigils.classList.add('heat-ready-burst');
+  }
+}
+
 // 스펠 큐(MMO식 입력 예약): 다른 시전·공통 대기 중에 누른 수동 스킬을 버리지 않고 기억했다가,
 // 현재 시전이 끝나는 즉시 자동 시전보다 먼저 발동합니다. 화염구 자동·메테오 수동 조합에서
 // 자동 화염구가 시전 틈을 계속 차지해 메테오 단축키가 먹지 않던 문제를 막습니다.
@@ -2685,8 +2729,8 @@ function requestManualSkill(skillKey) {
     return true;
   }
   // 시전·공통 대기 때문에만 막힌 경우에 예약합니다(쿨타임·미습득은 예약하지 않음).
-  const blockedByCast = Boolean(c.castingSkill) || c.gcdRemaining > 0;
-  const ready = skillKey === 'fireball' || (skillKey === 'meteor' && state.grimoires.meteor && c.meteorCdRem <= 0);
+  const blockedByCast = Boolean(c.castingSkill) || c.gcdRemaining > 0 || (skillKey === 'meteor' && c.meteorArmPending);
+  const ready = skillKey === 'fireball' || (skillKey === 'meteor' && state.grimoires.meteor && (c.meteorCdRem <= 0 || c.meteorArmPending));
   if (blockedByCast && ready) {
     c.queuedSkill = skillKey;
     c.queuedAge = 0;
@@ -2703,7 +2747,9 @@ function processQueuedSkill(dt) {
     clearQueuedSkill();
     return;
   }
-  if (c.castingSkill || c.gcdRemaining > 0) return;
+  if (c.queuedSkill === 'meteor' && c.meteorArmPending) return; // 열기 숫자 도착(무장) 대기
+  const instantMeteor = c.queuedSkill === 'meteor' && isMeteorInstantReady();
+  if (!instantMeteor && (c.castingSkill || c.gcdRemaining > 0)) return;
   const skill = c.queuedSkill;
   clearQueuedSkill();
   triggerSkill(skill, true);
@@ -2743,7 +2789,7 @@ function runSmartAutoCast() {
   }
 
   // 1. 몰아치는 열기 (즉시 시전 메테오): 몰열 2스택 상태라면 최우선 발사!
-  if (state.grimoires.meteor && isSkillAutoActive('meteor') && c.critStreak === 2) {
+  if (isSkillAutoActive('meteor') && isMeteorInstantReady() && c.meteorArmedAge >= METEOR_AUTO_BEAT) {
     triggerSkill('meteor', false);
   }
 
@@ -2874,7 +2920,7 @@ function updateNotificationBadges() {
     'badge-skill-2',
     state.grimoires.fireblast && c.fbCharges > 0 && (c.critStreak === 1 || (manualMode && c.fbCharges >= 2))
   );
-  setBadge('badge-skill-3', state.grimoires.meteor && c.critStreak === 2);
+  setBadge('badge-skill-3', isMeteorInstantReady());
   setBadge('badge-skill-4', manualMode && state.grimoires.combustion && c.combustionCdRem <= 0);
   setBadge('badge-skill-6', manualMode && state.grimoires.flame_patch && c.flamePatchCdRem <= 0);
 }
@@ -3895,6 +3941,7 @@ function restartSpeedrunRun() {
   state.combat.gcdRemaining = 0;
   state.combat.critStreak = 0;
   state.combat.streakTimer = 0;
+  state.combat.meteorArmPending = false;
   state.combat.igniteRem = 0;
   state.combat.ignitePool = 0;
   state.combat.meteorBurnRem = 0;
@@ -4063,8 +4110,12 @@ function gameLoop(nowMs) {
 
   if (c.critStreak > 0) {
     c.streakTimer -= dt;
+    if (c.critStreak === 2 && !c.meteorArmPending) c.meteorArmedAge += dt;
+    // 안전장치: 날아가던 두 번째 열기 숫자가 사라졌다면 바로 무장합니다.
+    if (c.meteorArmPending && !floatingTexts.some((f) => f.heatSigil === 1)) armMeteorInstant(true);
     if (c.streakTimer <= 0) {
       c.critStreak = 0;
+      c.meteorArmPending = false;
     }
   }
 
@@ -4149,7 +4200,7 @@ function updateLiveHUD() {
   const casterAvatar = document.getElementById('caster-avatar');
   const combBg = document.getElementById('combustion-bg');
   const isMeteorReady =
-    c.castingSkill === 'meteor' || (state.grimoires.meteor && c.critStreak === 2);
+    c.castingSkill === 'meteor' || isMeteorInstantReady();
 
   casterAvatar.classList.toggle('casting-active', Boolean(c.castingSkill) && !isMeteorReady);
   casterAvatar.classList.toggle('pyro-ready-mode', isMeteorReady);
@@ -4160,7 +4211,7 @@ function updateLiveHUD() {
   const arenaArt = document.getElementById('combat-arena');
   arenaArt.classList.toggle('fever-mode', c.combustionRem > 0);
   arenaArt.classList.toggle('art-combustion', c.combustionRem > 0);
-  arenaArt.classList.toggle('art-hot-streak', Boolean(state.grimoires.meteor && c.critStreak === 2));
+  arenaArt.classList.toggle('art-hot-streak', isMeteorInstantReady());
   const heatSigils = document.getElementById('heat-sigils');
   heatSigils.hidden = !state.grimoires.meteor;
   heatSigils.dataset.heat = String(c.critStreak);
@@ -4189,7 +4240,7 @@ function updateLiveHUD() {
       castName.textContent = tr('🔥 화염구');
     }
     castTime.textContent = isGatlingActive ? `${c.castRemaining.toFixed(2)}s` : `${c.castRemaining.toFixed(1)}s`;
-  } else if (state.grimoires.meteor && c.critStreak === 2) {
+  } else if (isMeteorInstantReady()) {
     castFill.style.width = '100%';
     castName.textContent = tr('☄️ 메테오 준비 완료!');
     castTime.textContent = tr('즉시 발사!');
@@ -4256,10 +4307,10 @@ function updateLiveHUD() {
 
   const btn3 = document.getElementById('skill-3');
   if (btn3) {
-    const isMeteorProc = Boolean(state.grimoires.meteor && c.critStreak === 2);
+    const isMeteorProc = isMeteorInstantReady();
     btn3.classList.toggle('proc-glow', isMeteorProc);
     if (state.grimoires.meteor) {
-      setRadialSweep(document.getElementById('gcd-3'), c.critStreak === 2 ? 0 : c.gcdRemaining, c.gcdTotal, false);
+      setRadialSweep(document.getElementById('gcd-3'), isMeteorProc ? 0 : c.gcdRemaining, c.gcdTotal, false);
     }
   }
 
@@ -4268,7 +4319,7 @@ function updateLiveHUD() {
   }
 
   if (state.grimoires.meteor) {
-    setRadialSweep(document.getElementById('cd-3'), c.critStreak === 2 ? 0 : c.meteorCdRem, c.meteorCdTotal, true);
+    setRadialSweep(document.getElementById('cd-3'), isMeteorInstantReady() ? 0 : c.meteorCdRem, c.meteorCdTotal, true);
   }
 
   if (state.grimoires.flame_patch) {
@@ -4403,7 +4454,7 @@ function loadGame() {
 function initEvents() {
   initSkillTooltips();
   document.getElementById('dummy-avatar').addEventListener('click', () => {
-    if (state.grimoires.meteor && state.combat.critStreak === 2) {
+    if (isMeteorInstantReady()) {
       requestManualSkill('meteor');
     } else {
       requestManualSkill('fireball');
