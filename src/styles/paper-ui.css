@@ -214,3 +214,6 @@
   100% { scale: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .heat-sigils.heat-ready-burst i { animation: none; } }
+/* 빨려 들어가는 열기 숫자의 스미어: 이동 방향으로 길게 늘어난 붉은 선. 뒤쪽 꼬리만 흐리고 앞머리는 선명하게. */
+.fct-crit.fct-heat[data-smear='fwd'] { -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 35%); mask-image: linear-gradient(to right, transparent 0%, #000 35%); }
+.fct-crit.fct-heat[data-smear='back'] { -webkit-mask-image: linear-gradient(to left, transparent 0%, #000 35%); mask-image: linear-gradient(to left, transparent 0%, #000 35%); }

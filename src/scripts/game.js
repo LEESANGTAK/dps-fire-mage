@@ -1510,6 +1510,20 @@ function applyFloatingTextTransform(f) {
   }
 
   f.el.style.opacity = opacity.toFixed(3);
+  if (f.smear) {
+    // 글자가 거꾸로 서지 않도록 왼쪽으로 날 때는 180도 뒤집고, 꼬리 흐림 방향도 함께 바꿉니다.
+    let angle = f.smear.angle;
+    const flipped = Math.abs(angle) > Math.PI / 2;
+    if (flipped) angle += angle > 0 ? -Math.PI : Math.PI;
+    if (!f.baseWidth) f.baseWidth = f.el.offsetWidth || 60;
+    const tail = (f.baseWidth * scale * (f.smear.sx - 1)) / 2;
+    const shift = flipped ? tail : -tail;
+    // 꼬리 흐림은 충분히 늘어났을 때만(움츠림 단계에서는 숫자를 선명하게 둡니다).
+    if (f.smear.sx > 1.3) f.el.dataset.smear = flipped ? 'back' : 'fwd';
+    else delete f.el.dataset.smear;
+    f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) rotate(${(angle * 180 / Math.PI).toFixed(1)}deg) translateX(${shift.toFixed(1)}px) scale(${(scale * f.smear.sx).toFixed(3)}, ${(scale * f.smear.sy).toFixed(3)})`;
+    return;
+  }
   const rotStr = rotDeg !== 0 ? ` rotate(${rotDeg.toFixed(1)}deg)` : '';
   f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})${rotStr}`;
 }
@@ -1669,6 +1683,8 @@ function updateFlyingCoins(dt) {
 
 // 열기 치명타 숫자 흡수 타이밍(초): 도장 찍기(0~0.27) 후 읽을 시간을 주고, 짧게 움츠렸다가 가속하며 문양으로 날아갑니다.
 const HEAT_ABSORB = { windup: 0.35, fly: 0.43, end: 0.75 };
+// 스미어: 초당 이동 px당 늘어나는 배율, 최대 늘어남(1+값 배), 최소 두께. 최고 속도에서 숫자가 한 줄의 선처럼 보입니다.
+const HEAT_SMEAR = { pxPerStretch: 260, maxStretch: 8, minThin: 0.22 };
 
 function prefersReducedMotion() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1720,15 +1736,24 @@ function updateHeatAbsorbMotion(f) {
     f.x = from.x - (dx / len) * pull;
     f.y = from.y - (dy / len) * pull;
     f.absorbScale = 1 - 0.12 * Math.sin(p * Math.PI * 0.5);
+    const squash = Math.sin(p * Math.PI) * 0.18;
+    f.smear = { angle: Math.atan2(dy, dx), sx: 1 - squash, sy: 1 + squash };
     return;
   }
-  const raw = Math.min(1, (f.life - HEAT_ABSORB.fly) / (HEAT_ABSORB.end - HEAT_ABSORB.fly));
+  const flyDur = HEAT_ABSORB.end - HEAT_ABSORB.fly;
+  const raw = Math.min(1, (f.life - HEAT_ABSORB.fly) / flyDur);
   const t = raw * raw * raw; // 묵직한 가속(ease-in)
   const ctrl = { x: (from.x + target.x) / 2, y: Math.min(from.y, target.y) - 70 };
   const u = 1 - t;
   f.x = u * u * from.x + 2 * u * t * ctrl.x + t * t * target.x;
   f.y = u * u * from.y + 2 * u * t * ctrl.y + t * t * target.y;
-  f.absorbScale = 0.88 - 0.6 * t;
+  f.absorbScale = 0.85 - 0.3 * raw; // 비행 중 조금씩 줄여, 늘어난 몸통이 굵은 글자 대신 선으로 읽히게
+  // 속도 = 곡선 접선 × 시간 가속(3·raw²/비행 시간). 빠를수록 길고 가늘게 늘어나 선처럼 보입니다.
+  const tanX = 2 * u * (ctrl.x - from.x) + 2 * t * (target.x - ctrl.x);
+  const tanY = 2 * u * (ctrl.y - from.y) + 2 * t * (target.y - ctrl.y);
+  const speed = Math.hypot(tanX, tanY) * (3 * raw * raw) / flyDur;
+  const stretch = 1 + Math.min(HEAT_SMEAR.maxStretch, speed / HEAT_SMEAR.pxPerStretch);
+  f.smear = { angle: Math.atan2(tanY, tanX), sx: stretch, sy: Math.max(HEAT_SMEAR.minThin, 1 / Math.pow(stretch, 0.7)) };
 }
 
 function updateFloatingTexts(dt) {
@@ -3987,8 +4012,9 @@ let lastTime = performance.now();
 let uiRefreshAccum = 0;
 
 function gameLoop(nowMs) {
-  const dt = Math.min(0.1, (nowMs - lastTime) / 1000);
-  lastTime = nowMs;
+  // 경과 시간은 0~0.1초로 제한합니다(첫 프레임 시각이 기준 시각보다 앞서면 음수가 되어 연출 시간이 거꾸로 흐름).
+  const dt = Math.max(0, Math.min(0.1, (nowMs - lastTime) / 1000));
+  lastTime = Math.max(lastTime, nowMs);
   if (arenaEnvironment) {
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     arenaEnvironment.update(dt, state.isPaused || document.hidden, reduced);
