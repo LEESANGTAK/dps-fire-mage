@@ -1702,7 +1702,8 @@ function extinguishHeatSigils(count) {
   if (!count || typeof document === 'undefined') return;
   let shown = false;
   for (let i = 0; i < count; i++) {
-    const flying = floatingTexts.find((f) => f.heatSigil === i);
+    // 지금의 열기와 연결된 숫자는 그 칸으로 날아가는 가장 최근 숫자입니다.
+    const flying = floatingTexts.findLast((f) => f.heatSigil === i);
     if (flying) {
       flying.extinguishOnArrival = true;
       continue;
