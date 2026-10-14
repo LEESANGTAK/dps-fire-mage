@@ -112,8 +112,12 @@ function normalizeMeta(raw, legacyBestTime) {
   // 구형 세이브로 이미 최종 보스를 쓰러뜨린 플레이어는 업화 1단계를 열어 둡니다.
   const unlocked = Math.max(clampInferno(meta.infernoUnlocked), bestTimes[0] && !raw ? 1 : 0);
   const startSpell = getUnlockedStartSpells(xp).includes(meta.startSpell) ? meta.startSpell : null;
+  // 액션 바 선호 배치(드래그 앤 드롭): 알려진 주문 키만, 중복 없이
+  const slotKeys = ['fireball', 'fireblast', 'meteor', 'combustion', 'flame_patch'];
+  const slotOrder = Array.isArray(meta.slotOrder) ? meta.slotOrder.filter((k, i, a) => slotKeys.includes(k) && a.indexOf(k) === i) : [];
   return {
     xp,
+    slotOrder,
     infernoUnlocked: unlocked,
     infernoSelected: Math.min(unlocked, clampInferno(meta.infernoSelected)),
     startSpell,

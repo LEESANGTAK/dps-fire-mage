@@ -455,7 +455,9 @@
         state.grimoires[raw.spellKey] = true;
         state.spellOrder = state.spellOrder || ['fireball'];
         if (!state.spellOrder.includes(raw.spellKey)) {
-          state.spellOrder.push(raw.spellKey);
+          // 플레이어가 드래그로 정한 선호 배치가 있으면 그 자리에 넣습니다(game.js insertSpellByPreference).
+          if (typeof insertSpellByPreference === 'function') insertSpellByPreference(raw.spellKey, (state.meta && state.meta.slotOrder) || []);
+          else state.spellOrder.push(raw.spellKey);
         }
         if (typeof updateSkillActionBarVisibility === 'function') updateSkillActionBarVisibility();
       }

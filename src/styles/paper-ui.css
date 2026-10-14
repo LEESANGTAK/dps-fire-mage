@@ -214,3 +214,10 @@
   100% { scale: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .heat-sigils.heat-ready-burst i { animation: none; } }
+
+/* 액션 바 슬롯 드래그 앤 드롭(action-bar-drag.js): 집은 슬롯은 떠올라 포인터를 따라오고, 놓으면 탄력 있게 내려앉습니다. */
+.action-bar .skill-btn:not(.hidden-slot) { touch-action: none; cursor: grab; }
+.action-bar .skill-btn.slot-dragging { position: relative; z-index: 20; cursor: grabbing; transition: none !important; border-color: #fde68a; box-shadow: 0 14px 18px #000b, 0 0 0 2px #fde68a, 0 0 14px #f59e0b88; }
+.action-bar.slot-drag-active .skill-btn:not(.slot-dragging) { filter: brightness(.85); }
+.action-bar.slot-drag-active { cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { .action-bar .skill-btn.slot-dragging { box-shadow: 0 0 0 2px #fde68a; } }

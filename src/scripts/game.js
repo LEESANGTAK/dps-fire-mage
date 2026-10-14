@@ -3028,13 +3028,34 @@ const SPELL_ACTION_CONFIG = {
 
 function getActiveSpellList() {
   state.spellOrder = state.spellOrder || ['fireball'];
-  // 새로 습득한 주문은 습득 순서대로 단축키 뒤쪽에 추가
+  // 새로 습득한 주문: 플레이어가 드래그로 정한 선호 배치(meta.slotOrder)가 있으면 그 자리에, 없으면 단축키 뒤쪽에 추가
+  const pref = state.meta && Array.isArray(state.meta.slotOrder) ? state.meta.slotOrder : [];
   ['fireblast', 'meteor', 'combustion', 'flame_patch'].forEach((s) => {
-    if (state.grimoires[s] && !state.spellOrder.includes(s)) {
-      state.spellOrder.push(s);
-    }
+    if (state.grimoires[s] && !state.spellOrder.includes(s)) insertSpellByPreference(s, pref);
   });
   return state.spellOrder.filter((s) => s === 'fireball' || state.grimoires[s]);
+}
+
+// 선호 배치에서 s보다 뒤에 오는 주문 중, 이미 슬롯에 있는 첫 주문 바로 앞에 넣습니다.
+function insertSpellByPreference(s, pref) {
+  const order = state.spellOrder;
+  const p = pref.indexOf(s);
+  const idx = p === -1 ? -1 : order.findIndex((k) => pref.includes(k) && pref.indexOf(k) > p);
+  if (idx === -1) order.push(s);
+  else order.splice(idx, 0, s);
+}
+
+// 액션 바 슬롯 이동(드래그 앤 드롭): 주문을 toIndex 자리로 옮기고, 다음 런에도 이어지도록 선호 배치로 저장합니다.
+function moveSpellSlot(skillKey, toIndex) {
+  const active = getActiveSpellList();
+  const from = active.indexOf(skillKey);
+  const to = Math.max(0, Math.min(active.length - 1, toIndex));
+  if (from === -1 || from === to) return false;
+  active.splice(from, 1);
+  active.splice(to, 0, skillKey);
+  state.spellOrder = active.concat(state.spellOrder.filter((k) => !active.includes(k)));
+  if (state.meta) state.meta.slotOrder = active.concat((state.meta.slotOrder || []).filter((k) => !active.includes(k)));
+  return true;
 }
 
 function updateSkillActionBarVisibility() {
@@ -4455,6 +4476,7 @@ function loadGame() {
 
 function initEvents() {
   initSkillTooltips();
+  if (typeof initActionBarDrag === 'function') initActionBarDrag();
   document.getElementById('dummy-avatar').addEventListener('click', () => {
     if (isMeteorInstantReady()) {
       requestManualSkill('meteor');
