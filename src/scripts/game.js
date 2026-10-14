@@ -2800,12 +2800,13 @@ function runSmartAutoCast() {
     }
   }
 
-  // 3. 일반 화염구 기본 시전 (몰열 2스택 대기 중이 아닐 때)
+  // 3. 일반 화염구 기본 시전. 몰열 2스택이면 곧 자동 메테오가 나가므로 화염구를 쉬지만,
+  //    메테오가 수동이면 플레이어가 누를 때까지 화염구 자동 시전을 계속합니다.
   if (
     isSkillAutoActive('fireball') &&
     !c.castingSkill &&
     c.gcdRemaining <= 0 &&
-    !(state.grimoires.meteor && c.critStreak === 2)
+    !(state.grimoires.meteor && c.critStreak === 2 && isSkillAutoActive('meteor'))
   ) {
     triggerSkill('fireball', false);
   }
