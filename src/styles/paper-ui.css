@@ -191,3 +191,17 @@
 .action-bar .skill-btn.skill-queued { border-color: #fde68a; box-shadow: 0 0 0 2px #fde68a, 0 0 12px #f59e0b; animation: skillQueued .6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate; }
 @keyframes skillQueued { from { transform: scale(1); } to { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .action-bar .skill-btn.skill-queued { animation: none; } }
+
+/* 열기(몰아치는 열기)를 채우는 치명타 숫자: 붉은색. 등장 순간의 흰 섬광도 붉은 기운을 띱니다. */
+.fct-crit.fct-heat { color: #ff3b30; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 -2px 0 #000, 0 3.5px 0 #000, 0 0 18px rgba(255, 40, 30, .95), 0 5px 10px rgba(0, 0, 0, .95); }
+.fct-crit.fct-heat.crit-flash { color: #ffe1dc; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 24px #ff6b5e, 0 0 40px #ff1a1a; }
+/* 숫자가 도착할 때까지 대상 문양은 꺼진 상태로 둡니다(열기 판정은 이미 반영됨, 표시만 지연). */
+.heat-sigils i.heat-awaiting { background: #231a22 !important; border-color: #9a754c !important; box-shadow: none !important; }
+/* 흡수 순간: 붉게 번쩍이며 납작하게 찌그러졌다가(스쿼시) 탄력 있게 복원. 마름모 회전은 transform에 두고 크기만 scale로 조절합니다. */
+.heat-sigils i.heat-absorb { animation: heatAbsorb .42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes heatAbsorb {
+  0% { scale: 1.7 0.6; background: #ff4d3d; border-color: #ffd0c4; box-shadow: 0 0 18px #ff2a2a; }
+  45% { scale: 0.85 1.25; }
+  100% { scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .heat-sigils i.heat-absorb { animation: none; } }

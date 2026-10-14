@@ -1270,6 +1270,7 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   // 화면 내 과도한 DOM 누적으로 인한 프레임 드랍 방지
   while (floatingTexts.length >= 45) {
     const oldest = floatingTexts.shift();
+    if (oldest && oldest.heatSigil !== null && oldest.heatSigil !== undefined) setHeatSigilAwaiting(oldest.heatSigil, false);
     if (oldest && oldest.el) oldest.el.remove();
   }
 
@@ -1280,8 +1281,9 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   const isGold = styleClass === 'fct-gold';
   const isBig = Boolean(extraOpts.isBig);
 
+  const heatSigil = isCrit && Number.isInteger(extraOpts.heatSigil) && !prefersReducedMotion() ? extraOpts.heatSigil : null;
   const el = document.createElement('div');
-  el.className = `fct-item ${styleClass}${isCrit ? ' crit-flash' : ''}${isCrit && isBig ? ' fct-big-crit' : ''}`;
+  el.className = `fct-item ${styleClass}${isCrit ? ' crit-flash' : ''}${isCrit && isBig ? ' fct-big-crit' : ''}${heatSigil !== null ? ' fct-heat' : ''}`;
   el.textContent = text;
 
   let x = pos.x;
@@ -1390,8 +1392,14 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     life: 0,
     maxLife,
     holdTime,
-    flashed: isCrit
+    flashed: isCrit,
+    heatSigil
   };
+  if (heatSigil !== null) {
+    // 도착 전까지 대상 문양은 꺼진 상태로 두고, 비행 시간만큼 수명을 늘립니다.
+    item.maxLife = HEAT_ABSORB.end;
+    setHeatSigilAwaiting(heatSigil, true);
+  }
 
   applyFloatingTextTransform(item);
   layer.appendChild(el);
@@ -1475,8 +1483,14 @@ function applyFloatingTextTransform(f) {
     }
   }
 
+  if (f.absorbScale !== undefined) scale *= f.absorbScale;
+
   let opacity = 1.0;
-  if (f.type === 'crit') {
+  if (f.heatSigil !== null && f.heatSigil !== undefined) {
+    // 문양에 닿기 직전(마지막 15%)에만 살짝 사라져, 흡수 순간 불씨와 자연스럽게 이어집니다.
+    const raw = (f.life - HEAT_ABSORB.fly) / (HEAT_ABSORB.end - HEAT_ABSORB.fly);
+    opacity = raw > 0.85 ? Math.max(0, 1 - (raw - 0.85) / 0.15) : 1;
+  } else if (f.type === 'crit') {
     // 크리티컬은 위로 쭉 올라가면서 후반부(68%~100%)에 자연스럽게 페이드 아웃
     if (prog > 0.68) {
       const fadeProg = (prog - 0.68) / 0.32;
@@ -1646,13 +1660,87 @@ function updateFlyingCoins(dt) {
   }
 }
 
+// 열기 치명타 숫자 흡수 타이밍(초): 도장 찍기(0~0.27) 후 읽을 시간을 주고, 짧게 움츠렸다가 가속하며 문양으로 날아갑니다.
+const HEAT_ABSORB = { windup: 0.5, fly: 0.6, end: 0.95 };
+
+function prefersReducedMotion() {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function getHeatSigilEl(index) {
+  const sigils = document.getElementById('heat-sigils');
+  return sigils ? sigils.children[index] || null : null;
+}
+
+function setHeatSigilAwaiting(index, on) {
+  const sigil = getHeatSigilEl(index);
+  if (sigil) sigil.classList.toggle('heat-awaiting', on);
+}
+
+// 열기 문양의 중심(전투 영역 좌표). 숨겨져 있으면 null.
+function getHeatSigilPos(index) {
+  const sigil = getHeatSigilEl(index);
+  const arenaEl = document.getElementById('combat-arena');
+  if (!sigil || !arenaEl || sigil.offsetParent === null) return null;
+  const r = sigil.getBoundingClientRect(), a = arenaEl.getBoundingClientRect();
+  return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height / 2 };
+}
+
+// 숫자가 문양에 닿는 순간: 문양 점등 + 찌그러졌다 튀는 흡수 반동 + 붉은 불씨
+function onHeatSigilAbsorbed(f) {
+  setHeatSigilAwaiting(f.heatSigil, false);
+  const sigil = getHeatSigilEl(f.heatSigil);
+  if (sigil) {
+    sigil.classList.remove('heat-absorb');
+    void sigil.offsetWidth;
+    sigil.classList.add('heat-absorb');
+  }
+  const pos = getHeatSigilPos(f.heatSigil);
+  if (pos) spawnParticles(pos.x, pos.y, 8, '#ffd0c4', '#ef2b2b', 0.7);
+}
+
+// 머무름 이후의 열기 숫자 위치·크기: 반대 방향으로 살짝 움츠렸다가(예비 동작) 위로 휘는 곡선을 따라 가속 비행
+function updateHeatAbsorbMotion(f) {
+  if (!f.flyFrom) f.flyFrom = { x: f.x, y: f.y };
+  const target = getHeatSigilPos(f.heatSigil) || f.flyTo || f.flyFrom;
+  f.flyTo = target;
+  const from = f.flyFrom;
+  if (f.life < HEAT_ABSORB.fly) {
+    const p = (f.life - HEAT_ABSORB.windup) / (HEAT_ABSORB.fly - HEAT_ABSORB.windup);
+    const pull = Math.sin(p * Math.PI) * 10;
+    const dx = target.x - from.x, dy = target.y - from.y, len = Math.hypot(dx, dy) || 1;
+    f.x = from.x - (dx / len) * pull;
+    f.y = from.y - (dy / len) * pull;
+    f.absorbScale = 1 - 0.12 * Math.sin(p * Math.PI * 0.5);
+    return;
+  }
+  const raw = Math.min(1, (f.life - HEAT_ABSORB.fly) / (HEAT_ABSORB.end - HEAT_ABSORB.fly));
+  const t = raw * raw * raw; // 묵직한 가속(ease-in)
+  const ctrl = { x: (from.x + target.x) / 2, y: Math.min(from.y, target.y) - 70 };
+  const u = 1 - t;
+  f.x = u * u * from.x + 2 * u * t * ctrl.x + t * t * target.x;
+  f.y = u * u * from.y + 2 * u * t * ctrl.y + t * t * target.y;
+  f.absorbScale = 0.88 - 0.6 * t;
+}
+
 function updateFloatingTexts(dt) {
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const f = floatingTexts[i];
     f.life += dt;
     if (f.life >= f.maxLife) {
+      if (f.heatSigil !== null && f.heatSigil !== undefined) onHeatSigilAbsorbed(f);
       f.el.remove();
       floatingTexts.splice(i, 1);
+      continue;
+    }
+
+    if (f.heatSigil !== null && f.heatSigil !== undefined && f.life >= HEAT_ABSORB.windup) {
+      if (f.flashed) {
+        f.flashed = false;
+        f.el.classList.remove('crit-flash');
+      }
+      updateHeatAbsorbMotion(f);
+      applyFloatingTextTransform(f);
       continue;
     }
 
@@ -2198,7 +2286,10 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   if (isDotTick || skillKey === 'ignite') {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-dot', 5);
   } else if (isCrit) {
-    spawnFloatingText(`${fmt(dmg)}!`, 'fct-crit', -8, { isBig: isBigSkill });
+    // 몰아치는 열기를 채우는 치명타(0→1, 1→2)는 붉은 숫자로 띄운 뒤 해당 열기 문양으로 빨려 들어갑니다.
+    // 열기 판정 자체는 아래에서 즉시 갱신하고, 문양의 점등만 숫자가 도착할 때까지 미룹니다(연출 전용).
+    const heatSigil = canTriggerStreak && state.grimoires.meteor && state.combat.critStreak < 2 ? state.combat.critStreak : null;
+    spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8, { isBig: isBigSkill, heatSigil });
     if (!isDotTick && skillKey !== 'meteor') {
       // 연속 치명타(몰아치는 열기) 콤보 피치 빌드업:
       // 1타 크리: 1.0 (예열) ➔ 2타 크리: 1.15 (몰열 완성 쾌감)
