@@ -261,6 +261,7 @@ const I18N_EN = {
   '업화 {n}단계': 'Inferno {n}',
   '기본 난이도': 'Base difficulty',
   '이 단계 최고 기록': 'Best time at this level',
+  '열기 소멸': 'Heat lost',
   '기록 없음': 'No record',
   '몬스터 체력 +15%': 'Monster health +15%',
   '10스테이지 이후 보스 광폭화 시간 -10%': 'Boss enrage timer -10% (stage 10+)',

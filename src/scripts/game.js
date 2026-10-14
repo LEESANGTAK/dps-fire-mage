@@ -1693,9 +1693,54 @@ function getHeatSigilPos(index) {
   return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height / 2 };
 }
 
+// 열기 소멸 연출 타이밍(초): 숫자가 도착해 칸이 켜진 모습을 보여준 뒤 식기까지의 숨
+const HEAT_EXTINGUISH = { holdAfterArrival: 0.35 };
+
+// 켜져 있던 열기 문양 count칸이 식어 꺼지는 연출(회색으로 부풀며 꺼짐 + 연기 + '열기 소멸').
+// 아직 숫자가 날아가는 칸은 숫자가 도착해 잠깐 켜진 뒤 꺼지도록 예약해, '채워짐 → 식음' 순서를 지킵니다.
+function extinguishHeatSigils(count) {
+  if (!count || typeof document === 'undefined') return;
+  let shown = false;
+  for (let i = 0; i < count; i++) {
+    const flying = floatingTexts.find((f) => f.heatSigil === i);
+    if (flying) {
+      flying.extinguishOnArrival = true;
+      continue;
+    }
+    playHeatSigilExtinguish(i, !shown);
+    shown = true;
+  }
+}
+
+function playHeatSigilExtinguish(index, withLabel) {
+  const sigil = getHeatSigilEl(index);
+  if (!sigil) return;
+  sigil.classList.remove('heat-hold', 'heat-absorb', 'heat-extinguish');
+  if (prefersReducedMotion()) return;
+  void sigil.offsetWidth;
+  sigil.classList.add('heat-extinguish');
+  setTimeout(() => sigil.classList.remove('heat-extinguish'), 600);
+  const pos = getHeatSigilPos(index);
+  if (pos) spawnParticles(pos.x, pos.y - 4, 6, '#e5e7eb', '#6b7280', 0.45);
+  if (withLabel) spawnFloatingText(tr('열기 소멸'), 'fct-heat-out', -70, { anchor: 'caster' });
+}
+
 // 숫자가 문양에 닿는 순간: 문양 점등 + 찌그러졌다 튀는 흡수 반동 + 붉은 불씨
 function onHeatSigilAbsorbed(f) {
   setHeatSigilAwaiting(f.heatSigil, false);
+  if (f.extinguishOnArrival) {
+    // 날아오는 동안 열기가 이미 식었다면: 도착해 잠깐 켜진 모습을 보여준 뒤 식어 꺼집니다.
+    const sigil = getHeatSigilEl(f.heatSigil);
+    if (sigil) {
+      sigil.classList.remove('heat-absorb');
+      void sigil.offsetWidth;
+      sigil.classList.add('heat-absorb', 'heat-hold');
+    }
+    const pos = getHeatSigilPos(f.heatSigil);
+    if (pos) spawnParticles(pos.x, pos.y, 8, '#ffd0c4', '#ef2b2b', 0.7);
+    setTimeout(() => playHeatSigilExtinguish(f.heatSigil, true), HEAT_EXTINGUISH.holdAfterArrival * 1000);
+    return;
+  }
   if (f.heatSigil === 1) armMeteorInstant(false);
   const sigil = getHeatSigilEl(f.heatSigil);
   if (sigil) {
@@ -2363,6 +2408,8 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     } else if (skillKey === 'fireball') {
       if (state.combat.critStreak === 1) {
         state.combat.critStreak = 0;
+        // 규칙: 열기 1칸에서 치명타가 아닌 화염구가 꽂히면 열기가 식습니다. 그 순간을 문양에서 보여줍니다.
+        extinguishHeatSigils(1);
       }
     }
   }
@@ -4137,6 +4184,7 @@ function gameLoop(nowMs) {
     // 안전장치: 날아가던 두 번째 열기 숫자가 사라졌다면 바로 무장합니다.
     if (c.meteorArmPending && !floatingTexts.some((f) => f.heatSigil === 1)) armMeteorInstant(true);
     if (c.streakTimer <= 0) {
+      extinguishHeatSigils(c.critStreak);
       c.critStreak = 0;
       c.meteorArmPending = false;
     }
