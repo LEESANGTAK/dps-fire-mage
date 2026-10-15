@@ -15,7 +15,7 @@ const INFERNO_RULES = [
   { level: 1, text: '몬스터 체력 +15%', hpPct: 15 },
   { level: 2, text: '10스테이지 이후 보스 광폭화 시간 -10%', enragePct: -10 },
   { level: 3, text: '카드 다시 뽑기 비용 +50%', rerollPct: 50 },
-  { level: 4, text: '10스테이지 이후 보스 체력 +20%', bossHpPct: 20 },
+  { level: 4, text: '10스테이지 이후 보스 체력 +60%', bossHpPct: 60 },
   { level: 5, text: '일반 웨이브 각성 카드 선택지 3장 → 2장', normalChoices: -1 },
   { level: 6, text: '10스테이지 이후 보스 광폭화 시간 -10% 추가', enragePct: -10 },
   { level: 7, text: '최종 보스 불의 심장 보호막 +50%', shieldPct: 50 },

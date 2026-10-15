@@ -269,7 +269,7 @@ const I18N_EN = {
   '몬스터 체력 +15%': 'Monster health +15%',
   '10스테이지 이후 보스 광폭화 시간 -10%': 'Boss enrage timer -10% (stage 10+)',
   '카드 다시 뽑기 비용 +50%': 'Card redraw cost +50%',
-  '10스테이지 이후 보스 체력 +20%': 'Boss health +20% (stage 10+)',
+  '10스테이지 이후 보스 체력 +60%': 'Boss health +60% (stage 10+)',
   '일반 웨이브 각성 카드 선택지 3장 → 2장': 'Normal wave card choices: 3 → 2',
   '10스테이지 이후 보스 광폭화 시간 -10% 추가': 'Boss enrage timer -10% more (stage 10+)',
   '최종 보스 불의 심장 보호막 +50%': "Final boss Heart of Fire shield +50%",
