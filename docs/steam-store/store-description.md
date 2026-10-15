@@ -64,6 +64,7 @@ DPS: Fire Mage strips the fire mage fantasy down to its core: a roguelike deckbu
 ---
 
 ## 태그 후보 (최대 20개 중 상위 우선)
-Roguelike Deckbuilder, Speedrun, Action Roguelike, Casual, Fantasy, Magic, Cute, Stylized, 2D, Singleplayer, Short, Replay Value, Card Battler, Score Attack, Auto Battler(자동 시전을 강조할 때만)
+- 상위 5개: Roguelike Deckbuilder, Action Roguelike, Speedrun, Roguelite, Card Battler
+- 보조: Short, Replay Value, Score Attack, Magic, Fantasy, Singleplayer, 2D, Stylized, Cartoon, Casual
 
-> ⚠️ "Idle/Clicker" 태그는 피합니다. 손맛을 약속하는 소개문과 기대가 어긋나 부정 리뷰로 이어지기 쉽습니다.
+> ⚠️ Idle·Clicker·Incremental·Auto Battler·MMORPG 태그는 피합니다. 손맛을 약속하는 소개문과 기대가 어긋나 부정 리뷰로 이어지기 쉽습니다. 선정 근거는 `docs/target-strategy-plan.md` 4장을 기준으로 합니다.
