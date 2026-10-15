@@ -334,7 +334,6 @@ function getNextBgmIndex() {
 
 function playNextBgmTrack() {
   if (!bgmAudios.length) return;
-  ensureBgmWebAudioGraph();
   currentBgmIndex = getNextBgmIndex();
   const effVol = getEffectiveBgmVol();
 
@@ -363,7 +362,8 @@ function getEffectiveBgmVol() {
   const master = getEffectiveMasterVol();
   if (master <= 0) return 0;
   const bgm = Math.max(0, Math.min(1, typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.2));
-  return Math.max(0, Math.min(1, master * bgm));
+  const duckingMult = isBgmBehindWallActive ? 0.35 : 1.0;
+  return Math.max(0, Math.min(1, master * bgm * duckingMult));
 }
 
 function getEffectiveSfxVol(baseVol = 0.75) {
@@ -395,87 +395,48 @@ function initBgmAudio() {
 initBgmAudio();
 
 // ==========================================
-// Web Audio API를 활용한 BGM 공간감 & 벽 뒤(Muffled Low-Pass) 효과
+// 마도서 각성 창 진입 시 BGM 공간감 & 벽 뒤(Ducking & Muffled) 효과
 // ==========================================
-let bgmAudioCtx = null;
-let bgmFilterNode = null;
-let bgmFilterGain = null;
 let isBgmBehindWallActive = false;
-
-function getBgmAudioContext() {
-  if (typeof window === 'undefined') return null;
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return null;
-  if (!bgmAudioCtx) {
-    try {
-      bgmAudioCtx = new AudioCtx();
-    } catch (e) {
-      return null;
-    }
-  }
-  if (bgmAudioCtx && bgmAudioCtx.state === 'suspended') {
-    bgmAudioCtx.resume().catch(() => {});
-  }
-  return bgmAudioCtx;
-}
-
-function ensureBgmWebAudioGraph() {
-  const ctx = getBgmAudioContext();
-  if (!ctx) return;
-  try {
-    if (!bgmFilterNode) {
-      bgmFilterNode = ctx.createBiquadFilter();
-      bgmFilterNode.type = 'lowpass';
-      bgmFilterNode.frequency.value = isBgmBehindWallActive ? 380 : 22050;
-      bgmFilterNode.Q.value = 1.0;
-
-      bgmFilterGain = ctx.createGain();
-      bgmFilterGain.gain.value = isBgmBehindWallActive ? 0.65 : 1.0;
-
-      bgmFilterNode.connect(bgmFilterGain);
-      bgmFilterGain.connect(ctx.destination);
-    }
-
-    bgmAudios.forEach((audio) => {
-      if (!audio._webAudioConnected) {
-        try {
-          const source = ctx.createMediaElementSource(audio);
-          source.connect(bgmFilterNode);
-          audio._webAudioConnected = true;
-        } catch (e) {}
-      }
-    });
-  } catch (e) {}
-}
+let bgmFadeRafId = null;
 
 function setBgmBehindWall(enable, smooth = true) {
   isBgmBehindWallActive = enable;
-  ensureBgmWebAudioGraph();
-  const ctx = getBgmAudioContext();
-  if (!ctx || !bgmFilterNode || !bgmFilterGain) return;
-  try {
-    const now = ctx.currentTime;
-    const targetFreq = enable ? 380 : 22050;
-    const targetGain = enable ? 0.65 : 1.0;
-    const dur = smooth ? 0.35 : 0.01;
+  const targetVol = getEffectiveBgmVol();
+  const currentAudio = (currentBgmIndex >= 0 && currentBgmIndex < bgmAudios.length) ? bgmAudios[currentBgmIndex] : null;
+  if (!currentAudio) return;
 
-    bgmFilterNode.frequency.cancelScheduledValues(now);
-    bgmFilterNode.frequency.setTargetAtTime(targetFreq, now, dur / 3);
-
-    bgmFilterGain.gain.cancelScheduledValues(now);
-    bgmFilterGain.gain.setTargetAtTime(targetGain, now, dur / 3);
-  } catch (e) {
-    try {
-      bgmFilterNode.frequency.value = enable ? 380 : 22050;
-      bgmFilterGain.gain.value = enable ? 0.65 : 1.0;
-    } catch (err) {}
+  if (bgmFadeRafId) {
+    cancelAnimationFrame(bgmFadeRafId);
+    bgmFadeRafId = null;
   }
+
+  if (!smooth) {
+    currentAudio.volume = targetVol;
+    return;
+  }
+
+  const startVol = currentAudio.volume;
+  const startTime = performance.now();
+  const duration = 350;
+
+  const step = (now) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    currentAudio.volume = startVol + (targetVol - startVol) * progress;
+    if (progress < 1) {
+      bgmFadeRafId = requestAnimationFrame(step);
+    } else {
+      currentAudio.volume = targetVol;
+      bgmFadeRafId = null;
+    }
+  };
+  bgmFadeRafId = requestAnimationFrame(step);
 }
 
 function updateBgmPlayback() {
   if (!bgmAudios.length) return;
   try {
-    ensureBgmWebAudioGraph();
     const effVol = getEffectiveBgmVol();
     if (effVol > 0) {
       if (currentBgmIndex < 0 || currentBgmIndex >= bgmAudios.length) {
