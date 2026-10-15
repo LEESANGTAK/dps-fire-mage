@@ -9,13 +9,13 @@
 const INFERNO_MAX = 8;
 
 // level 단계에서 새로 더해지는 규칙. 효과 값은 앞 단계와 합산됩니다.
-// 광폭화 단축은 빌드가 갖춰진 10스테이지 이후 보스에만 적용해, 초반 보스에서 런이 허무하게 끝나지 않게 합니다(시뮬레이터 실측 근거).
-const INFERNO_ENRAGE_FROM_STAGE = 10;
+// 광폭화 단축과 보스 체력 증가는 빌드가 갖춰진 10스테이지 이후 보스에만 적용해, 초반 보스에서 런이 허무하게 끝나지 않게 합니다(시뮬레이터 실측 근거).
+const INFERNO_LATE_BOSS_FROM_STAGE = 10;
 const INFERNO_RULES = [
   { level: 1, text: '몬스터 체력 +15%', hpPct: 15 },
   { level: 2, text: '10스테이지 이후 보스 광폭화 시간 -10%', enragePct: -10 },
   { level: 3, text: '카드 다시 뽑기 비용 +50%', rerollPct: 50 },
-  { level: 4, text: '보스 체력 +20%', bossHpPct: 20 },
+  { level: 4, text: '10스테이지 이후 보스 체력 +20%', bossHpPct: 20 },
   { level: 5, text: '일반 웨이브 각성 카드 선택지 3장 → 2장', normalChoices: -1 },
   { level: 6, text: '10스테이지 이후 보스 광폭화 시간 -10% 추가', enragePct: -10 },
   { level: 7, text: '최종 보스 불의 심장 보호막 +50%', shieldPct: 50 },
@@ -128,7 +128,7 @@ function normalizeMeta(raw, legacyBestTime) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    INFERNO_MAX, INFERNO_ENRAGE_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, START_SPELL_CARDS,
+    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, START_SPELL_CARDS,
     clampInferno, getInfernoModifiers, getRunMasteryXp, getUnlocksAt, getMasteryProgress,
     getLockedCardIds, getUnlockedStartSpells, normalizeMeta
   };

@@ -50,12 +50,13 @@ function getStageData(stageNum) {
   const stepInPhase = ((stage - 1) % 5) + 1;
   const base = STAGE_MONSTERS[stage - 1];
   const isPhaseBoss = stepInPhase === 5;
-  // 업화 단계: 체력·광폭화 시간 배율(meta-progression.js의 표)
+  // 업화 단계: 체력·광폭화 시간 배율(meta-progression.js의 표). 보스 전용 규칙은 10스테이지 이후 보스에만 적용합니다.
   const mods = getInfernoModifiers(currentInfernoLevel());
+  const isLateBoss = isPhaseBoss && stage >= INFERNO_LATE_BOSS_FROM_STAGE;
   return {
     ...base,
-    hp: Math.round(base.hp * (isPhaseBoss ? mods.bossHpMult : mods.hpMult)),
-    enrage: base.enrage ? Math.round(base.enrage * (stage >= INFERNO_ENRAGE_FROM_STAGE ? mods.enrageMult : 1)) : base.enrage,
+    hp: Math.round(base.hp * (isLateBoss ? mods.bossHpMult : mods.hpMult)),
+    enrage: base.enrage ? Math.round(base.enrage * (stage >= INFERNO_LATE_BOSS_FROM_STAGE ? mods.enrageMult : 1)) : base.enrage,
     phase,
     stepInPhase,
     isPhaseBoss
@@ -122,8 +123,9 @@ const state = {
     flame_patch: true
   },
   soundOn: true,
-  bgmVolume: 0.4,
-  sfxVolume: 0.8,
+  masterVolume: 1.0,
+  bgmVolume: 0.2,
+  sfxVolume: 0.1,
 
   // 최근 6초 피해량 기반 실시간 DPS (최고 DPS 기록용)
   currentDps: 0,
@@ -302,8 +304,9 @@ fireballCastAudio.loop = true;
 fireballCastAudio.volume = 0.58;
 
 const BGM_TRACKS = [
-  { title: tr('선술집의 변덕 A'), src: 'assets/sounds/bgm/Tavern Whimsy.mp3' },
-  { title: tr('선술집의 변덕 B'), src: 'assets/sounds/bgm/Tavern Whimsy (1).mp3' }
+  { title: tr('돌문 아래에서'), src: 'assets/sounds/bgm/Beneath_the_Stone_Gates.mp3' },
+  { title: tr('구리의 일곱 문'), src: 'assets/sounds/bgm/Seven_Gates_of_Copper.mp3' },
+  { title: tr('칼날의 시련'), src: 'assets/sounds/bgm/Trial_by_the_Blade.mp3' }
 ];
 const bgmAudios = [];
 let currentBgmIndex = -1;
@@ -349,15 +352,23 @@ function playNextBgmTrack() {
   updateSoundUI();
 }
 
-function getEffectiveBgmVol() {
+function getEffectiveMasterVol() {
   if (!state.soundOn) return 0;
-  return Math.max(0, Math.min(1, typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.4));
+  return Math.max(0, Math.min(1, typeof state.masterVolume === 'number' ? state.masterVolume : 1.0));
+}
+
+function getEffectiveBgmVol() {
+  const master = getEffectiveMasterVol();
+  if (master <= 0) return 0;
+  const bgm = Math.max(0, Math.min(1, typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.2));
+  return Math.max(0, Math.min(1, master * bgm));
 }
 
 function getEffectiveSfxVol(baseVol = 0.75) {
-  if (!state.soundOn) return 0;
-  const userSfx = Math.max(0, Math.min(1, typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.8));
-  return Math.max(0, Math.min(1, baseVol * userSfx));
+  const master = getEffectiveMasterVol();
+  if (master <= 0) return 0;
+  const userSfx = Math.max(0, Math.min(1, typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.1));
+  return Math.max(0, Math.min(1, baseVol * userSfx * master));
 }
 
 function initBgmAudio() {
@@ -365,7 +376,7 @@ function initBgmAudio() {
     const audio = new Audio(track.src);
     audio.preload = 'auto';
     audio.loop = false;
-    audio.volume = 0.4;
+    audio.volume = 0.2;
     audio.addEventListener('ended', () => {
       playNextBgmTrack();
     });
@@ -518,9 +529,10 @@ function playSound(type, pitchMult = 1.0) {
 }
 
 function updateSoundUI() {
-  const bgmPct = Math.round((typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.4) * 100);
-  const sfxPct = Math.round((typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.8) * 100);
-  const isAllMuted = !state.soundOn || (bgmPct === 0 && sfxPct === 0);
+  const masterPct = Math.round((typeof state.masterVolume === 'number' ? state.masterVolume : 1.0) * 100);
+  const bgmPct = Math.round((typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.2) * 100);
+  const sfxPct = Math.round((typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.1) * 100);
+  const isAllMuted = !state.soundOn || masterPct === 0 || (bgmPct === 0 && sfxPct === 0);
 
   const soundBtn = document.getElementById('btn-sound');
   if (soundBtn) {
@@ -529,9 +541,15 @@ function updateSoundUI() {
 
   const muteAllBtn = document.getElementById('btn-sound-mute-all');
   if (muteAllBtn) {
-    muteAllBtn.textContent = state.soundOn ? tr('🔊 켜짐') : tr('🔇 음소거됨');
-    muteAllBtn.classList.toggle('muted', !state.soundOn);
+    const isMuted = !state.soundOn || masterPct === 0;
+    muteAllBtn.textContent = !isMuted ? tr('🔊 켜짐') : tr('🔇 음소거됨');
+    muteAllBtn.classList.toggle('muted', isMuted);
   }
+
+  const masterSlider = document.getElementById('slider-master-vol');
+  const masterValEl = document.getElementById('ui-master-vol-val');
+  if (masterSlider) masterSlider.value = String(masterPct);
+  if (masterValEl) masterValEl.textContent = state.soundOn ? `${masterPct}%` : tr('음소거');
 
   const bgmSlider = document.getElementById('slider-bgm-vol');
   const bgmValEl = document.getElementById('ui-bgm-vol-val');
@@ -4474,6 +4492,7 @@ function saveGame() {
       autoCast: state.autoCast,
       skillAuto: state.skillAuto,
       soundOn: state.soundOn,
+      masterVolume: state.masterVolume,
       bgmVolume: state.bgmVolume,
       sfxVolume: state.sfxVolume,
       unfolded: state.unfolded,
@@ -4514,6 +4533,7 @@ function loadGame() {
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;
     if (data.skillAuto) Object.assign(state.skillAuto, data.skillAuto);
     if (typeof data.soundOn === 'boolean') state.soundOn = data.soundOn;
+    if (typeof data.masterVolume === 'number') state.masterVolume = Math.max(0, Math.min(1, data.masterVolume));
     if (typeof data.bgmVolume === 'number') state.bgmVolume = Math.max(0, Math.min(1, data.bgmVolume));
     if (typeof data.sfxVolume === 'number') state.sfxVolume = Math.max(0, Math.min(1, data.sfxVolume));
     if (data.unfolded) {
@@ -4623,6 +4643,7 @@ function initEvents() {
   const soundPopover = document.getElementById('sound-popover');
   const soundMenuWrap = document.getElementById('sound-menu-wrap');
   const muteAllBtn = document.getElementById('btn-sound-mute-all');
+  const masterSlider = document.getElementById('slider-master-vol');
   const bgmSlider = document.getElementById('slider-bgm-vol');
   const sfxSlider = document.getElementById('slider-sfx-vol');
 
@@ -4645,6 +4666,23 @@ function initEvents() {
   if (muteAllBtn) {
     muteAllBtn.addEventListener('click', () => {
       state.soundOn = !state.soundOn;
+      if (state.soundOn && state.masterVolume === 0) {
+        state.masterVolume = 1.0;
+      }
+      updateSoundUI();
+      updateBgmPlayback();
+      updateCastingLoopSound();
+      updateBurningLoopSound();
+      saveGame();
+    });
+  }
+
+  if (masterSlider) {
+    masterSlider.addEventListener('input', () => {
+      state.masterVolume = Math.max(0, Math.min(1, Number(masterSlider.value) / 100));
+      if (state.masterVolume > 0 && !state.soundOn) {
+        state.soundOn = true;
+      }
       updateSoundUI();
       updateBgmPlayback();
       updateCastingLoopSound();

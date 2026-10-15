@@ -11,6 +11,7 @@
  *        클리어 후 콘텐츠: [--level 0~8] [--locked] [--start fireblast|meteor|combustion|flame_patch]
  *          --level 업화 단계, --locked 숙련도 0(전설 카드 잠김, 첫 런 조건), --start 시작 주문서
  *        전설 카드 비교: [--force-legendary 카드ID] 첫 보스 보상에서 해당 전설을 강제로 고름(같은 시드로 카드별 비교)
+ *        업화 규칙 시험: [--rules '[{"level":4,"bossHpPct":40}]'] 단계별 규칙 값을 덮어써서 비교
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
  *                "목표 시간에 맞는 HP = 중앙값 DPS x 목표 시간"을 제안합니다.
  */
@@ -31,6 +32,8 @@ const LOCKED = args.includes('--locked');
 const START_SPELL = argValue('start', '');
 // 전설 카드 단독 비교: 첫 전설 선택 기회(보스 보상)에 이 카드를 강제로 고릅니다. 같은 시드로 카드별 힘을 비교할 때 씁니다.
 const FORCE_LEGENDARY = argValue('force-legendary', '');
+// 업화 규칙 시험: '[{"level":4,"bossHpPct":40}]'처럼 단계별 값을 덮어씁니다(meta-progression.js는 그대로 두고 비교할 때 사용).
+const RULE_OVERRIDES = JSON.parse(argValue('rules', '[]'));
 const FRAME = 1 / 30;
 
 // 목표 처치 시간(초): 픽 전략 greedy의 중앙값 기준, 첫 클리어 약 13분 (일반 진행·카드 선택 포함 15분 내외)
@@ -89,6 +92,13 @@ function simulateRun(policyName, seed) {
   st.meta.infernoSelected = LEVEL;
   st.meta.xp = LOCKED ? 0 : 1e9;
   st.meta.startSpell = START_SPELL || null;
+  if (RULE_OVERRIDES.length) {
+    const rules = g.run('INFERNO_RULES');
+    for (const o of RULE_OVERRIDES) {
+      const rule = rules.find((r) => r.level === o.level);
+      if (rule) Object.assign(rule, o);
+    }
+  }
   g.run('restartSpeedrunRun()');
   const calib = [];
   let calibStage = 0;
@@ -182,7 +192,7 @@ function report(policyName) {
   // --verbose: 런마다 시드·총 시간·돌파 스테이지·실패 위치를 출력합니다.
   if (args.includes('--verbose')) runs.forEach((r, i) => console.log(`  run seed ${BASE_SEED + i}: ${fmtSec(r.totalSec)} · 돌파 ${r.stages.length} · 실패 ${r.failedAt ?? '-'} · 스테이지별(초) ${r.stages.map((s) => Math.round(s.ttk)).join(' ')}`));
 
-  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''} ===`);
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''} ===`);
   console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
   for (let stage = 1; stage <= 20; stage++) {
     const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);

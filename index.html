@@ -49,10 +49,17 @@
           </div>
           <div class="sound-slider-row">
             <div class="sound-slider-label-row">
-              <span class="sound-slider-label">🎵 배경음 (BGM)</span>
-              <span class="sound-slider-val" id="ui-bgm-vol-val">40%</span>
+              <span class="sound-slider-label">🔊 전체 볼륨</span>
+              <span class="sound-slider-val" id="ui-master-vol-val">100%</span>
             </div>
-            <input type="range" class="sound-range" id="slider-bgm-vol" min="0" max="100" step="1" value="40" />
+            <input type="range" class="sound-range" id="slider-master-vol" min="0" max="100" step="1" value="100" />
+          </div>
+          <div class="sound-slider-row">
+            <div class="sound-slider-label-row">
+              <span class="sound-slider-label">🎵 배경음 (BGM)</span>
+              <span class="sound-slider-val" id="ui-bgm-vol-val">20%</span>
+            </div>
+            <input type="range" class="sound-range" id="slider-bgm-vol" min="0" max="100" step="1" value="20" />
             <div class="sound-track-row">
               <span class="sound-track-info" id="ui-bgm-title" title="현재 재생 중인 배경음">🎲 트랙 준비 중...</span>
               <button type="button" class="sound-skip-btn" id="btn-sound-skip" title="다음 랜덤 BGM 재생">⏭️ 다음 곡</button>
@@ -61,9 +68,9 @@
           <div class="sound-slider-row">
             <div class="sound-slider-label-row">
               <span class="sound-slider-label">💥 효과음 (SFX)</span>
-              <span class="sound-slider-val" id="ui-sfx-vol-val">80%</span>
+              <span class="sound-slider-val" id="ui-sfx-vol-val">10%</span>
             </div>
-            <input type="range" class="sound-range" id="slider-sfx-vol" min="0" max="100" step="1" value="80" />
+            <input type="range" class="sound-range" id="slider-sfx-vol" min="0" max="100" step="1" value="10" />
           </div>
         </div>
       </div>
