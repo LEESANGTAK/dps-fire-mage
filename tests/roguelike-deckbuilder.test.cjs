@@ -42,6 +42,44 @@ test('Step 3: 보스 웨이브 시 희귀/전설 카드 우대 가중치 검증'
   assert.equal(rareOrLegendaryCount, iterations * 3, '보스 웨이브에서는 모든 카드가 희귀 또는 전설이어야 합니다.');
 });
 
+test('Step 3-1: 전설 카드가 없을 때 보스 보상에 전설 1장 보장', () => {
+  const legendaries = CARD_POOL.filter(c => c.rarity === RARITY.LEGENDARY);
+  const fakeState = { gold: 0, playerStatsBonus: {}, deckMechanics: {}, grimoires: {} };
+
+  // 전설이 없으면 보스 보상마다 반드시 전설이 섞여 나와야 함 (선택은 플레이어 몫)
+  for (let i = 0; i < 50; i++) {
+    const choices = createDeckManager().drawChoices(3, true, fakeState);
+    assert.equal(choices.length, 3, '보장 후에도 선택지 수는 그대로여야 합니다.');
+    assert.equal(new Set(choices.map(c => c.id)).size, 3, '보장된 전설이 다른 선택지와 겹치지 않아야 합니다.');
+    assert.ok(choices.some(c => c.rarity === RARITY.LEGENDARY), '전설이 없는 런의 보스 보상에는 전설이 1장 이상 있어야 합니다.');
+  }
+
+  // 일반 웨이브에는 보장이 없어야 함
+  let normalWithoutLegendary = 0;
+  for (let i = 0; i < 50; i++) {
+    const choices = createDeckManager().drawChoices(3, false, fakeState);
+    if (!choices.some(c => c.rarity === RARITY.LEGENDARY)) normalWithoutLegendary++;
+  }
+  assert.ok(normalWithoutLegendary > 0, '일반 웨이브에는 전설 보장이 적용되지 않아야 합니다.');
+
+  // 이미 전설을 가진 런에는 보장이 없어야 함 (보스 보상도 가중치 그대로)
+  let heldWithoutLegendary = 0;
+  for (let i = 0; i < 50; i++) {
+    const manager = createDeckManager();
+    manager.selectCard(legendaries[0].id, { gold: 0, playerStatsBonus: {}, deckMechanics: {}, grimoires: {} });
+    const choices = manager.drawChoices(3, true, fakeState);
+    if (!choices.some(c => c.rarity === RARITY.LEGENDARY)) heldWithoutLegendary++;
+  }
+  assert.ok(heldWithoutLegendary > 0, '전설을 이미 가진 런에는 보장이 적용되지 않아야 합니다.');
+
+  // 전설이 모두 잠긴 첫 런에서는 보장할 전설이 없으므로 선택지에 전설이 없어야 함
+  const lockedState = { ...fakeState, lockedCards: legendaries.map(c => c.id) };
+  for (let i = 0; i < 20; i++) {
+    const choices = createDeckManager().drawChoices(3, true, lockedState);
+    assert.ok(!choices.some(c => c.rarity === RARITY.LEGENDARY), '잠긴 전설은 보장으로도 나오면 안 됩니다.');
+  }
+});
+
 test('Step 4: 카드 선택 및 스탯/메커니즘 반영 검증', () => {
   const manager = createDeckManager();
   const fakeState = { gold: 100, playerStatsBonus: {}, deckMechanics: {} };

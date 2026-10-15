@@ -2015,8 +2015,16 @@ function loadStage(stageNum) {
     state.currentBossFightStartTime = null;
   }
 
-  state.combat.ignitePool = 0;
-  state.combat.igniteRem = 0;
+  // 들불(전설): 쓰러진 적에게 남은 화상이 사라지지 않고 다음 적에게 번집니다.
+  const carriesIgnite = !!(state.deckMechanics && state.deckMechanics.igniteCarryOver) && state.combat.ignitePool >= 5;
+  if (carriesIgnite) {
+    state.combat.igniteRem = IGNITE_DURATION;
+    state.combat.igniteTickTimer = 0;
+    spawnFloatingText(tr('🌋 들불이 번집니다!'), 'fct-proc', -55);
+  } else {
+    state.combat.ignitePool = 0;
+    state.combat.igniteRem = 0;
+  }
   state.combat.meteorBurnRem = 0;
   updateBurningLoopSound();
 
@@ -2362,14 +2370,21 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     }
   }
 
+  // 들불(전설): 치명타가 아닌 적중도 기본 비율로 화상을 남깁니다.
+  const igniteOnAllHits = !!(state.deckMechanics && state.deckMechanics.igniteOnAllHits);
+  if (!isCrit && igniteOnAllHits && !isDotTick && skillKey !== 'ignite') {
+    state.combat.ignitePool += dmg * IGNITE_RATIO;
+    state.combat.igniteRem = IGNITE_DURATION;
+  }
+
   if (isCrit && !isDotTick && skillKey !== 'ignite') {
     // 화상은 '남은 피해량' 풀: 치명타마다 피해의 일정 비율이 더해지고 지속 시간이 갱신되며, 틱마다 나눠 소모됩니다.
     const igniteRatioMult = (state.deckMechanics && state.deckMechanics.igniteRatioMult) || 1;
     state.combat.ignitePool += dmg * IGNITE_RATIO * igniteRatioMult;
     state.combat.igniteRem = IGNITE_DURATION;
 
-    // 로그라이크 덱: 불사조의 가호 (치명타 시 15% 확률로 전 스킬 쿨다운 즉시 리셋)
-    if (state.deckMechanics && (state.deckMechanics.phoenixReset || state.deckMechanics.phoenix_reset) && Math.random() < 0.15) {
+    // 로그라이크 덱: 불사조의 가호 (치명타 시 10% 확률로 전 스킬 쿨다운 즉시 리셋)
+    if (state.deckMechanics && (state.deckMechanics.phoenixReset || state.deckMechanics.phoenix_reset) && Math.random() < 0.1) {
       state.combat.fbCharges = state.combat.fbMaxCharges;
       state.combat.fbRechargeRem = 0;
       state.combat.meteorCdRem = 0;

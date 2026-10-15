@@ -347,12 +347,14 @@
       "rarity": "legendary",
       "build": "burn",
       "maxStack": 1,
-      "desc": "치명타가 남기는 <b>화상 피해가 2.5배</b>로 불어납니다.",
+      "desc": "<b>모든 적중이 화상</b>을 남기고, 치명타가 남기는 <b>화상 피해는 6배</b>로 불어납니다. 쓰러진 적의 <b>남은 화상은 다음 적에게 번집니다</b>.",
       "title_en": "Wildfire",
-      "desc_en": "Ignite left by critical strikes deals <b>2.5x damage</b>.",
+      "desc_en": "<b>Every hit leaves Ignite</b>, and Ignite from critical strikes deals <b>6x damage</b>. Leftover Ignite <b>spreads to the next enemy</b>.",
       "mechanic": "wildfire",
       "mechanicParams": {
-        "igniteRatioMult": 2.5
+        "igniteRatioMult": 6,
+        "igniteOnAllHits": true,
+        "igniteCarryOver": true
       }
     },
     {
@@ -406,9 +408,9 @@
       "rarity": "legendary",
       "build": "utility",
       "maxStack": 1,
-      "desc": "<b>불사조</b>가 함께 싸우며 확정 치명타로 협공하고, 치명타 적중 시 <b>15% 확률로 모든 스킬 쿨다운</b>이 초기화됩니다.",
+      "desc": "<b>불사조</b>가 함께 싸우며 확정 치명타로 협공하고, 치명타 적중 시 <b>10% 확률로 모든 스킬 쿨다운</b>이 초기화됩니다.",
       "title_en": "Phoenix's Blessing",
-      "desc_en": "A <b>Phoenix</b> fights at your side with guaranteed crits, and your crits have a <b>15% chance to reset all skill cooldowns</b>.",
+      "desc_en": "A <b>Phoenix</b> fights at your side with guaranteed crits, and your crits have a <b>10% chance to reset all skill cooldowns</b>.",
       "prerequisite": "has_any_spell",
       "mechanic": "phoenix_reset"
     }
@@ -510,7 +512,9 @@
             state.deckMechanics.patchDamageBonus = (state.deckMechanics.patchDamageBonus || 0) + (p.damageBonus || 0.4);
             break;
           case 'wildfire':
-            state.deckMechanics.igniteRatioMult = p.igniteRatioMult || 2.5;
+            state.deckMechanics.igniteRatioMult = p.igniteRatioMult || 6;
+            state.deckMechanics.igniteOnAllHits = !!p.igniteOnAllHits;
+            state.deckMechanics.igniteCarryOver = !!p.igniteCarryOver;
             break;
           case 'phoenix_reset':
             state.deckMechanics.phoenixReset = true;
@@ -644,6 +648,17 @@
         const originalIndex = poolCopy.findIndex(c => c.id === chosenCard.id);
         if (originalIndex !== -1) {
           poolCopy.splice(originalIndex, 1);
+        }
+      }
+
+      // 보스 보상 전설 보장: 아직 전설 카드가 없으면 마지막 한 장을 전설로 바꿔 내놓습니다.
+      // 전설을 10스테이지까지 하나도 못 얻은 런이 얻은 런보다 5분 가까이 느려(시뮬레이션) 기록이 운에 좌우되던 문제를 줄입니다.
+      // 고르는 것은 여전히 플레이어이고, 이미 전설을 가진 런·전설이 잠긴 첫 런에는 영향이 없습니다.
+      const holdsLegendary = CARD_POOL.some(c => c.rarity === RARITY.LEGENDARY && (activeDeck[c.id] || 0) > 0);
+      if (isBossWave && !holdsLegendary && selected.length > 0 && !selected.some(c => c.rarity === RARITY.LEGENDARY)) {
+        const legendaryPool = poolCopy.filter(c => c.rarity === RARITY.LEGENDARY);
+        if (legendaryPool.length > 0) {
+          selected[selected.length - 1] = legendaryPool[Math.floor(Math.random() * legendaryPool.length)];
         }
       }
 

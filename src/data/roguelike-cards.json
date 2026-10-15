@@ -308,12 +308,14 @@
     "rarity": "legendary",
     "build": "burn",
     "maxStack": 1,
-    "desc": "치명타가 남기는 <b>화상 피해가 2.5배</b>로 불어납니다.",
+    "desc": "<b>모든 적중이 화상</b>을 남기고, 치명타가 남기는 <b>화상 피해는 6배</b>로 불어납니다. 쓰러진 적의 <b>남은 화상은 다음 적에게 번집니다</b>.",
     "title_en": "Wildfire",
-    "desc_en": "Ignite left by critical strikes deals <b>2.5x damage</b>.",
+    "desc_en": "<b>Every hit leaves Ignite</b>, and Ignite from critical strikes deals <b>6x damage</b>. Leftover Ignite <b>spreads to the next enemy</b>.",
     "mechanic": "wildfire",
     "mechanicParams": {
-      "igniteRatioMult": 2.5
+      "igniteRatioMult": 6,
+      "igniteOnAllHits": true,
+      "igniteCarryOver": true
     }
   },
   {
@@ -367,9 +369,9 @@
     "rarity": "legendary",
     "build": "utility",
     "maxStack": 1,
-    "desc": "<b>불사조</b>가 함께 싸우며 확정 치명타로 협공하고, 치명타 적중 시 <b>15% 확률로 모든 스킬 쿨다운</b>이 초기화됩니다.",
+    "desc": "<b>불사조</b>가 함께 싸우며 확정 치명타로 협공하고, 치명타 적중 시 <b>10% 확률로 모든 스킬 쿨다운</b>이 초기화됩니다.",
     "title_en": "Phoenix's Blessing",
-    "desc_en": "A <b>Phoenix</b> fights at your side with guaranteed crits, and your crits have a <b>15% chance to reset all skill cooldowns</b>.",
+    "desc_en": "A <b>Phoenix</b> fights at your side with guaranteed crits, and your crits have a <b>10% chance to reset all skill cooldowns</b>.",
     "prerequisite": "has_any_spell",
     "mechanic": "phoenix_reset"
   }

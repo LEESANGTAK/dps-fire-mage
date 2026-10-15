@@ -111,7 +111,7 @@ Short · Replay Value · Magic · Fantasy · Singleplayer · 2D · Stylized · C
 1. **Electron 래퍼 + 파일 세이브 + Steamworks 연동** 마무리 (`docs/desktop-build.md`).
 2. **BGM 교체**: Suno 무료 플랜 제작물은 상업 이용 불가 → 출시 전 교체.
 3. **블리자드 IP 잔재 최종 점검**: 코드상 명칭은 제거됨. 몬스터·보스 외형과 스토어 문구를 눈으로 마지막 확인.
-4. **밸런스 이상치 수정**: 전설 카드 들불 유무로 런 시간 9~11분 vs 20분+ 편차 (`docs/2026-10-13-post-clear-content.md`).
+4. ~~**밸런스 이상치 수정**~~ ✅ 2026-10-15: 원인은 전설 카드 획득 운과 들불의 약세였음. 보스 보상 전설 보장·들불 재설계·불사조 하향으로 0단계 p75 13:12 → 10:50 (`docs/2026-10-15-legendary-balance.md`).
 5. **캡슐·키아트 교체**: 현재 임시본 (`docs/steam-store/README.md`).
 6. **첫 런 FTUE 플레이테스트**: MMO 경험 없는 2차 타겟 기준으로 첫 3분 이탈 여부 확인.
 

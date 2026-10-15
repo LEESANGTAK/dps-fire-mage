@@ -69,6 +69,7 @@ const I18N_EN = {
   '🚀 다음 도전 자동 진입!': '🚀 On to the next challenge!',
   '💥 불의 심장 파괴! 화염 역류!': '💥 Heart of Fire shattered! Flames surge back!',
   '🪶 불사조의 가호! 전 스킬 쿨다운 초기화!': "🪶 Phoenix's Blessing! All cooldowns reset!",
+  '🌋 들불이 번집니다!': '🌋 Wildfire spreads!',
   '🔥 {boss} 강림! 지금 세계를 구원하십시오!': '🔥 {boss} has descended! Save the world now!',
   '🌋 용암 보호막 ({hp} / {sec}s)': '🌋 Lava Shield ({hp} / {sec}s)',
   '⚠️ 보호막 폭발! {boss} 체력 회복!': '⚠️ Shield erupted! {boss} recovers health!',

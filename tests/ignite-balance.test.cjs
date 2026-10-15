@@ -45,11 +45,42 @@ for (const critsPerSecond of [0.5, 2, 6]) {
   assert.ok(Math.abs(long.ratio - short.ratio) < 0.02, `전투 시간이 길어져도 화상 비율이 커지면 안 됩니다. (20초 ${short.ratio.toFixed(3)} / 120초 ${long.ratio.toFixed(3)})`);
 }
 
-// 3. 들불(전환율 2.5배)과 지속 피해 % 스탯은 곱으로 적용
+// 3. 들불(치명타 화상 배율)과 지속 피해 % 스탯은 곱으로 적용
 {
   const { ratio } = burnRatioAfterCrits({ critsPerSecond: 2, seconds: 40, igniteRatioMult: 2.5, burnPct: 45 });
   const expected = EXPECTED * 2.5 * 1.45;
   assert.ok(Math.abs(ratio - expected) < 0.02, `들불 + 지속 피해 +45%: ${ratio.toFixed(3)} (기대 ${expected.toFixed(3)})`);
 }
 
-console.log('화상 총량 22% 고정·정령 연장 무한 누적 제거·들불/지속 피해 배율 검증 통과');
+// 4. 들불: 치명타가 아닌 적중도 기본 비율(22%)로 화상을 남김 (들불이 없으면 남기지 않음)
+for (const igniteOnAllHits of [false, true]) {
+  const g = createHeadlessGame({ seed: 3 });
+  const state = g.run('state');
+  state.autoCast = false;
+  state.monster.maxHp = 1e15;
+  state.monster.hp = 1e15;
+  state.deckMechanics = { igniteOnAllHits };
+  g.run("dealDamage('fireblast', 1000, false, false)");
+  for (let t = 0; t < 8; t += 1 / 30) g.step(1 / 30);
+  const ignite = state.skillDamage.ignite.dmg;
+  if (igniteOnAllHits) assert.ok(Math.abs(ignite / 1000 - EXPECTED) < 0.01, `들불: 일반 적중 화상 비율 ${(ignite / 1000).toFixed(3)} (기대 ${EXPECTED})`);
+  else assert.equal(ignite, 0, '들불이 없으면 일반 적중은 화상을 남기지 않아야 합니다.');
+}
+
+// 5. 들불: 다음 스테이지로 넘어가도 남은 화상이 이어짐 (들불이 없으면 초기화)
+for (const igniteCarryOver of [false, true]) {
+  const g = createHeadlessGame({ seed: 3 });
+  const state = g.run('state');
+  state.deckMechanics = { igniteCarryOver };
+  state.combat.ignitePool = 500;
+  state.combat.igniteRem = 1;
+  g.run('loadStage(2)');
+  if (igniteCarryOver) {
+    assert.equal(state.combat.ignitePool, 500, '들불: 남은 화상 풀이 다음 적에게 그대로 이어져야 합니다.');
+    assert.ok(state.combat.igniteRem > 1, '들불: 번진 화상은 지속 시간이 새로 갱신되어야 합니다.');
+  } else {
+    assert.equal(state.combat.ignitePool, 0, '들불이 없으면 다음 적에서 화상이 초기화되어야 합니다.');
+  }
+}
+
+console.log('화상 총량 22% 고정·정령 연장 무한 누적 제거·들불/지속 피해 배율·들불 일반 적중 화상·다음 적 번짐 검증 통과');

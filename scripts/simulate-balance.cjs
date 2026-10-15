@@ -10,6 +10,7 @@
  *        node scripts/simulate-balance.cjs --calibrate [--runs 30] [--policy greedy]
  *        클리어 후 콘텐츠: [--level 0~8] [--locked] [--start fireblast|meteor|combustion|flame_patch]
  *          --level 업화 단계, --locked 숙련도 0(전설 카드 잠김, 첫 런 조건), --start 시작 주문서
+ *        전설 카드 비교: [--force-legendary 카드ID] 첫 보스 보상에서 해당 전설을 강제로 고름(같은 시드로 카드별 비교)
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
  *                "목표 시간에 맞는 HP = 중앙값 DPS x 목표 시간"을 제안합니다.
  */
@@ -28,6 +29,8 @@ const CALIBRATE = args.includes('--calibrate');
 const LEVEL = Number(argValue('level', 0));
 const LOCKED = args.includes('--locked');
 const START_SPELL = argValue('start', '');
+// 전설 카드 단독 비교: 첫 전설 선택 기회(보스 보상)에 이 카드를 강제로 고릅니다. 같은 시드로 카드별 힘을 비교할 때 씁니다.
+const FORCE_LEGENDARY = argValue('force-legendary', '');
 const FRAME = 1 / 30;
 
 // 목표 처치 시간(초): 픽 전략 greedy의 중앙값 기준, 첫 클리어 약 13분 (일반 진행·카드 선택 포함 15분 내외)
@@ -78,6 +81,8 @@ function simulateRun(policyName, seed) {
   let lastCleared = 0;
   let reactTimer = 0;
   let failedAt = null;
+  // 전설 카드를 고른 스테이지(카드별 영향 분석용)
+  const legendaryAt = {};
   const st = g.run('state');
   // 런 조건: 업화 단계·카드 잠금·시작 주문서를 실제 게임의 새 런과 같은 경로(restartSpeedrunRun)로 적용합니다.
   st.meta.infernoUnlocked = LEVEL;
@@ -97,7 +102,11 @@ function simulateRun(policyName, seed) {
     if (st.isPaused) {
       const choices = g.run('deckManager.getCurrentChoices()');
       if (choices.length > 0) {
-        const pick = policy(choices, g.run('deckManager.getActiveDeck()'), pool, rand);
+        let pick = policy(choices, g.run('deckManager.getActiveDeck()'), pool, rand);
+        if (FORCE_LEGENDARY && Object.keys(legendaryAt).length === 0 && choices.some((c) => c.rarity === 'legendary')) {
+          pick = pool.find((c) => c.id === FORCE_LEGENDARY) || pick;
+        }
+        if (pick.rarity === 'legendary' && !(pick.id in legendaryAt)) legendaryAt[pick.id] = st.currentStage;
         g.run(`selectAwakeningCard(${JSON.stringify(pick.id)})`);
       } else {
         g.step(FRAME);
@@ -151,6 +160,7 @@ function simulateRun(policyName, seed) {
     failedAt,
     totalSec: st.playTimeSec,
     deck: g.run('deckManager.getActiveDeck()'),
+    legendaryAt,
     dmg
   };
 }
@@ -160,7 +170,11 @@ const quantile = (arr, q) => {
   const s = [...arr].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(q * s.length))];
 };
-const fmtSec = (sec) => (Number.isFinite(sec) ? `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}` : '-');
+const fmtSec = (sec) => {
+  if (!Number.isFinite(sec)) return '-';
+  const s = Math.round(sec);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
 
 function report(policyName) {
   const runs = [];
@@ -168,7 +182,7 @@ function report(policyName) {
   // --verbose: 런마다 시드·총 시간·돌파 스테이지·실패 위치를 출력합니다.
   if (args.includes('--verbose')) runs.forEach((r, i) => console.log(`  run seed ${BASE_SEED + i}: ${fmtSec(r.totalSec)} · 돌파 ${r.stages.length} · 실패 ${r.failedAt ?? '-'} · 스테이지별(초) ${r.stages.map((s) => Math.round(s.ttk)).join(' ')}`));
 
-  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''} ===`);
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''} ===`);
   console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
   for (let stage = 1; stage <= 20; stage++) {
     const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);
@@ -192,6 +206,26 @@ function report(policyName) {
   const picks = {};
   for (const r of runs) for (const [id, n] of Object.entries(r.deck)) picks[id] = (picks[id] || 0) + n / RUNS;
   console.log('런당 평균 보유: ' + Object.entries(picks).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(' · '));
+
+  // 전설 카드 영향: 그 카드를 얻은 런과 못 얻은 런의 클리어 시간 중앙값 비교 (차이가 크면 해당 카드 하나가 런을 좌우한다는 뜻)
+  const legendaryIds = [...new Set(runs.flatMap((r) => Object.keys(r.legendaryAt)))].sort();
+  if (legendaryIds.length) {
+    console.log('전설 카드 영향 (클리어 런 시간 중앙값): 보유 n / 미보유 n · 획득 스테이지 중앙');
+    for (const id of legendaryIds) {
+      const withIt = cleared.filter((r) => id in r.legendaryAt);
+      const without = cleared.filter((r) => !(id in r.legendaryAt));
+      const pickStage = quantile(runs.filter((r) => id in r.legendaryAt).map((r) => r.legendaryAt[id]), 0.5);
+      console.log(`  ${id.padEnd(24)} ${fmtSec(quantile(withIt.map((r) => r.totalSec), 0.5))} (${withIt.length}) / ${fmtSec(quantile(without.map((r) => r.totalSec), 0.5))} (${without.length}) · ${pickStage}스테이지`);
+    }
+    // 개별 카드보다 "전설을 몇 장, 언제 얻었나"가 런 시간을 가르는지 확인
+    const byCount = {};
+    for (const r of cleared) {
+      const early = Object.values(r.legendaryAt).filter((s) => s <= 10).length;
+      const key = early >= 2 ? '2+' : String(early);
+      (byCount[key] = byCount[key] || []).push(r.totalSec);
+    }
+    console.log('10스테이지까지 얻은 전설 수별 런 시간 중앙값: ' + ['0', '1', '2+'].filter((k) => byCount[k]).map((k) => `${k}장 ${fmtSec(quantile(byCount[k], 0.5))} (${byCount[k].length})`).join(' · '));
+  }
   return runs;
 }
 

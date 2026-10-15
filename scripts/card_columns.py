@@ -109,9 +109,9 @@ GUIDE_SECTIONS = [
             ["synchronized_fire", "일제 협공 사격", "마법사가 화염구를 발사할 때마다 모든 정령이 동시에 협공합니다.", "없음"],
             ["cinder_lord", "잿더미 군단장", "소환수 1기당 마법사의 모든 주문 피해가 +30% 증폭됩니다.", "없음"],
             ["patch_boost", "번지는 불길", "불장판 재사용 대기시간에 cooldownMult를 곱하고 불장판 피해를 damageBonus만큼 증가시킵니다.", "{\"cooldownMult\": 0.7, \"damageBonus\": 0.5}"],
-            ["wildfire", "들불", "치명타가 남기는 화상(치명타 피해의 22%)을 igniteRatioMult배로 키웁니다.", "{\"igniteRatioMult\": 2.5}"],
+            ["wildfire", "들불", "모든 적중이 화상(피해의 22%)을 남기고, 치명타 화상은 igniteRatioMult배로 키웁니다. igniteCarryOver면 쓰러진 적의 남은 화상이 다음 적에게 이어집니다.", "{\"igniteRatioMult\": 6, \"igniteOnAllHits\": true, \"igniteCarryOver\": true}"],
             ["executioner", "처형인의 불꽃", "적 체력이 40% 이하일 때 모든 피해량이 executionerMult만큼 증가합니다. (스택 시 합산)", "{\"executionerMult\": 0.7}"],
-            ["phoenix_reset", "불사조의 가호", "불사조가 2.4초마다 확정 치명타로 협공하고, 치명타 적중 시 15% 확률로 모든 스킬의 재사용 대기가 초기화됩니다.", "없음"],
+            ["phoenix_reset", "불사조의 가호", "불사조가 2.4초마다 확정 치명타로 협공하고, 치명타 적중 시 10% 확률로 모든 스킬의 재사용 대기가 초기화됩니다.", "없음"],
         ],
     },
     {
