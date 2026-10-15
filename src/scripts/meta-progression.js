@@ -48,7 +48,7 @@ function clampInferno(level) {
 // 해당 단계까지 누적된 규칙을 배율로 바꿉니다.
 function getInfernoModifiers(level) {
   const lv = clampInferno(level);
-  const sum = { hpPct: 0, bossHpPct: 0, enragePct: 0, rerollPct: 0, normalChoices: 0, shieldPct: 0, cooldownPct: 0, shieldSecPct: 0 };
+  const sum = { hpPct: 0, bossHpPct: 0, enragePct: 0, rerollPct: 0, normalChoices: 0, shieldPct: 0, cooldownPct: 0, shieldSecPct: 0, shieldHealPct: 0 };
   for (const rule of INFERNO_RULES) {
     if (rule.level > lv) break;
     for (const key of Object.keys(sum)) if (typeof rule[key] === 'number') sum[key] += rule[key];
@@ -62,6 +62,8 @@ function getInfernoModifiers(level) {
     normalChoices: Math.max(2, 3 + sum.normalChoices),
     shieldMult: 1 + sum.shieldPct / 100,
     shieldSec: Math.max(3, 10 * (1 + sum.shieldSecPct / 100)),
+    // 불의 심장을 제한 시간 안에 못 깨면 최종 보스가 회복하는 체력 비율(기본 10%)
+    shieldHeal: (10 + sum.shieldHealPct) / 100,
     cooldownMult: 1 + sum.cooldownPct / 100
   };
 }

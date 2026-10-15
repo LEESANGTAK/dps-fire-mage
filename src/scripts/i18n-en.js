@@ -42,9 +42,11 @@ const I18N_EN = {
 
   // 사운드
   '🔊 전체 볼륨': '🔊 Master Volume',
-  '돌문 아래에서': 'Beneath the Stone Gates',
+  '무거운 왕관 아래에서': 'Beneath the Heavy Crown',
+  '도사린 강철': 'Iron Underneath',
   '구리의 일곱 문': 'Seven Gates of Copper',
   '칼날의 시련': 'Trial by the Blade',
+  '심연의 무게': 'Weight of the Deep',
   '🔇 음소거': '🔇 Muted',
   '🔊 사운드': '🔊 Sound',
   '🔊 켜짐': '🔊 On',

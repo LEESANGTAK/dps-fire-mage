@@ -305,9 +305,11 @@ fireballCastAudio.loop = true;
 fireballCastAudio.volume = 0.58;
 
 const BGM_TRACKS = [
-  { title: tr('돌문 아래에서'), src: 'assets/sounds/bgm/Beneath_the_Stone_Gates.mp3' },
+  { title: tr('무거운 왕관 아래에서'), src: 'assets/sounds/bgm/Beneath_the_Heavy_Crown.mp3' },
+  { title: tr('도사린 강철'), src: 'assets/sounds/bgm/Iron_Underneath.mp3' },
   { title: tr('구리의 일곱 문'), src: 'assets/sounds/bgm/Seven_Gates_of_Copper.mp3' },
-  { title: tr('칼날의 시련'), src: 'assets/sounds/bgm/Trial_by_the_Blade.mp3' }
+  { title: tr('칼날의 시련'), src: 'assets/sounds/bgm/Trial_by_the_Blade.mp3' },
+  { title: tr('심연의 무게'), src: 'assets/sounds/bgm/Weight_of_the_Deep.mp3' }
 ];
 const bgmAudios = [];
 let currentBgmIndex = -1;
@@ -3380,7 +3382,7 @@ function updateBossGimmick(dt) {
       if (bg.shieldTimer <= 0) {
         bg.shield = 0;
         bg.shieldTimer = 0;
-        state.monster.hp = Math.min(state.monster.maxHp, state.monster.hp + Math.round(state.monster.maxHp * 0.1));
+        state.monster.hp = Math.min(state.monster.maxHp, state.monster.hp + Math.round(state.monster.maxHp * getInfernoModifiers(state.infernoLevel).shieldHeal));
         triggerArenaShake('lg');
         playSound('meteor_impact');
         spawnFloatingText(tr('⚠️ 보호막 폭발! {boss} 체력 회복!', { boss: FINAL_BOSS.name }), 'fct-normal', -35);

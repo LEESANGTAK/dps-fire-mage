@@ -10,9 +10,11 @@ console.log('▶ 사운드 시스템 및 전체 볼륨 UI 무결성 검증');
 
 // 1. BGM 음원 파일 실존 확인
 const expectedBgmFiles = [
-  'Beneath_the_Stone_Gates.mp3',
+  'Beneath_the_Heavy_Crown.mp3',
+  'Iron_Underneath.mp3',
   'Seven_Gates_of_Copper.mp3',
-  'Trial_by_the_Blade.mp3'
+  'Trial_by_the_Blade.mp3',
+  'Weight_of_the_Deep.mp3'
 ];
 
 expectedBgmFiles.forEach((file) => {
@@ -21,7 +23,7 @@ expectedBgmFiles.forEach((file) => {
   const stats = fs.statSync(fullPath);
   assert.ok(stats.size > 100000, `BGM 파일 용량이 비정상적입니다: ${file} (${stats.size} bytes)`);
 });
-console.log('   ✔ 1. BGM 3종 음원 파일 디스크 존재 및 크기 검증 통과');
+console.log('   ✔ 1. BGM 5종 음원 파일 디스크 존재 및 크기 검증 통과');
 
 // 2. index.html 내 전체 볼륨 슬라이더 및 기본 볼륨 검증
 assert.ok(htmlSource.includes('id="slider-master-vol"'), '전체 볼륨 슬라이더 (slider-master-vol) 마크업이 누락되었습니다.');
