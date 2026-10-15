@@ -3,7 +3,7 @@
   "productName": "DPS Fire Mage",
   "version": "1.0.0",
   "private": true,
-  "description": "DPS: Fire Mage - 화염 마법사 딜사이클 손맛의 로그라이크 덱빌딩 스피드런",
+  "description": "DPS: Fire Mage - 화염 마법사 딜사이클 손맛의 로그라이트 스피드런",
   "main": "electron/main.cjs",
   "scripts": {
     "test": "node tests/run-all.cjs",
