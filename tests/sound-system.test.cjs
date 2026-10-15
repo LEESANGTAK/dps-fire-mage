@@ -44,3 +44,10 @@ console.log('   ✔ 3. game.js state 기본 볼륨 및 BGM_TRACKS 등록 검증 
 assert.ok(gameSource.includes('masterVolume: state.masterVolume'), 'saveGame에 masterVolume 직렬화가 누락되었습니다.');
 assert.ok(gameSource.includes('state.masterVolume = Math.max(0, Math.min(1, data.masterVolume))'), 'loadGame에 masterVolume 복원이 누락되었습니다.');
 console.log('   ✔ 4. 세이브/로드 masterVolume 영속성 검증 통과');
+
+// 5. 마도서 각성 창 오픈/닫힘 시 BGM 벽 뒤(Muffled Low-Pass) 효과 검증
+assert.ok(gameSource.includes('function setBgmBehindWall'), 'setBgmBehindWall 함수가 정의되어 있어야 합니다.');
+assert.ok(gameSource.includes('targetFreq = enable ? 380 : 22050'), '벽 뒤 효과 활성화 시 380Hz 로우패스 컷오프 주파수가 적용되어야 합니다.');
+assert.ok(/triggerAwakeningSelection[\s\S]*?setBgmBehindWall\(true\)/.test(gameSource), '각성 창이 열릴 때 setBgmBehindWall(true)가 호출되어야 합니다.');
+assert.ok(/closeAwakeningModal[\s\S]*?setBgmBehindWall\(false\)/.test(gameSource), '각성 창이 닫힐 때 setBgmBehindWall(false)가 호출되어야 합니다.');
+console.log('   ✔ 5. 마도서 각성 창 BGM 벽 뒤(380Hz 로우패스 필터 & 볼륨 덕킹) 공간감 효과 검증 통과');

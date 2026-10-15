@@ -264,7 +264,8 @@ function getPlayerStats() {
     crit: Math.max(0, Math.min(100, crit)),
     haste,
     critDmg,
-    cdr: 0,
+    // 재사용 대기 감소율. 업화 단계의 '재사용 대기시간 +N%'는 음수 감소율로 들어옵니다.
+    cdr: 1 - getInfernoModifiers(state.infernoLevel || 0).cooldownMult,
     speedMult: 1 + haste / 100,
     burnMult: Math.max(0, 1 + (bonus.burnPct || 0) / 100),
     spiritMult: Math.max(0, 1 + (bonus.spiritPct || 0) / 100)
@@ -333,6 +334,7 @@ function getNextBgmIndex() {
 
 function playNextBgmTrack() {
   if (!bgmAudios.length) return;
+  ensureBgmWebAudioGraph();
   currentBgmIndex = getNextBgmIndex();
   const effVol = getEffectiveBgmVol();
 
@@ -392,9 +394,88 @@ function initBgmAudio() {
 }
 initBgmAudio();
 
+// ==========================================
+// Web Audio API를 활용한 BGM 공간감 & 벽 뒤(Muffled Low-Pass) 효과
+// ==========================================
+let bgmAudioCtx = null;
+let bgmFilterNode = null;
+let bgmFilterGain = null;
+let isBgmBehindWallActive = false;
+
+function getBgmAudioContext() {
+  if (typeof window === 'undefined') return null;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!bgmAudioCtx) {
+    try {
+      bgmAudioCtx = new AudioCtx();
+    } catch (e) {
+      return null;
+    }
+  }
+  if (bgmAudioCtx && bgmAudioCtx.state === 'suspended') {
+    bgmAudioCtx.resume().catch(() => {});
+  }
+  return bgmAudioCtx;
+}
+
+function ensureBgmWebAudioGraph() {
+  const ctx = getBgmAudioContext();
+  if (!ctx) return;
+  try {
+    if (!bgmFilterNode) {
+      bgmFilterNode = ctx.createBiquadFilter();
+      bgmFilterNode.type = 'lowpass';
+      bgmFilterNode.frequency.value = isBgmBehindWallActive ? 380 : 22050;
+      bgmFilterNode.Q.value = 1.0;
+
+      bgmFilterGain = ctx.createGain();
+      bgmFilterGain.gain.value = isBgmBehindWallActive ? 0.65 : 1.0;
+
+      bgmFilterNode.connect(bgmFilterGain);
+      bgmFilterGain.connect(ctx.destination);
+    }
+
+    bgmAudios.forEach((audio) => {
+      if (!audio._webAudioConnected) {
+        try {
+          const source = ctx.createMediaElementSource(audio);
+          source.connect(bgmFilterNode);
+          audio._webAudioConnected = true;
+        } catch (e) {}
+      }
+    });
+  } catch (e) {}
+}
+
+function setBgmBehindWall(enable, smooth = true) {
+  isBgmBehindWallActive = enable;
+  ensureBgmWebAudioGraph();
+  const ctx = getBgmAudioContext();
+  if (!ctx || !bgmFilterNode || !bgmFilterGain) return;
+  try {
+    const now = ctx.currentTime;
+    const targetFreq = enable ? 380 : 22050;
+    const targetGain = enable ? 0.65 : 1.0;
+    const dur = smooth ? 0.35 : 0.01;
+
+    bgmFilterNode.frequency.cancelScheduledValues(now);
+    bgmFilterNode.frequency.setTargetAtTime(targetFreq, now, dur / 3);
+
+    bgmFilterGain.gain.cancelScheduledValues(now);
+    bgmFilterGain.gain.setTargetAtTime(targetGain, now, dur / 3);
+  } catch (e) {
+    try {
+      bgmFilterNode.frequency.value = enable ? 380 : 22050;
+      bgmFilterGain.gain.value = enable ? 0.65 : 1.0;
+    } catch (err) {}
+  }
+}
+
 function updateBgmPlayback() {
   if (!bgmAudios.length) return;
   try {
+    ensureBgmWebAudioGraph();
     const effVol = getEffectiveBgmVol();
     if (effVol > 0) {
       if (currentBgmIndex < 0 || currentBgmIndex >= bgmAudios.length) {
@@ -3348,10 +3429,10 @@ function updateBossGimmick(dt) {
         bg.shieldTriggered = true;
         bg.shield = Math.round(state.monster.maxHp * 0.12 * getInfernoModifiers(state.infernoLevel).shieldMult);
         bg.maxShield = bg.shield;
-        bg.shieldTimer = 10.0;
+        bg.shieldTimer = getInfernoModifiers(state.infernoLevel).shieldSec;
         triggerArenaShake('lg');
         playSound('proc');
-        spawnFloatingText(tr('🌋 불의 심장 전개! 10초 내 보호막을 파괴하세요!'), 'fct-crit', -50, { isBig: true });
+        spawnFloatingText(tr('🌋 불의 심장 전개! {sec}초 내 보호막을 파괴하세요!', { sec: Math.round(bg.shieldTimer) }), 'fct-crit', -50, { isBig: true });
       }
       if (badge && bg.shield <= 0) badge.classList.add('hidden');
     }
@@ -3580,6 +3661,7 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   if (modal) {
     modal.classList.remove('hidden');
     playSound('proc');
+    setBgmBehindWall(true);
   }
 }
 
@@ -3710,6 +3792,7 @@ function closeAwakeningModal() {
   const modal = document.getElementById('awakening-modal-backdrop');
   if (modal) modal.classList.add('hidden');
   state.isPaused = false;
+  setBgmBehindWall(false);
 }
 
 function initAwakeningModalEvents() {

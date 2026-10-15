@@ -13,12 +13,12 @@ const INFERNO_MAX = 8;
 const INFERNO_LATE_BOSS_FROM_STAGE = 10;
 const INFERNO_RULES = [
   { level: 1, text: '몬스터 체력 +15%', hpPct: 15 },
-  { level: 2, text: '10스테이지 이후 보스 광폭화 시간 -10%', enragePct: -10 },
+  { level: 2, text: '주문 재사용 대기시간 +15%', cooldownPct: 15 },
   { level: 3, text: '카드 다시 뽑기 비용 +50%', rerollPct: 50 },
   { level: 4, text: '10스테이지 이후 보스 체력 +60%', bossHpPct: 60 },
   { level: 5, text: '일반 웨이브 각성 카드 선택지 3장 → 2장', normalChoices: -1 },
-  { level: 6, text: '10스테이지 이후 보스 광폭화 시간 -10% 추가', enragePct: -10 },
-  { level: 7, text: '최종 보스 불의 심장 보호막 +50%', shieldPct: 50 },
+  { level: 6, text: '10스테이지 이후 보스 광폭화 시간 -30%', enragePct: -30 },
+  { level: 7, text: '불의 심장 보호막 +50%, 제한 시간 10초 → 6초', shieldPct: 50, shieldSecPct: -40 },
   { level: 8, text: '모든 몬스터 체력 +20% 추가', hpPct: 20 }
 ];
 
@@ -48,7 +48,7 @@ function clampInferno(level) {
 // 해당 단계까지 누적된 규칙을 배율로 바꿉니다.
 function getInfernoModifiers(level) {
   const lv = clampInferno(level);
-  const sum = { hpPct: 0, bossHpPct: 0, enragePct: 0, rerollPct: 0, normalChoices: 0, shieldPct: 0 };
+  const sum = { hpPct: 0, bossHpPct: 0, enragePct: 0, rerollPct: 0, normalChoices: 0, shieldPct: 0, cooldownPct: 0, shieldSecPct: 0 };
   for (const rule of INFERNO_RULES) {
     if (rule.level > lv) break;
     for (const key of Object.keys(sum)) if (typeof rule[key] === 'number') sum[key] += rule[key];
@@ -60,7 +60,9 @@ function getInfernoModifiers(level) {
     enrageMult: Math.max(0.5, 1 + sum.enragePct / 100),
     rerollMult: 1 + sum.rerollPct / 100,
     normalChoices: Math.max(2, 3 + sum.normalChoices),
-    shieldMult: 1 + sum.shieldPct / 100
+    shieldMult: 1 + sum.shieldPct / 100,
+    shieldSec: Math.max(3, 10 * (1 + sum.shieldSecPct / 100)),
+    cooldownMult: 1 + sum.cooldownPct / 100
   };
 }
 

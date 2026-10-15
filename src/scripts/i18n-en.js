@@ -75,7 +75,7 @@ const I18N_EN = {
   '🔥 {boss} 강림! 지금 세계를 구원하십시오!': '🔥 {boss} has descended! Save the world now!',
   '🌋 용암 보호막 ({hp} / {sec}s)': '🌋 Lava Shield ({hp} / {sec}s)',
   '⚠️ 보호막 폭발! {boss} 체력 회복!': '⚠️ Shield erupted! {boss} recovers health!',
-  '🌋 불의 심장 전개! 10초 내 보호막을 파괴하세요!': '🌋 Heart of Fire awakens! Break the shield within 10 seconds!',
+  '🌋 불의 심장 전개! {sec}초 내 보호막을 파괴하세요!': '🌋 Heart of Fire awakens! Break the shield within {sec} seconds!',
   '💀 광폭화! 런 실패': '💀 Enraged! Run failed',
   '⚡ 스피드런 새 런 시작! (Stage 1-1 · 타이머 00:00)': '⚡ New speedrun started! (Stage 1-1 · Timer 00:00)',
   '✨ [{card}] 각성 획득!': '✨ [{card}] awakened!',
@@ -267,12 +267,12 @@ const I18N_EN = {
   '열기 소멸': 'Heat lost',
   '기록 없음': 'No record',
   '몬스터 체력 +15%': 'Monster health +15%',
-  '10스테이지 이후 보스 광폭화 시간 -10%': 'Boss enrage timer -10% (stage 10+)',
+  '주문 재사용 대기시간 +15%': 'Spell cooldowns +15%',
   '카드 다시 뽑기 비용 +50%': 'Card redraw cost +50%',
   '10스테이지 이후 보스 체력 +60%': 'Boss health +60% (stage 10+)',
   '일반 웨이브 각성 카드 선택지 3장 → 2장': 'Normal wave card choices: 3 → 2',
-  '10스테이지 이후 보스 광폭화 시간 -10% 추가': 'Boss enrage timer -10% more (stage 10+)',
-  '최종 보스 불의 심장 보호막 +50%': "Final boss Heart of Fire shield +50%",
+  '10스테이지 이후 보스 광폭화 시간 -30%': 'Boss enrage timer -30% (stage 10+)',
+  '불의 심장 보호막 +50%, 제한 시간 10초 → 6초': 'Heart of Fire shield +50%, time limit 10s → 6s',
   '모든 몬스터 체력 +20% 추가': 'All monster health +20% more'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

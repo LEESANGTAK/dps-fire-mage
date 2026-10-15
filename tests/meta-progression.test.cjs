@@ -10,13 +10,19 @@ const m4 = M.getInfernoModifiers(4);
 assert.equal(m4.hpMult, 1.15);
 const bossHpPct4 = M.INFERNO_RULES.find((r) => r.level === 4).bossHpPct;
 assert.ok(Math.abs(m4.bossHpMult - 1.15 * (1 + bossHpPct4 / 100)) < 1e-9, '보스 체력은 일반 배율에 보스 배율이 곱해집니다.');
-assert.equal(m4.enrageMult, 0.9);
-assert.equal(m4.rerollMult, 1.5);
+// 규칙 값은 밸런스 조정으로 바뀌므로 표에서 누적값을 계산해 비교합니다.
+const sumTo = (lv, key) => M.INFERNO_RULES.filter((r) => r.level <= lv).reduce((a, r) => a + (r[key] || 0), 0);
+assert.ok(Math.abs(m4.enrageMult - (1 + sumTo(4, 'enragePct') / 100)) < 1e-9);
+assert.ok(Math.abs(m4.rerollMult - (1 + sumTo(4, 'rerollPct') / 100)) < 1e-9);
+assert.ok(Math.abs(m4.cooldownMult - (1 + sumTo(4, 'cooldownPct') / 100)) < 1e-9);
+assert.ok(m4.cooldownMult > 1, '2단계부터 주문 재사용 대기시간이 늘어납니다.');
 assert.equal(m4.normalChoices, 3, '선택지 감소는 5단계부터입니다.');
 const m8 = M.getInfernoModifiers(8);
 assert.equal(m8.normalChoices, 2);
-assert.ok(Math.abs(m8.enrageMult - 0.8) < 1e-9);
-assert.equal(m8.shieldMult, 1.5);
+assert.ok(Math.abs(m8.enrageMult - (1 + sumTo(8, 'enragePct') / 100)) < 1e-9);
+assert.ok(Math.abs(m8.shieldMult - (1 + sumTo(8, 'shieldPct') / 100)) < 1e-9);
+assert.ok(m8.shieldSec < 10, '7단계부터 불의 심장 제한 시간이 줄어듭니다.');
+assert.equal(M.getInfernoModifiers(6).shieldSec, 10);
 assert.deepEqual(M.getInfernoModifiers(99), m8);
 assert.deepEqual(M.getInfernoModifiers(-3), m0);
 assert.equal(M.INFERNO_RULES.length, M.INFERNO_MAX, '단계마다 규칙이 하나씩 있어야 합니다.');
@@ -94,4 +100,19 @@ assert.equal(st.meta.infernoUnlocked, 7);
 assert.equal(st.meta.infernoSelected, 7);
 assert.equal(st.meta.lastRun.newInferno, 7);
 
-console.log('업화 단계 규칙 누적·숙련도 지급(실패 포함, 중복 방지)·해금 순서·세이브 정리·새 런 적용·다음 단계 해금 검증 통과');
+// 7. 업화 7단계: 주문 재사용 대기시간 증가와 불의 심장 제한 시간 단축이 실제 전투에 적용됩니다.
+g.run('restartSpeedrunRun()');
+assert.equal(st.infernoLevel, 7);
+const m7 = M.getInfernoModifiers(7);
+assert.ok(Math.abs(g.run('getPlayerStats().cdr') - (1 - m7.cooldownMult)) < 1e-9, '업화 재사용 대기 증가가 cdr(음수)로 들어가야 합니다.');
+st.grimoires.combustion = true;
+st.combat.gcdRemaining = 0;
+g.run("triggerSkill('combustion', true)");
+assert.ok(Math.abs(st.combat.combustionCdTotal - Math.max(14, 30 * m7.cooldownMult)) < 1e-9, '마력 폭주 재사용 대기에 업화 배율이 곱해져야 합니다.');
+g.run('loadStage(20)');
+st.monster.hp = Math.floor(st.monster.maxHp * 0.29);
+g.step(1 / 30);
+assert.ok(st.bossGimmick.shield > 0, '체력 30% 이하에서 불의 심장이 전개됩니다.');
+assert.ok(Math.abs(st.bossGimmick.shieldTimer - m7.shieldSec) < 0.1, `불의 심장 제한 시간은 ${m7.shieldSec}초여야 합니다.`);
+
+console.log('업화 단계 규칙 누적·숙련도 지급(실패 포함, 중복 방지)·해금 순서·세이브 정리·새 런 적용·다음 단계 해금·재사용 대기·불의 심장 시간 검증 통과');
