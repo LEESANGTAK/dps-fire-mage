@@ -25,3 +25,7 @@ $RECYCLE.BIN/
 # 의존성·데스크톱 빌드 산출물
 node_modules/
 dist/
+
+# 로컬 AI 도구 설정·플레이테스트용 브라우저 프로필
+.claude/
+.playtest-edge-live/
