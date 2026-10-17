@@ -1502,6 +1502,12 @@ body {
   transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
+.speedrun-val .speedrun-ms {
+  font-size: 0.72em;
+  opacity: 0.7;
+  margin-left: 1px;
+}
+
 .speedrun-stat-box.record-flash {
   animation: speedrunRecordPulse 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }

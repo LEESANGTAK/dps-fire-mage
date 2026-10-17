@@ -3285,10 +3285,7 @@ function updateStageUI() {
   const dispGold = isCleared ? data.gold : data.gold + data.firstBonus;
   document.getElementById('target-reward').textContent = `💰 ${fmt(dispGold)} G`;
 
-  const timerEl = document.getElementById('ui-speedrun-timer');
-  if (timerEl) {
-    timerEl.textContent = formatSpeedrunTime(state.playTimeSec);
-  }
+  renderSpeedrunTimer(state.playTimeSec);
 
   updateBossGimmick(0);
   updateNotificationBadges();
@@ -3407,11 +3404,40 @@ function updateBossGimmick(dt) {
 // ==========================================
 // 16. Stage 20(최종 보스) 토벌 스피드런 결과 모달
 // ==========================================
+// 스피드런 기록은 ms까지 표기합니다(MM:SS.mmm). 소수점 아래는 버림이라 기록이 실제보다 빨라 보이지 않습니다.
+function splitSpeedrunTime(sec) {
+  const totalMs = Math.max(0, Math.floor((sec || 0) * 1000 + 1e-6));
+  const m = Math.floor(totalMs / 60000);
+  const s = Math.floor(totalMs / 1000) % 60;
+  return {
+    main: `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
+    ms: `.${String(totalMs % 1000).padStart(3, '0')}`
+  };
+}
+
 function formatSpeedrunTime(sec) {
-  const total = Math.max(0, Math.floor(sec || 0));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const t = splitSpeedrunTime(sec);
+  return t.main + t.ms;
+}
+
+// 전투 HUD 타이머: 매 프레임 호출되므로 마크업은 한 번만 만들고 바뀐 글자만 갱신합니다.
+// ms 자리는 작고 흐리게 두어 초 단위 가독성은 지키면서 숫자가 흘러가는 긴장감만 더합니다.
+function renderSpeedrunTimer(sec) {
+  const el = document.getElementById('ui-speedrun-timer');
+  if (!el) return;
+  let mainEl = el.querySelector('.speedrun-main');
+  let msEl = el.querySelector('.speedrun-ms');
+  if (!mainEl || !msEl) {
+    el.textContent = '';
+    mainEl = document.createElement('span');
+    mainEl.className = 'speedrun-main';
+    msEl = document.createElement('span');
+    msEl.className = 'speedrun-ms';
+    el.append(mainEl, msEl);
+  }
+  const t = splitSpeedrunTime(sec);
+  if (mainEl.textContent !== t.main) mainEl.textContent = t.main;
+  if (msEl.textContent !== t.ms) msEl.textContent = t.ms;
 }
 
 function formatPlayTime(sec) {
@@ -4122,10 +4148,7 @@ function restartSpeedrunRun() {
   saveGame();
   updateLiveHUD();
 
-  const timerEl = document.getElementById('ui-speedrun-timer');
-  if (timerEl) {
-    timerEl.textContent = formatSpeedrunTime(0);
-  }
+  renderSpeedrunTimer(0);
   updateNotificationBadges();
 }
 
@@ -4157,6 +4180,7 @@ function gameLoop(nowMs) {
 
   state.playTimeSec = (state.playTimeSec || 0) + dt;
   state.totalPlayTimeSec = (state.totalPlayTimeSec || 0) + dt;
+  renderSpeedrunTimer(state.playTimeSec);
 
   const c = state.combat;
   const stats = getPlayerStats();
@@ -4507,10 +4531,7 @@ function updatePeriodicUI() {
   const now = performance.now() / 1000;
   state.dpsHistory = state.dpsHistory.filter((entry) => now - entry.time <= 6.0);
 
-  const timerEl = document.getElementById('ui-speedrun-timer');
-  if (timerEl) {
-    timerEl.textContent = formatSpeedrunTime(state.playTimeSec);
-  }
+  renderSpeedrunTimer(state.playTimeSec);
 
   updateNotificationBadges();
 }
