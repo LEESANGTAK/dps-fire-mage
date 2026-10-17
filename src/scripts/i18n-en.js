@@ -269,12 +269,12 @@ const I18N_EN = {
   '열기 소멸': 'Heat lost',
   '기록 없음': 'No record',
   '몬스터 체력 +15%': 'Monster health +15%',
-  '주문 재사용 대기시간 +15%': 'Spell cooldowns +15%',
+  '주문 재사용 대기시간 +30%': 'Spell cooldowns +30%',
   '카드 다시 뽑기 비용 +50%': 'Card redraw cost +50%',
-  '10스테이지 이후 보스 체력 +60%': 'Boss health +60% (stage 10+)',
+  '10스테이지 이후 보스 체력 +20%': 'Boss health +20% (stage 10+)',
   '일반 웨이브 각성 카드 선택지 3장 → 2장': 'Normal wave card choices: 3 → 2',
   '10스테이지 이후 보스 광폭화 시간 -30%': 'Boss enrage timer -30% (stage 10+)',
-  '불의 심장 보호막 +50%, 제한 시간 10초 → 6초': 'Heart of Fire shield +50%, time limit 10s → 6s',
-  '모든 몬스터 체력 +20% 추가': 'All monster health +20% more'
+  '불의 심장 보호막 +150%, 제한 시간 10초 → 6초, 못 깨면 회복 10% → 30%': 'Heart of Fire shield +150%, time limit 10s → 6s, heals 30% (was 10%) if not broken',
+  '모든 몬스터 체력 +10% 추가': 'All monster health +10% more'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

@@ -15,13 +15,16 @@ const sumTo = (lv, key) => M.INFERNO_RULES.filter((r) => r.level <= lv).reduce((
 assert.ok(Math.abs(m4.enrageMult - (1 + sumTo(4, 'enragePct') / 100)) < 1e-9);
 assert.ok(Math.abs(m4.rerollMult - (1 + sumTo(4, 'rerollPct') / 100)) < 1e-9);
 assert.ok(Math.abs(m4.cooldownMult - (1 + sumTo(4, 'cooldownPct') / 100)) < 1e-9);
-assert.ok(m4.cooldownMult > 1, '2단계부터 주문 재사용 대기시간이 늘어납니다.');
+assert.equal(m4.cooldownMult, 1, '주문 재사용 대기시간 증가는 6단계부터입니다.');
+assert.ok(M.getInfernoModifiers(6).cooldownMult > 1);
 assert.equal(m4.normalChoices, 3, '선택지 감소는 5단계부터입니다.');
 const m8 = M.getInfernoModifiers(8);
 assert.equal(m8.normalChoices, 2);
 assert.ok(Math.abs(m8.enrageMult - (1 + sumTo(8, 'enragePct') / 100)) < 1e-9);
 assert.ok(Math.abs(m8.shieldMult - (1 + sumTo(8, 'shieldPct') / 100)) < 1e-9);
 assert.ok(m8.shieldSec < 10, '7단계부터 불의 심장 제한 시간이 줄어듭니다.');
+assert.ok(Math.abs(m8.shieldHeal - (10 + sumTo(8, 'shieldHealPct')) / 100) < 1e-9, '불의 심장을 못 깨면 회복량이 업화 규칙만큼 늘어납니다.');
+assert.equal(M.getInfernoModifiers(6).shieldHeal, 0.1);
 assert.equal(M.getInfernoModifiers(6).shieldSec, 10);
 assert.deepEqual(M.getInfernoModifiers(99), m8);
 assert.deepEqual(M.getInfernoModifiers(-3), m0);

@@ -13,13 +13,13 @@ const INFERNO_MAX = 8;
 const INFERNO_LATE_BOSS_FROM_STAGE = 10;
 const INFERNO_RULES = [
   { level: 1, text: '몬스터 체력 +15%', hpPct: 15 },
-  { level: 2, text: '주문 재사용 대기시간 +15%', cooldownPct: 15 },
+  { level: 2, text: '10스테이지 이후 보스 광폭화 시간 -30%', enragePct: -30 },
   { level: 3, text: '카드 다시 뽑기 비용 +50%', rerollPct: 50 },
-  { level: 4, text: '10스테이지 이후 보스 체력 +60%', bossHpPct: 60 },
+  { level: 4, text: '10스테이지 이후 보스 체력 +20%', bossHpPct: 20 },
   { level: 5, text: '일반 웨이브 각성 카드 선택지 3장 → 2장', normalChoices: -1 },
-  { level: 6, text: '10스테이지 이후 보스 광폭화 시간 -30%', enragePct: -30 },
-  { level: 7, text: '불의 심장 보호막 +50%, 제한 시간 10초 → 6초', shieldPct: 50, shieldSecPct: -40 },
-  { level: 8, text: '모든 몬스터 체력 +20% 추가', hpPct: 20 }
+  { level: 6, text: '주문 재사용 대기시간 +30%', cooldownPct: 30 },
+  { level: 7, text: '불의 심장 보호막 +150%, 제한 시간 10초 → 6초, 못 깨면 회복 10% → 30%', shieldPct: 150, shieldSecPct: -40, shieldHealPct: 20 },
+  { level: 8, text: '모든 몬스터 체력 +10% 추가', hpPct: 10 }
 ];
 
 // 런 종료 경험치: 돌파한 일반 스테이지 1, 페이즈 보스(5·10·15) 3, 최종 보스 10. 업화 단계마다 +25%.
