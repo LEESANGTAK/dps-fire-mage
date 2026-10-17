@@ -29,6 +29,7 @@ const MASTERY_XP = { perStage: 1, phaseBoss: 3, finalBoss: 10, perInfernoPct: 25
 const MASTERY_UNLOCKS = [
   { xp: 10, type: 'card', id: 'rapid_gatling' },
   { xp: 25, type: 'start', id: 'fireblast' },
+  { xp: 35, type: 'card', id: 'util_auto_grimoire' },
   { xp: 45, type: 'card', id: 'sum_cinder_lord' },
   { xp: 70, type: 'start', id: 'flame_patch' },
   { xp: 100, type: 'card', id: 'burn_wildfire' },

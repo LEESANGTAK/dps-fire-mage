@@ -43,7 +43,7 @@ ENUMS = {
         "meteor_buff", "meteor_charge", "combustion_god",
         "extra_spirit", "synchronized_fire", "cinder_lord",
         "patch_boost", "wildfire",
-        "executioner", "phoenix_reset",
+        "executioner", "phoenix_reset", "smart_autocast",
     ],
 }
 
@@ -112,6 +112,7 @@ GUIDE_SECTIONS = [
             ["wildfire", "들불", "모든 적중이 화상(피해의 22%)을 남기고, 치명타 화상은 igniteRatioMult배로 키웁니다. igniteCarryOver면 쓰러진 적의 남은 화상이 다음 적에게 이어집니다.", "{\"igniteRatioMult\": 6, \"igniteOnAllHits\": true, \"igniteCarryOver\": true}"],
             ["executioner", "처형인의 불꽃", "적 체력이 40% 이하일 때 모든 피해량이 executionerMult만큼 증가합니다. (스택 시 합산)", "{\"executionerMult\": 0.7}"],
             ["phoenix_reset", "불사조의 가호", "불사조가 2.4초마다 확정 치명타로 협공하고, 치명타 적중 시 10% 확률로 모든 스킬의 재사용 대기가 초기화됩니다.", "없음"],
+            ["smart_autocast", "자동 영창", "화염구 외 주문(불꽃 작렬·메테오·마력 폭주·불장판)도 최적의 순간에 자동 시전합니다. 없으면 이 주문들은 직접 눌러야 합니다.", "없음"],
         ],
     },
     {

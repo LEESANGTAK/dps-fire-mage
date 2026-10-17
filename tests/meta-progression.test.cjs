@@ -44,8 +44,8 @@ assert.equal(M.getLockedCardIds(0).length, M.MASTERY_UNLOCKS.filter((u) => u.typ
 assert.deepEqual(M.getLockedCardIds(1e9), []);
 assert.deepEqual(M.getUnlockedStartSpells(0), []);
 assert.deepEqual(M.getUnlockedStartSpells(1e9).sort(), Object.keys(M.START_SPELL_CARDS).sort());
-const p = M.getMasteryProgress(35);
-assert.equal(p.level, 2);
+const p = M.getMasteryProgress(40);
+assert.equal(p.level, 3);
 assert.equal(p.next.xp, 45);
 assert.ok(Math.abs(p.ratio - 0.5) < 1e-9);
 assert.equal(M.getMasteryProgress(1e9).next, null);

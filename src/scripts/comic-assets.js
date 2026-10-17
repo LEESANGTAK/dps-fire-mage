@@ -38,7 +38,7 @@ const PAPER_CARD_ICONS = {
  spell_combustion:['skills',3], crit_crimson_frenzy:['skills',3,'ruby'],
  sum_spirit:['skills',5], sum_fury:['skills',5,'blaze'], sum_volley:['skills',5,'charge'], sum_pact:['skills',5,'cursed'], sum_cinder_lord:['skills',5,'crimson'],
  burn_ignite:['stats',2,'blaze'], spell_flame_patch:['skills',4], burn_spread:['skills',4,'charge'], burn_wildfire:['skills',4,'crimson'],
- util_power:['stats',3], util_executioner:['stats',4,'crimson'], util_glass_cannon:['stats',1], util_phoenix_reborn:['stats',2]
+ util_power:['stats',3], util_executioner:['stats',4,'crimson'], util_glass_cannon:['stats',1], util_phoenix_reborn:['stats',2], util_auto_grimoire:['stats',3,'blaze']
 };
 function paperCardIconHTML(card) {
  const entry = card && PAPER_CARD_ICONS[card.id];

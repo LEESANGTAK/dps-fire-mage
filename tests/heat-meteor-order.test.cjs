@@ -12,6 +12,7 @@ function setup({ autoMeteor }) {
   st.grimoires.meteor = true;
   if (!st.spellOrder.includes('meteor')) st.spellOrder.push('meteor');
   st.autoCast = true;
+  st.deckMechanics.smartAutoCast = true; // 메테오 자동 시전은 전설 카드 '자동 영창'이 있어야 합니다.
   st.skillAuto.fireball = false; // 화염구 자동 시전이 열기를 바꾸지 않게
   st.skillAuto.meteor = autoMeteor;
   st.combat.critStreak = 0;

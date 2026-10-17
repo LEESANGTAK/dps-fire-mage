@@ -2904,39 +2904,52 @@ function setQueuedSkillUI(skillKey) {
   }
 }
 
+// 화염구만 기본 자동 시전입니다. 나머지 주문(불꽃 작렬·메테오·마력 폭주·불장판)은
+// 전설 카드 '자동 영창'을 얻어야 자동으로 돌고, 그 전까지는 직접 눌러 연계합니다.
+function hasSmartAutoCast() {
+  return Boolean(state.deckMechanics && state.deckMechanics.smartAutoCast);
+}
+
+function canSkillAutoCast(skillKey) {
+  return skillKey === 'fireball' || hasSmartAutoCast();
+}
+
 function isSkillAutoActive(skillKey) {
   if (!state.autoCast) return false;
+  if (!canSkillAutoCast(skillKey)) return false;
   if (!state.skillAuto) return true;
   return state.skillAuto[skillKey] !== false;
 }
 
-function runSmartAutoCast() {
-  if (!state.autoCast) return;
+// 최적 시전 순서. 게임은 자동 시전 중인 주문에만 쓰고,
+// 시뮬레이터는 수동 주문을 사람이 반응 지연을 두고 누르는 모습을 흉내 낼 때 canCast·isManual을 바꿔 씁니다.
+function runSmartAutoCast(canCast = isSkillAutoActive, isManual = false) {
+  if (!isManual && !state.autoCast) return;
   const c = state.combat;
 
-  if (state.grimoires.combustion && isSkillAutoActive('combustion') && c.combustionCdRem <= 0) {
-    triggerSkill('combustion', false);
+  if (state.grimoires.combustion && canCast('combustion') && c.combustionCdRem <= 0) {
+    triggerSkill('combustion', isManual);
   }
-  if (state.grimoires.flame_patch && isSkillAutoActive('flame_patch') && c.flamePatchCdRem <= 0) {
-    triggerSkill('flame_patch', false);
+  if (state.grimoires.flame_patch && canCast('flame_patch') && c.flamePatchCdRem <= 0) {
+    triggerSkill('flame_patch', isManual);
   }
 
   // 1. 몰아치는 열기 (즉시 시전 메테오): 몰열 2스택 상태라면 최우선 발사!
-  if (isSkillAutoActive('meteor') && isMeteorInstantReady() && c.meteorArmedAge >= METEOR_AUTO_BEAT) {
-    triggerSkill('meteor', false);
+  if (canCast('meteor') && isMeteorInstantReady() && c.meteorArmedAge >= METEOR_AUTO_BEAT) {
+    triggerSkill('meteor', isManual);
   }
 
   // 2. 불꽃 작렬 (확정 치명타): 1스택일 때 즉시 2스택 완성 유도 또는 완충 시 즉시 소모
-  if (state.grimoires.fireblast && isSkillAutoActive('fireblast') && c.fbCharges > 0) {
+  if (state.grimoires.fireblast && canCast('fireblast') && c.fbCharges > 0) {
     if (!state.grimoires.meteor || c.critStreak === 1 || c.fbCharges >= c.fbMaxCharges) {
-      triggerSkill('fireblast', false);
+      triggerSkill('fireblast', isManual);
     }
   }
 
   // 3. 일반 화염구 기본 시전. 몰열 2스택이면 곧 자동 메테오가 나가므로 화염구를 쉬지만,
   //    메테오가 수동이면 플레이어가 누를 때까지 화염구 자동 시전을 계속합니다.
   if (
-    isSkillAutoActive('fireball') &&
+    canCast('fireball') &&
     !c.castingSkill &&
     c.gcdRemaining <= 0 &&
     !(state.grimoires.meteor && c.critStreak === 2 && isSkillAutoActive('meteor'))
@@ -2949,6 +2962,8 @@ function toggleSkillAuto(skillKey) {
   if (!state.skillAuto) {
     state.skillAuto = { fireball: true, fireblast: true, combustion: true, meteor: true, flame_patch: true };
   }
+  // 자동 영창이 없으면 화염구 말고는 자동으로 돌릴 수 없습니다(수동 주문을 우클릭해도 아무 일 없음).
+  if (!canSkillAutoCast(skillKey)) return;
   state.skillAuto[skillKey] = !state.skillAuto[skillKey];
   playSound('item_select');
   const isAuto = state.skillAuto[skillKey];
@@ -2976,6 +2991,13 @@ function updateSkillAutoUI() {
 
   for (const [key, btn] of Object.entries(autoMap)) {
     if (!btn) continue;
+    // 자동 영창 전의 수동 주문: AUTO 배지와 수동 테두리 없이 그냥 누르는 버튼입니다.
+    if (!canSkillAutoCast(key)) {
+      const stale = btn.querySelector('.skill-auto-badge');
+      if (stale) stale.remove();
+      btn.classList.remove('manual-mode-active');
+      continue;
+    }
     const isAuto = state.skillAuto ? state.skillAuto[key] !== false : true;
     let badge = btn.querySelector('.skill-auto-badge');
     if (!badge) {
@@ -3049,14 +3071,16 @@ function updateNotificationBadges() {
 
   // 2. 스킬 액션바 (!) 배지: 수동 조작 중이거나 즉시 발사 프록이 떴을 때
   const manualMode = !state.autoCast;
+  // 주문별로 '지금 직접 눌러야 하는가'를 봅니다(자동 영창 전에는 화염구 외 주문이 모두 수동).
+  const manualSkill = (key) => !isSkillAutoActive(key);
   setBadge('badge-skill-1', manualMode && !c.castingSkill && c.gcdRemaining <= 0 && state.dpsHistory.length === 0);
   setBadge(
     'badge-skill-2',
-    state.grimoires.fireblast && c.fbCharges > 0 && (c.critStreak === 1 || (manualMode && c.fbCharges >= 2))
+    state.grimoires.fireblast && c.fbCharges > 0 && (c.critStreak === 1 || (manualSkill('fireblast') && c.fbCharges >= 2))
   );
   setBadge('badge-skill-3', isMeteorInstantReady());
-  setBadge('badge-skill-4', manualMode && state.grimoires.combustion && c.combustionCdRem <= 0);
-  setBadge('badge-skill-6', manualMode && state.grimoires.flame_patch && c.flamePatchCdRem <= 0);
+  setBadge('badge-skill-4', manualSkill('combustion') && state.grimoires.combustion && c.combustionCdRem <= 0);
+  setBadge('badge-skill-6', manualSkill('flame_patch') && state.grimoires.flame_patch && c.flamePatchCdRem <= 0);
 }
 
 // ==========================================
@@ -3094,6 +3118,17 @@ function showUnfoldToast(title, desc) {
   unfoldToastTimer = setTimeout(() => {
     toastEl.classList.add('hidden');
   }, 3200);
+}
+
+// 자동 영창 획득: 모달이 닫힌 직후 주문 칸마다 AUTO 배지가 왼쪽부터 차례로 튀어나옵니다.
+function triggerAutoGrimoireUnfold() {
+  const badges = [...document.querySelectorAll('.skill-btn:not(#skill-1) .skill-auto-badge')].filter((b) => b.offsetParent !== null);
+  badges.forEach((badge, i) => {
+    badge.classList.remove('auto-unfold');
+    void badge.offsetWidth;
+    badge.style.animationDelay = `${0.35 + i * 0.12}s`;
+    badge.classList.add('auto-unfold');
+  });
 }
 
 function triggerUnfoldPop(elId) {
@@ -3721,6 +3756,7 @@ function selectAwakeningCard(cardId) {
   else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();
 
   updateSkillActionBarVisibility();
+  if (cardId === 'util_auto_grimoire') triggerAutoGrimoireUnfold();
   closeAwakeningModal();
   renderDeckStripUI();
   updateLiveHUD();

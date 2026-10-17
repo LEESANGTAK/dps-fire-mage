@@ -12,6 +12,7 @@ function readyState(autoMeteor) {
   st.grimoires.meteor = true;
   if (!st.spellOrder.includes('meteor')) st.spellOrder.push('meteor');
   st.autoCast = true;
+  st.deckMechanics.smartAutoCast = true; // 주문별 AUTO 토글은 전설 카드 '자동 영창'을 얻은 뒤에 생깁니다.
   st.skillAuto.fireball = true;
   st.skillAuto.meteor = autoMeteor;
   st.combat.castingSkill = null;

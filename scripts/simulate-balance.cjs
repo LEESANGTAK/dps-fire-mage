@@ -42,6 +42,9 @@ const STAGE_TIMEOUT_SEC = 1500;
 
 const RARITY_SCORE = { legendary: 3, rare: 2, common: 1 };
 
+// 수동 주문(불꽃 작렬·메테오·마력 폭주·불장판)을 사람이 판단해 누르는 간격(초). 평균 반응 지연은 0.2초입니다.
+const MANUAL_SPELL_REACT = 0.4;
+
 // 카드 3장 중 하나를 고르는 전략
 const POLICIES = {
   // 사람이 흔히 하는 선택: 주문서 우선 → 높은 등급 → 이미 모은 빌드와 같은 계열
@@ -83,6 +86,7 @@ function simulateRun(policyName, seed) {
   let stageStartPlay = 0;
   let lastCleared = 0;
   let reactTimer = 0;
+  let manualSpellTimer = 0;
   let failedAt = null;
   // 전설 카드를 고른 스테이지(카드별 영향 분석용)
   const legendaryAt = {};
@@ -126,13 +130,21 @@ function simulateRun(policyName, seed) {
 
     // 자동 시전이 꺼져 있으면 사람처럼 0.25초 반응 지연으로 화염구를 누릅니다.
     const c = st.combat;
-    if (!(st.grimoires.autocast && st.autoCast)) {
+    if (!st.autoCast) {
       if (!c.castingSkill && c.gcdRemaining <= 0) {
         reactTimer += FRAME;
         if (reactTimer >= 0.25) { g.run("triggerSkill('fireball', true)"); reactTimer = 0; }
       } else {
         reactTimer = 0;
       }
+    }
+
+    // 자동 영창(전설) 전에는 화염구 외 주문이 수동입니다. 사람이 화면을 보고 누르듯
+    // MANUAL_SPELL_REACT초마다 한 번 최적 순서로 판단해 누릅니다(평균 반응 지연 = 그 절반).
+    manualSpellTimer += FRAME;
+    if (manualSpellTimer >= MANUAL_SPELL_REACT) {
+      manualSpellTimer = 0;
+      g.run("runSmartAutoCast((k) => k !== 'fireball' && !isSkillAutoActive(k), true)");
     }
 
     // 보정 모드: 스테이지 시작 시 체력을 무한으로 바꾸고 목표 시간 동안의 DPS만 측정

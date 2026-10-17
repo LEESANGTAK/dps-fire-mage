@@ -18,7 +18,7 @@ test('Telemetry & Card Pool 무결성 검증', async (t) => {
   });
 
   await t.test('2. 카드 풀 구성 검증 (빌드별 등급 분포, 상위호환 중복 금지)', () => {
-    assert.equal(cardsJson.length, 27, '밸런스 패치 v2 카드 풀은 총 27종이어야 합니다.');
+    assert.equal(cardsJson.length, 28, '카드 풀은 밸런스 패치 v2의 27종 + 자동 영창(전설) 28종이어야 합니다.');
 
     // 모든 빌드는 초반에 잡을 일반 카드와 빌드를 완성할 희귀/전설 카드를 함께 가져야 합니다.
     for (const build of ['rapid', 'crit', 'summon', 'burn']) {

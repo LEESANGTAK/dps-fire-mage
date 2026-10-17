@@ -332,7 +332,7 @@ test('Step 13: roguelike-cards.json 파일 데이터 주도(Data-Driven) 연동 
 
   const rawJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   assert.ok(Array.isArray(rawJson), 'JSON 루트는 배열이어야 합니다.');
-  assert.equal(rawJson.length, 27, '밸런스 패치 v2 카드 풀은 총 27종이어야 합니다.');
+  assert.equal(rawJson.length, 28, '카드 풀은 밸런스 패치 v2의 27종 + 자동 영창(전설) 28종이어야 합니다.');
   assert.ok(!rawJson.some(c => c.id === 'crit_chain_streak'), '연쇄 몰열 카드는 JSON에 존재하지 않아야 합니다.');
 
   // 동적 로더 및 실시간 반영 검증
