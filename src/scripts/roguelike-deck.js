@@ -672,7 +672,8 @@
       // 보스 보상 전설 보장: 아직 전설 카드가 없으면 마지막 한 장을 전설로 바꿔 내놓습니다.
       // 전설을 10스테이지까지 하나도 못 얻은 런이 얻은 런보다 5분 가까이 느려(시뮬레이션) 기록이 운에 좌우되던 문제를 줄입니다.
       // 고르는 것은 여전히 플레이어이고, 이미 전설을 가진 런·전설이 잠긴 첫 런에는 영향이 없습니다.
-      const holdsLegendary = CARD_POOL.some(c => c.rarity === RARITY.LEGENDARY && (activeDeck[c.id] || 0) > 0);
+      // 자동 영창(smart_autocast)은 피해를 올리지 않는 편의 전설이라, 골라도 보장이 끝나지 않습니다(피해 전설을 놓치는 손해 없음).
+      const holdsLegendary = CARD_POOL.some(c => c.rarity === RARITY.LEGENDARY && c.mechanic !== 'smart_autocast' && (activeDeck[c.id] || 0) > 0);
       if (isBossWave && !holdsLegendary && selected.length > 0 && !selected.some(c => c.rarity === RARITY.LEGENDARY)) {
         const legendaryPool = poolCopy.filter(c => c.rarity === RARITY.LEGENDARY);
         if (legendaryPool.length > 0) {

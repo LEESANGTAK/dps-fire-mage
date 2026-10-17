@@ -41,4 +41,17 @@ assert.equal(card.req(st, {}), false, '주문서가 없으면 자동으로 돌�
 assert.ok(M.getLockedCardIds(0).includes('util_auto_grimoire'));
 assert.ok(!M.getLockedCardIds(35).includes('util_auto_grimoire'));
 
-console.log('자동 영창: 카드 전 수동 주문·토글 차단·획득 즉시 자동 시전·주문별 토글·새 런 초기화·해금 검증 통과');
+// 5. 자동 영창은 편의 전설이라 골라도 보스 보상 전설 보장이 이어지고, 피해 전설을 고르면 보장이 끝납니다.
+{
+  const g2 = createHeadlessGame({ seed: 8 });
+  const s2 = g2.run('state');
+  s2.lockedCards = [];
+  g2.run("selectAwakeningCard('spell_fireblast')");
+  g2.run("selectAwakeningCard('util_auto_grimoire')");
+  const bossDraws = () => Array.from({ length: 40 }, () => g2.run('deckManager.drawChoices(3, true, state)').map((c) => c.rarity));
+  assert.ok(bossDraws().every((r) => r.includes('legendary')), '자동 영창만 가졌으면 보스 보상마다 전설이 보장됩니다.');
+  g2.run("selectAwakeningCard('rapid_gatling')");
+  assert.ok(bossDraws().some((r) => !r.includes('legendary')), '피해 전설을 얻으면 보장이 끝납니다.');
+}
+
+console.log('자동 영창: 카드 전 수동 주문·토글 차단·획득 즉시 자동 시전·주문별 토글·새 런 초기화·해금·전설 보장 유지 검증 통과');
