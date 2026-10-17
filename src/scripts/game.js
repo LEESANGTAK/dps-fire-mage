@@ -80,6 +80,7 @@ function getAwakeningChoiceCount(isBossWave) {
 const BASE_SPELL_POWER = 100;
 const BASE_CRIT = 5;
 const BASE_CRIT_DMG = 1.5;
+const CRIT_ROLL_SPREAD = 0.12; // 치명타 피해 흔들림 폭(±12%). 평균은 그대로라 밸런스는 유지하고 숫자만 매번 다르게 터집니다.
 const FIREBLAST_RECHARGE = 8.0; // 불꽃 작렬 1회 충전 시간(초)
 const IGNITE_DURATION = 5.0; // 화상 지속 시간(초) - 치명타 적중 시 갱신
 const IGNITE_TICK = 0.85; // 화상 틱 간격(초)
@@ -2251,7 +2252,14 @@ let lastHeavyKnockbackTime = 0;
 let hitDirectionCounter = 0;
 let lastDotShiverTime = 0;
 
+// 치명타 한 방마다 피해 배율을 1 ± CRIT_ROLL_SPREAD 안에서 고르게 뽑습니다.
+function rollCritVariance() {
+  return 1 + (Math.random() * 2 - 1) * CRIT_ROLL_SPREAD;
+}
+
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false, isCombustionCast = false) {
+  // 치명타 직격만 흔듭니다. 화상 같은 지속 피해 틱은 일정한 리듬을 유지합니다.
+  if (isCrit && !isDotTick) rawDamage *= rollCritVariance();
   const isCombustingEffective = Boolean((state.combat && state.combat.combustionRem > 0) || isCombustionCast);
 
   // 3-1. 최종 보스(Stage 20) 전용 기믹 판정
