@@ -37,8 +37,6 @@ const I18N_EN = {
   '메테오': 'Meteor',
   '마력 폭주': 'Combustion',
   '불장판': 'Flame Patch',
-  '불의 정령': 'Fire Spirit',
-  '불의 정령 x{n}': 'Fire Spirit x{n}',
 
   // 사운드
   '🔊 전체 볼륨': '🔊 Master Volume',
@@ -266,7 +264,6 @@ const I18N_EN = {
   '업화 {n}단계': 'Inferno {n}',
   '기본 난이도': 'Base difficulty',
   '이 단계 최고 기록': 'Best time at this level',
-  '열기 소멸': 'Heat lost',
   '기록 없음': 'No record',
   '몬스터 체력 +15%': 'Monster health +15%',
   '주문 재사용 대기시간 +30%': 'Spell cooldowns +30%',

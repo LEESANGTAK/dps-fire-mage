@@ -1001,12 +1001,6 @@ function drawSummonsAndAuras(dt) {
       ctx.textBaseline = 'middle';
       drawComicAbility(ctx, 'fire-elemental', 0, 0, Math.round(cfg.baseSize * cfg.scale));
 
-      if (sIdx === 0) {
-        ctx.font = 'bold 10px Pretendard, sans-serif';
-        ctx.fillStyle = '#fed7aa';
-        ctx.fillText(elemLv > 1 ? tr('불의 정령 x{n}', { n: elemLv }) : tr('불의 정령'), 0, Math.round(24 * cfg.scale));
-      }
-
       ctx.restore();
     }
   }
@@ -1759,11 +1753,10 @@ function getHeatSigilPos(index) {
 // 열기 소멸 연출 타이밍(초): 숫자가 도착해 칸이 켜진 모습을 보여준 뒤 식기까지의 숨
 const HEAT_EXTINGUISH = { holdAfterArrival: 0.35 };
 
-// 켜져 있던 열기 문양 count칸이 식어 꺼지는 연출(회색으로 부풀며 꺼짐 + 연기 + '열기 소멸').
+// 켜져 있던 열기 문양 count칸이 식어 꺼지는 연출(회색으로 부풀며 꺼짐 + 연기).
 // 아직 숫자가 날아가는 칸은 숫자가 도착해 잠깐 켜진 뒤 꺼지도록 예약해, '채워짐 → 식음' 순서를 지킵니다.
 function extinguishHeatSigils(count) {
   if (!count || typeof document === 'undefined') return;
-  let shown = false;
   for (let i = 0; i < count; i++) {
     // 지금의 열기와 연결된 숫자는 그 칸으로 날아가는 가장 최근 숫자입니다.
     const flying = floatingTexts.findLast((f) => f.heatSigil === i);
@@ -1771,12 +1764,11 @@ function extinguishHeatSigils(count) {
       flying.extinguishOnArrival = true;
       continue;
     }
-    playHeatSigilExtinguish(i, !shown);
-    shown = true;
+    playHeatSigilExtinguish(i);
   }
 }
 
-function playHeatSigilExtinguish(index, withLabel) {
+function playHeatSigilExtinguish(index) {
   const sigil = getHeatSigilEl(index);
   if (!sigil) return;
   sigil.classList.remove('heat-hold', 'heat-absorb', 'heat-extinguish');
@@ -1786,7 +1778,6 @@ function playHeatSigilExtinguish(index, withLabel) {
   setTimeout(() => sigil.classList.remove('heat-extinguish'), 600);
   const pos = getHeatSigilPos(index);
   if (pos) spawnParticles(pos.x, pos.y - 4, 6, '#e5e7eb', '#6b7280', 0.45);
-  if (withLabel) spawnFloatingText(tr('열기 소멸'), 'fct-heat-out', -70, { anchor: 'caster' });
 }
 
 // 숫자가 문양에 닿는 순간: 문양 점등 + 찌그러졌다 튀는 흡수 반동 + 붉은 불씨
@@ -1802,7 +1793,7 @@ function onHeatSigilAbsorbed(f) {
     }
     const pos = getHeatSigilPos(f.heatSigil);
     if (pos) spawnParticles(pos.x, pos.y, 8, '#ffd0c4', '#ef2b2b', 0.7);
-    setTimeout(() => playHeatSigilExtinguish(f.heatSigil, true), HEAT_EXTINGUISH.holdAfterArrival * 1000);
+    setTimeout(() => playHeatSigilExtinguish(f.heatSigil), HEAT_EXTINGUISH.holdAfterArrival * 1000);
     return;
   }
   if (f.heatSigil === 1) armMeteorInstant(false);
