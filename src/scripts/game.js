@@ -2061,6 +2061,19 @@ if (typeof window !== 'undefined') {
 // ==========================================
 // 8. 스테이지 설정 및 몬스터 처치 처리
 // ==========================================
+// 모든 주문의 재사용 대기시간을 비우고 불꽃 작렬 충전을 가득 채웁니다. 대기 중이던 버튼만 준비 완료 번쩍임을 보여줍니다.
+function resetSpellCooldowns() {
+  const c = state.combat;
+  if (c.fbCharges < c.fbMaxCharges) triggerReadyFlash('skill-2');
+  c.fbCharges = c.fbMaxCharges;
+  c.fbRechargeRem = 0;
+  for (const [key, slot] of [['meteorCdRem', 3], ['combustionCdRem', 4], ['flamePatchCdRem', 6]]) {
+    if (c[key] > 0) triggerReadyFlash(`skill-${slot}`);
+    c[key] = 0;
+    c.wasOnCd[slot] = false;
+  }
+}
+
 function loadStage(stageNum) {
   state.currentStage = Math.max(1, Math.min(FINAL_STAGE, stageNum));
   playtestTelemetry.onStageStart(state.currentStage);
@@ -2090,6 +2103,9 @@ function loadStage(stageNum) {
   }
   state.combat.meteorBurnRem = 0;
   updateBurningLoopSound();
+
+  // 새 적마다 주문 재사용 대기시간과 불꽃 작렬 충전을 처음부터 시작합니다.
+  resetSpellCooldowns();
 
   // 충전형 카드: 스테이지 시작마다 충전 횟수를 다시 채움
   const mech = state.deckMechanics || {};
@@ -2455,11 +2471,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
 
     // 로그라이크 덱: 불사조의 가호 (치명타 시 10% 확률로 전 스킬 쿨다운 즉시 리셋)
     if (state.deckMechanics && (state.deckMechanics.phoenixReset || state.deckMechanics.phoenix_reset) && Math.random() < 0.1) {
-      state.combat.fbCharges = state.combat.fbMaxCharges;
-      state.combat.fbRechargeRem = 0;
-      state.combat.meteorCdRem = 0;
-      state.combat.combustionCdRem = 0;
-      state.combat.flamePatchCdRem = 0;
+      resetSpellCooldowns();
       spawnFloatingText(tr('🪶 불사조의 가호! 전 스킬 쿨다운 초기화!'), 'fct-proc', -55, { isBig: true, anchor: 'caster' });
       playSound('proc');
     }
