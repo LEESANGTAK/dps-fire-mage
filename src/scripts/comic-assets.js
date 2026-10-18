@@ -77,7 +77,9 @@ function configureComicMonster(stage){
  const stageBox=document.getElementById('target-stage-box');
  if(stageBox && stageBox.dataset)stageBox.dataset.monsterSize=stage>2 && stage%5===0?'boss':'normal';
  el.dataset.monsterStage=String(stage);
- if(stage<=2){el.style.cssText='';el.style.width=`${baseHeight*growth*1.55}px`;el.style.height=el.style.width;el.style.bottom=`${-baseHeight*growth*1.55*.1252}px`;el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';if(typeof configurePaperSlime==='function')configurePaperSlime(el,baseHeight*growth*1.55,stage);return;}
+ // 화상 불꽃(.burn-status)이 원화 크기에 맞춰 몸에 붙도록 실제 원화 폭·높이를 넘깁니다.
+ const setArtBox=(w,h)=>{if(avatar && avatar.style && avatar.style.setProperty){avatar.style.setProperty('--art-w',`${w}px`);avatar.style.setProperty('--art-h',`${h}px`);}};
+ if(stage<=2){const s=baseHeight*growth*1.55;setArtBox(s*.6,s*.62);el.style.cssText='';el.style.width=`${baseHeight*growth*1.55}px`;el.style.height=el.style.width;el.style.bottom=`${-baseHeight*growth*1.55*.1252}px`;el.dataset.art='slime';el.dataset.variant=stage===2?'blue':'';if(typeof configurePaperSlime==='function')configurePaperSlime(el,baseHeight*growth*1.55,stage);return;}
  el.dataset.paper='true';if(avatar && avatar.dataset)avatar.dataset.paper='true';
  if(typeof paperSlimeMotion!=='undefined')paperSlimeMotion.stage=0;
  if(el.replaceChildren)el.replaceChildren();
@@ -89,6 +91,7 @@ function configureComicMonster(stage){
  const height=Math.min(baseHeight*growth,roomHeight,roomWidth*frame.h/frame.w);
  if(stageBox && stageBox.style && stageBox.style.setProperty)stageBox.style.setProperty('--monster-half-width',`${height*frame.w/frame.h/2}px`);
  const scale=height/frame.h;
+ setArtBox(frame.w*scale,height);
  el.style.clipPath=frame.clip;el.style.width=`${frame.w*scale}px`;el.style.height=`${height}px`;
  el.style.backgroundImage=`url('${frame.sheet || 'assets/art/comic-monsters-clean.png'}')`;
  el.style.backgroundSize=`${(frame.size || COMIC_MONSTER_SIZE)[0]*scale}px ${(frame.size || COMIC_MONSTER_SIZE)[1]*scale}px`;
