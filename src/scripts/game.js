@@ -4508,12 +4508,6 @@ function updateLiveHUD() {
   }
   debuffRow.innerHTML = debuffHtml;
 
-  const dummyAvatar = document.getElementById('dummy-avatar');
-  if (dummyAvatar) {
-    const isBurning = (c.igniteRem > 0 && c.ignitePool >= 5) || c.flamePatchRem > 0 || c.meteorBurnRem > 0;
-    dummyAvatar.classList.toggle('is-burning', isBurning);
-  }
-
   setRadialSweep(document.getElementById('gcd-1'), c.gcdRemaining, c.gcdTotal, false);
 
   if (state.grimoires.fireblast) {
