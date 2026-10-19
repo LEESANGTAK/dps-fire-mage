@@ -3143,6 +3143,13 @@ function triggerAutoGrimoireUnfold() {
 // 메테오 연계 시연: 세이브에서 메테오를 처음 배운 순간 한 번만, 전투를 멈추고 '치명 → 치명 → 즉시 메테오'를
 // 아이콘·열기 문양 애니메이션으로 보여 줍니다. 닫으면 이번 런의 첫 열기 2칸이 보장되어 바로 직접 겪어 봅니다.
 const COMBO_COACH_DISMISS_DELAY = 900; // ms. 카드를 고른 클릭이 시연을 바로 닫지 않도록 기다립니다.
+let finishComboCoach = null; // 열려 있는 시연을 즉시 닫는 함수(밸런스 시뮬레이터가 '클릭'을 대신할 때 사용)
+
+function dismissMeteorComboCoach() {
+  if (typeof finishComboCoach !== 'function') return false;
+  finishComboCoach();
+  return true;
+}
 
 function startMeteorComboCoach() {
   const tips = state.meta.tips;
@@ -3179,14 +3186,19 @@ function startMeteorComboCoach() {
   }
   playSound('proc', 0.8);
   const openedAt = Date.now();
-  const close = () => {
-    if (Date.now() - openedAt < COMBO_COACH_DISMISS_DELAY) return;
+  const finish = () => {
+    finishComboCoach = null;
     coach.removeEventListener('click', close);
     window.removeEventListener('keydown', onKey, true);
     coach.classList.add('cc-out');
     setTimeout(() => coach.remove(), 260);
     state.isPaused = false;
   };
+  const close = () => {
+    if (Date.now() - openedAt < COMBO_COACH_DISMISS_DELAY) return;
+    finish();
+  };
+  finishComboCoach = finish;
   const onKey = (event) => {
     if (['Enter', ' ', 'Escape'].includes(event.key)) {
       event.preventDefault();

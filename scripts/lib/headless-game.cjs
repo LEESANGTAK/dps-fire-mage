@@ -98,6 +98,7 @@ function createHeadlessGame({ seed } = {}) {
   };
   context.window = context;
   context.addEventListener = () => {};
+  context.removeEventListener = () => {};
   context.dispatchEvent = () => {};
   vm.createContext(context);
 

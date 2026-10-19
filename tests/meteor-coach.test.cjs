@@ -45,7 +45,9 @@ function setup() {
   assert.equal(st.isPaused, true, '시연이 떠 있는 동안 전투가 멈춥니다.');
   assert.equal(st.heatTutorial, true, '이번 런의 첫 열기 2칸이 보장됩니다.');
 
-  st.isPaused = false; // 시연을 닫은 상태
+  assert.equal(g.run('dismissMeteorComboCoach()'), true, '열린 시연은 즉시 닫을 수 있습니다(시뮬레이터용).');
+  assert.equal(st.isPaused, false, '시연을 닫으면 전투가 다시 흐릅니다.');
+  assert.equal(g.run('dismissMeteorComboCoach()'), false, '닫힌 시연은 다시 닫지 않습니다.');
   let t = 0;
   while (t < 8 && !g.run('isMeteorInstantReady()')) { g.step(FRAME); t += FRAME; }
   assert.ok(g.run('isMeteorInstantReady()'), `치명타 0%여도 화염구 두 발로 메테오가 준비되어야 합니다(${t.toFixed(1)}초).`);

@@ -10,6 +10,8 @@
  *        node scripts/simulate-balance.cjs --calibrate [--runs 30] [--policy greedy]
  *        클리어 후 콘텐츠: [--level 0~8] [--locked] [--start fireblast|meteor|combustion|flame_patch]
  *          --level 업화 단계, --locked 숙련도 0(전설 카드 잠김, 첫 런 조건), --start 시작 주문서
+ *          --xp N 숙련도 경험치 지정(예: --xp 4 --start fireblast = 5스테이지 보스에서 실패한 첫 런 다음의 두 번째 런)
+ *        수동 판단 비교: [--hold-combustion] 마력 폭주를 보스(5·10·15·20)까지 아낌, [--no-auto-grimoire] 자동 영창을 추첨에서 빼 수동 판단을 유지
  *        전설 카드 비교: [--force-legendary 카드ID] 첫 보스 보상에서 해당 전설을 강제로 고름(같은 시드로 카드별 비교)
  *        업화 규칙 시험: [--rules '[{"level":4,"bossHpPct":40}]'] 단계별 규칙 값을 덮어써서 비교
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
@@ -30,6 +32,10 @@ const CALIBRATE = args.includes('--calibrate');
 const LEVEL = Number(argValue('level', 0));
 const LOCKED = args.includes('--locked');
 const START_SPELL = argValue('start', '');
+const XP = args.includes('--xp') ? Number(argValue('xp', 0)) : null;
+// 마력 폭주를 일반 몬스터에 쓰지 않고 보스 스테이지까지 아끼는 수동 판단(자동 영창으로 자동이 된 주문에는 적용되지 않음)
+const HOLD_COMBUSTION = args.includes('--hold-combustion');
+const NO_AUTO_GRIMOIRE = args.includes('--no-auto-grimoire');
 // 전설 카드 단독 비교: 첫 전설 선택 기회(보스 보상)에 이 카드를 강제로 고릅니다. 같은 시드로 카드별 힘을 비교할 때 씁니다.
 const FORCE_LEGENDARY = argValue('force-legendary', '');
 // 업화 규칙 시험: '[{"level":4,"bossHpPct":40}]'처럼 단계별 값을 덮어씁니다(meta-progression.js는 그대로 두고 비교할 때 사용).
@@ -94,7 +100,9 @@ function simulateRun(policyName, seed) {
   // 런 조건: 업화 단계·카드 잠금·시작 주문서를 실제 게임의 새 런과 같은 경로(restartSpeedrunRun)로 적용합니다.
   st.meta.infernoUnlocked = LEVEL;
   st.meta.infernoSelected = LEVEL;
-  st.meta.xp = LOCKED ? 0 : 1e9;
+  st.meta.xp = XP !== null ? XP : LOCKED ? 0 : 1e9;
+  // 메테오 연계 시연·첫 열기 보장은 세이브에서 처음 메테오를 얻을 때만 나옵니다. 첫 런(--locked)만 처음으로 봅니다.
+  st.meta.tips.meteorCombo = !LOCKED;
   st.meta.startSpell = START_SPELL || null;
   if (RULE_OVERRIDES.length) {
     const rules = g.run('INFERNO_RULES');
@@ -104,6 +112,7 @@ function simulateRun(policyName, seed) {
     }
   }
   g.run('restartSpeedrunRun()');
+  if (NO_AUTO_GRIMOIRE) st.lockedCards.push('util_auto_grimoire');
   const calib = [];
   let calibStage = 0;
   let calibDamageStart = 0;
@@ -122,7 +131,7 @@ function simulateRun(policyName, seed) {
         }
         if (pick.rarity === 'legendary' && !(pick.id in legendaryAt)) legendaryAt[pick.id] = st.currentStage;
         g.run(`selectAwakeningCard(${JSON.stringify(pick.id)})`);
-      } else {
+      } else if (!g.run('dismissMeteorComboCoach()')) {
         g.step(FRAME);
       }
       continue;
@@ -144,7 +153,8 @@ function simulateRun(policyName, seed) {
     manualSpellTimer += FRAME;
     if (manualSpellTimer >= MANUAL_SPELL_REACT) {
       manualSpellTimer = 0;
-      g.run("runSmartAutoCast((k) => k !== 'fireball' && !isSkillAutoActive(k), true)");
+      const holdCombustion = HOLD_COMBUSTION && st.currentStage % 5 !== 0;
+      g.run(`runSmartAutoCast((k) => k !== 'fireball' && !isSkillAutoActive(k) && !(${holdCombustion} && k === 'combustion'), true)`);
     }
 
     // 보정 모드: 스테이지 시작 시 체력을 무한으로 바꾸고 목표 시간 동안의 DPS만 측정
@@ -204,7 +214,7 @@ function report(policyName) {
   // --verbose: 런마다 시드·총 시간·돌파 스테이지·실패 위치를 출력합니다.
   if (args.includes('--verbose')) runs.forEach((r, i) => console.log(`  run seed ${BASE_SEED + i}: ${fmtSec(r.totalSec)} · 돌파 ${r.stages.length} · 실패 ${r.failedAt ?? '-'} · 스테이지별(초) ${r.stages.map((s) => Math.round(s.ttk)).join(' ')}`));
 
-  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''} ===`);
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${XP !== null ? ` · 숙련도 ${XP}` : ''}${HOLD_COMBUSTION ? ' · 마력 폭주 보스까지 보존' : ''}${NO_AUTO_GRIMOIRE ? ' · 자동 영창 제외' : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''} ===`);
   console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
   for (let stage = 1; stage <= 20; stage++) {
     const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);
