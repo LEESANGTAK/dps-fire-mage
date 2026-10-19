@@ -2955,14 +2955,9 @@ function runSmartAutoCast(canCast = isSkillAutoActive, isManual = false) {
     }
   }
 
-  // 3. 일반 화염구 기본 시전. 몰열 2스택이면 곧 자동 메테오가 나가므로 화염구를 쉬지만,
-  //    메테오가 수동이면 플레이어가 누를 때까지 화염구 자동 시전을 계속합니다.
-  if (
-    canCast('fireball') &&
-    !c.castingSkill &&
-    c.gcdRemaining <= 0 &&
-    !(state.grimoires.meteor && c.critStreak === 2 && isSkillAutoActive('meteor'))
-  ) {
+  // 3. 일반 화염구 기본 시전. 즉시 메테오는 화염구 시전 중에도 그 위로 떨어지므로, 열기 2칸이어도 화염구를 쉬지 않습니다.
+  //    (지금 시작한 화염구는 메테오가 열기를 소비한 뒤 꽂혀 다음 열기 1칸으로 이어집니다)
+  if (canCast('fireball') && !c.castingSkill && c.gcdRemaining <= 0) {
     triggerSkill('fireball', false);
   }
 }

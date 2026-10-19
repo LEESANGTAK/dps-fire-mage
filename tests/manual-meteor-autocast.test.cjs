@@ -1,5 +1,5 @@
-/* 메테오 수동·화염구 자동일 때, 메테오 즉시 시전 준비 상태에서도 화염구 자동 시전이 멈추지 않는지 검증합니다.
- * (메테오가 자동이면 곧 메테오가 나가므로 화염구가 잠깐 쉬는 기존 동작을 유지) */
+/* 메테오 즉시 시전 준비(열기 2칸) 상태에서도 화염구 자동 시전이 멈추지 않는지 검증합니다.
+ * 메테오가 수동이면 플레이어가 쓸 때까지 준비가 유지되고, 자동이면 화염구 시전 중에 그 위로 즉시 떨어집니다. */
 const assert = require('node:assert/strict');
 const { createHeadlessGame } = require('../scripts/lib/headless-game.cjs');
 
@@ -35,16 +35,22 @@ function readyState(autoMeteor) {
   assert.equal(st.combat.critStreak, 2, '수동 메테오 준비는 플레이어가 쓸 때까지 유지됩니다.');
 }
 
-// 2. 메테오 자동: 화염구 대신 메테오가 먼저 나갑니다.
+// 2. 메테오 자동: 화염구 시전을 쉬지 않고, 메테오는 화염구 시전 중에 즉시 떨어집니다.
 {
   const { g, st } = readyState(true);
-  let fired = false;
-  for (let i = 0; i < 30 && !fired; i++) {
+  g.step(FRAME);
+  assert.equal(st.combat.castingSkill, 'fireball', '메테오 준비 상태에서도 화염구 시전을 바로 시작합니다.');
+  const castTotal = st.combat.castTotal;
+  let firedDuringCast = false;
+  for (let i = 0; i < 30; i++) {
     g.step(FRAME);
-    if (st.combat.critStreak === 0) { fired = true; break; } // 메테오가 나간 프레임에 화염구가 이어지는 것은 정상
-    assert.notEqual(st.combat.castingSkill, 'fireball', '자동 메테오가 나가기 전에 화염구 시전을 시작하지 않습니다.');
+    if (st.combat.critStreak === 0) {
+      firedDuringCast = st.combat.castingSkill === 'fireball';
+      break;
+    }
   }
-  assert.ok(fired, '자동 메테오가 즉시 시전되어야 합니다.');
+  assert.ok(firedDuringCast, '자동 메테오는 화염구 시전을 끊지 않고 그 위로 즉시 떨어져야 합니다.');
+  assert.equal(st.combat.castTotal, castTotal, '메테오가 화염구 시전 시간을 바꾸지 않습니다.');
 }
 
-console.log('메테오 수동 시 준비 상태에서도 화염구 자동 시전 유지, 메테오 자동 시 메테오 우선 발사 검증 통과');
+console.log('메테오 준비 상태에서도 화염구 자동 시전 유지(수동: 준비 유지, 자동: 화염구 시전 중 즉시 낙하) 검증 통과');
