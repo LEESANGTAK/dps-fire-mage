@@ -118,4 +118,24 @@ g.step(1 / 30);
 assert.ok(st.bossGimmick.shield > 0, '체력 30% 이하에서 불의 심장이 전개됩니다.');
 assert.ok(Math.abs(st.bossGimmick.shieldTimer - m7.shieldSec) < 0.1, `불의 심장 제한 시간은 ${m7.shieldSec}초여야 합니다.`);
 
-console.log('업화 단계 규칙 누적·숙련도 지급(실패 포함, 중복 방지)·해금 순서·세이브 정리·새 런 적용·다음 단계 해금·재사용 대기·불의 심장 시간 검증 통과');
+// 8. 첫 런을 5스테이지 보스에서 실패해도 시작 주문서가 열리고, 다음 런 기본값으로 자동 선택됩니다.
+assert.equal(M.MASTERY_UNLOCKS[0].xp, M.getRunMasteryXp({ clearedStage: 4 }), '첫 해금은 5스테이지 보스 실패 경험치로 열려야 합니다.');
+assert.deepEqual(M.getUnlockedStartSpells(M.getRunMasteryXp({ clearedStage: 4 })), ['fireblast']);
+const fresh = createHeadlessGame({ seed: 11 });
+const fs0 = fresh.run('state');
+assert.equal(fs0.meta.xp, 0);
+assert.equal(fs0.meta.startSpell, null);
+fs0.highestClearedStage = 4;
+fresh.run('failRunByEnrage()');
+assert.ok(fs0.meta.lastRun.newUnlocks.some((u) => u.type === 'start' && u.id === 'fireblast'), '첫 실패에서도 해금이 하나 생깁니다.');
+assert.equal(fs0.meta.startSpell, 'fireblast', '새로 열린 시작 주문서는 자동으로 선택됩니다.');
+fresh.run('restartSpeedrunRun()');
+assert.equal(fs0.grimoires.fireblast, true, '두 번째 런은 불꽃 작렬을 들고 시작합니다.');
+// 이미 고른 주문서는 새 시작 주문서가 열리지 않는 런에서 바뀌지 않습니다.
+fs0.meta.startSpell = null;
+fs0.highestClearedStage = 9;
+fresh.run('failRunByEnrage()');
+assert.deepEqual(Array.from(fs0.meta.lastRun.newUnlocks, (u) => u.id), ['rapid_gatling'], '10스테이지 보스 실패(4+11=15)에서는 화염 기관총만 열립니다.');
+assert.equal(fs0.meta.startSpell, null, '시작 주문서 해금이 없으면 플레이어 선택을 유지합니다.');
+
+console.log('업화 단계 규칙 누적·숙련도 지급(실패 포함, 중복 방지)·해금 순서·세이브 정리·새 런 적용·다음 단계 해금·재사용 대기·불의 심장 시간·첫 실패 해금과 시작 주문서 자동 선택 검증 통과');

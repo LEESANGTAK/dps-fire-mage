@@ -26,9 +26,10 @@ const INFERNO_RULES = [
 const MASTERY_XP = { perStage: 1, phaseBoss: 3, finalBoss: 10, perInfernoPct: 25 };
 
 // 누적 경험치 기준과 해금 보상(순서대로 열림). card=각성 카드 풀에 추가, start=런 시작 시 고를 수 있는 주문서.
+// 첫 해금(4)은 5스테이지 보스에서 실패한 첫 런도 받는 경험치입니다. 두 번째 런이 첫 런과 똑같이 시작하지 않게 합니다.
 const MASTERY_UNLOCKS = [
+  { xp: 4, type: 'start', id: 'fireblast' },
   { xp: 10, type: 'card', id: 'rapid_gatling' },
-  { xp: 25, type: 'start', id: 'fireblast' },
   { xp: 35, type: 'card', id: 'util_auto_grimoire' },
   { xp: 45, type: 'card', id: 'sum_cinder_lord' },
   { xp: 70, type: 'start', id: 'flame_patch' },

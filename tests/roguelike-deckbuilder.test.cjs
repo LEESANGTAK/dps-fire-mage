@@ -687,3 +687,20 @@ test('Step 23: 메테오 연속 낙하 시 파티클 지속 보장, 다시 도�
 
 
 
+test('무모한 일격은 받은 뒤에도 치명타 확률이 15% 이상 남을 때만 등장', () => {
+  const reckless = CARD_POOL.find((c) => c.id === 'crit_reckless');
+  assert.equal(reckless.prerequisite, 'crit_after_15');
+  const canOffer = (bonusCrit) => reckless.req({ playerStatsBonus: { crit: bonusCrit } }, {});
+  // 기본 치명타 5%: 집중 0장(5→0%), 1장(15→7%)으로는 함정이 되므로 나오지 않습니다.
+  assert.equal(canOffer(0), false, '기본 치명타 5%에서는 등장하면 안 됩니다.');
+  assert.equal(canOffer(10), false, '집중 1장(15%)에서 고르면 7%만 남으므로 등장하면 안 됩니다.');
+  assert.equal(canOffer(20), true, '집중 2장(25%)이면 고른 뒤 17%가 남으므로 등장합니다.');
+  assert.equal(canOffer(12), false, '무모한 일격 1장을 이미 든 집중 2장(17%)에서는 두 번째가 9%로 떨어지므로 등장하지 않습니다.');
+  assert.equal(reckless.req(null, {}), false, '상태를 모르면 등장시키지 않습니다.');
+
+  const manager = createDeckManager();
+  for (let i = 0; i < 200; i++) {
+    const ids = manager.drawChoices(3, true, { playerStatsBonus: {} }).map((c) => c.id);
+    assert.ok(!ids.includes('crit_reckless'), '치명타 카드 없이 시작한 런의 보스 보상에도 나오면 안 됩니다.');
+  }
+});

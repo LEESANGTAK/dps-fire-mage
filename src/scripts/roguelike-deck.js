@@ -36,6 +36,9 @@
     UTILITY: 'utility'    // 유틸리티 및 특수
   };
 
+  // 선행 조건 crit_after_15: 카드를 받은 뒤 남아야 하는 최소 치명타율(%)
+  const CRIT_FLOOR_AFTER_CARD = 15;
+
   // 기본 내장 카드 데이터는 roguelike-cards.json과 동일하게 유지합니다. (file:// 실행 시 fallback)
   const DEFAULT_CARDS_RAW = [
     {
@@ -159,7 +162,8 @@
       "stats": {
         "crit": -8,
         "critDmg": 80
-      }
+      },
+      "prerequisite": "crit_after_15"
     },
     {
       "id": "spell_meteor",
@@ -442,6 +446,14 @@
       card.req = (st, deck) => (deck['spell_combustion'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.combustion);
     } else if (raw.prerequisite === 'has_flame_patch') {
       card.req = (st, deck) => (deck['spell_flame_patch'] || 0) > 0 || Boolean(st && st.grimoires && st.grimoires.flame_patch);
+    } else if (raw.prerequisite === 'crit_after_15') {
+      // 치명타율을 깎는 카드는 받은 뒤에도 치명타율이 15% 이상 남을 때만 나옵니다.
+      // 기본 치명타율(5%)에서 바로 고르면 0%가 되어 치명타 피해 증가와 몰아치는 열기가 모두 죽는 함정이 되기 때문입니다.
+      card.req = (st) => {
+        const baseCrit = typeof BASE_CRIT === 'number' ? BASE_CRIT : 5;
+        const bonusCrit = (st && st.playerStatsBonus && st.playerStatsBonus.crit) || 0;
+        return baseCrit + bonusCrit + ((raw.stats && raw.stats.crit) || 0) >= CRIT_FLOOR_AFTER_CARD;
+      };
     } else if (raw.prerequisite === 'has_any_spell') {
       card.req = (st, deck) => Boolean(
         (deck['spell_fireblast'] || 0) > 0 ||

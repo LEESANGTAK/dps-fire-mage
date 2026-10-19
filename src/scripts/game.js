@@ -4014,6 +4014,9 @@ function awardRunMastery(finalKilled) {
     meta.infernoSelected = meta.infernoUnlocked; // 새로 열린 단계를 다음 런 기본값으로 둡니다.
     newInferno = meta.infernoUnlocked;
   }
+  // 새로 열린 시작 주문서는 다음 런 기본값으로 둡니다. 칩을 따로 누르지 않아도 방금 해금한 주문서로 런이 달라집니다.
+  const newStartSpell = newUnlocks.filter((u) => u.type === 'start').pop();
+  if (newStartSpell) meta.startSpell = newStartSpell.id;
   meta.lastRun = { gained, xpBefore, xpAfter: meta.xp, newUnlocks, newInferno, infernoLevel: state.infernoLevel, shown: false };
   state.runRewarded = true;
   state.lockedCards = getLockedCardIds(meta.xp);

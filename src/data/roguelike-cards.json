@@ -120,7 +120,8 @@
     "stats": {
       "crit": -8,
       "critDmg": 80
-    }
+    },
+    "prerequisite": "crit_after_15"
   },
   {
     "id": "spell_meteor",

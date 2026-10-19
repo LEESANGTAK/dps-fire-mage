@@ -36,7 +36,7 @@ LEGACY_HEADERS = ["주문력(sp)", "골드보너스(goldBonus)"]
 ENUMS = {
     "rarity": ["common", "rare", "legendary"],
     "build": ["rapid", "crit", "summon", "burn", "utility"],
-    "prerequisite": ["has_summon", "has_meteor", "has_combustion", "has_flame_patch", "has_any_spell"],
+    "prerequisite": ["has_summon", "has_meteor", "has_combustion", "has_flame_patch", "has_any_spell", "crit_after_15"],
     "spellKey": ["fireblast", "meteor", "combustion", "flame_patch"],
     "mechanic": [
         "split_fireball", "gatling_mode", "quickdraw_charge",
@@ -81,6 +81,7 @@ GUIDE_SECTIONS = [
             ["has_combustion", "마력 폭주 습득 시", "마력 폭주를 배운 상태에서만 '진홍의 마력 폭주'가 등장"],
             ["has_flame_patch", "불장판 습득 시", "불장판을 배운 상태에서만 '번지는 불길'이 등장"],
             ["has_any_spell", "쿨다운 스킬 1개 이상 습득 시", "쿨다운 스킬이 없는데 '쿨다운 초기화' 카드가 떠서 무용지물이 되는 현상 방지"],
+            ["crit_after_15", "카드를 받은 뒤에도 치명타 확률 15% 이상", "기본 치명타 5%에서 '무모한 일격'(-8%)을 골라 치명타가 0%가 되는 함정 방지"],
         ],
     },
     {
