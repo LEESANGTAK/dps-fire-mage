@@ -3,12 +3,12 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const source=fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'),'utf8');
 const skillCode=source.slice(source.indexOf('function triggerSkill('),source.indexOf('function runSmartAutoCast('));
 const combat={castingSkill:'fireball',castRemaining:1,castTotal:1.5,gcdRemaining:.8,critStreak:2,streakTimer:12,meteorCdRem:9};
-let impacts=0,streakFlag;
+let impacts=0,streakFlag,instantMeteors=0;
 const state={combat,grimoires:{meteor:true}};
-const ctx=vm.createContext({state,getPlayerStats:()=>({sp:100,crit:100,critDmg:2,speedMult:1,cdr:0}),beginMageGesture(){},updateCastingLoopSound(){},launchMeteorVfx:fn=>{impacts++;fn();},dealDamage:(key,dmg,crit,streak)=>{assert.equal(key,'meteor');assert.equal(dmg,640);assert.ok(crit);streakFlag=streak;}});
+const ctx=vm.createContext({state,getPlayerStats:()=>({sp:100,crit:100,critDmg:2,speedMult:1,cdr:0}),beginMageGesture(){},updateCastingLoopSound(){},addRunStat:(key,n)=>{if(key==='instantMeteors')instantMeteors+=n;},launchMeteorVfx:fn=>{impacts++;fn();},dealDamage:(key,dmg,crit,streak)=>{assert.equal(key,'meteor');assert.equal(dmg,640);assert.ok(crit);streakFlag=streak;}});
 vm.runInContext(skillCode,ctx);
 assert.ok(vm.runInContext("triggerSkill('meteor')",ctx));
-assert.equal(impacts,1);assert.equal(streakFlag,false);
+assert.equal(impacts,1);assert.equal(streakFlag,false);assert.equal(instantMeteors,1,'즉시 메테오는 결과창 진단용으로 셉니다.');
 assert.equal(combat.critStreak,0);assert.equal(combat.streakTimer,0);
 assert.equal(combat.meteorCdRem,9);assert.equal(combat.castingSkill,'fireball');assert.equal(combat.castRemaining,1);
 assert.equal(vm.runInContext("triggerSkill('meteor')",ctx),false);

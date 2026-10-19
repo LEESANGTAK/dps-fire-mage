@@ -133,11 +133,24 @@ const I18N_EN = {
   '{h}시간 {m}분 {s}초': '{h}h {m}m {s}s',
   '{m}분 {s}초': '{m}m {s}s',
   '{n}초': '{n}s',
+  '{n}회': '{n}x',
 
   // 상단 바
   '골드': 'Gold',
   '주문 공격력': 'Spell Power',
   '치명타': 'Crit',
+  // 패배 원인 진단(결과창)
+  '즉시 메테오': 'Instant Meteors',
+  '식은 열기': 'Heat lost',
+  '놓친 메테오': 'Missed Meteors',
+  '마력 폭주 대기': 'Combustion idle',
+  '불꽃 작렬 충전 가득': 'Fire Blast capped',
+  '준비된 메테오를 {n}번 놓쳤습니다 · 열기 2칸이 켜지면 바로 메테오를 쓰세요': 'You let a ready Meteor expire {n} times · Cast Meteor as soon as both Heat sigils light up',
+  '마력 폭주가 {n}초 동안 쉬었습니다 · 쿨이 돌면 바로 쓰세요': 'Combustion sat ready for {n}s · Use it as soon as it comes off cooldown',
+  '열기가 {n}번 식었습니다 · 열기 1칸일 때 불꽃 작렬을 쓰세요': 'Heat faded {n} times · Use Fire Blast when 1 Heat sigil is lit',
+  '치명타 확률이 낮아 메테오 연계가 한 번도 터지지 않았습니다 · 치명타 카드를 노려 보세요': 'Crit chance was too low for a single Meteor combo · Look for crit cards',
+  '보스 체력 {n}%만 남았습니다 · 화력 카드 한 장 차이입니다': 'Only {n}% boss health left · One more damage card would have done it',
+  '화력이 모자랐습니다 · 한 계열 카드를 몰아 빌드를 완성해 보세요': 'Not enough damage · Stack cards from one build to complete it',
   // 메테오 연계 안내(첫 획득 시연·불꽃 작렬 말풍선)
   '메테오 연계': 'Meteor Combo',
   '즉시·무료': 'Instant · Free',

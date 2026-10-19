@@ -9,7 +9,7 @@
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="src/styles/styles.css?v=balance-v2-3" />
   <link rel="stylesheet" href="src/styles/art.css?v=final-boss-1" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=meteor-coach-1" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=defeat-cause-1" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -314,6 +314,9 @@
         불타는 심연의 지배자를 물리치고 세상 최고의 대마법사 반열에 올랐습니다!
       </p>
 
+      <!-- 패배 원인 한 줄 진단과 주문별 지표 칩 (game.js renderDefeatCause, 패배 결과창에서만 보임) -->
+      <div class="defeat-cause" id="defeat-cause" hidden></div>
+
       <!-- 마도서 숙련도: 실패해도 쌓이는 영구 진행과 해금 연출 (meta-ui.js) -->
       <div class="run-progress" id="run-progress" hidden></div>
 
@@ -391,7 +394,7 @@
     </div>
   </div>
 
-  <script src="src/scripts/i18n-en.js?v=meteor-coach-1"></script>
+  <script src="src/scripts/i18n-en.js?v=defeat-cause-1"></script>
   <script src="src/scripts/i18n.js?v=i18n-1"></script>
   <script src="src/scripts/meteor-art.js?v=meteor-trail-overflow-4"></script>
   <script src="src/scripts/combat-art.js?v=fireball-flame-color-1"></script>
@@ -410,6 +413,6 @@
   <script src="src/scripts/save-storage.js?v=desktop-save-1"></script>
   <script src="src/scripts/meta-progression.js?v=meteor-coach-1"></script>
   <script src="src/scripts/meta-ui.js?v=meta-1"></script>
-  <script src="src/scripts/game.js?v=meteor-coach-1"></script>
+  <script src="src/scripts/game.js?v=defeat-cause-1"></script>
 </body>
 </html>

@@ -2498,6 +2498,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     } else if (skillKey === 'fireball') {
       if (state.combat.critStreak === 1) {
         state.combat.critStreak = 0;
+        addRunStat('heatCooled', 1);
         // 규칙: 열기 1칸에서 치명타가 아닌 화염구가 꽂히면 열기가 식습니다. 그 순간을 문양에서 보여줍니다.
         extinguishHeatSigils(1);
       }
@@ -2711,6 +2712,7 @@ function triggerSkill(skillKey, isManual = false) {
     if (isMeteorInstantReady()) {
       c.critStreak = 0;
       c.streakTimer = 0;
+      addRunStat('instantMeteors', 1);
       releaseMeteor(isManual);
       return true;
     }
@@ -4105,6 +4107,73 @@ function awardRunMastery(finalKilled) {
   return meta.lastRun;
 }
 
+// ==========================================
+// 패배 원인 진단: 결과창에 '왜 졌는지'를 한 줄(+아이콘 지표)로 보여 줍니다.
+// ==========================================
+function createRunDiagnosticStats() {
+  return { instantMeteors: 0, heatCooled: 0, meteorMissed: 0, combustionIdle: 0, fireblastCapped: 0 };
+}
+
+function addRunStat(key, amount) {
+  if (!state.stats) state.stats = {};
+  state.stats[key] = (state.stats[key] || 0) + amount;
+}
+
+// 진단 기준(위에서부터 먼저 맞는 하나만 고릅니다). 초 단위 기준은 런 전체 누적입니다.
+const DEFEAT_DIAG = {
+  combustionIdleSec: 20, // 마력 폭주가 이만큼 쉬었으면 지적
+  heatCooled: 4,         // 열기 1칸이 이만큼 식었고
+  fireblastCappedSec: 10, // 그동안 불꽃 작렬 충전이 가득 차 놀고 있었으면 지적
+  lowCrit: 20,           // 메테오가 한 번도 즉시 시전되지 않았고 치명타 확률이 이보다 낮으면 지적
+  closeHpPct: 15         // 보스 체력이 이 이하로 남았으면 '아깝다'
+};
+
+// 남은 보스 체력(%)과 런 통계로 가장 큰 패배 원인 하나와, 가진 주문에 해당하는 지표 칩을 고릅니다.
+function diagnoseDefeat(hpLeftPct) {
+  const s = state.stats || {};
+  const g = state.grimoires || {};
+  const n = (key) => Math.round(s[key] || 0);
+  const chips = [];
+  if (g.meteor) {
+    chips.push({ icon: '☄️', label: tr('즉시 메테오'), value: tr('{n}회', { n: n('instantMeteors') }), bad: n('instantMeteors') === 0 });
+    chips.push({ icon: '💨', label: tr('식은 열기'), value: tr('{n}회', { n: n('heatCooled') }), bad: n('heatCooled') >= DEFEAT_DIAG.heatCooled });
+    if (n('meteorMissed') > 0) chips.push({ icon: '⌛', label: tr('놓친 메테오'), value: tr('{n}회', { n: n('meteorMissed') }), bad: true });
+  }
+  if (g.combustion) chips.push({ icon: '☀️', label: tr('마력 폭주 대기'), value: tr('{n}초', { n: n('combustionIdle') }), bad: n('combustionIdle') >= DEFEAT_DIAG.combustionIdleSec });
+  if (g.fireblast) chips.push({ icon: '💥', label: tr('불꽃 작렬 충전 가득'), value: tr('{n}초', { n: n('fireblastCapped') }), bad: n('fireblastCapped') >= DEFEAT_DIAG.fireblastCappedSec });
+
+  let cause;
+  if (g.meteor && n('meteorMissed') > 0) {
+    cause = { key: 'meteor_missed', icon: '☄️', text: tr('준비된 메테오를 {n}번 놓쳤습니다 · 열기 2칸이 켜지면 바로 메테오를 쓰세요', { n: n('meteorMissed') }) };
+  } else if (g.combustion && n('combustionIdle') >= DEFEAT_DIAG.combustionIdleSec) {
+    cause = { key: 'combustion_idle', icon: '☀️', text: tr('마력 폭주가 {n}초 동안 쉬었습니다 · 쿨이 돌면 바로 쓰세요', { n: n('combustionIdle') }) };
+  } else if (g.meteor && g.fireblast && n('heatCooled') >= DEFEAT_DIAG.heatCooled && n('fireblastCapped') >= DEFEAT_DIAG.fireblastCappedSec) {
+    cause = { key: 'heat_cooled', icon: '💥', text: tr('열기가 {n}번 식었습니다 · 열기 1칸일 때 불꽃 작렬을 쓰세요', { n: n('heatCooled') }) };
+  } else if (g.meteor && n('instantMeteors') === 0 && getPlayerStats().crit < DEFEAT_DIAG.lowCrit) {
+    cause = { key: 'low_crit', icon: '🎯', text: tr('치명타 확률이 낮아 메테오 연계가 한 번도 터지지 않았습니다 · 치명타 카드를 노려 보세요') };
+  } else if (hpLeftPct <= DEFEAT_DIAG.closeHpPct) {
+    cause = { key: 'close', icon: '🔥', text: tr('보스 체력 {n}%만 남았습니다 · 화력 카드 한 장 차이입니다', { n: hpLeftPct }) };
+  } else {
+    cause = { key: 'firepower', icon: '📖', text: tr('화력이 모자랐습니다 · 한 계열 카드를 몰아 빌드를 완성해 보세요') };
+  }
+  return { cause, chips };
+}
+
+function renderDefeatCause(hpLeftPct) {
+  const box = document.getElementById('defeat-cause');
+  if (!box) return null;
+  const { cause, chips } = diagnoseDefeat(hpLeftPct);
+  box.innerHTML = `
+    <div class="dc-line"><span class="dc-icon">${cause.icon}</span><span class="dc-text">${cause.text}</span></div>
+    ${chips.length ? `<div class="dc-chips">${chips.map((chip) => `<span class="dc-chip${chip.bad ? ' bad' : ''}"><span class="dc-chip-icon">${chip.icon}</span><span class="dc-chip-label">${chip.label}</span><b>${chip.value}</b></span>`).join('')}</div>` : ''}`;
+  box.dataset.cause = cause.key;
+  box.hidden = false;
+  box.classList.remove('dc-pop');
+  void box.offsetWidth;
+  box.classList.add('dc-pop');
+  return cause.key;
+}
+
 function failRunByEnrage() {
   if (state.runFailed) return;
   state.runFailed = true;
@@ -4134,6 +4203,7 @@ function openDefeatModal() {
   document.getElementById('victory-modal-title').textContent = tr('{boss} 광폭화', { boss: data.name });
   document.getElementById('victory-modal-subtitle').textContent = tr('STAGE {phase}-{step} 보스를 제한 시간 안에 쓰러뜨리지 못했습니다. 새 런에서 다른 빌드를 시도해 보세요!', { phase: data.phase, step: data.stepInPhase });
   document.getElementById('btn-speedrun-retry').textContent = tr('⚡ 새 런 시작');
+  renderDefeatCause(hpLeftPct);
 
   grid.innerHTML = `
     <div class="victory-stat-item">
@@ -4229,7 +4299,8 @@ function restartSpeedrunRun() {
   }
 
   // 4. 런 단위 전투 기록 초기화 (결과창 · 밸런스 로그가 이번 런만 집계하도록)
-  state.stats = { peakDps: 0, combustionHits: 0, combustionPyros: 0 };
+  // 패배 원인 진단용 카운터: 즉시 메테오·식은 열기(1칸)·놓친 메테오 준비(2칸)·마력 폭주 쉰 시간·불꽃 작렬 충전 가득 시간
+  state.stats = { peakDps: 0, combustionHits: 0, combustionPyros: 0, ...createRunDiagnosticStats() };
   for (const k of Object.keys(state.skillDamage)) {
     state.skillDamage[k].dmg = 0;
     state.skillDamage[k].hits = 0;
@@ -4387,6 +4458,9 @@ function gameLoop(nowMs) {
   if (c.combustionRem > 0) {
     c.combustionRem = Math.max(0, c.combustionRem - dt);
   }
+  // 진단: 쓸 수 있는데 쉬고 있는 시간(마력 폭주 쿨 완료, 불꽃 작렬 충전 가득)
+  if (state.grimoires.combustion && c.combustionCdRem <= 0 && c.combustionRem <= 0) addRunStat('combustionIdle', dt);
+  if (state.grimoires.fireblast && c.fbCharges >= c.fbMaxCharges) addRunStat('fireblastCapped', dt);
   if (c.combustionCdRem > 0) {
     c.combustionCdRem = Math.max(0, c.combustionCdRem - dt);
     if (c.combustionCdRem === 0 && c.wasOnCd[4]) {
@@ -4421,6 +4495,7 @@ function gameLoop(nowMs) {
     // 안전장치: 날아가던 두 번째 열기 숫자가 사라졌다면 바로 무장합니다.
     if (c.meteorArmPending && !floatingTexts.some((f) => f.heatSigil === 1)) armMeteorInstant(true);
     if (c.streakTimer <= 0) {
+      addRunStat(c.critStreak === 2 ? 'meteorMissed' : 'heatCooled', 1);
       extinguishHeatSigils(c.critStreak);
       c.critStreak = 0;
       c.meteorArmPending = false;

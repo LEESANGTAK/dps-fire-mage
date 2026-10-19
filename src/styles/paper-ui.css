@@ -278,3 +278,19 @@
 @keyframes fbHintPop { from { opacity: 0; scale: .3; } to { opacity: 1; scale: 1; } }
 @keyframes fbHintBob { 50% { translate: -50% -4px; } }
 @media (prefers-reduced-motion: reduce) { .action-bar .skill-btn .fb-hint { animation: none; } }
+
+/* 패배 원인 한 줄 진단: 결과창이 열리고 0.45초 여운 뒤 오버슈트로 튀어나옵니다. 지적 대상 지표 칩은 붉게 강조합니다. */
+.defeat-cause { margin: -6px 0 14px; padding: 10px 12px; border: 1.5px solid #b91c1c; border-radius: 6px; background: #2a1418; box-shadow: 0 2px 0 #151119; text-align: left; }
+.defeat-cause[hidden], .victory-modal-backdrop:not(.defeat-mode) .defeat-cause { display: none; }
+.defeat-cause.dc-pop { animation: dcPop .42s cubic-bezier(0.34, 1.56, 0.64, 1) .45s both; }
+.dc-line { display: flex; align-items: center; gap: 10px; }
+.dc-icon { flex: 0 0 auto; font-size: 1.6rem; line-height: 1; }
+.dc-text { font-size: .86rem; font-weight: 700; color: #ffd9c7; line-height: 1.4; }
+.dc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid #5a4537; border-radius: 99px; background: #1b1318; font-size: .7rem; color: #cbbba0; }
+.dc-chip b { color: #f3e3c4; font-variant-numeric: tabular-nums; }
+.dc-chip.bad { border-color: #ef4444; color: #fca5a5; }
+.dc-chip.bad b { color: #ff7a6b; }
+.dc-chip-icon { font-size: .85rem; }
+@keyframes dcPop { 0% { opacity: 0; scale: .7; } 60% { opacity: 1; scale: 1.04 .97; } 100% { opacity: 1; scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .defeat-cause.dc-pop { animation: none; } }
