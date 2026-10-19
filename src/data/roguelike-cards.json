@@ -121,7 +121,7 @@
       "crit": -8,
       "critDmg": 80
     },
-    "prerequisite": "crit_after_15"
+    "prerequisite": "crit_15_or_combustion"
   },
   {
     "id": "spell_meteor",

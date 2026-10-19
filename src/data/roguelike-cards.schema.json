@@ -96,10 +96,10 @@
           "has_combustion",
           "has_flame_patch",
           "has_any_spell",
-          "crit_after_15"
+          "crit_15_or_combustion"
         ],
         "description": "3지선다에 등장하기 위한 선행 조건 필터 (드롭다운 목록 제공):\n- has_summon: 화염 정령을 소환한 상태에서만 등장\n- has_meteor: 메테오를 습득한 상태에서만 등장\n- has_combustion: 마력 폭주를 습득한 상태에서만 등장\n- has_flame_patch: 불장판을 습득한 상태에서만 등장\n- has_any_spell: 불꽃 작렬·메테오·마력 폭주·불장판 중 1개 이상 습득한 상태에서만 등장
-- crit_after_15: 카드를 받은 뒤에도 치명타 확률이 15% 이상 남을 때만 등장 (치명타 확률 감소 카드용)"
+- crit_15_or_combustion: 카드를 받은 뒤에도 치명타 확률이 15% 이상 남거나, 마력 폭주(치명타 100%)를 가졌을 때만 등장 (치명타 확률 감소 카드용)"
       },
       "spellKey": {
         "type": "string",
