@@ -138,6 +138,12 @@ const I18N_EN = {
   '골드': 'Gold',
   '주문 공격력': 'Spell Power',
   '치명타': 'Crit',
+  // 메테오 연계 안내(첫 획득 시연·불꽃 작렬 말풍선)
+  '메테오 연계': 'Meteor Combo',
+  '즉시·무료': 'Instant · Free',
+  '불꽃 작렬은 항상 치명타': 'Fire Blast always crits',
+  '클릭하여 계속': 'Click to continue',
+  '지금!': 'Now!',
   '시전속도': 'Haste',
   '몬스터 토벌로 획득하며, 마도서 각성 카드 다시 뽑기(리롤)에 사용됩니다': 'Earned by defeating monsters. Spend it to redraw Grimoire cards.',
   '언어 변경 / Change language': 'Change language / 언어 변경',
@@ -169,10 +175,10 @@ const I18N_EN = {
   '직접 피해 없음': 'No direct damage',
   '{sec} 동안 치명타 확률 100%와 가속 +20%를 얻습니다. 각성 카드로 지속시간이 증가할 수 있습니다.':
     'For {sec}, gain 100% crit chance and +20% haste. Grimoire cards can extend the duration.',
-  '즉시 · 몰아치는 열기 활성': 'Instant · Heating Up active',
-  '{sec} · 몰열 시 즉시': '{sec} · Instant with Heating Up',
-  '열기 2회 충전 시 쿨타임 중에도 즉시 시전합니다. 낙하 1초 후 적중하며 6초간 연소합니다. 0.85초마다 일반 {n}의 추가 피해를 줍니다.':
-    'With 2 Heat charges it casts instantly, even on cooldown. Lands 1s after falling and burns for 6s, dealing {n} extra damage every 0.85s.',
+  '즉시 · 치명타 2연속 완성': 'Instant · 2 crits in a row ready',
+  '{sec} · 치명타 2연속 시 즉시': '{sec} · Instant after 2 crits in a row',
+  '치명타 2연속(열기 2칸)이면 쿨타임 중에도 즉시·무료로 시전합니다. 낙하 1초 후 적중하며 6초간 연소합니다. 0.85초마다 일반 {n}의 추가 피해를 줍니다.':
+    'After 2 crits in a row (2 Heat sigils) it casts instantly and for free, even on cooldown. Lands 1s after falling and burns for 6s, dealing {n} extra damage every 0.85s.',
   '매 틱 {n}': '{n} per tick',
   '7초간 지속됩니다. 사용 즉시 첫 피해를 주고 이후 0.5초마다 피해를 줍니다.': 'Lasts 7s. Deals damage immediately, then every 0.5s.',
   '시전': 'Cast',

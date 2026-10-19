@@ -2483,6 +2483,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       if (state.combat.critStreak === 0) {
         state.combat.critStreak = 1;
         state.combat.streakTimer = 8.0;
+        maybeShowFireblastHint();
       } else if (state.combat.critStreak === 1) {
         state.combat.critStreak = 2;
         state.combat.streakTimer = 12.0;
@@ -2602,7 +2603,9 @@ function fireSpellProjectile(type, baseMult, isCombustingSnapshot = false) {
       ? (5 + Math.random() * 10)
       : 0;
     const effectiveCrit = isCombustEffective ? 100 : Math.min(100, st.crit + pityBonus);
-    const isCrit = effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
+    // 메테오를 처음 배운 런: 열기 2칸이 한 번 완성될 때까지 화염구는 치명타로 꽂혀 연계를 직접 보여 줍니다.
+    const heatTutorialCrit = type === 'fireball' && state.heatTutorial && state.grimoires.meteor;
+    const isCrit = heatTutorialCrit || effectiveCrit >= 100 || Math.random() * 100 < effectiveCrit;
     const base = st.sp * baseMult;
     const finalDmg = isCrit ? base * st.critDmg : base;
     dealDamage(type, finalDmg, isCrit, true, false, isCombustEffective);
@@ -2842,6 +2845,7 @@ function armMeteorInstant(skipBeat) {
     return;
   }
   c.meteorArmPending = false;
+  state.heatTutorial = false;
   c.meteorArmedAge = skipBeat ? METEOR_AUTO_BEAT : 0;
   playSound('proc');
   triggerReadyFlash('skill-3');
@@ -3132,6 +3136,83 @@ function triggerAutoGrimoireUnfold() {
     badge.style.animationDelay = `${0.35 + i * 0.12}s`;
     badge.classList.add('auto-unfold');
   });
+}
+
+// 메테오 연계 시연: 세이브에서 메테오를 처음 배운 순간 한 번만, 전투를 멈추고 '치명 → 치명 → 즉시 메테오'를
+// 아이콘·열기 문양 애니메이션으로 보여 줍니다. 닫으면 이번 런의 첫 열기 2칸이 보장되어 바로 직접 겪어 봅니다.
+const COMBO_COACH_DISMISS_DELAY = 900; // ms. 카드를 고른 클릭이 시연을 바로 닫지 않도록 기다립니다.
+
+function startMeteorComboCoach() {
+  const tips = state.meta.tips;
+  if (!tips || tips.meteorCombo) return false;
+  tips.meteorCombo = true;
+  state.heatTutorial = true;
+  saveGame();
+
+  const arena = document.getElementById('combat-arena');
+  if (!arena || typeof arena.insertAdjacentHTML !== 'function') return true;
+  state.isPaused = true;
+  const step2Icon = state.grimoires.fireblast ? '💥' : '🔥';
+  const step2Name = state.grimoires.fireblast ? tr('불꽃 작렬') : tr('화염구');
+  arena.insertAdjacentHTML('beforeend', `
+    <div class="combo-coach" id="combo-coach" role="dialog" aria-modal="true" aria-label="${tr('메테오 연계')}">
+      <div class="cc-card">
+        <div class="cc-title">☄️ ${tr('메테오 연계')}</div>
+        <div class="cc-row">
+          <span class="cc-step cc-s1"><span class="cc-icon">🔥</span><span class="cc-name">${tr('화염구')}</span><b>${tr('치명타')}</b></span>
+          <span class="cc-arrow cc-a1">➜</span>
+          <span class="cc-step cc-s2"><span class="cc-icon">${step2Icon}</span><span class="cc-name">${step2Name}</span><b>${tr('치명타')}</b></span>
+          <span class="cc-arrow cc-a2">➜</span>
+          <span class="cc-step cc-s3"><span class="cc-icon">☄️</span><span class="cc-name">${tr('메테오')}</span><b>${tr('즉시·무료')}</b></span>
+        </div>
+        <div class="cc-sigils" aria-hidden="true"><i></i><i></i></div>
+        ${state.grimoires.fireblast ? `<div class="cc-note">💥 ${tr('불꽃 작렬은 항상 치명타')}</div>` : ''}
+        <div class="cc-tap">${tr('클릭하여 계속')}</div>
+      </div>
+    </div>`);
+  const coach = document.getElementById('combo-coach');
+  if (!coach) {
+    state.isPaused = false;
+    return true;
+  }
+  playSound('proc', 0.8);
+  const openedAt = Date.now();
+  const close = () => {
+    if (Date.now() - openedAt < COMBO_COACH_DISMISS_DELAY) return;
+    coach.removeEventListener('click', close);
+    window.removeEventListener('keydown', onKey, true);
+    coach.classList.add('cc-out');
+    setTimeout(() => coach.remove(), 260);
+    state.isPaused = false;
+  };
+  const onKey = (event) => {
+    if (['Enter', ' ', 'Escape'].includes(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+    }
+  };
+  coach.addEventListener('click', close);
+  window.addEventListener('keydown', onKey, true);
+  return true;
+}
+
+// 열기 1칸이 켜진 순간, 불꽃 작렬을 손으로 쓰는 플레이어에게 '지금!' 말풍선을 세이브 전체에서 몇 번만 띄웁니다.
+function maybeShowFireblastHint() {
+  const tips = state.meta.tips;
+  const c = state.combat;
+  if (!tips || tips.fireblastHint >= FIREBLAST_HINT_MAX) return false;
+  if (!state.grimoires.fireblast || !state.grimoires.meteor || c.fbCharges <= 0 || isSkillAutoActive('fireblast')) return false;
+  tips.fireblastHint += 1;
+  saveGame();
+  const btn = document.getElementById(SPELL_ACTION_CONFIG.fireblast.id);
+  if (!btn || typeof btn.insertAdjacentHTML !== 'function') return true;
+  const old = btn.querySelector('.fb-hint');
+  if (old) old.remove();
+  btn.insertAdjacentHTML('beforeend', `<span class="fb-hint" aria-hidden="true">${tr('지금!')}</span>`);
+  const hint = btn.querySelector('.fb-hint');
+  setTimeout(() => hint && hint.remove(), 1800);
+  return true;
 }
 
 function triggerUnfoldPop(elId) {
@@ -3761,6 +3842,7 @@ function selectAwakeningCard(cardId) {
   updateSkillActionBarVisibility();
   if (cardId === 'util_auto_grimoire') triggerAutoGrimoireUnfold();
   closeAwakeningModal();
+  if (cardId === 'spell_meteor') startMeteorComboCoach();
   renderDeckStripUI();
   updateLiveHUD();
 
@@ -4122,6 +4204,7 @@ function restartSpeedrunRun() {
     flame_patch: false
   };
   state.spellOrder = ['fireball'];
+  state.heatTutorial = false;
   state.skillAuto = {
     fireball: true,
     fireblast: true,

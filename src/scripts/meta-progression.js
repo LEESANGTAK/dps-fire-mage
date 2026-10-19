@@ -40,6 +40,9 @@ const MASTERY_UNLOCKS = [
   { xp: 320, type: 'start', id: 'combustion' }
 ];
 
+// 열기 1칸일 때 불꽃 작렬 칸에 '지금!' 말풍선을 띄우는 횟수(세이브 전체 기준)
+const FIREBLAST_HINT_MAX = 3;
+
 // 시작 주문서 → 해당 주문서 카드 ID
 const START_SPELL_CARDS = { fireblast: 'spell_fireblast', meteor: 'spell_meteor', combustion: 'spell_combustion', flame_patch: 'spell_flame_patch' };
 
@@ -121,9 +124,16 @@ function normalizeMeta(raw, legacyBestTime) {
   // 액션 바 선호 배치(드래그 앤 드롭): 알려진 주문 키만, 중복 없이
   const slotKeys = ['fireball', 'fireblast', 'meteor', 'combustion', 'flame_patch'];
   const slotOrder = Array.isArray(meta.slotOrder) ? meta.slotOrder.filter((k, i, a) => slotKeys.includes(k) && a.indexOf(k) === i) : [];
+  // 한 번만 보여 주는 안내: 메테오 연계 시연(본 적 있음), 불꽃 작렬 '지금!' 말풍선(보여 준 횟수)
+  const rawTips = meta.tips && typeof meta.tips === 'object' ? meta.tips : {};
+  const tips = {
+    meteorCombo: rawTips.meteorCombo === true,
+    fireblastHint: Math.max(0, Math.min(FIREBLAST_HINT_MAX, Math.floor(Number(rawTips.fireblastHint) || 0)))
+  };
   return {
     xp,
     slotOrder,
+    tips,
     infernoUnlocked: unlocked,
     infernoSelected: Math.min(unlocked, clampInferno(meta.infernoSelected)),
     startSpell,
@@ -134,7 +144,7 @@ function normalizeMeta(raw, legacyBestTime) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, START_SPELL_CARDS,
+    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, START_SPELL_CARDS, FIREBLAST_HINT_MAX,
     clampInferno, getInfernoModifiers, getRunMasteryXp, getUnlocksAt, getMasteryProgress,
     getLockedCardIds, getUnlockedStartSpells, normalizeMeta
   };

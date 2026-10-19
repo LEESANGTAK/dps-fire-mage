@@ -74,9 +74,9 @@
     "rarity": "common",
     "build": "crit",
     "maxStack": 1,
-    "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다.",
+    "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다. 화염구 치명타 직후에 쓰면 치명타 2연속이 됩니다.",
     "title_en": "Grimoire: Fire Blast",
-    "desc_en": "Learn <b>[Fire Blast], an instant spell that always crits</b> and fires even while casting.",
+    "desc_en": "Learn <b>[Fire Blast], an instant spell that always crits</b> and fires even while casting. Use it right after a Fireball crit for 2 crits in a row.",
     "spellKey": "fireblast"
   },
   {
@@ -130,9 +130,9 @@
     "rarity": "rare",
     "build": "crit",
     "maxStack": 1,
-    "desc": "하늘에서 거대 운석을 낙하시킵니다. 치명타 2연속(몰열) 시 <b>즉시 노코스트로 투하</b>됩니다.",
+    "desc": "거대 운석을 떨어뜨립니다. <b>치명타 2연속</b>이면 메테오가 <b>즉시·무료</b>로 떨어집니다. 불꽃 작렬은 항상 치명타입니다.",
     "title_en": "Grimoire: Meteor",
-    "desc_en": "Call down a giant meteor. After 2 crits in a row (Heating Up), it <b>drops instantly at no cost</b>.",
+    "desc_en": "Call down a giant meteor. Land <b>2 crits in a row</b> and Meteor drops <b>instantly, for free</b>. Fire Blast always crits.",
     "spellKey": "meteor"
   },
   {
