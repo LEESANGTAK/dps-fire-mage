@@ -67,8 +67,6 @@ const I18N_EN = {
   '🏆 {boss} 스피드런 신기록! ({time})': '🏆 New {boss} speedrun record! ({time})',
   '👑 {boss} 최초 토벌!': '👑 First victory over {boss}!',
   '👑 {boss} 토벌 완료!': '👑 You defeated {boss}!',
-  '👑 보스 구역 자동 진입!': '👑 Entering the boss zone!',
-  '🚀 다음 도전 자동 진입!': '🚀 On to the next challenge!',
   '💥 불의 심장 파괴! 화염 역류!': '💥 Heart of Fire shattered! Flames surge back!',
   '🪶 불사조의 가호! 전 스킬 쿨다운 초기화!': "🪶 Phoenix's Blessing! All cooldowns reset!",
   '🌋 들불이 번집니다!': '🌋 Wildfire spreads!',
@@ -78,7 +76,6 @@ const I18N_EN = {
   '🌋 불의 심장 전개! {sec}초 내 보호막을 파괴하세요!': '🌋 Heart of Fire awakens! Break the shield within {sec} seconds!',
   '💀 광폭화! 런 실패': '💀 Enraged! Run failed',
   '⚡ 스피드런 새 런 시작! (Stage 1-1 · 타이머 00:00)': '⚡ New speedrun started! (Stage 1-1 · Timer 00:00)',
-  '✨ [{card}] 각성 획득!': '✨ [{card}] awakened!',
   '💰 리롤에 필요한 골드가 부족합니다!': '💰 Not enough gold to redraw!',
   '골드가 부족합니다.': 'Not enough gold.',
 

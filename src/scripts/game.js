@@ -2304,14 +2304,7 @@ function onMonsterKilled() {
   scheduleKillBeat(() => {
     triggerAwakeningSelection(clearedStage, data.isPhaseBoss, () => {
       loadStage(clearedStage + 1);
-      const nextData = getStageData(state.currentStage);
       respawnMonsterPop();
-      // 각성 획득 문구가 먼저 읽히도록 진입 안내는 반 박자 늦춥니다.
-      setTimeout(() => spawnFloatingText(
-        nextData.isPhaseBoss ? tr('👑 보스 구역 자동 진입!') : tr('🚀 다음 도전 자동 진입!'),
-        'fct-proc',
-        -50
-      ), ENTRY_BEAT_MS);
       saveGame();
     });
   }, beatMs);
@@ -3934,10 +3927,8 @@ function selectAwakeningCard(cardId) {
   renderDeckStripUI();
   updateLiveHUD();
 
+  // 획득 사실은 덱 트레이·주문 슬롯 팝으로 보여 주고, 몬스터를 가리는 문구는 띄우지 않습니다.
   const reveal = () => {
-    if (card) {
-      spawnFloatingText(tr('✨ [{card}] 각성 획득!', { card: cardText(card, 'title') }), 'fct-proc', -60, { isBig: true });
-    }
     if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
     else if (cardId === 'spell_meteor') triggerUnfoldPop('skill-3');
     else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
