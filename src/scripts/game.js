@@ -4238,11 +4238,13 @@ function awardRunMastery(finalKilled) {
     newInferno = meta.infernoUnlocked;
   }
   // 새로 열린 시작 주문서는 다음 런 기본값으로 둡니다. 칩을 따로 누르지 않아도 방금 해금한 주문서로 런이 달라집니다.
-  const newStartSpell = newUnlocks.filter((u) => u.type === 'start').pop();
+  // (업화 단계로 잠긴 주문서—예: 업화 2단계 전 마력 폭주—는 고를 수 없으므로 기본값으로 두지 않습니다.)
+  const usableSpells = getUnlockedStartSpells(meta.xp, meta.infernoUnlocked);
+  const newStartSpell = newUnlocks.filter((u) => u.type === 'start' && usableSpells.includes(u.id)).pop();
   if (newStartSpell) meta.startSpell = newStartSpell.id;
   meta.lastRun = { gained, xpBefore, xpAfter: meta.xp, newUnlocks, newInferno, infernoLevel: state.infernoLevel, shown: false };
   state.runRewarded = true;
-  state.lockedCards = getLockedCardIds(meta.xp);
+  state.lockedCards = getLockedCardIds(meta.xp, meta.infernoUnlocked);
   return meta.lastRun;
 }
 
@@ -4402,7 +4404,7 @@ function restartSpeedrunRun() {
   // 업화 단계·해금 카드·단계별 최고 기록: 결과창에서 고른 값으로 새 런을 엽니다.
   const meta = state.meta;
   state.infernoLevel = Math.min(meta.infernoSelected, meta.infernoUnlocked);
-  state.lockedCards = getLockedCardIds(meta.xp);
+  state.lockedCards = getLockedCardIds(meta.xp, meta.infernoUnlocked);
   state.bestSpeedrunTime = meta.bestTimes[state.infernoLevel] ?? null;
   state.runRewarded = false;
 
@@ -4433,7 +4435,7 @@ function restartSpeedrunRun() {
 
   // 숙련도로 연 시작 주문서를 고른 경우 첫 스테이지부터 그 주문을 들고 시작합니다.
   const startCard = meta.startSpell && START_SPELL_CARDS[meta.startSpell];
-  if (startCard && deckManager) {
+  if (startCard && deckManager && !state.lockedCards.includes(startCard)) {
     deckManager.selectCard(startCard, state);
     renderDeckStripUI();
   }
@@ -4955,7 +4957,7 @@ function loadGame() {
     state.meta = normalizeMeta(data.meta, data.bestSpeedrunTime);
     state.infernoLevel = Math.min(clampInferno(data.infernoLevel), state.meta.infernoUnlocked);
     state.runRewarded = data.runRewarded === true;
-    state.lockedCards = getLockedCardIds(state.meta.xp);
+    state.lockedCards = getLockedCardIds(state.meta.xp, state.meta.infernoUnlocked);
     state.bestSpeedrunTime = state.meta.bestTimes[state.infernoLevel] ?? null;
     if (data.bossClearTimes) state.bossClearTimes = Object.assign({}, data.bossClearTimes);
     if (typeof data.autoCast === 'boolean') state.autoCast = data.autoCast;

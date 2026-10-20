@@ -4,7 +4,9 @@
  * - 업화 단계(Inferno, 0~8): 현재 해금된 최고 단계로 최종 보스를 쓰러뜨리면 다음 단계가 열립니다.
  *   단계 규칙은 누적됩니다(3단계 = 1·2·3단계 규칙 모두 적용). 스피드런 기록은 단계별로 따로 남깁니다.
  * - 마도서 숙련도(Mastery): 런이 끝날 때(클리어·실패 모두) 돌파한 스테이지만큼 경험치를 얻고,
- *   누적 경험치가 기준을 넘을 때마다 전설 카드·시작 주문서가 차례로 영구 해금됩니다. */
+ *   누적 경험치가 기준을 넘을 때마다 전설 카드·시작 주문서가 차례로 영구 해금됩니다.
+ * - 업화 해금 카드: 너무 강해 첫 클리어 전부터 나오면 난이도를 무너뜨리는 카드는 업화 단계에 처음 도달할 때
+ *   영구 해금됩니다(이후 0단계 런 포함 모든 런에서 등장). */
 
 const INFERNO_MAX = 8;
 
@@ -29,7 +31,6 @@ const MASTERY_XP = { perStage: 1, phaseBoss: 3, finalBoss: 10, perInfernoPct: 25
 // 첫 해금(4)은 5스테이지 보스에서 실패한 첫 런도 받는 경험치입니다. 두 번째 런이 첫 런과 똑같이 시작하지 않게 합니다.
 const MASTERY_UNLOCKS = [
   { xp: 4, type: 'start', id: 'fireblast' },
-  { xp: 10, type: 'card', id: 'rapid_gatling' },
   { xp: 35, type: 'card', id: 'util_auto_grimoire' },
   { xp: 45, type: 'card', id: 'sum_cinder_lord' },
   { xp: 70, type: 'start', id: 'flame_patch' },
@@ -38,6 +39,13 @@ const MASTERY_UNLOCKS = [
   { xp: 190, type: 'card', id: 'crit_crimson_frenzy' },
   { xp: 250, type: 'card', id: 'util_phoenix_reborn' },
   { xp: 320, type: 'start', id: 'combustion' }
+];
+
+// 업화 단계에 처음 도달(infernoUnlocked)하면 영구 해금되는 카드. 마력 폭주·화염 기관총은 0~1단계 난이도를 무너뜨릴 만큼 강해
+// 첫 클리어 이후의 보상으로 둡니다. 마력 폭주 시작 주문서도 카드가 열린 뒤에만 고를 수 있습니다.
+const INFERNO_CARD_UNLOCKS = [
+  { level: 2, type: 'card', id: 'spell_combustion' },
+  { level: 3, type: 'card', id: 'rapid_gatling' }
 ];
 
 // 열기 1칸일 때 불꽃 작렬 칸에 '지금!' 말풍선을 띄우는 횟수(세이브 전체 기준)
@@ -99,13 +107,25 @@ function getMasteryProgress(xp) {
   };
 }
 
-// 아직 숙련도로 열지 못한 카드(각성 카드 추첨에서 제외)
-function getLockedCardIds(xp) {
-  return MASTERY_UNLOCKS.filter((u) => u.type === 'card' && xp < u.xp).map((u) => u.id);
+// 아직 숙련도·업화 단계로 열지 못한 카드(각성 카드 추첨에서 제외)
+function getLockedCardIds(xp, infernoUnlocked = 0) {
+  return MASTERY_UNLOCKS.filter((u) => u.type === 'card' && xp < u.xp).map((u) => u.id)
+    .concat(INFERNO_CARD_UNLOCKS.filter((u) => clampInferno(infernoUnlocked) < u.level).map((u) => u.id));
 }
 
-function getUnlockedStartSpells(xp) {
-  return getUnlocksAt(xp).filter((u) => u.type === 'start').map((u) => u.id);
+// 해당 업화 단계에 도달하며 새로 열리는 카드
+function getInfernoCardUnlocks(level) {
+  return INFERNO_CARD_UNLOCKS.filter((u) => u.level === clampInferno(level));
+}
+
+// 아직 열리지 않은 다음 업화 해금 카드(결과창 예고용)
+function getNextInfernoCardUnlock(infernoUnlocked) {
+  return INFERNO_CARD_UNLOCKS.find((u) => u.level > clampInferno(infernoUnlocked)) || null;
+}
+
+function getUnlockedStartSpells(xp, infernoUnlocked = 0) {
+  const locked = getLockedCardIds(xp, infernoUnlocked);
+  return getUnlocksAt(xp).filter((u) => u.type === 'start' && !locked.includes(START_SPELL_CARDS[u.id])).map((u) => u.id);
 }
 
 // 저장 데이터의 meta 블록을 안전한 기본값으로 정리합니다(구형 세이브 이관 포함).
@@ -120,7 +140,7 @@ function normalizeMeta(raw, legacyBestTime) {
   const xp = Math.max(0, Math.floor(Number(meta.xp) || 0));
   // 구형 세이브로 이미 최종 보스를 쓰러뜨린 플레이어는 업화 1단계를 열어 둡니다.
   const unlocked = Math.max(clampInferno(meta.infernoUnlocked), bestTimes[0] && !raw ? 1 : 0);
-  const startSpell = getUnlockedStartSpells(xp).includes(meta.startSpell) ? meta.startSpell : null;
+  const startSpell = getUnlockedStartSpells(xp, unlocked).includes(meta.startSpell) ? meta.startSpell : null;
   // 액션 바 선호 배치(드래그 앤 드롭): 알려진 주문 키만, 중복 없이
   const slotKeys = ['fireball', 'fireblast', 'meteor', 'combustion', 'flame_patch'];
   const slotOrder = Array.isArray(meta.slotOrder) ? meta.slotOrder.filter((k, i, a) => slotKeys.includes(k) && a.indexOf(k) === i) : [];
@@ -144,8 +164,8 @@ function normalizeMeta(raw, legacyBestTime) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, START_SPELL_CARDS, FIREBLAST_HINT_MAX,
+    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, INFERNO_CARD_UNLOCKS, START_SPELL_CARDS, FIREBLAST_HINT_MAX,
     clampInferno, getInfernoModifiers, getRunMasteryXp, getUnlocksAt, getMasteryProgress,
-    getLockedCardIds, getUnlockedStartSpells, normalizeMeta
+    getLockedCardIds, getInfernoCardUnlocks, getNextInfernoCardUnlock, getUnlockedStartSpells, normalizeMeta
   };
 }

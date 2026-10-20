@@ -40,12 +40,23 @@ assert.equal(M.getRunMasteryXp({ clearedStage: 20, finalKilled: true, infernoLev
 // 3. 해금은 경험치 순서대로, 카드 잠금·시작 주문서 목록이 일치합니다.
 const xps = M.MASTERY_UNLOCKS.map((u) => u.xp);
 assert.deepEqual(xps, [...xps].sort((a, b) => a - b), '해금 기준은 오름차순이어야 합니다.');
-assert.equal(M.getLockedCardIds(0).length, M.MASTERY_UNLOCKS.filter((u) => u.type === 'card').length);
-assert.deepEqual(M.getLockedCardIds(1e9), []);
+assert.equal(M.getLockedCardIds(0).length, M.MASTERY_UNLOCKS.filter((u) => u.type === 'card').length + M.INFERNO_CARD_UNLOCKS.length);
+assert.deepEqual(M.getLockedCardIds(1e9, M.INFERNO_MAX), []);
 assert.deepEqual(M.getUnlockedStartSpells(0), []);
-assert.deepEqual(M.getUnlockedStartSpells(1e9).sort(), Object.keys(M.START_SPELL_CARDS).sort());
+assert.deepEqual(M.getUnlockedStartSpells(1e9, M.INFERNO_MAX).sort(), Object.keys(M.START_SPELL_CARDS).sort());
+// 3-1. 업화 해금 카드: 마력 폭주는 업화 2단계, 화염 기관총은 3단계에 처음 도달하면 영구 해금(숙련도와 무관).
+assert.ok(M.getLockedCardIds(1e9, 1).includes('spell_combustion') && M.getLockedCardIds(1e9, 1).includes('rapid_gatling'), '업화 1단계까지는 두 카드가 잠겨 있습니다.');
+assert.ok(!M.getLockedCardIds(0, 2).includes('spell_combustion') && M.getLockedCardIds(0, 2).includes('rapid_gatling'), '업화 2단계에서 마력 폭주만 열립니다.');
+assert.ok(!M.getLockedCardIds(0, 3).includes('rapid_gatling'), '업화 3단계에서 화염 기관총이 열립니다.');
+assert.ok(!M.MASTERY_UNLOCKS.some((u) => u.id === 'rapid_gatling'), '화염 기관총은 숙련도로 열리지 않습니다.');
+assert.ok(!M.getUnlockedStartSpells(1e9, 1).includes('combustion'), '마력 폭주 시작 주문서도 업화 2단계 전에는 고를 수 없습니다.');
+assert.deepEqual(M.getInfernoCardUnlocks(2).map((u) => u.id), ['spell_combustion']);
+assert.equal(M.getNextInfernoCardUnlock(0).id, 'spell_combustion');
+assert.equal(M.getNextInfernoCardUnlock(2).id, 'rapid_gatling');
+assert.equal(M.getNextInfernoCardUnlock(3), null);
+assert.equal(M.normalizeMeta({ xp: 1e9, infernoUnlocked: 1, startSpell: 'combustion' }).startSpell, null, '잠긴 마력 폭주를 시작 주문서로 불러오면 비웁니다.');
 const p = M.getMasteryProgress(40);
-assert.equal(p.level, 3);
+assert.equal(p.level, 2);
 assert.equal(p.next.xp, 45);
 assert.ok(Math.abs(p.ratio - 0.5) < 1e-9);
 assert.equal(M.getMasteryProgress(1e9).next, null);
@@ -63,7 +74,7 @@ assert.deepEqual(bad.bestTimes, { 3: 600 }, 'meta가 있는 세이브는 구형 
 // 5. 실제 게임: 새 런에 업화 단계·시작 주문서·카드 잠금이 적용되고, 실패해도 숙련도가 한 번만 지급됩니다.
 const g = createHeadlessGame({ seed: 7 });
 const st = g.run('state');
-assert.deepEqual([...st.lockedCards].sort(), M.getLockedCardIds(0).sort(), '첫 런은 전설 카드가 잠겨 있습니다.');
+assert.deepEqual([...st.lockedCards].sort(), M.getLockedCardIds(0).sort(), '첫 런은 전설 카드와 업화 해금 카드가 잠겨 있습니다.');
 st.meta.xp = 30; // 시작 주문서 불꽃 작렬 해금 구간
 st.meta.infernoUnlocked = 6;
 st.meta.infernoSelected = 6;
@@ -94,6 +105,13 @@ assert.ok(st.meta.lastRun.newUnlocks.some((u) => u.id === 'sum_cinder_lord'), '�
 g.run('awardRunMastery(false)');
 assert.equal(st.meta.xp, 30 + gained, '같은 런에서 두 번 지급하면 안 됩니다.');
 assert.equal(st.meta.infernoUnlocked, 6, '실패로는 다음 업화 단계가 열리지 않습니다.');
+
+// 5-1. 업화 단계를 0으로 낮춰도, 이미 도달한 단계의 해금 카드는 계속 나옵니다(영구 해금).
+st.meta.infernoSelected = 0;
+g.run('restartSpeedrunRun()');
+assert.equal(st.infernoLevel, 0);
+assert.ok(!st.lockedCards.includes('spell_combustion') && !st.lockedCards.includes('rapid_gatling'), '업화 6단계에 도달한 플레이어는 0단계 런에서도 두 카드를 받을 수 있습니다.');
+st.meta.infernoSelected = 6;
 
 // 6. 최고 단계로 최종 보스를 쓰러뜨리면 다음 단계가 열리고 다음 런 기본값이 됩니다.
 g.run('restartSpeedrunRun()');
@@ -135,7 +153,22 @@ assert.equal(fs0.grimoires.fireblast, true, '두 번째 런은 불꽃 작렬을 
 fs0.meta.startSpell = null;
 fs0.highestClearedStage = 9;
 fresh.run('failRunByEnrage()');
-assert.deepEqual(Array.from(fs0.meta.lastRun.newUnlocks, (u) => u.id), ['rapid_gatling'], '10스테이지 보스 실패(4+11=15)에서는 화염 기관총만 열립니다.');
+assert.deepEqual(Array.from(fs0.meta.lastRun.newUnlocks, (u) => u.id), [], '10스테이지 보스 실패(4+11=15)에서는 새 해금이 없습니다(화염 기관총은 업화 3단계 해금).');
 assert.equal(fs0.meta.startSpell, null, '시작 주문서 해금이 없으면 플레이어 선택을 유지합니다.');
 
 console.log('업화 단계 규칙 누적·숙련도 지급(실패 포함, 중복 방지)·해금 순서·세이브 정리·새 런 적용·다음 단계 해금·재사용 대기·불의 심장 시간·첫 실패 해금과 시작 주문서 자동 선택 검증 통과');
+
+// 9. 업화 1단계로 최종 보스를 처음 쓰러뜨려 2단계에 도달하면, 그 런 직후부터 마력 폭주가 추첨 풀에 들어갑니다.
+{
+  const h = createHeadlessGame({ seed: 13 });
+  const hs = h.run('state');
+  hs.meta.infernoUnlocked = 1;
+  hs.meta.infernoSelected = 1;
+  h.run('restartSpeedrunRun()');
+  assert.ok(hs.lockedCards.includes('spell_combustion'));
+  hs.highestClearedStage = 20;
+  h.run('awardRunMastery(true)');
+  assert.equal(hs.meta.infernoUnlocked, 2);
+  assert.ok(!hs.lockedCards.includes('spell_combustion') && hs.lockedCards.includes('rapid_gatling'));
+  console.log('업화 해금 카드(마력 폭주 2단계·화염 기관총 3단계) 영구 해금 검증 통과');
+}

@@ -154,6 +154,28 @@
 .rp-unlock-text b { color: #fff4dc; font-size: .82rem; }
 .rp-unlock-inferno { border-color: #ef4444; background: linear-gradient(90deg, #3f1414, #1f1212); box-shadow: 0 0 14px #ef444466; }
 .rp-flame { font-size: 1.5rem; }
+/* 해금 칸·다음 해금·시작 주문서: 마우스를 올리면(터치는 탭) 카드 설명이 뜹니다. */
+[data-tip-card] { cursor: help; }
+.rp-unlock[data-tip-card]:hover, .rp-unlock[data-tip-card]:focus-visible { border-color: #fde68a; outline: none; }
+.rp-next-icon[data-tip-card]:focus-visible, .rs-next-card:focus-visible { outline: 2px solid #fde68a; outline-offset: 2px; border-radius: 4px; }
+.rs-next-card { display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; padding: 5px 8px; border: 1px dashed #ef4444aa; border-radius: 6px; background: #2a1414cc; font-size: .7rem; color: #e7d9c3; }
+.rs-next-card b { color: #fecaca; }
+.rs-next-icon .paper-card-icon { width: 24px; height: 24px; filter: grayscale(.6) brightness(.85); }
+.meta-tip { position: fixed; z-index: 10050; width: min(260px, calc(100vw - 16px)); padding: 9px 11px 10px; border: 2px solid #a88a64; border-radius: 4px; background: #241b22f7; box-shadow: 0 3px 0 #151119, 0 10px 24px #000c; color: #efe1c6; text-align: left; pointer-events: none; }
+.meta-tip[hidden] { display: none; }
+.meta-tip.mt-pop { animation: metaTipPop .22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes metaTipPop { 0% { opacity: 0; transform: translateY(6px) scale(.94); } 100% { opacity: 1; transform: none; } }
+.mt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #4a382d; }
+.mt-icon .paper-card-icon { width: 34px; height: 34px; }
+.mt-title { display: flex; flex-direction: column; gap: 2px; }
+.mt-title b { font-size: .86rem; color: #fff4dc; }
+.mt-rarity { align-self: flex-start; padding: 0 6px; border-radius: 99px; font-size: .6rem; font-weight: 800; background: #334155; color: #cbd5e1; }
+.mt-rarity.rarity-rare { background: #0369a1; color: #bae6fd; }
+.mt-rarity.rarity-legendary { background: #b45309; color: #fef08a; }
+.mt-desc { font-size: .74rem; line-height: 1.5; color: #e7d9c3; }
+.mt-desc b { color: #fde047; }
+.mt-note { margin-top: 6px; font-size: .66rem; color: #b8a58a; }
+@media (prefers-reduced-motion: reduce) { .meta-tip.mt-pop { animation: none; } }
 @keyframes rpPop { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes rpUnlock { 0% { transform: translateY(8px) scale(.85); opacity: 0; } 65% { transform: translateY(-2px) scale(1.04); opacity: 1; } 100% { transform: none; } }
 
