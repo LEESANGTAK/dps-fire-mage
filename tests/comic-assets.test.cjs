@@ -44,20 +44,23 @@ assert.ok(parseFloat(actor.style.height)>150,'모바일에서도 보스 실루�
 assert.equal(actor.style.bottom,'0px');
 console.log('몬스터 성장·보스 크기·화면 상한·이미지·슬라임 복원 검증 통과');
 
-// 불장판의 소멸 알파를 유지하고 다른 소환물로 합성 상태가 새지 않아야 한다.
-const paint={beginPath(){},ellipse(){},stroke(){},globalAlpha:.4,globalCompositeOperation:'source-over',filter:'none',draws:[],stack:[],
+// 불장판: 사진풍 원화 대신 종이 불꽃을 직접 그리며, 빛 번짐 합성 없이 호출자의 소멸 알파만 따릅니다.
+const paint={globalAlpha:.4,globalCompositeOperation:'source-over',filter:'none',fills:[],stack:[],ys:[],
+ beginPath(){},closePath(){},moveTo(x,y){this.ys.push(y);},lineTo(x,y){this.ys.push(y);},ellipse(){},stroke(){},clip(){},translate(){},transform(){},
  save(){this.stack.push([this.globalAlpha,this.globalCompositeOperation,this.filter]);},
  restore(){[this.globalAlpha,this.globalCompositeOperation,this.filter]=this.stack.pop();},
- drawImage(...args){this.draws.push({args,alpha:this.globalAlpha,blend:this.globalCompositeOperation});}};
+ fill(){this.fills.push({style:this.fillStyle,alpha:this.globalAlpha,blend:this.globalCompositeOperation,filter:this.filter});},
+ drawImage(...args){this.draws=(this.draws||[]);this.draws.push({args,alpha:this.globalAlpha});}};
 context.paint=paint;
-vm.runInContext("comicAbilityImages['flame-patch']={complete:true,naturalWidth:1536};comicAbilityImages['fire-elemental']={complete:true,naturalWidth:1536};drawComicAbility(paint,'flame-patch',100,200,230,150);",context);
-assert.ok(paint.draws[0].alpha>0 && paint.draws[0].alpha<.3,'불장판은 호출자의 소멸 알파보다 더 옅게 합성해야 합니다');
-assert.equal(paint.draws[0].blend,'screen');
-const patchDraw=paint.draws[0].args;
-assert.ok(patchDraw[4]<150,'높이를 낮춰 배우를 가리지 않아야 합니다');
-assert.equal(patchDraw[2]+patchDraw[4]*.75,237.5,'원화 바닥 접지점은 유지해야 합니다');
-assert.equal(paint.globalAlpha,.4);assert.equal(paint.globalCompositeOperation,'source-over');assert.equal(paint.filter,'none');
-vm.runInContext("drawComicAbility(paint,'fire-elemental',100,200,48)",context);
-assert.equal(paint.draws[1].alpha,.4,'다른 소환수의 불투명도는 변경하지 않아야 합니다');
-paint.globalAlpha=0;vm.runInContext("drawComicAbility(paint,'flame-patch',100,200,230,150)",context);
-assert.equal(paint.draws[2].alpha,0,'소멸 완료 뒤 원화가 남으면 안 됩니다');
+assert.ok(!vm.runInContext("'flame-patch' in comicAbilityImages",context),'불장판은 사진풍 원화를 불러오지 않아야 합니다');
+vm.runInContext('drawPaperFlamePatch(paint,100,200,230,0)',context);
+assert.ok(paint.fills.length>=8*4,'바닥 위에 종이 불꽃 여러 장(테두리 그림자·주황·밑단·속불)을 세워야 합니다');
+assert.ok(paint.fills.some((f)=>f.style==='#f26a1b') && paint.fills.some((f)=>f.style==='#ffd36b'),'화상 종이 불꽃과 같은 색 문법을 써야 합니다');
+assert.ok(paint.fills.every((f)=>f.alpha===.4 && f.blend==='source-over' && f.filter==='none'),'블러·화면 합성 없이 호출자의 소멸 알파만 따라야 합니다');
+assert.equal(paint.globalAlpha,.4);assert.equal(paint.globalCompositeOperation,'source-over');
+paint.fills.length=0;
+vm.runInContext('drawPaperFlamePatch(paint,100,200,230,0.6)',context);
+const poseA=paint.fills.length;
+assert.ok(poseA>0,'포즈가 바뀌어도 불꽃은 계속 그려져야 합니다');
+vm.runInContext("comicAbilityImages['fire-elemental']={complete:true,naturalWidth:1536};drawComicAbility(paint,'fire-elemental',100,200,48)",context);
+assert.equal(paint.draws[0].alpha,.4,'다른 소환수의 불투명도는 변경하지 않아야 합니다');

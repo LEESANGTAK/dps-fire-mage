@@ -337,15 +337,15 @@ body,button,input,select { font-family:'ComicRead','Malgun Gothic',sans-serif; }
 .living-paused :is(.burn-layer, .burn-glow) {animation-play-state:paused!important;}
 
 /* 화상 상태: 원화 크기 상자(--art-w·--art-h)에 손으로 오린 종이 불꽃을 붙입니다(페이퍼 마리오 천년의 문의 '등 뒤·발밑 작은 불꽃' 재해석).
-   data-level = 걸린 화상 종류 수(화상·연소·불장판, 최대 3). 1개는 등 쪽 어깨, 2개부터 발밑에 하나씩 더 붙습니다(원화 뒤에 두면 윤곽에 따라 가려져 앞에 둡니다).
+   data-level = 걸린 화상 종류 수(화상·연소·불장판, 최대 3). 1개는 몸 가운데 발밑, 2개부터 그 양옆 발밑에 하나씩 더 붙습니다(원화 뒤에 두면 윤곽에 따라 가려져 앞에 둡니다).
    불꽃은 종이 인형처럼 3포즈를 끊어 바꾸고(steps), 화상 틱마다(.burn-shiver) 한 번 확 커집니다. */
 .burn-status { position:absolute; bottom:0; width:var(--art-w,126px); height:var(--art-h,126px); pointer-events:none; --flame:clamp(16px, calc(var(--art-h,126px) * .22), 44px); }
 .paper-flame { position:absolute; width:var(--flame); height:calc(var(--flame) * 1.35); margin-left:calc(var(--flame) * -.5); transform-origin:50% 100%;
   scale:0; opacity:0; transition:scale .16s cubic-bezier(.55,.055,.675,.19), opacity .16s ease-in;
   filter:drop-shadow(0 0 .7px #fff0c5) drop-shadow(0 0 .7px #fff0c5) drop-shadow(1px 2px 0 #0000006b); }
-.paper-flame:nth-child(1) { left:80%; bottom:46%; }
-.paper-flame:nth-child(2) { left:26%; bottom:-3%; }
-.paper-flame:nth-child(3) { left:58%; bottom:-5%; --flame:clamp(13px, calc(var(--art-h,126px) * .17), 34px); }
+.paper-flame:nth-child(1) { left:50%; bottom:-2%; }
+.paper-flame:nth-child(2) { left:28%; bottom:-4%; --flame:clamp(14px, calc(var(--art-h,126px) * .19), 38px); }
+.paper-flame:nth-child(3) { left:72%; bottom:-5%; --flame:clamp(13px, calc(var(--art-h,126px) * .17), 34px); }
 .burn-status:is([data-level='1'],[data-level='2'],[data-level='3']) .paper-flame:nth-child(1),
 .burn-status:is([data-level='2'],[data-level='3']) .paper-flame:nth-child(2),
 .burn-status[data-level='3'] .paper-flame:nth-child(3) { scale:1; opacity:1; transition:scale .32s cubic-bezier(.34,1.56,.64,1), opacity .1s ease-out; }

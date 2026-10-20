@@ -109,7 +109,7 @@ if(typeof document!=='undefined'){
 }
 
 const comicAbilityImages = {};
-for (const key of ['fire-elemental','flame-patch','combustion']) {
+for (const key of ['fire-elemental','combustion']) {
   if (typeof Image === 'undefined') continue;
   const image = new Image();
   image.src = `assets/art/comic-${key}.png`;
@@ -118,25 +118,84 @@ for (const key of ['fire-elemental','flame-patch','combustion']) {
 function drawComicAbility(painter,key,x,y,width,height=width) {
   const image = comicAbilityImages[key];
   if (!image || !image.complete || !image.naturalWidth) return;
-  if(key === 'flame-patch') {
-    // 검은 돌바닥을 화면에 덮지 않고, 기존 소멸 알파를 곱해 반투명한 불빛만 합성한다.
-    const ground = y + height * .25;
-    const flameHeight = height * .7;
-    painter.save();
-    const fade = painter.globalAlpha;
-    // 얇은 바닥 윤곽은 밝은 배경에서도 활성 영역을 알아볼 수 있게 한다.
-    painter.globalAlpha = fade * .22;
-    painter.strokeStyle = '#e49b4b';
-    painter.lineWidth = 1.5;
-    painter.beginPath();
-    painter.ellipse(x, ground, width * .44, height * .1, 0, 0, Math.PI * 2);
-    painter.stroke();
-    painter.globalAlpha = fade * .5;
-    painter.globalCompositeOperation = 'screen';
-    painter.filter = 'blur(0.45px)';
-    painter.drawImage(image, x - width / 2, ground - flameHeight * .75, width, flameHeight);
-    painter.restore();
-    return;
-  }
   painter.drawImage(image,x-width/2,y-height/2,width,height);
+}
+
+/* 불장판: 화상 불꽃(.paper-flame)과 같은 '오려 붙인 종이 불꽃'을 그을린 종이 바닥 위에 세웁니다.
+ * 납작한 3색 종이(주황·진홍 밑단·노랑 속불), 크림색 오림 테두리, 3포즈를 끊어 바꾸는 종이 인형식 일렁임.
+ * 빛 번짐(블러·화면 합성) 없이 호출자의 소멸 알파만 곱합니다. */
+const PAPER_FLAME_SHAPE = [[.5,0],[.62,.22],[.74,.1],[.77,.38],[.92,.28],[.97,.62],[.87,.87],[.66,1],[.34,1],[.13,.87],[.03,.62],[.09,.34],[.24,.45],[.27,.16],[.4,.3]];
+const PAPER_FLAME_BAND = [[0,.7],[.3,.62],[.5,.74],[.72,.6],[1,.7],[1,1],[0,1]];
+const PAPER_FLAME_CORE = [[.5,.3],[.6,.52],[.7,.45],[.73,.72],[.63,.92],[.37,.92],[.27,.72],[.31,.49],[.42,.56]];
+const PAPER_FLAME_POSES = [[1,1,0],[.9,1.12,-.1],[1.07,.9,.09]]; // [가로, 세로, 기울기] — CSS paper-flame-flick과 같은 3포즈
+// 바닥 위 불꽃 배치(타원 가로 반지름 대비 x, 앞뒤 줄, 크기, 일렁임 위상). 가운데는 몬스터가 서 있어 양옆을 키웁니다.
+const FLAME_PATCH_TONGUES = [
+  [-.78, 0, .62, .1], [-.38, 0, .74, .55], [.12, 0, .66, .3], [.6, 0, .78, .8],
+  [-.6, 1, .92, .65], [-.12, 1, .7, .2], [.36, 1, .84, .9], [.84, 1, .64, .45]
+];
+// 그을린 종이 바닥의 오린 가장자리(고정 요철: 프레임마다 떨리지 않게)
+const FLAME_PATCH_EDGE = [1, .9, 1.04, .94, 1, .86, .98, 1.05, .92, 1, .9, 1.03, .95, .88, 1.02, .97];
+
+function tracePaperShape(painter, points, x, y, w, h) {
+  painter.beginPath();
+  points.forEach(([px, py], i) => {
+    const sx = x + (px - .5) * w, sy = y - (1 - py) * h;
+    if (i === 0) painter.moveTo(sx, sy); else painter.lineTo(sx, sy);
+  });
+  painter.closePath();
+}
+
+function drawPaperFlame(painter, x, groundY, height, pose) {
+  const [sx, sy, skew] = PAPER_FLAME_POSES[pose];
+  const w = height * .74 * sx, h = height * sy;
+  painter.save();
+  painter.translate(x, groundY);
+  painter.transform(1, 0, skew, 1, 0, 0);
+  // 오린 종이의 크림색 테두리와 아래로 떨어지는 짧은 그림자
+  painter.fillStyle = '#0000006b';
+  tracePaperShape(painter, PAPER_FLAME_SHAPE, 1.5, 2, w, h); painter.fill();
+  painter.lineJoin = 'round';
+  painter.lineWidth = 2.2;
+  painter.strokeStyle = '#fff0c5';
+  tracePaperShape(painter, PAPER_FLAME_SHAPE, 0, 0, w, h); painter.stroke();
+  painter.fillStyle = '#f26a1b'; painter.fill();
+  painter.save();
+  painter.clip();
+  painter.fillStyle = '#c8321b';
+  tracePaperShape(painter, PAPER_FLAME_BAND, 0, 0, w, h); painter.fill();
+  painter.restore();
+  painter.fillStyle = '#ffd36b';
+  tracePaperShape(painter, PAPER_FLAME_CORE, 0, 0, w, h); painter.fill();
+  painter.restore();
+}
+
+function drawPaperFlamePatch(painter, x, groundY, width, time, reduced = false) {
+  const rx = width * .46, ry = width * .1;
+  painter.save();
+  // 1. 그을린 종이 바닥: 가장자리를 오린 짙은 갈색 종이 + 안쪽 잉걸 종이, 크림색 오림선
+  painter.beginPath();
+  FLAME_PATCH_EDGE.forEach((k, i) => {
+    const a = (i / FLAME_PATCH_EDGE.length) * Math.PI * 2;
+    const px = x + Math.cos(a) * rx * k, py = groundY + Math.sin(a) * ry * k;
+    if (i === 0) painter.moveTo(px, py); else painter.lineTo(px, py);
+  });
+  painter.closePath();
+  painter.fillStyle = '#2a1712cc';
+  painter.fill();
+  painter.lineWidth = 1.5;
+  painter.strokeStyle = '#fff0c599';
+  painter.stroke();
+  painter.beginPath();
+  painter.ellipse(x, groundY, rx * .62, ry * .55, 0, 0, Math.PI * 2);
+  painter.fillStyle = '#9a2d14bb';
+  painter.fill();
+  // 2. 종이 불꽃: 뒷줄(작고 높게) → 앞줄 순서로 세우고, 0.5초마다 포즈를 끊어 바꿉니다.
+  const step = reduced ? 0 : Math.floor(time * 2);
+  const base = Math.min(56, width * .24);
+  for (const [ox, row, size, phase] of FLAME_PATCH_TONGUES) {
+    const pose = reduced ? 0 : (step + Math.round(phase * 3)) % 3;
+    const fy = groundY + (row === 0 ? -ry * .45 : ry * .35);
+    drawPaperFlame(painter, x + ox * rx, fy, base * size * (row === 0 ? .82 : 1), pose);
+  }
+  painter.restore();
 }

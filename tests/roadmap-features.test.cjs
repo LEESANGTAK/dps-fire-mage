@@ -40,6 +40,10 @@ test('UX 피드백 2: 캐릭터 발 아래 자동시전 마법진 전개 및 발
 
   // game.js에 updateAutoCastMagicCircle 함수 검증
   assert.ok(gameJsContent.includes('function updateAutoCastMagicCircle'), 'updateAutoCastMagicCircle 함수가 구현되어 있어야 합니다.');
+  assert.ok(gameJsContent.includes("circleEl.classList.toggle('hidden', !hasSmartAutoCast())"), '마법진은 자동 영창 카드를 얻은 뒤에만 보여야 합니다.');
+  // 아트 정합성: 빛 번짐 합성 대신 오려 붙인 종이 문양
+  const circleCss = stylesCssContent.slice(stylesCssContent.indexOf('.autocast-magic-circle {'), stylesCssContent.indexOf('/* 타오르는 기운'));
+  assert.ok(!circleCss.includes('mix-blend-mode') && !circleCss.includes('radial-gradient'), '마법진은 화면 합성·방사형 발광 없이 종이 문양이어야 합니다.');
 });
 
 test('UX 피드백 4: 스킬 마우스 클릭 시 툴팁 즉시 닫힘 검증', () => {

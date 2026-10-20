@@ -4,7 +4,7 @@ const patch = new Image(); patch.src = '../assets/art/comic-flame-patch.png';
 for (const theme of ['meadow', 'citadel']) {
   for (const before of [true, false]) {
     const card = document.createElement('section');
-    card.innerHTML = `<h2>${theme === 'meadow' ? '초원' : '성채'} · ${before ? '기존' : '반투명 수정'}</h2>`;
+    card.innerHTML = `<h2>${theme === 'meadow' ? '초원' : '성채'} · ${before ? '기존 사진풍 원화' : '종이 불꽃'}</h2>`;
     const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 320;
     card.append(canvas); document.querySelector('#gallery').append(card);
     const background = new Image(); background.src = `assets/art/paper-arena${theme === 'meadow' ? '' : '-citadel'}.png`;
@@ -23,7 +23,7 @@ function renderFlameComparison(now) {
     if (background.complete && background.naturalWidth) ctx.drawImage(background, 0, 0, 560, 320);
     ctx.save(); ctx.globalAlpha = Number(document.querySelector('#fade').value);
     if (before && patch.complete && patch.naturalWidth) ctx.drawImage(patch, 280 - 115 * pulse, 230 - 75, 230 * pulse, 150);
-    if (!before) drawComicAbility(ctx, 'flame-patch', 280, 230, 230 * pulse, 150);
+    if (!before) drawPaperFlamePatch(ctx, 280, 262, 230 * pulse, flameTime, reduced);
     ctx.restore();
     if (monster.complete && monster.naturalWidth) {
       const height = 140, width = frame.w / frame.h * height;

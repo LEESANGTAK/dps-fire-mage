@@ -1025,10 +1025,10 @@ function drawSummonsAndAuras(dt) {
     const pulse = reduced ? 1 : 1 + Math.sin(c.animTime * 4) * 0.025;
     gCtx.save();
     gCtx.globalAlpha = fadeAlpha;
-    // 원화의 타원형 바닥을 접지하고, 몬스터 뒤 레이어에만 표시합니다.
-    drawComicAbility(gCtx, 'flame-patch', fx, fy - 35, 230 * pulse, 150);
+    // 그을린 종이 바닥을 몬스터 발밑에 접지하고, 몬스터 뒤 레이어에만 표시합니다.
+    drawPaperFlamePatch(gCtx, fx, fy, 230 * pulse, c.animTime, reduced);
     gCtx.restore();
-    if (!reduced && dt > 0 && particles.length < 180 && Math.random() < Math.min(1, dt * 12)) {
+    if (!reduced && dt > 0 && particles.length < 180 && Math.random() < Math.min(1, dt * 6)) {
       particles.push({x:fx+(Math.random()-.5)*140,y:fy,vx:(Math.random()-.5)*18,vy:-45,
         radius:2,life:0,maxLife:.4,colorCore:'#fef08a',colorEdge:'#ea580c'});
     }
@@ -3181,6 +3181,13 @@ function hideUnfoldToast() {
 
 // 자동 영창 획득: 모달이 닫힌 직후 주문 칸마다 AUTO 배지가 왼쪽부터 차례로 튀어나옵니다.
 function triggerAutoGrimoireUnfold() {
+  // 발밑 마법진이 종이를 펼치듯 튀어 오르며 처음 깔립니다.
+  const circleEl = document.getElementById('autocast-magic-circle');
+  if (circleEl) {
+    circleEl.classList.remove('mc-unfold');
+    void circleEl.offsetWidth;
+    circleEl.classList.add('mc-unfold');
+  }
   const badges = [...document.querySelectorAll('.skill-btn:not(#skill-1) .skill-auto-badge')].filter((b) => b.offsetParent !== null);
   badges.forEach((badge, i) => {
     badge.classList.remove('auto-unfold');
@@ -3424,10 +3431,11 @@ function updateSkillActionBarVisibility() {
   updateSkillAutoUI();
 }
 
+// 발밑 마법진은 전설 카드 '자동 영창'을 얻은 순간부터 나타나, 모든 주문이 스스로 영창됨을 보여 줍니다.
 function updateAutoCastMagicCircle() {
   const circleEl = document.getElementById('autocast-magic-circle');
   if (!circleEl) return;
-  circleEl.classList.remove('hidden');
+  circleEl.classList.toggle('hidden', !hasSmartAutoCast());
   if (state.autoCast) {
     circleEl.classList.add('active');
     circleEl.classList.remove('dormant');
@@ -4795,7 +4803,7 @@ function updateLiveHUD() {
   }
   debuffRow.innerHTML = debuffHtml;
 
-  // 몸에 붙은 종이 불꽃: 화상·연소·불장판 중 걸린 개수만큼(최대 3개) 등 뒤와 발밑에서 타오릅니다.
+  // 몸에 붙은 종이 불꽃: 화상·연소·불장판 중 걸린 개수만큼(최대 3개) 몸 가운데 발밑부터 양옆으로 번지며 타오릅니다.
   const burnStatus = document.getElementById('burn-status');
   if (burnStatus) {
     const burnLevel = String((c.igniteRem > 0 && c.ignitePool >= 5 ? 1 : 0) + (c.meteorBurnRem > 0 ? 1 : 0) + (c.flamePatchRem > 0 ? 1 : 0));
