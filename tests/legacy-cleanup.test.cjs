@@ -69,7 +69,7 @@ function freshState() {
     skillAuto: { fireball: true, fireblast: true, combustion: true, meteor: true, flame_patch: true },
     soundOn: true, bgmVolume: 0.4, sfxVolume: 0.8,
     playerStatsBonus: {}, deckMechanics: {}, spellOrder: ['fireball'],
-    unfolded: { awakening: false, combatStats: false, hallOfFame: false },
+    unfolded: { combatStats: false, hallOfFame: false },
     grimoires: { fireblast: false, meteor: false, combustion: false, flame_patch: false },
     combat: { combustionRem: 0 },
     stats: { peakDps: 0, combustionHits: 0, combustionPyros: 0 }
@@ -116,7 +116,7 @@ test('구형 세이브를 불러와도 제거된 시스템 필드는 복원·재
     gold: 1234, currentStage: 27, highestClearedStage: 25, campaignCleared: true, bestSpeedrunTime: 812,
     essence: 99, ascensionCount: 3, phoenixFeathers: 5, items: { oak_wand: 9 }, skillTree: { fire_elem: 2 },
     heatPacts: { iron_skin: true }, bounty: { type: 'crit_count' }, devMode: true, cheats: { alwaysCrit: true },
-    unfolded: { grimoireShop: true, equipShop: true, hallOfFame: true },
+    unfolded: { grimoireShop: true, equipShop: true, awakening: true, hallOfFame: true },
     grimoires: { autocast: true, ignite: true, meteor: true },
     stats: { peakDps: 4300, totalDamage: 1, biggestCrit: 2 },
     activeDeck: { sum_spirit: 1 }
@@ -127,7 +127,7 @@ test('구형 세이브를 불러와도 제거된 시스템 필드는 복원·재
   assert.equal(state.currentStage, 20, '최종 스테이지를 넘는 구형 심연 스테이지는 Stage 20으로 보정되어야 합니다.');
   assert.equal(state.highestClearedStage, 20);
   assert.equal(state.bestSpeedrunTime, 812);
-  assert.deepEqual(state.unfolded, { awakening: false, combatStats: false, hallOfFame: true });
+  assert.deepEqual(state.unfolded, { combatStats: false, hallOfFame: true }, '제거된 언폴딩 플래그(각성 개방 안내 등)는 복원하지 않아야 합니다.');
   assert.deepEqual(state.grimoires, { fireblast: false, meteor: true, combustion: false, flame_patch: false });
   assert.equal(state.stats.peakDps, 4300);
   assert.equal(state.stats.totalDamage, undefined, '제거된 상세 딜로그 통계는 복원하지 않아야 합니다.');

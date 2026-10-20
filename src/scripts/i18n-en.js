@@ -200,8 +200,6 @@ const I18N_EN = {
   '피해량은 현재 능력치 기준 · 추가 탄환·별도 화상 제외': 'Damage uses your current stats · excludes extra projectiles and Ignite',
 
   // 각성 카드
-  '🔥 마도서 각성 시스템 개방!': '🔥 Grimoire Awakening unlocked!',
-  '웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!': 'After every wave, pick one of 3 Awakening cards and build your own run!',
   '⚡ 속사 머신건': '⚡ Rapid Fire',
   '🎯 극치명 누킹': '🎯 Critical',
   '🔥 정령 군단': '🔥 Fire Spirits',

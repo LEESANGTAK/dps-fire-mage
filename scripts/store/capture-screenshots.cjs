@@ -23,7 +23,7 @@ function save(over) {
   return Object.assign({
     gold: 3820, currentStage: 12, highestClearedStage: 11, playTimeSec: 402, totalPlayTimeSec: 402, totalKills: 11,
     campaignCleared: false, bestReachedStage: 12, runFailed: false, autoCast: true, soundOn: false,
-    unfolded: { awakening: true, combatStats: true, hallOfFame: false }, grimoires: allSpells,
+    unfolded: { combatStats: true, hallOfFame: false }, grimoires: allSpells,
     spellOrder: ['fireball', 'fireblast', 'meteor', 'combustion', 'flame_patch'], activeDeck: midRunDeck
   }, over);
 }
@@ -38,7 +38,7 @@ const SCENES = [
   { name: '04-awakening-cards', save: save({ currentStage: 9, highestClearedStage: 8, gold: 980, playTimeSec: 288 }), warmup: 2500,
     action: 'triggerAwakeningSelection(9, false, () => {});', afterAction: 2200, frames: 3, interval: 300 },
   { name: '05-speedrun-record', save: save({ currentStage: 20, highestClearedStage: 20, campaignCleared: true, bestSpeedrunTime: 754, playTimeSec: 754, totalPlayTimeSec: 754, totalKills: 20,
-      unfolded: { awakening: true, combatStats: true, hallOfFame: true },
+      unfolded: { combatStats: true, hallOfFame: true },
       stats: { peakDps: 48200, lastSpeedrunTime: 754, prevBestSpeedrunTime: 812, isNewSpeedrunRecord: true, lastBossKillDuration: 96.4, combustionPyros: 5 } }), warmup: 2500,
     action: 'openVictoryModal(false);', afterAction: 2600, frames: 2, interval: 300 },
   { name: '06-early-forest', save: save({ currentStage: 6, highestClearedStage: 5, gold: 210, playTimeSec: 140, grimoires: { fireblast: true, meteor: false, combustion: false, flame_patch: false },

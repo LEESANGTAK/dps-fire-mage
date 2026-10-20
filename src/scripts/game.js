@@ -139,7 +139,6 @@ const state = {
 
   // 점진적 언폴딩(Unfolding) 해금 상태
   unfolded: {
-    awakening: false,
     combatStats: false,
     hallOfFame: false
   },
@@ -2055,8 +2054,6 @@ if (typeof window !== 'undefined') {
 // 연출 호흡(처치 여운·카드 선택 여운) 동안 전투와 스피드런 시계만 멈춥니다. 모달 정지(isPaused)와 달리
 // 마법사 호흡·사망 잔상·골드 비행은 계속 흘러, 플레이어가 결과를 눈으로 끝까지 따라갈 수 있습니다.
 const KILL_BEAT_MS = { normal: 1200, boss: 1900, final: 2000 };
-const UNFOLD_TOAST_DELAY_MS = 1000; // 골드가 상단에 도착한 뒤 개방 안내를 띄웁니다.
-const UNFOLD_READ_MS = 3000; // 개방 안내 한 줄을 끝까지 읽을 시간
 const ENTRY_BEAT_MS = 500; // 카드 창이 닫힌 뒤 다음 몬스터가 자리 잡을 때까지
 let combatHeld = false;
 let combatHoldTimer = null;
@@ -2251,10 +2248,10 @@ function onMonsterKilled() {
     }
   }
 
-  // 처치 여운: 전투·시계를 멈추고 사망 연출 → 돌파 도장 → 골드 흡수 → (개방 안내) → 보상 창 순으로 한 박자씩 보여 줍니다.
+  // 처치 여운: 전투·시계를 멈추고 사망 연출 → 돌파 도장 → 골드 흡수 → 보상 창 순으로 한 박자씩 보여 줍니다.
   holdCombat();
   settleMageForKillBeat();
-  const announcements = checkAndTriggerUnfolds(false);
+  checkAndTriggerUnfolds(false);
   scheduleKillBeat(() => {
     spawnStageClearStamp(state.currentStage, data.isPhaseBoss);
     if (data.isPhaseBoss) playSound('proc');
@@ -2301,16 +2298,10 @@ function onMonsterKilled() {
     return;
   }
 
-  // 웨이브 클리어 ➔ 사망·골드 여운(보스는 더 길게) ➔ 첫 처치라면 개방 안내를 읽을 시간 ➔ 마도서 각성 3지선다
-  let beatMs = data.isPhaseBoss ? KILL_BEAT_MS.boss : KILL_BEAT_MS.normal;
-  if (announcements.length) {
-    const [title, desc] = announcements[0];
-    scheduleKillBeat(() => showUnfoldToast(title, desc), UNFOLD_TOAST_DELAY_MS);
-    beatMs = Math.max(beatMs, UNFOLD_TOAST_DELAY_MS + UNFOLD_READ_MS);
-  }
+  // 웨이브 클리어 ➔ 사망·골드 여운(보스는 더 길게) ➔ 마도서 각성 3지선다
+  const beatMs = data.isPhaseBoss ? KILL_BEAT_MS.boss : KILL_BEAT_MS.normal;
   const clearedStage = state.currentStage;
   scheduleKillBeat(() => {
-    hideUnfoldToast();
     triggerAwakeningSelection(clearedStage, data.isPhaseBoss, () => {
       loadStage(clearedStage + 1);
       const nextData = getStageData(state.currentStage);
@@ -3313,22 +3304,11 @@ function triggerUnfoldPop(elId) {
   el.classList.add('unfold-pop-anim');
 }
 
-// 새로 열린 시스템의 안내 문구 목록([제목, 설명])을 돌려줍니다. 띄우는 시점은 호출한 쪽(처치 여운)이 정합니다.
 function checkAndTriggerUnfolds(silent = false) {
   const u = state.unfolded;
   let changed = false;
-  const announcements = [];
 
-  // 1. 첫 몬스터 처치 또는 첫 골드 획득 시: 마도서 각성 시스템 개방 안내
-  if (!u.awakening && (state.gold >= 4 || state.highestClearedStage >= 1)) {
-    u.awakening = true;
-    changed = true;
-    if (!silent) {
-      announcements.push([tr('🔥 마도서 각성 시스템 개방!'), tr('웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!')]);
-    }
-  }
-
-  // 2. 첫 각성 카드 획득 시: 치명타/시전속도 스탯 알약 개방
+  // 1. 첫 각성 카드 획득 시: 치명타/시전속도 스탯 알약 개방
   const hasAnyCard = Boolean(deckManager && Object.keys(deckManager.getActiveDeck()).length > 0);
   if (!u.combatStats && hasAnyCard) {
     u.combatStats = true;
@@ -3337,7 +3317,7 @@ function checkAndTriggerUnfolds(silent = false) {
     triggerUnfoldPop('pill-haste');
   }
 
-  // 3. Stage 20(최종 보스) 클리어 시: 상단 명예의 전당(스피드런 기록) 버튼 개방
+  // 2. Stage 20(최종 보스) 클리어 시: 상단 명예의 전당(스피드런 기록) 버튼 개방
   if (!u.hallOfFame && state.campaignCleared) {
     u.hallOfFame = true;
     changed = true;
@@ -3350,7 +3330,6 @@ function checkAndTriggerUnfolds(silent = false) {
   if (changed && !silent) {
     saveGame();
   }
-  return announcements;
 }
 
 function applyUnfoldedVisibility() {
@@ -4476,7 +4455,6 @@ function restartSpeedrunRun() {
   playtestTelemetry.failedStage = null;
 
   // 5. 언폴딩 상태 초반으로 리셋 (명예의 전당은 기록이 남아 있으므로 유지)
-  state.unfolded.awakening = false;
   state.unfolded.combatStats = false;
 
   // 6. 전투 상태 초기화
