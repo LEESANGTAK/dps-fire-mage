@@ -610,7 +610,8 @@ test('Step 21: 정수(Essence) 재화 및 관련 UI(상단 알약, 마법 부여
 test('Step 22: 화염 정령 덱 메커니즘 & 결과창 스피드런 기록 비교 대시보드 및 재도전 검증', () => {
   const fs = require('node:fs');
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-  const css = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8');
+  // 결과창 스타일은 페이퍼 UI 구역(paper-ui.css)에 모여 있습니다.
+  const css = fs.readFileSync(path.join(__dirname, '../src/styles/styles.css'), 'utf8') + fs.readFileSync(path.join(__dirname, '../src/styles/paper-ui.css'), 'utf8');
   const gameSource = fs.readFileSync(path.join(__dirname, '../src/scripts/game.js'), 'utf8');
   const { createDeckManager, CARD_POOL } = require('../src/scripts/roguelike-deck.js');
 
@@ -648,7 +649,7 @@ test('Step 22: 화염 정령 덱 메커니즘 & 결과창 스피드런 기록 �
 
   // 6. styles.css 스타일 검증
   assert.ok(css.includes('.speedrun-comparison-board'), '스피드런 비교 보드 스타일이 정의되어 있어야 합니다.');
-  assert.ok(css.includes('.speedrun-retry-btn'), '스피드런 재도전 버튼 스타일이 정의되어 있어야 합니다.');
+  assert.ok(css.includes('.victory-btn.primary'), '스피드런 재도전 버튼(.victory-btn.primary) 스타일이 정의되어 있어야 합니다.');
   assert.ok(css.includes('.victory-close-icon'), '결과창 닫기 아이콘 스타일이 정의되어 있어야 합니다.');
 
   // 7. game.js 내 스피드런 비교 데이터 갱신 검증

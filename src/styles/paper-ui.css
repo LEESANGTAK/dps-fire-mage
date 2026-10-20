@@ -131,80 +131,365 @@
 .vampire-deck-icon .paper-card-icon { width: 24px; height: 24px; border-radius: 3px; }
 .vtt-icon .paper-card-icon { width: 30px; height: 30px; }
 
-/* ===== 클리어 후 콘텐츠 (meta-ui.js) =====
+/* ===== 승리·패배 결과창: 페이퍼크래프트 (docs/art/PAPER_AWAKENING_UI.md와 같은 문법) =====
+   점무늬 판지 판 위에 리본 제목, 크림색 기록지, 짙은 종이 칸, 두꺼운 종이 버튼. 발광·그라데이션·흐림 없이
+   잉크 테두리 + 크림색 오림선 + 아래로 딱 떨어지는 짧은 층 그림자만 씁니다.
    숙련도 막대는 부드러운 감속으로 차고, 해금 칩·획득 경험치는 오버슈트로 튀어나옵니다. 모션 감소 설정에서는 즉시 표시합니다. */
-.run-progress { margin: -6px 0 16px; padding: 10px 12px; border: 1px solid #8b7055; border-radius: 10px; background: #1b1519e8; text-align: left; box-shadow: inset 0 1px 0 #ffffff12; }
+.victory-modal-backdrop {
+  --pp-ink: #241b22;
+  --pp-board: #2e2329;
+  --pp-sheet: #3a2c31;
+  --pp-kraft: #a88a64;
+  --pp-cream: #efe1c6;
+  --pp-cut: #fff0c5;
+  --pp-drop: #151119;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(14, 10, 14, 0.86);
+  animation: vmBackdropFade 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.victory-modal-backdrop.hidden { display: none !important; }
+@keyframes vmBackdropFade { from { opacity: 0; } to { opacity: 1; } }
+
+.victory-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 24px 22px 20px;
+  text-align: center;
+  background: radial-gradient(rgba(255, 240, 197, 0.05) 1.2px, transparent 1.7px) 0 0 / 16px 16px, var(--pp-board);
+  border: 3px solid var(--pp-ink);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 3px var(--pp-kraft), inset 0 0 0 5px var(--pp-ink), 0 7px 0 var(--pp-drop), 0 18px 40px rgba(0, 0, 0, 0.6);
+  scrollbar-color: var(--pp-kraft) var(--pp-board);
+  animation: vmCardPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.victory-modal-card.hs-victory-pop { animation: vmCardPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+/* 종이 한 장이 펄럭이며 내려앉는 등장(빛 번짐 없음) */
+@keyframes vmCardPop {
+  0% { opacity: 0; transform: translateY(-30px) scale(0.6) rotate(-4deg); }
+  58% { opacity: 1; transform: translateY(4px) scale(1.04) rotate(1.2deg); }
+  78% { transform: scale(0.98) rotate(-0.4deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* 닫기: 크림색 종이 단추 */
+.victory-close-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--pp-ink);
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: 0 3px 0 var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.victory-close-icon:hover { transform: translateY(-1px) rotate(-8deg); }
+.victory-close-icon:active { transform: translateY(3px); box-shadow: 0 0 0 var(--pp-drop); }
+
+/* 머리 리본: 크림색 띠 양옆에 V자로 오린 꼬리 */
+.victory-crown-badge {
+  position: relative;
+  display: inline-block;
+  margin: 0 30px 12px;
+  padding: 5px 18px 6px;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: var(--pp-ink);
+  background: var(--pp-cream);
+  border: 2.5px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px var(--pp-cut), 0 3px 0 var(--pp-drop);
+}
+.victory-crown-badge::before,
+.victory-crown-badge::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 8px;
+  width: 30px;
+  height: 100%;
+  background: #cdb48c;
+  border: 2.5px solid var(--pp-ink);
+}
+.victory-crown-badge::before { left: -22px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 28% 50%); }
+.victory-crown-badge::after { right: -22px; clip-path: polygon(0 0, 100% 0, 72% 50%, 100% 100%, 0 100%); }
+
+.victory-title {
+  margin: 0 0 6px;
+  font-size: 1.42rem;
+  font-weight: 900;
+  color: #fde68a;
+  text-shadow: 0 2px 0 var(--pp-ink), 0 3px 0 var(--pp-drop);
+}
+.victory-subtitle {
+  margin: 0 0 18px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #cdbda6;
+}
+
+/* 패배: 리본·판 테두리를 짙은 진홍 종이로 */
+.victory-modal-backdrop.defeat-mode .victory-modal-card { box-shadow: inset 0 0 0 3px #8f2a22, inset 0 0 0 5px var(--pp-ink), 0 7px 0 var(--pp-drop), 0 18px 40px rgba(0, 0, 0, 0.6); }
+.victory-modal-backdrop.defeat-mode .victory-crown-badge { color: var(--pp-cream); background: #8f2a22; box-shadow: inset 0 0 0 2px #b8473a, 0 3px 0 var(--pp-drop); }
+.victory-modal-backdrop.defeat-mode .victory-crown-badge::before,
+.victory-modal-backdrop.defeat-mode .victory-crown-badge::after { background: #6b1f19; }
+.victory-modal-backdrop.defeat-mode .victory-title { color: #fca5a5; }
+.victory-modal-backdrop.defeat-mode .speedrun-comparison-board,
+.victory-modal-backdrop.defeat-mode .victory-close-icon { display: none; }
+
+/* 공용 종이 칸: 짙은 종이 한 장(잉크 테두리 + 크라프트 안쪽 선 + 짧은 그림자) */
+.run-progress, .run-setup, .victory-logs-preview, .defeat-cause {
+  text-align: left;
+  background: var(--pp-sheet);
+  border: 2px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #5a4537, 0 3px 0 var(--pp-drop);
+}
+
+/* 스피드런 기록지: 크림색 종이 위 짙은 잉크 숫자 */
+.speedrun-comparison-board {
+  margin-bottom: 16px;
+  padding: 12px 14px 14px;
+  text-align: left;
+  color: var(--pp-ink);
+  background: radial-gradient(rgba(36, 27, 34, 0.05) 1px, transparent 1.4px) 0 0 / 12px 12px, var(--pp-cream);
+  border: 3px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px var(--pp-cut), 0 5px 0 var(--pp-drop);
+}
+.speedrun-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #5a4537;
+  border-bottom: 2px dashed rgba(36, 27, 34, 0.3);
+}
+.speedrun-badge-tag {
+  flex: 0 0 auto;
+  padding: 1px 8px 2px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #fff4dc;
+  text-shadow: 0 1px 0 var(--pp-ink);
+  background: #e8743b;
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: 0 2px 0 var(--pp-drop);
+  animation: vmTagWiggle 1.6s steps(1, end) infinite;
+}
+@keyframes vmTagWiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.speedrun-times-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.speedrun-time-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  text-align: center;
+  background: #fff8e8;
+  border: 2px solid var(--pp-ink);
+  border-top-width: 6px;
+  border-radius: 2px;
+}
+.speedrun-time-box.current { border-top-color: #e8743b; }
+.speedrun-time-box.best { border-top-color: #d9a03a; }
+.speedrun-box-label { font-size: 0.7rem; font-weight: 800; color: #6b5a48; }
+.speedrun-box-val { font-size: 1.42rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; color: var(--pp-ink); }
+.speedrun-box-val.fire { color: #b3401b; }
+.speedrun-box-val.gold { color: #8a5a00; }
+.speedrun-vs-divider { padding: 0 2px; font-size: 0.8rem; font-weight: 900; font-style: italic; color: #8f8270; }
+.speedrun-diff-banner {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+  color: #3b2c25;
+  background: #e2cfae;
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+}
+.speedrun-diff-banner.record { color: #fff4dc; text-shadow: 0 1px 0 var(--pp-ink); background: #d9a03a; }
+.speedrun-diff-banner.slower { color: #5a4537; background: #d9cdb6; }
+
+/* 전투 요약: 짙은 종이 꼬리표 여섯 장 */
+.victory-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+.victory-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--pp-sheet);
+  border: 2px solid var(--pp-ink);
+  border-left: 6px solid var(--pp-kraft);
+  border-radius: 2px;
+  box-shadow: 0 3px 0 var(--pp-drop);
+}
+.victory-stat-label { font-size: 0.7rem; font-weight: 700; color: #b8a58a; }
+.victory-stat-val { font-size: 1rem; font-weight: 900; color: var(--pp-cream); }
+.victory-stat-val.gold { color: #fde68a; }
+.victory-stat-val.cyan { color: #9fd3f0; }
+
+/* 주문별 피해 점유율: 홈 파인 종이 위에 색종이 띠 */
+.victory-logs-preview { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; padding: 10px 12px; }
+.victory-logs-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 800; color: #f3d391; }
+.victory-logs-bars { display: flex; flex-direction: column; gap: 5px; }
+.victory-log-bar-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #1b1418;
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+}
+.victory-log-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; opacity: 0.55; border-right: 2px solid var(--pp-ink); }
+.victory-log-bar-row > :not(.victory-log-bar-fill) { position: relative; text-shadow: 0 1px 0 var(--pp-ink); }
+
+/* 버튼: 다시 도전은 두꺼운 주황 종이(누르면 내려앉음), 0.8초마다 살짝 들썩여 다음 런을 권합니다. */
+.victory-actions { display: flex; flex-direction: column; gap: 8px; }
+.speedrun-actions { margin-top: 6px; }
+.victory-btn {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: #fff4dc;
+  text-shadow: 0 1px 0 var(--pp-ink);
+  background: #e8743b;
+  border: 3px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #f6a066, 0 5px 0 var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.victory-btn.primary { animation: vmRetryNudge 1.6s steps(1, end) 1.2s infinite; }
+.victory-btn:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 2px #f6a066, 0 7px 0 var(--pp-drop); animation: none; }
+.victory-btn:active { transform: translateY(5px); box-shadow: inset 0 0 0 2px #f6a066, 0 0 0 var(--pp-drop); }
+@keyframes vmRetryNudge { 0%, 100% { transform: none; } 50% { transform: translateY(-2px) rotate(-0.6deg); } }
+
+/* 숙련도 */
+.run-progress { margin: -6px 0 16px; padding: 10px 12px; }
 .rp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
 .rp-title { font-size: .82rem; color: #f3d391; font-weight: 700; }
 .rp-level { display: inline-block; margin-left: 4px; color: #fff4dc; }
-.rp-level.rp-level-up { animation: rpPop .55s cubic-bezier(0.34, 1.56, 0.64, 1); color: #fde68a; text-shadow: 0 0 8px #f59e0b; }
-.rp-gain { font-size: .8rem; font-weight: 800; color: #86efac; animation: rpPop .5s cubic-bezier(0.34, 1.56, 0.64, 1) .35s both; }
-.rp-bar { position: relative; height: 10px; border-radius: 99px; background: #0d0a0e; border: 1px solid #5c4636; overflow: hidden; }
-.rp-fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #b45309, #f59e0b 60%, #fde68a); box-shadow: 0 0 8px #f59e0b99; }
+.rp-level.rp-level-up { animation: rpPop .55s cubic-bezier(0.34, 1.56, 0.64, 1); color: #fde68a; }
+.rp-gain { padding: 0 6px; font-size: .78rem; font-weight: 900; color: var(--pp-ink); background: #86c98f; border: 2px solid var(--pp-ink); border-radius: 2px; box-shadow: 0 2px 0 var(--pp-drop); animation: rpPop .5s cubic-bezier(0.34, 1.56, 0.64, 1) .35s both; }
+/* 막대: 홈 파인 종이 위에 주황 색종이 띠가 찹니다(빗금 결). */
+.rp-bar { position: relative; height: 12px; overflow: hidden; background: #1b1418; border: 2px solid var(--pp-ink); border-radius: 2px; }
+.rp-fill { height: 100%; width: 0; background: repeating-linear-gradient(-45deg, #e8743b 0 6px, #d9622b 6px 12px); border-right: 2px solid var(--pp-ink); }
 .rp-next { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .74rem; color: #cbbfae; }
 .rp-next-icon .paper-card-icon { width: 26px; height: 26px; }
 .rp-next-text { flex: 1; min-width: 0; }
-.rp-next-text small, .rp-unlock-text small { display: block; font-size: .66rem; color: #9b8f7f; }
+.rp-next-text small, .rp-unlock-text small { display: block; font-size: .66rem; color: #8f8270; }
 .rp-next-xp { font-variant-numeric: tabular-nums; color: #f3d391; white-space: nowrap; }
 .rp-done { color: #fde68a; }
-.rp-unlocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px; margin-top: 7px; }
+.rp-unlocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-top: 8px; }
 .rp-unlocks:empty { display: none; }
-.rp-unlock { display: flex; align-items: center; gap: 9px; padding: 6px 9px; border-radius: 8px; border: 1px solid #f59e0b; background: linear-gradient(90deg, #3b2412, #1f1712); box-shadow: 0 0 12px #f59e0b55; animation: rpUnlock .6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+/* 해금 칩: 크림색 꼬리표 + 왼쪽 색종이 띠(카드 금색 · 업화 진홍) */
+.rp-unlock { display: flex; align-items: center; gap: 9px; padding: 6px 9px; color: var(--pp-ink); background: var(--pp-cream); border: 2px solid var(--pp-ink); border-left: 6px solid #d9a03a; border-radius: 2px; box-shadow: 0 3px 0 var(--pp-drop); animation: rpUnlock .6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .rp-unlock-icon .paper-card-icon { width: 34px; height: 34px; }
-.rp-unlock-text b { color: #fff4dc; font-size: .82rem; }
-.rp-unlock-inferno { border-color: #ef4444; background: linear-gradient(90deg, #3f1414, #1f1212); box-shadow: 0 0 14px #ef444466; }
+.rp-unlock-text b { color: var(--pp-ink); font-size: .82rem; }
+.rp-unlock-inferno { border-left-color: #b8473a; background: #f3dccf; }
 .rp-flame { font-size: 1.5rem; }
+@keyframes rpPop { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes rpUnlock { 0% { transform: translateY(8px) scale(.85) rotate(-3deg); opacity: 0; } 65% { transform: translateY(-2px) scale(1.04) rotate(1deg); opacity: 1; } 100% { transform: none; } }
+
 /* 해금 칸·다음 해금·시작 주문서: 마우스를 올리면(터치는 탭) 카드 설명이 뜹니다. */
 [data-tip-card] { cursor: help; }
-.rp-unlock[data-tip-card]:hover, .rp-unlock[data-tip-card]:focus-visible { border-color: #fde68a; outline: none; }
-.rp-next-icon[data-tip-card]:focus-visible, .rs-next-card:focus-visible { outline: 2px solid #fde68a; outline-offset: 2px; border-radius: 4px; }
-.rs-next-card { display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; padding: 5px 8px; border: 1px dashed #ef4444aa; border-radius: 6px; background: #2a1414cc; font-size: .7rem; color: #e7d9c3; }
-.rs-next-card b { color: #fecaca; }
-.rs-next-icon .paper-card-icon { width: 24px; height: 24px; filter: grayscale(.6) brightness(.85); }
-.meta-tip { position: fixed; z-index: 10050; width: min(260px, calc(100vw - 16px)); padding: 9px 11px 10px; border: 2px solid #a88a64; border-radius: 4px; background: #241b22f7; box-shadow: 0 3px 0 #151119, 0 10px 24px #000c; color: #efe1c6; text-align: left; pointer-events: none; }
+.rp-unlock[data-tip-card]:hover, .rp-unlock[data-tip-card]:focus-visible { transform: translateY(-2px) rotate(-1deg); outline: none; }
+.rp-next-icon[data-tip-card]:focus-visible, .rs-next-card:focus-visible { outline: 2px solid #fde68a; outline-offset: 2px; }
+.meta-tip { position: fixed; z-index: 10050; width: min(260px, calc(100vw - 16px)); padding: 9px 11px 10px; color: var(--paper-ink); text-align: left; pointer-events: none;
+  background: radial-gradient(rgba(36, 27, 34, 0.05) 1px, transparent 1.4px) 0 0 / 12px 12px, #efe1c6; border: 3px solid #241b22; border-radius: 3px; box-shadow: inset 0 0 0 2px #fff0c5, 0 4px 0 #151119, 0 10px 24px #0009; }
 .meta-tip[hidden] { display: none; }
 .meta-tip.mt-pop { animation: metaTipPop .22s cubic-bezier(0.34, 1.56, 0.64, 1); }
-@keyframes metaTipPop { 0% { opacity: 0; transform: translateY(6px) scale(.94); } 100% { opacity: 1; transform: none; } }
-.mt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #4a382d; }
+@keyframes metaTipPop { 0% { opacity: 0; transform: translateY(6px) scale(.94) rotate(-2deg); } 100% { opacity: 1; transform: none; } }
+.mt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 2px dashed rgba(36, 27, 34, 0.3); }
 .mt-icon .paper-card-icon { width: 34px; height: 34px; }
 .mt-title { display: flex; flex-direction: column; gap: 2px; }
-.mt-title b { font-size: .86rem; color: #fff4dc; }
-.mt-rarity { align-self: flex-start; padding: 0 6px; border-radius: 99px; font-size: .6rem; font-weight: 800; background: #334155; color: #cbd5e1; }
-.mt-rarity.rarity-rare { background: #0369a1; color: #bae6fd; }
-.mt-rarity.rarity-legendary { background: #b45309; color: #fef08a; }
-.mt-desc { font-size: .74rem; line-height: 1.5; color: #e7d9c3; }
-.mt-desc b { color: #fde047; }
-.mt-note { margin-top: 6px; font-size: .66rem; color: #b8a58a; }
+.mt-title b { font-size: .86rem; color: #241b22; }
+.mt-rarity { align-self: flex-start; padding: 0 6px; font-size: .6rem; font-weight: 900; color: #fffaf0; text-shadow: 0 1px 0 #241b22; background: #8f8270; border: 1.5px solid #241b22; border-radius: 2px; }
+.mt-rarity.rarity-rare { background: #3d7ab8; }
+.mt-rarity.rarity-legendary { background: #d9a03a; }
+.mt-desc { font-size: .74rem; line-height: 1.5; color: #3b2c25; }
+.mt-desc b { color: #b3261e; }
+.mt-note { margin-top: 6px; font-size: .66rem; color: #6b5a48; }
 @media (prefers-reduced-motion: reduce) { .meta-tip.mt-pop { animation: none; } }
-@keyframes rpPop { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
-@keyframes rpUnlock { 0% { transform: translateY(8px) scale(.85); opacity: 0; } 65% { transform: translateY(-2px) scale(1.04); opacity: 1; } 100% { transform: none; } }
 
-.run-setup { margin: 4px 0 12px; padding: 10px 12px; border: 1px dashed #8b7055; border-radius: 10px; background: #17121ae0; text-align: left; }
+/* 새 런 설정: 절취선(점선) 테두리 종이 */
+.run-setup { margin: 4px 0 12px; padding: 10px 12px; border-style: dashed; border-color: var(--pp-kraft); }
 .rs-row { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .rs-row + .rs-row, .rs-best + .rs-row { margin-top: 9px; }
 .rs-label { width: 100%; font-size: .74rem; font-weight: 700; color: #f3d391; margin-bottom: 2px; }
-.rs-pip { min-width: 30px; height: 30px; padding: 0 4px; border-radius: 7px; border: 1px solid #5c4636; background: #241b22; color: #f1e2c9; font-size: .85rem; cursor: pointer; transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .2s; }
-.rs-pip.open { opacity: .55; }
-.rs-pip.lit { opacity: 1; border-color: #f59e0b; background: #3b2412; box-shadow: 0 0 8px #f59e0b66; }
+/* 업화 단계 칩: 네모난 종이 말. 고른 단계까지는 주황 종이로 칠해지고 눌린 듯 내려앉습니다. */
+.rs-pip { min-width: 30px; height: 30px; padding: 0 4px; font-size: .85rem; color: #f1e2c9; background: #241b22; border: 2px solid var(--pp-ink); border-radius: 2px; box-shadow: inset 0 0 0 1px #5a4537, 0 3px 0 var(--pp-drop); cursor: pointer; transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.rs-pip.open { opacity: .6; }
+.rs-pip.lit { opacity: 1; color: #fff4dc; background: #e8743b; box-shadow: inset 0 0 0 1px #f6a066, 0 2px 0 var(--pp-drop); transform: translateY(1px); }
 .rs-pip.locked { opacity: .3; cursor: not-allowed; }
-.rs-pip:not(:disabled):hover { transform: translateY(-2px) scale(1.08); }
+.rs-pip:not(:disabled):hover { transform: translateY(-2px) rotate(-3deg); }
 .rs-rules { margin: 7px 0 0; padding-left: 18px; font-size: .7rem; color: #cbbfae; line-height: 1.5; }
 .rs-rules .rs-rule-new { color: #fca5a5; font-weight: 700; }
+.rs-next-card { display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; padding: 5px 8px; font-size: .7rem; color: #e7d9c3; background: #2a1418; border: 2px dashed #b8473a; border-radius: 2px; }
+.rs-next-card b { color: #fecaca; }
+.rs-next-icon .paper-card-icon { width: 24px; height: 24px; filter: grayscale(.6) brightness(.85); }
 .rs-best { margin-top: 5px; font-size: .72rem; color: #cbbfae; }
 .rs-best b { color: #fde68a; font-variant-numeric: tabular-nums; }
-.rs-spell { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #5c4636; background: #241b22; color: #cbbfae; cursor: pointer; display: grid; place-items: center; transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.rs-spell { display: grid; place-items: center; width: 40px; height: 40px; color: #cbbfae; background: #241b22; border: 2px solid var(--pp-ink); border-radius: 2px; box-shadow: inset 0 0 0 1px #5a4537, 0 3px 0 var(--pp-drop); cursor: pointer; transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .rs-spell .paper-card-icon { width: 32px; height: 32px; box-shadow: none; }
-.rs-spell.on { border-color: #f59e0b; box-shadow: 0 0 10px #f59e0b88; background: #3b2412; }
-.rs-spell:hover { transform: translateY(-2px) scale(1.06); }
+.rs-spell.on { background: #e8743b; box-shadow: inset 0 0 0 1px #f6a066, 0 2px 0 var(--pp-drop); transform: translateY(1px); }
+.rs-spell:hover { transform: translateY(-2px) rotate(-3deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .victory-modal-card, .victory-modal-card.hs-victory-pop, .speedrun-badge-tag, .victory-btn.primary,
+  .rp-gain, .rp-unlock, .rp-level.rp-level-up { animation: none; }
+  .rs-pip, .rs-spell { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .victory-modal-card { max-width: 95vw; padding: 20px 12px 16px; }
+  .victory-title { font-size: 1.18rem; }
+  .victory-subtitle { font-size: 0.78rem; }
+  .victory-stats-grid { grid-template-columns: 1fr; gap: 6px; }
+  .victory-btn { padding: 10px; }
+}
 
 /* 전투 화면 업화 배지: 스테이지 표시 옆의 작은 불꽃 */
 .inferno-badge { display: inline-flex; align-items: center; padding: 1px 6px; margin-left: 2px; border-radius: 99px; border: 1px solid #ef4444; background: #3f1414; color: #fecaca; font-size: .74rem; font-weight: 800; box-shadow: 0 0 8px #ef444466; }
 .inferno-badge[hidden] { display: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  .rp-gain, .rp-unlock, .rp-level.rp-level-up { animation: none; }
-  .rs-pip, .rs-spell { transition: none; }
-}
 
 /* 스펠 큐: 시전 중 눌러 예약된 스킬 버튼. 접수됐다는 것을 맥박처럼 뛰는 고리로 알려줍니다. */
 .action-bar .skill-btn.skill-queued { border-color: #fde68a; box-shadow: 0 0 0 2px #fde68a, 0 0 12px #f59e0b; animation: skillQueued .6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate; }
@@ -299,17 +584,17 @@
 @media (prefers-reduced-motion: reduce) { .action-bar .skill-btn .fb-hint { animation: none; } }
 
 /* 패배 원인 한 줄 진단: 결과창이 열리고 0.45초 여운 뒤 오버슈트로 튀어나옵니다. 지적 대상 지표 칩은 붉게 강조합니다. */
-.defeat-cause { margin: -6px 0 14px; padding: 10px 12px; border: 1.5px solid #b91c1c; border-radius: 6px; background: #2a1418; box-shadow: 0 2px 0 #151119; text-align: left; }
+.defeat-cause { margin: -6px 0 14px; padding: 10px 12px; background: #3a1518; box-shadow: inset 0 0 0 2px #8f2a22, 0 3px 0 #151119; }
 .defeat-cause[hidden], .victory-modal-backdrop:not(.defeat-mode) .defeat-cause { display: none; }
 .defeat-cause.dc-pop { animation: dcPop .42s cubic-bezier(0.34, 1.56, 0.64, 1) .45s both; }
 .dc-line { display: flex; align-items: center; gap: 10px; }
 .dc-icon { flex: 0 0 auto; font-size: 1.6rem; line-height: 1; }
 .dc-text { font-size: .86rem; font-weight: 700; color: #ffd9c7; line-height: 1.4; }
 .dc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.dc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid #5a4537; border-radius: 99px; background: #1b1318; font-size: .7rem; color: #cbbba0; }
+.dc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 2px solid #241b22; border-radius: 2px; background: #2a1d22; box-shadow: 0 2px 0 #151119; font-size: .7rem; color: #cbbba0; }
 .dc-chip b { color: #f3e3c4; font-variant-numeric: tabular-nums; }
-.dc-chip.bad { border-color: #ef4444; color: #fca5a5; }
-.dc-chip.bad b { color: #ff7a6b; }
+.dc-chip.bad { background: #8f2a22; color: #ffd9c7; }
+.dc-chip.bad b { color: #fff4dc; }
 .dc-chip-icon { font-size: .85rem; }
 @keyframes dcPop { 0% { opacity: 0; scale: .7; } 60% { opacity: 1; scale: 1.04 .97; } 100% { opacity: 1; scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .defeat-cause.dc-pop { animation: none; } }
