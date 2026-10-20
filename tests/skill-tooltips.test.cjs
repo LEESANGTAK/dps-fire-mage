@@ -7,7 +7,7 @@ for(const stats of [{sp:100,speedMult:1,critDmg:1.5,cdr:0,burnMult:1},{sp:317,sp
  for(const skill of ['fireball','fireblast','combustion','meteor','flame_patch']) {
   const combat={castingSkill:null,gcdRemaining:0,fbCharges:2,fbMaxCharges:2,fbRechargeRem:0,critStreak:0,combustionCdRem:0,meteorCdRem:0,flamePatchCdRem:0};
   let rawDamage=null;
-  const context=vm.createContext({state:{combat,grimoires:{fireblast:true,combustion:true,meteor:true,flame_patch:true}},getPlayerStats:()=>stats,getCombustionDuration:()=>3.4,FIREBLAST_RECHARGE:8,FLAME_PATCH_DURATION:7,getTargetPos:()=>({x:0,y:0}),spawnParticles(){},dealDamage:(key,value)=>{rawDamage=value;},beginMageGesture(){},updateCastingLoopSound(){},updateBurningLoopSound(){},spawnFloatingText(){},playSound(){},playFireballSfx(){},shockwaves:[],launchMeteorVfx:callback=>callback()});
+  const context=vm.createContext({state:{combat,grimoires:{fireblast:true,combustion:true,meteor:true,flame_patch:true}},getPlayerStats:()=>stats,getCombustionDuration:()=>3.4,FIREBLAST_RECHARGE:8,FLAME_PATCH_DURATION:7,getTargetPos:()=>({x:0,y:0}),getActorGroundPos:()=>({x:0,y:0}),spawnParticles(){},dealDamage:(key,value)=>{rawDamage=value;},beginMageGesture(){},updateCastingLoopSound(){},updateBurningLoopSound(){},spawnFloatingText(){},playSound(){},playFireballSfx(){},shockwaves:[],launchMeteorVfx:callback=>callback()});
   vm.runInContext(trigger,context);
   const detail=buildSkillDetails(skill,stats,combat,3.4);
   assert.ok(vm.runInContext(`triggerSkill('${skill}')`,context));

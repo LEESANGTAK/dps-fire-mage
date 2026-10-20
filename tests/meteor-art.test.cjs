@@ -84,10 +84,14 @@ const loop=game.slice(begin,game.indexOf('  // 메테오 충돌 시 사방으로
 for(const reduced of [false,true]) {
  let impacts=0,debris=0,shake=0,burst=0;
  const state={isPaused:true,soundOn:false},meteors=[{...m,progress:.9,onImpact:()=>impacts++}],shockwaves=[];
- const c=vm.createContext({state,meteors,shockwaves,particles:[],performance:{now:()=>1000},lastMeteorShakeTime:-Infinity,getMeteorPose,emitMeteorTrail,drawComicMeteor(){},ctx:{},spawnParticles:(x,y,count)=>burst=count,spawnMeteorRockDebris:()=>debris++,triggerArenaShake:()=>shake++,playSound(){}});
+ const c=vm.createContext({state,meteors,shockwaves,particles:[],performance:{now:()=>1000},lastMeteorShakeTime:-Infinity,getActorGroundPos:()=>({x:0,y:0}),getMeteorPose,emitMeteorTrail,drawComicMeteor(){},ctx:{},spawnParticles:(x,y,count)=>burst=count,spawnMeteorRockDebris:()=>debris++,triggerArenaShake:()=>shake++,playSound(){}});
  vm.runInContext(`function tick(dt){const meteorDt=state.isPaused?0:dt;const reducedMeteor=${reduced};${loop}}`,c);
  vm.runInContext('tick(.2)',c);assert.equal(meteors[0].progress,.9);assert.equal(impacts,0);
  state.isPaused=false;vm.runInContext('tick(.2);tick(.2)',c);assert.equal(impacts,1);assert.equal(meteors.length,0);
  assert.equal(debris,reduced?0:1);assert.equal(shake,reduced?0:1);assert.equal(shockwaves.length,reduced?0:2);assert.equal(burst,reduced?6:30);
 }
-console.log('운석 방향·가속·꼬리 잔상·입자 상한·정확한 충돌·모달 정지·모션 감소 검증 통과');
+// 바닥 투시: 메테오 예고 원·바닥 충격파는 발밑에 접지하고 불장판 균열과 같은 바닥 비율(GROUND_TILT)로 눕힙니다.
+assert.ok(game.includes("y: getActorGroundPos('dummy-avatar').y + offsetY * GROUND_TILT"),'메테오 예고 원은 몬스터 발밑 바닥에 접지해야 합니다');
+assert.ok(game.includes('gCtx.scale(1, GROUND_TILT)') && game.includes('sw.flat ? GROUND_TILT'),'바닥 원과 충격파는 공통 바닥 비율을 써야 합니다');
+assert.ok(!/scale\(1, ?0\.4\d?\)/.test(game),'바닥마다 다른 눕힘 비율(0.42·0.45)이 남아 있으면 안 됩니다');
+console.log('운석 방향·가속·꼬리 잔상·입자 상한·정확한 충돌·모달 정지·모션 감소·바닥 투시 검증 통과');

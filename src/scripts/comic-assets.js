@@ -123,9 +123,11 @@ function drawComicAbility(painter,key,x,y,width,height=width) {
 
 /* 불장판: 몬스터 발밑 바닥이 붉게 달아올라 갈라지는 균열(프랙탈 가지) 무늬.
  * 위에서 내려다본 단위 원판 좌표로 균열 나무를 한 번만 만들고(고정 시드: 프레임마다 떨리지 않음),
- * 그리는 순간 바닥 원근(세로 FLAME_PATCH_TILT배)으로 눕힙니다. 앞쪽(화면 아래)은 굵게, 뒤쪽은 가늘게.
+ * 그리는 순간 바닥 원근(세로 GROUND_TILT배)으로 눕힙니다. 앞쪽(화면 아래)은 굵게, 뒤쪽은 가늘게.
  * 시전 직후 중심에서 바깥으로 0.35초 동안 금이 번져 나가고, 이후 열기가 중심→바깥으로 맥동합니다. */
-const FLAME_PATCH_TILT = .32; // 자동 시전 마법진(scale(1, .28))과 같은 바닥 눕힘 비율
+// 전장 바닥 눕힘 비율(세로/가로). 바닥에 깔리는 모든 원·무늬(불장판·메테오 예고 원·바닥 충격파)가 같은 값을 써야 투시가 맞습니다.
+// 자동 시전 마법진(CSS scale(1, .28))과 거의 같은 바닥면입니다.
+const GROUND_TILT = .32;
 const FLAME_PATCH_GROW = .35; // 균열이 끝까지 번지는 시간(초)
 let flamePatchCracks = null;
 
@@ -179,17 +181,17 @@ function flamePatchEmberPoint(x, groundY, width, r = Math.random()) {
   const segs = getFlamePatchCracks();
   const seg = segs[Math.floor(r * segs.length) % segs.length];
   const rx = width / 2;
-  return { x: x + seg.x2 * rx, y: groundY + seg.y2 * rx * FLAME_PATCH_TILT };
+  return { x: x + seg.x2 * rx, y: groundY + seg.y2 * rx * GROUND_TILT };
 }
 
 function drawFlamePatchCracks(painter, x, groundY, width, time, age = 99, reduced = false) {
-  const rx = width / 2, ry = rx * FLAME_PATCH_TILT;
+  const rx = width / 2, ry = rx * GROUND_TILT;
   const fade = painter.globalAlpha;
   painter.save();
   // 1. 달아오른 바닥: 바닥에 눕힌 원형 그을음(중심은 검붉게, 가장자리는 바닥에 녹아듦)
   painter.save();
   painter.translate(x, groundY);
-  painter.scale(1, FLAME_PATCH_TILT);
+  painter.scale(1, GROUND_TILT);
   const heat = painter.createRadialGradient(0, 0, 0, 0, 0, rx);
   heat.addColorStop(0, '#6a1006b3');
   heat.addColorStop(.55, '#3a0a0573');

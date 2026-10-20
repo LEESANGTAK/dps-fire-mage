@@ -651,9 +651,20 @@ function getCasterCenter() {
   };
 }
 
+// 배우의 발밑(전장 기준 좌표). 배우 자신에게 걸린 피격 흔들림·재등장 팝 같은 CSS 변형은 빼고 잽니다
+// (부모 상자의 화면 위치 + 배우의 레이아웃 오프셋). 그래야 새 몬스터가 튀어나오는 도중 시전한
+// 메테오 예고 원·불장판도 실제 바닥에 붙고, 피격 때마다 바닥 무늬가 출렁이지 않습니다.
 function getActorGroundPos(id) {
   const arena = document.getElementById('combat-arena').getBoundingClientRect();
-  const actor = document.getElementById(id).getBoundingClientRect();
+  const actorEl = document.getElementById(id);
+  const parent = actorEl.offsetParent;
+  if (parent && typeof parent.getBoundingClientRect === 'function' && typeof actorEl.offsetTop === 'number') {
+    const p = parent.getBoundingClientRect();
+    const left = p.left + parent.clientLeft + actorEl.offsetLeft - arena.left;
+    const top = p.top + parent.clientTop + actorEl.offsetTop - arena.top;
+    return { x: left + actorEl.offsetWidth * 0.5, y: top + actorEl.offsetHeight };
+  }
+  const actor = actorEl.getBoundingClientRect();
   return { x: actor.left - arena.left + actor.width * 0.5, y: actor.bottom - arena.top };
 }
 
@@ -864,10 +875,10 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
   const offsetY = scale < 1 ? Math.random() * 24 - 12 : 10;
   const fallDuration = 0.96 * Math.max(0.78, scale);
 
-  // 메테오 크기 1.5배 확대에 맞춰 지면 충돌 예고 마법진도 1.5배 확대
+  // 지면 충돌 예고 원: 몬스터 몸 중앙이 아니라 발밑 바닥에 접지하고, 앞뒤 흔들림도 바닥 비율로 줄입니다.
   groundEffects.push({
     x: target.x + offsetX,
-    y: target.y + 32 + offsetY,
+    y: getActorGroundPos('dummy-avatar').y + offsetY * GROUND_TILT,
     radius: 93 * scale,
     life: 0,
     maxLife: fallDuration
@@ -1053,7 +1064,7 @@ function drawSummonsAndAuras(dt) {
     const targetCtx = sw.flat ? gCtx : ctx;
     targetCtx.save();
     targetCtx.translate(sw.x, sw.y);
-    targetCtx.scale(1, sw.flat ? 0.45 : 0.85);
+    targetCtx.scale(1, sw.flat ? GROUND_TILT : 0.85);
     targetCtx.beginPath();
     targetCtx.arc(0, 0, sw.maxRadius * prog, 0, Math.PI * 2);
     targetCtx.strokeStyle = `rgba(${rgb}, ${alpha})`;
@@ -1084,11 +1095,12 @@ function updateAndDrawVfx(dt) {
     const alpha = 1 - prog;
     gCtx.save();
     gCtx.translate(g.x, g.y);
-    gCtx.scale(1, 0.42);
+    gCtx.scale(1, GROUND_TILT);
     gCtx.beginPath();
     gCtx.arc(0, 0, g.radius, 0, Math.PI * 2);
     gCtx.strokeStyle = `rgba(251, 191, 36, ${alpha * 0.9})`;
-    gCtx.lineWidth = 3.5;
+    // 바닥에 칠한 선이라 눕히면 앞뒤(위아래)가 가늘어집니다. 가장 가는 곳도 보이도록 굵기를 넉넉히 둡니다.
+    gCtx.lineWidth = 5;
     gCtx.stroke();
     gCtx.fillStyle = `rgba(239, 68, 68, ${alpha * 0.28})`;
     gCtx.fill();
@@ -1096,7 +1108,7 @@ function updateAndDrawVfx(dt) {
     gCtx.beginPath();
     gCtx.arc(0, 0, g.radius * (1 - prog * 0.65), 0, Math.PI * 2);
     gCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.65})`;
-    gCtx.lineWidth = 2;
+    gCtx.lineWidth = 3;
     gCtx.stroke();
     gCtx.restore();
   }
@@ -1176,7 +1188,7 @@ function updateAndDrawVfx(dt) {
       if (!reducedMeteor && shockwaves.length <= 28) {
         shockwaves.push({
           x: m.targetX,
-          y: m.targetY + 12,
+          y: getActorGroundPos('dummy-avatar').y, // 바닥 충격파는 발밑에 접지
           life: 0,
           maxLife: 0.45,
           maxRadius: 125 * m.scale,
@@ -2795,7 +2807,7 @@ function triggerSkill(skillKey, isManual = false) {
 
     const target = getTargetPos();
     const fx = target.x;
-    const fy = target.y + 56;
+    const fy = getActorGroundPos('dummy-avatar').y; // 발밑 바닥(불장판 균열 중심과 같은 높이)
     spawnParticles(fx, fy, 32, '#fef08a', '#ea580c', 1.45);
     shockwaves.push({
       x: fx,
@@ -4808,7 +4820,7 @@ function updateLiveHUD() {
   }
   debuffRow.innerHTML = debuffHtml;
 
-  // 몸에 붙은 종이 불꽃: 화상·연소 중 걸린 개수만큼(최대 2개) 몸 가운데 발밑부터 옆으로 번지며 타오릅니다.
+  // 몸에 붙은 종이 불꽃: 화상·연소 중 걸린 개수만큼(최대 2개) 몸 가운데 살짝 오른쪽 발밑부터 왼쪽으로 번지며 타오릅니다.
   // 불장판은 바닥 균열 무늬로만 보여 주고 몸에 불꽃을 붙이지 않습니다.
   const burnStatus = document.getElementById('burn-status');
   if (burnStatus) {
