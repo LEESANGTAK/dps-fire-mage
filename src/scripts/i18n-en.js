@@ -215,8 +215,6 @@ const I18N_EN = {
   '소환수 피해': 'Summon damage',
   '지속 피해': 'DoT damage',
   '(누적)': '(total)',
-  '👑 STAGE {n} 보스 돌파 특별 보상': '👑 Stage {n} boss bonus reward',
-  'STAGE {phase}-{wave} 돌파 보상': 'Stage {phase}-{wave} clear reward',
   'STAGE {phase}-{wave} 돌파!': 'STAGE {phase}-{wave} CLEAR!',
   '👑 마도서 대각성 (Greater Awakening)': '👑 Greater Awakening',
   '🔥 마도서 각성 (Grimoire Awakening)': '🔥 Grimoire Awakening',

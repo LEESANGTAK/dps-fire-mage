@@ -3840,16 +3840,8 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   awakeningExiting = false;
 
   const modal = document.getElementById('awakening-modal-backdrop');
-  const tagEl = document.getElementById('awakening-wave-tag');
   const titleEl = document.getElementById('awakening-modal-title');
   const subEl = document.querySelector('.awakening-modal-subtitle');
-
-  if (tagEl) {
-    const phase = Math.floor((stageNum - 1) / 5) + 1;
-    const wave = ((stageNum - 1) % 5) + 1;
-    tagEl.textContent = isBossWave ? tr('👑 STAGE {n} 보스 돌파 특별 보상', { n: stageNum }) : tr('STAGE {phase}-{wave} 돌파 보상', { phase, wave });
-    tagEl.className = isBossWave ? 'awakening-wave-tag boss' : 'awakening-wave-tag';
-  }
 
   if (titleEl) {
     titleEl.textContent = isBossWave ? tr('👑 마도서 대각성 (Greater Awakening)') : tr('🔥 마도서 각성 (Grimoire Awakening)');
@@ -4030,14 +4022,8 @@ function handleAwakeningReroll() {
   updateLiveHUD();
   updateRerollButtonUI();
   renderAwakeningChoicesUI(result.choices, isCurrentAwakeningBoss, AWAKENING_DEAL.rerollFirst);
+  // 새 카드는 펼침 연출(.is-dealing)로 다시 한 장씩 뒤집혀 들어옵니다.
   lockAwakeningInput(AWAKENING_DEAL.rerollLock);
-
-  const container = document.getElementById('awakening-cards-container');
-  if (container) {
-    container.classList.remove('cards-shuffle-pop');
-    void container.offsetWidth;
-    container.classList.add('cards-shuffle-pop');
-  }
 }
 
 function closeAwakeningModal() {

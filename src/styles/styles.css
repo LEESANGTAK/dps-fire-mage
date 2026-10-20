@@ -2614,13 +2614,22 @@ body {
 /* ==========================================================================
    7. 로그라이크 마도서 각성 (Grimoire Awakening) 3지선다 모달 & 덱 트레이
    ========================================================================== */
-/* 7-1. 전체화면 모달 백드롭 (게임 일시정지 중 팝업) */
+/* 마도서 각성 창: 페이퍼크래프트 문법
+   레퍼런스(docs/art/PAPER_AWAKENING_UI.md): 페이퍼 마리오 천년의 문 리메이크 메뉴(무늬 찍힌 두꺼운 판지 위에 밝은 종이판·깎은 이름표·밝은 종이 위 짙은 글자),
+   Erin Brume Paper GUI(양끝 접힌 리본 제목판·납작한 단색·흰 오림 테두리).
+   규칙: 둥근 모서리·그라데이션·바깥 발광·배경 흐림 대신, 짙은 잉크 테두리 + 크림색 오림선 + 아래로 딱 떨어지는 짧은 층 그림자.
+   색은 전투 HUD 종이(paper-ui.css)와 같은 판지·크라프트·크림 계열을 씁니다. */
 .awakening-modal-backdrop {
+  --pp-ink: #241b22;
+  --pp-board: #2e2329;
+  --pp-kraft: #a88a64;
+  --pp-cream: #efe1c6;
+  --pp-cut: #fff0c5;
+  --pp-drop: #151119;
   position: fixed;
   inset: 0;
   z-index: 1300;
-  background: rgba(8, 6, 14, 0.88);
-  backdrop-filter: blur(8px);
+  background: rgba(14, 10, 14, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2632,16 +2641,17 @@ body {
   display: none !important;
 }
 
-/* 7-2. 모달 컨테이너 (쫀득한 오버슈트 팝업) */
+/* 7-2. 판지 판: 잉크 테두리 → 크라프트 띠 → 잉크 선 → 점무늬 찍힌 짙은 판지, 아래로 떨어지는 두꺼운 그림자 */
 .awakening-modal {
   position: relative;
   width: 100%;
-  max-width: 740px;
-  background: linear-gradient(165deg, #1c182a 0%, #0d0b14 100%);
-  border: 2px solid #b45309;
-  border-radius: 18px;
-  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85), 0 0 35px rgba(217, 119, 6, 0.3);
-  padding: 24px;
+  max-width: 760px;
+  margin-top: 26px;
+  padding: 38px 22px 18px;
+  background: radial-gradient(rgba(255, 240, 197, 0.05) 1.2px, transparent 1.7px) 0 0 / 16px 16px, var(--pp-board);
+  border: 3px solid var(--pp-ink);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 3px var(--pp-kraft), inset 0 0 0 5px var(--pp-ink), 0 7px 0 var(--pp-drop), 0 18px 40px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2655,175 +2665,226 @@ body {
 }
 
 .awakening-modal-header {
-  margin-bottom: 18px;
+  margin: -62px 0 16px;
 }
 
-.awakening-wave-tag {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #fde047;
-  background: rgba(180, 83, 9, 0.4);
-  border: 1px solid #d97706;
-  padding: 3px 12px;
-  border-radius: 99px;
-  margin-bottom: 8px;
-  letter-spacing: 0.5px;
-}
-
+/* 제목: 판 위쪽 테두리에 걸쳐 붙인 크림색 리본. 양옆 꼬리는 한 톤 어두운 종이를 V자로 오려 뒤에 끼웁니다. */
 .awakening-modal-title {
-  font-size: 1.45rem;
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  padding: 9px 30px 10px;
+  background: var(--pp-cream);
+  color: var(--pp-ink);
+  font-size: 1.22rem;
   font-weight: 900;
-  color: #fffbeb;
-  text-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
-  margin: 0 0 6px 0;
+  letter-spacing: 0.3px;
+  border: 3px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px var(--pp-cut), 0 4px 0 var(--pp-drop);
+}
+
+.awakening-modal-title::before,
+.awakening-modal-title::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 12px;
+  width: 42px;
+  height: 100%;
+  background: #cdb48c;
+  border: 3px solid var(--pp-ink);
+}
+
+.awakening-modal-title::before {
+  left: -32px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 26% 50%);
+}
+
+.awakening-modal-title::after {
+  right: -32px;
+  clip-path: polygon(0 0, 100% 0, 74% 50%, 100% 100%, 0 100%);
 }
 
 .awakening-modal-subtitle {
-  font-size: 0.82rem;
-  color: #94a3b8;
-  margin: 0;
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  color: #cdbda6;
 }
 
-/* 7-3. 3장의 카드 그리드 */
+/* 7-3. 카드 그리드 */
 .awakening-cards-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 18px;
   width: 100%;
-  margin: 12px 0 20px 0;
+  margin: 14px 0 22px;
+  padding: 10px 4px 0;
 }
 
 @media (max-width: 640px) {
+  /* 좁은 화면: 리본 제목이 위로 잘리지 않게 위에서부터 쌓고, 하단은 골드 꼬리표 한 줄 + 버튼 한 줄로 접습니다. */
+  .awakening-modal-backdrop { align-items: flex-start; overflow-y: auto; }
+  .awakening-modal { margin-top: 34px; padding: 34px 12px 14px; }
+  .awakening-modal-title { font-size: 1rem; padding: 7px 18px 8px; }
+  .awakening-modal-title::before, .awakening-modal-title::after { width: 30px; top: 9px; }
+  .awakening-modal-title::before { left: -22px; }
+  .awakening-modal-title::after { right: -22px; }
   .awakening-cards-container {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 14px;
     max-height: 55vh;
     overflow-y: auto;
-    padding-right: 4px;
+    padding: 16px 10px 10px;
   }
+  .awakening-card { min-height: 0; }
+  .awakening-modal-footer { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .awakening-player-gold { width: 100%; justify-content: center; }
+  .awakening-footer-actions { width: 100%; justify-content: center; flex-wrap: wrap; }
 }
 
-/* 7-4. 개별 각성 카드 */
+/* 7-4. 각성 카드: 크림색 카드 면 + 등급 색종이 테두리 + 잉크 외곽선, 손으로 늘어놓은 듯 살짝씩 기울어 있습니다. */
 .awakening-card {
+  --rar: #8f8270;
+  --tilt: 0deg;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   min-height: 230px;
-  padding: 18px 14px;
-  border-radius: 14px;
+  padding: 18px 12px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  background: #1e1b2e;
-  border: 2px solid #475569;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  color: var(--pp-ink);
+  background: radial-gradient(rgba(36, 27, 34, 0.05) 1px, transparent 1.4px) 0 0 / 12px 12px, var(--pp-cream);
+  border: 6px solid var(--rar);
+  box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 7px 0 3px var(--pp-drop);
+  transform: rotate(var(--tilt));
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
+.awakening-card:nth-child(1) { --tilt: -1.6deg; }
+.awakening-card:nth-child(2) { --tilt: 0.9deg; }
+.awakening-card:nth-child(3) { --tilt: -0.6deg; }
+
+/* 집어 드는 느낌: 기울기를 펴며 떠오르고, 그림자가 길어집니다(발광 없음). */
 .awakening-card:hover {
-  transform: translateY(-8px) scale(1.04);
+  transform: translateY(-8px) rotate(0deg);
+  box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 14px 0 3px rgba(21, 17, 25, 0.75);
 }
 
 .awakening-card:active {
-  transform: translateY(-2px) scale(0.98);
+  transform: translateY(-2px) rotate(0deg) scale(0.98);
+  box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 3px 0 3px var(--pp-drop);
 }
 
-/* 등급별 테두리 및 컬러 */
-.awakening-card.rarity-common {
-  border-color: #64748b;
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-}
-.awakening-card.rarity-common:hover {
-  border-color: #94a3b8;
-  box-shadow: 0 12px 28px rgba(100, 116, 139, 0.35);
-}
-
-.awakening-card.rarity-rare {
-  border-color: #0284c7;
-  background: linear-gradient(180deg, #075985 0%, #082f49 100%);
-  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
-}
-.awakening-card.rarity-rare:hover {
-  border-color: #38bdf8;
-  box-shadow: 0 14px 32px rgba(56, 189, 248, 0.45);
-}
-
+.awakening-card.rarity-common { --rar: #8f8270; }
+.awakening-card.rarity-rare { --rar: #3d7ab8; }
 .awakening-card.rarity-legendary {
-  border-color: #d97706;
-  background: linear-gradient(180deg, #78350f 0%, #451a03 100%);
-  box-shadow: 0 8px 30px rgba(217, 119, 6, 0.35);
-  animation: cardLegendaryPulse 2.8s infinite alternate;
-}
-.awakening-card.rarity-legendary:hover {
-  border-color: #fbbf24;
-  box-shadow: 0 16px 40px rgba(251, 191, 36, 0.6);
+  --rar: #d9a03a;
+  background: radial-gradient(rgba(36, 27, 34, 0.05) 1px, transparent 1.4px) 0 0 / 12px 12px, #f6e5bd;
 }
 
-@keyframes cardLegendaryPulse {
-  0% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
-  100% { box-shadow: 0 0 35px rgba(251, 191, 36, 0.65); }
+/* 전설: 모서리에 붙인 금색 별 스티커 두 장이 종이 인형처럼 끊어 반짝입니다. */
+.awakening-card.rarity-legendary::before,
+.awakening-card.rarity-legendary::after {
+  content: '✦';
+  position: absolute;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: #f2b632;
+  -webkit-text-stroke: 1.5px var(--pp-ink);
+  text-shadow: 0 2px 0 rgba(21, 17, 25, 0.5);
+  animation: legendSticker 1.6s steps(1, end) infinite;
 }
 
+/* 설명 글자를 가리지 않도록 위쪽 두 모서리에만 붙입니다. */
+.awakening-card.rarity-legendary::before { top: 6px; left: 8px; }
+.awakening-card.rarity-legendary::after { top: 6px; right: 8px; animation-delay: -0.8s; }
+
+@keyframes legendSticker {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(18deg) scale(1.25); }
+}
+
+/* 등급 스티커: 카드 위쪽 테두리에 걸쳐 붙인 색종이 꼬리표 */
 .card-rarity-badge {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 11px 3px;
   font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 99px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  color: #fffaf0;
+  text-shadow: 0 1px 0 var(--pp-ink);
+  background: var(--rar);
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: 0 3px 0 var(--pp-drop);
 }
-.rarity-common .card-rarity-badge { background: #334155; color: #94a3b8; }
-.rarity-rare .card-rarity-badge { background: #0369a1; color: #7dd3fc; }
-.rarity-legendary .card-rarity-badge { background: #b45309; color: #fef08a; }
+
+/* 이미 가진 카드: 오른쪽 위 모서리의 작은 크라프트 꼬리표 */
+.card-stack-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 6px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--pp-ink);
+  background: #d9c6a3;
+  border: 1.5px solid var(--pp-ink);
+  border-radius: 2px;
+}
 
 .card-icon {
   font-size: 2.5rem;
-  margin: 6px 0;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  margin: 6px 0 4px;
+  filter: drop-shadow(0 3px 0 rgba(21, 17, 25, 0.35));
 }
 
 .card-name {
   font-size: 1rem;
-  font-weight: 800;
-  color: #fff;
+  font-weight: 900;
+  color: var(--pp-ink);
   margin-bottom: 8px;
 }
 
 .card-desc {
   font-size: 0.78rem;
-  color: #cbd5e1;
-  line-height: 1.45;
+  color: #3b2c25;
+  line-height: 1.5;
   text-align: center;
   flex-grow: 1;
 }
 
 .card-desc b {
-  color: #fde047;
+  color: #b3261e;
+  font-weight: 900;
 }
 
+/* 빌드 분류: 절취선(점선) 아래 오려 낸 띠 */
 .card-build-tag {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #94a3b8;
+  width: 100%;
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  width: 100%;
+  border-top: 2px dashed rgba(36, 27, 34, 0.3);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #6b5a48;
 }
 
 /* 7-4b. 각성 창 펼침: 머리글 → 카드 한 장씩(뒤집히며 착지) → 하단 순으로 시선을 이끕니다.
-   채움 모드는 backwards만 써서, 착지 후에는 hover 변형이 그대로 살아 있게 합니다. */
-.is-dealing .awakening-wave-tag { animation: awkDrop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s backwards; }
+   채움 모드는 backwards만 써서, 착지 후에는 hover 변형이 그대로 살아 있게 합니다. 착지 끝 자세는 카드마다의 기울기입니다. */
 .is-dealing .awakening-modal-title { animation: awkDrop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) 0.14s backwards; }
 .is-dealing .awakening-modal-subtitle { animation: awkFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.22s backwards; }
 .is-dealing .awakening-card { animation: awkCardDeal 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) var(--deal-delay, 0ms) backwards; }
-.is-dealing .awakening-card.rarity-rare { animation-name: awkCardDealRare; }
-.is-dealing .awakening-card.rarity-legendary {
-  animation: awkCardDealLegend 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) var(--deal-delay, 0ms) backwards,
-    cardLegendaryPulse 2.8s calc(var(--deal-delay, 0ms) + 0.62s) infinite alternate;
-}
+.is-dealing .awakening-card.rarity-legendary { animation: awkCardDealLegend 0.66s cubic-bezier(0.34, 1.56, 0.64, 1) var(--deal-delay, 0ms) backwards; }
 .is-dealing .awakening-modal-footer { animation: awkFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.78s backwards; }
 
 @keyframes awkDrop {
@@ -2837,20 +2898,17 @@ body {
 @keyframes awkCardDeal {
   0% { opacity: 0; transform: perspective(700px) translateY(40px) rotateY(80deg) scale(0.86); }
   60% { opacity: 1; transform: perspective(700px) translateY(-6px) rotateY(-6deg) scale(1.04); }
-  100% { opacity: 1; transform: none; }
+  100% { opacity: 1; transform: rotate(var(--tilt)); }
 }
-@keyframes awkCardDealRare {
-  0% { opacity: 0; transform: perspective(700px) translateY(40px) rotateY(80deg) scale(0.86); }
-  60% { opacity: 1; transform: perspective(700px) translateY(-6px) rotateY(-6deg) scale(1.05); box-shadow: 0 0 34px rgba(56, 189, 248, 0.75); }
-  100% { opacity: 1; transform: none; }
-}
+/* 전설: 한 바퀴 더 뒤집히며 들어와 탁 내려앉습니다(눌렸다 펴지는 스쿼시). */
 @keyframes awkCardDealLegend {
-  0% { opacity: 0; transform: perspective(700px) translateY(48px) rotateY(100deg) scale(0.82); filter: brightness(2.2); }
-  55% { opacity: 1; transform: perspective(700px) translateY(-10px) rotateY(-8deg) scale(1.08); box-shadow: 0 0 60px rgba(251, 191, 36, 0.95); filter: brightness(1.6); }
-  100% { opacity: 1; transform: none; filter: none; }
+  0% { opacity: 0; transform: perspective(700px) translateY(48px) rotateY(260deg) scale(0.82); }
+  55% { opacity: 1; transform: perspective(700px) translateY(-14px) rotateY(-8deg) scale(1.08); }
+  78% { transform: translateY(2px) scale(1.12, 0.9) rotate(var(--tilt)); }
+  100% { opacity: 1; transform: rotate(var(--tilt)); }
 }
 
-/* 7-4c. 선택 여운: 고른 카드는 눌렸다 튀어오르며 빛나고, 나머지는 가라앉은 뒤 창이 닫힙니다. */
+/* 7-4c. 선택 여운: 고른 카드는 눌렸다 집어 올려지고, 나머지는 바닥으로 미끄러져 사라진 뒤 창이 닫힙니다. */
 .awakening-modal-backdrop.is-exiting { pointer-events: none; animation: awkBackdropOut 0.25s cubic-bezier(0.55, 0.055, 0.675, 0.19) 0.42s forwards; }
 .is-exiting .awakening-modal { animation: awkModalOut 0.25s cubic-bezier(0.55, 0.055, 0.675, 0.19) 0.4s forwards; }
 .is-exiting .awakening-card.is-chosen { z-index: 2; animation: awkChosen 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
@@ -2860,21 +2918,21 @@ body {
 .exit-legendary.is-exiting .awakening-card.is-chosen { animation: awkChosenLegend 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 @keyframes awkChosen {
-  0% { transform: none; }
+  0% { transform: rotate(var(--tilt)); }
   22% { transform: scale(1.12, 0.88); }
-  60% { transform: translateY(-12px) scale(1.1); box-shadow: 0 0 44px rgba(251, 191, 36, 0.85); filter: brightness(1.35); }
-  100% { transform: translateY(-10px) scale(1.08); box-shadow: 0 0 36px rgba(251, 191, 36, 0.7); filter: brightness(1.25); }
+  60% { transform: translateY(-16px) scale(1.08); box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 20px 0 3px rgba(21, 17, 25, 0.6); }
+  100% { transform: translateY(-14px) scale(1.06); box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 18px 0 3px rgba(21, 17, 25, 0.6); }
 }
 @keyframes awkChosenLegend {
-  0% { transform: none; }
+  0% { transform: rotate(var(--tilt)); }
   16% { transform: scale(1.15, 0.85); }
-  45% { transform: translateY(-16px) scale(1.16) rotate(-1.5deg); box-shadow: 0 0 80px rgba(251, 191, 36, 1); filter: brightness(1.8); }
-  70% { transform: translateY(-14px) scale(1.12) rotate(1deg); }
-  100% { transform: translateY(-14px) scale(1.12); box-shadow: 0 0 56px rgba(251, 191, 36, 0.85); filter: brightness(1.4); }
+  45% { transform: translateY(-20px) scale(1.12) rotate(-3deg); box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 24px 0 3px rgba(21, 17, 25, 0.55); }
+  70% { transform: translateY(-18px) scale(1.1) rotate(2deg); }
+  100% { transform: translateY(-18px) scale(1.1); box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 22px 0 3px rgba(21, 17, 25, 0.55); }
 }
 @keyframes awkDismiss {
-  0% { opacity: 1; transform: none; }
-  100% { opacity: 0; transform: translateY(26px) scale(0.9); filter: grayscale(0.7); }
+  0% { opacity: 1; transform: rotate(var(--tilt)); }
+  100% { opacity: 0; transform: translateY(30px) rotate(calc(var(--tilt) * 4)) scale(0.92); }
 }
 @keyframes awkModalOut {
   0% { opacity: 1; transform: none; }
@@ -2886,14 +2944,16 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .is-dealing :is(.awakening-wave-tag, .awakening-modal-title, .awakening-modal-subtitle, .awakening-card, .awakening-modal-footer),
+  .is-dealing :is(.awakening-modal-title, .awakening-modal-subtitle, .awakening-card, .awakening-modal-footer),
   .is-exiting .awakening-card,
-  .is-exiting .awakening-modal { animation: none !important; }
+  .is-exiting .awakening-modal,
+  .awakening-card.rarity-legendary::before,
+  .awakening-card.rarity-legendary::after { animation: none !important; }
   .is-exiting .awakening-card.is-dismissed { opacity: 0.35; }
   .awakening-modal-backdrop.is-exiting { animation: awkBackdropOut 0.2s linear forwards; }
 }
 
-/* 7-5. 모달 하단 버튼 및 보유 골드 정보 */
+/* 7-5. 하단: 크라프트 띠 위에 크림색 골드 꼬리표·두꺼운 종이 버튼 */
 .awakening-modal-footer {
   display: flex;
   align-items: center;
@@ -2901,42 +2961,42 @@ body {
   gap: 16px;
   width: 100%;
   margin-top: 8px;
-  padding: 10px 18px;
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 14px;
+  background: #3a2c31;
+  border: 2px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #5a4537;
 }
 
 .awakening-player-gold {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 8px;
-  padding: 6px 14px;
+  gap: 7px;
+  padding: 5px 12px;
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: 0 3px 0 var(--pp-drop);
 }
 
 .awakening-player-gold .gold-icon {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .awakening-player-gold .gold-label {
-  font-size: 0.82rem;
-  color: #cbd5e1;
-  font-weight: 600;
+  font-size: 0.8rem;
+  color: #5a4537;
+  font-weight: 700;
 }
 
 .awakening-player-gold .gold-value {
   font-size: 0.95rem;
-  color: #fbbf24;
-  font-weight: 800;
-  text-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+  color: #9a5b00;
+  font-weight: 900;
 }
 
 .awakening-player-gold.insufficient .gold-value {
-  color: #f87171;
-  text-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+  color: #b3261e;
 }
 
 .awakening-footer-actions {
@@ -2945,63 +3005,68 @@ body {
   gap: 12px;
 }
 
+/* 두꺼운 종이 버튼: 누르면 그림자만큼 내려앉습니다. */
 .btn-reroll-cards {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  border: 1px solid #fcd34d;
-  color: #ffffff;
-  padding: 10px 22px;
-  border-radius: 10px;
-  font-size: 0.88rem;
-  font-weight: 800;
+  padding: 8px 16px;
+  background: #e8743b;
+  color: #fff4dc;
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-shadow: 0 1px 0 var(--pp-ink);
+  border: 3px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #f6a066, 0 4px 0 var(--pp-drop);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.4);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-reroll-cards:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 2px #f6a066, 0 6px 0 var(--pp-drop);
+}
+
+.btn-reroll-cards:active {
+  transform: translateY(4px);
+  box-shadow: inset 0 0 0 2px #f6a066, 0 0 0 var(--pp-drop);
 }
 
 .btn-reroll-cards:disabled,
 .btn-reroll-cards.disabled {
-  opacity: 0.45 !important;
   cursor: not-allowed !important;
-  filter: grayscale(0.5);
+  background: #8f8270;
+  box-shadow: inset 0 0 0 2px #a99c88, 0 4px 0 var(--pp-drop) !important;
   transform: none !important;
-  box-shadow: none !important;
-}
-
-.btn-reroll-cards:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.5);
-}
-
-.btn-reroll-cards:active {
-  transform: translateY(1px);
 }
 
 .reroll-cost-badge {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid #fde047;
-  color: #fde047;
-  padding: 2px 7px;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  padding: 1px 6px;
+  font-size: 0.76rem;
+  color: var(--pp-ink);
+  text-shadow: none;
+  background: var(--pp-cream);
+  border: 1.5px solid var(--pp-ink);
+  border-radius: 2px;
 }
 
 .btn-skip-cards {
+  padding: 8px 14px;
   background: transparent;
-  border: 1px solid #475569;
-  color: #94a3b8;
-  padding: 9px 18px;
-  border-radius: 10px;
-  font-size: 0.82rem;
+  color: #cdbda6;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 2px dashed var(--pp-kraft);
+  border-radius: 3px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-skip-cards:hover {
-  color: #e2e8f0;
-  border-color: #94a3b8;
+  color: var(--pp-cream);
+  border-style: solid;
+  border-color: var(--pp-cream);
 }
 
 /* 7-6. 아레나 좌측 상단: 뱀파이어 서바이버즈 스타일 덱 트레이 (Vampire Survivors Style Active Deck Tray) */
