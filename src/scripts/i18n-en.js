@@ -222,6 +222,7 @@ const I18N_EN = {
   '(누적)': '(total)',
   '👑 STAGE {n} 보스 돌파 특별 보상': '👑 Stage {n} boss bonus reward',
   'STAGE {phase}-{wave} 돌파 보상': 'Stage {phase}-{wave} clear reward',
+  'STAGE {phase}-{wave} 돌파!': 'STAGE {phase}-{wave} CLEAR!',
   '👑 마도서 대각성 (Greater Awakening)': '👑 Greater Awakening',
   '🔥 마도서 각성 (Grimoire Awakening)': '🔥 Grimoire Awakening',
   '강력한 페이즈 보스를 물리치고 최고위 마력이 개방되었습니다! (희귀/전설 카드 확정 출현)': 'You defeated a phase boss and unlocked supreme power! (Rare/Legendary cards guaranteed)',

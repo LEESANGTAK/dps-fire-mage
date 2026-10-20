@@ -480,7 +480,7 @@ function updateBurningLoopSound() {
   const c = state.combat;
   const effVol = getEffectiveSfxVol(0.68);
   const isDotBurning =
-    effVol > 0 &&
+    effVol > 0 && !state.monster.isDying &&
     ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0 || c.flamePatchRem > 0);
   try {
     burningLoopAudio.volume = effVol;
@@ -2052,6 +2052,71 @@ if (typeof window !== 'undefined') {
 // ==========================================
 // 8. 스테이지 설정 및 몬스터 처치 처리
 // ==========================================
+// 연출 호흡(처치 여운·카드 선택 여운) 동안 전투와 스피드런 시계만 멈춥니다. 모달 정지(isPaused)와 달리
+// 마법사 호흡·사망 잔상·골드 비행은 계속 흘러, 플레이어가 결과를 눈으로 끝까지 따라갈 수 있습니다.
+const KILL_BEAT_MS = { normal: 1200, boss: 1900, final: 2000 };
+const UNFOLD_TOAST_DELAY_MS = 1000; // 골드가 상단에 도착한 뒤 개방 안내를 띄웁니다.
+const UNFOLD_READ_MS = 3000; // 개방 안내 한 줄을 끝까지 읽을 시간
+const ENTRY_BEAT_MS = 500; // 카드 창이 닫힌 뒤 다음 몬스터가 자리 잡을 때까지
+let combatHeld = false;
+let combatHoldTimer = null;
+let killBeatTimers = [];
+
+function isCombatHeld() {
+  return combatHeld;
+}
+
+// ms를 주면 그 뒤 자동으로 풀리고, 생략하면 releaseCombatHold()까지 유지합니다.
+function holdCombat(ms) {
+  combatHeld = true;
+  if (combatHoldTimer) clearTimeout(combatHoldTimer);
+  combatHoldTimer = typeof ms === 'number' ? setTimeout(releaseCombatHold, ms) : null;
+}
+
+function releaseCombatHold() {
+  combatHeld = false;
+  if (combatHoldTimer) clearTimeout(combatHoldTimer);
+  combatHoldTimer = null;
+}
+
+function scheduleKillBeat(fn, ms) {
+  const id = setTimeout(() => {
+    killBeatTimers = killBeatTimers.filter((t) => t !== id);
+    fn();
+  }, ms);
+  killBeatTimers.push(id);
+}
+
+function cancelKillBeat() {
+  killBeatTimers.forEach((id) => clearTimeout(id));
+  killBeatTimers = [];
+  releaseCombatHold();
+}
+
+// 처치 순간 시전 중이던 주문을 거둬, 마법사가 빈 자리에 헛손질하지 않고 숨을 고르게 합니다.
+function settleMageForKillBeat() {
+  const c = state.combat;
+  c.castingSkill = null;
+  c.castRemaining = 0;
+  if (typeof clearQueuedSkill === 'function') clearQueuedSkill();
+  updateCastingLoopSound();
+}
+
+// 스테이지 돌파 도장: 처치 직후 한 번 '쾅' 찍혀 이번 승리를 감정적으로 매듭짓습니다.
+function spawnStageClearStamp(stageNum, isBoss) {
+  const arena = document.getElementById('combat-arena');
+  if (!arena || typeof arena.insertAdjacentHTML !== 'function') return;
+  const old = arena.querySelector('.clear-stamp');
+  if (old) old.remove();
+  const phase = Math.floor((stageNum - 1) / 5) + 1;
+  const wave = ((stageNum - 1) % 5) + 1;
+  const text = isBoss ? tr('👑 보스 격파!') : tr('STAGE {phase}-{wave} 돌파!', { phase, wave });
+  arena.insertAdjacentHTML('beforeend', `<div class="clear-stamp${isBoss ? ' boss' : ''}" aria-hidden="true"><span>${text}</span></div>`);
+  const stamp = arena.querySelector('.clear-stamp');
+  if (!stamp) return;
+  stamp.addEventListener('animationend', () => stamp.remove(), { once: true });
+  setTimeout(() => stamp.isConnected && stamp.remove(), isBoss ? 2200 : 1600);
+}
 // 모든 주문의 재사용 대기시간을 비우고 불꽃 작렬 충전을 가득 채웁니다. 대기 중이던 버튼만 준비 완료 번쩍임을 보여줍니다.
 function resetSpellCooldowns() {
   const c = state.combat;
@@ -2164,11 +2229,6 @@ function onMonsterKilled() {
   if (isFirstClear) {
     state.highestClearedStage = state.currentStage;
     totalGold += data.firstBonus;
-
-    if (data.isPhaseBoss) {
-      spawnFloatingText(tr('👑 보스 격파!'), 'fct-proc', -60);
-      playSound('proc');
-    }
   }
 
   state.gold += totalGold;
@@ -2191,7 +2251,14 @@ function onMonsterKilled() {
     }
   }
 
-  checkAndTriggerUnfolds(false);
+  // 처치 여운: 전투·시계를 멈추고 사망 연출 → 돌파 도장 → 골드 흡수 → (개방 안내) → 보상 창 순으로 한 박자씩 보여 줍니다.
+  holdCombat();
+  settleMageForKillBeat();
+  const announcements = checkAndTriggerUnfolds(false);
+  scheduleKillBeat(() => {
+    spawnStageClearStamp(state.currentStage, data.isPhaseBoss);
+    if (data.isPhaseBoss) playSound('proc');
+  }, 140);
 
   // 골드는 상단 배너(#target-reward)에서 #pill-gold로 곡선 비행 흡수!
   spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
@@ -2215,8 +2282,7 @@ function onMonsterKilled() {
   playtestTelemetry.onStageDefeat(state.currentStage);
 
   if (isFinalBossKill) {
-    // 최종 보스 대폭발 & 드라마틱 여운 (Breathing Room)
-    state.isPaused = true;
+    // 최종 보스 대폭발 & 드라마틱 여운: 결과창 전까지 소각 잔상이 멈추지 않고 끝까지 타오르게 합니다.
     playSound('proc');
     spawnFloatingText(
       isFirstFinalBossKill ? tr('👑 {boss} 최초 토벌!', { boss: FINAL_BOSS.title }) : tr('👑 {boss} 토벌 완료!', { boss: FINAL_BOSS.title }),
@@ -2225,30 +2291,39 @@ function onMonsterKilled() {
       { isBig: true }
     );
 
-    // 1.3초간 보스 파괴 연출과 진동 여운을 감상할 충분한 호흡을 둔 뒤 스피드런 결과 모달 개방!
-    setTimeout(() => {
+    scheduleKillBeat(() => {
+      state.isPaused = true;
+      releaseCombatHold();
       openVictoryModal(isFirstFinalBossKill);
-    }, 1300);
+    }, KILL_BEAT_MS.final);
 
     saveGame();
     return;
   }
 
-  // 웨이브 클리어 ➔ 0.6초 피격/사망 여운 후 마도서 각성 3지선다 카드 선택 트리거!
+  // 웨이브 클리어 ➔ 사망·골드 여운(보스는 더 길게) ➔ 첫 처치라면 개방 안내를 읽을 시간 ➔ 마도서 각성 3지선다
+  let beatMs = data.isPhaseBoss ? KILL_BEAT_MS.boss : KILL_BEAT_MS.normal;
+  if (announcements.length) {
+    const [title, desc] = announcements[0];
+    scheduleKillBeat(() => showUnfoldToast(title, desc), UNFOLD_TOAST_DELAY_MS);
+    beatMs = Math.max(beatMs, UNFOLD_TOAST_DELAY_MS + UNFOLD_READ_MS);
+  }
   const clearedStage = state.currentStage;
-  setTimeout(() => {
+  scheduleKillBeat(() => {
+    hideUnfoldToast();
     triggerAwakeningSelection(clearedStage, data.isPhaseBoss, () => {
       loadStage(clearedStage + 1);
       const nextData = getStageData(state.currentStage);
-      spawnFloatingText(
+      respawnMonsterPop();
+      // 각성 획득 문구가 먼저 읽히도록 진입 안내는 반 박자 늦춥니다.
+      setTimeout(() => spawnFloatingText(
         nextData.isPhaseBoss ? tr('👑 보스 구역 자동 진입!') : tr('🚀 다음 도전 자동 진입!'),
         'fct-proc',
         -50
-      );
-      respawnMonsterPop();
+      ), ENTRY_BEAT_MS);
       saveGame();
     });
-  }, 600);
+  }, beatMs);
   saveGame();
 }
 
@@ -2636,6 +2711,7 @@ function fireSpellProjectile(type, baseMult, isCombustingSnapshot = false) {
 }
 
 function triggerSkill(skillKey, isManual = false) {
+  if (typeof isCombatHeld === 'function' && isCombatHeld()) return false;
   const stats = getPlayerStats();
   const c = state.combat;
 
@@ -3119,9 +3195,14 @@ function showUnfoldToast(title, desc) {
   toastEl.classList.add('toast-pop');
 
   if (unfoldToastTimer) clearTimeout(unfoldToastTimer);
-  unfoldToastTimer = setTimeout(() => {
-    toastEl.classList.add('hidden');
-  }, 3200);
+  unfoldToastTimer = setTimeout(hideUnfoldToast, 3200);
+}
+
+function hideUnfoldToast() {
+  if (unfoldToastTimer) clearTimeout(unfoldToastTimer);
+  unfoldToastTimer = null;
+  const toastEl = document.getElementById('unfold-toast');
+  if (toastEl) toastEl.classList.add('hidden');
 }
 
 // 자동 영창 획득: 모달이 닫힌 직후 주문 칸마다 AUTO 배지가 왼쪽부터 차례로 튀어나옵니다.
@@ -3232,16 +3313,18 @@ function triggerUnfoldPop(elId) {
   el.classList.add('unfold-pop-anim');
 }
 
+// 새로 열린 시스템의 안내 문구 목록([제목, 설명])을 돌려줍니다. 띄우는 시점은 호출한 쪽(처치 여운)이 정합니다.
 function checkAndTriggerUnfolds(silent = false) {
   const u = state.unfolded;
   let changed = false;
+  const announcements = [];
 
   // 1. 첫 몬스터 처치 또는 첫 골드 획득 시: 마도서 각성 시스템 개방 안내
   if (!u.awakening && (state.gold >= 4 || state.highestClearedStage >= 1)) {
     u.awakening = true;
     changed = true;
     if (!silent) {
-      showUnfoldToast(tr('🔥 마도서 각성 시스템 개방!'), tr('웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!'));
+      announcements.push([tr('🔥 마도서 각성 시스템 개방!'), tr('웨이브를 돌파할 때마다 3장의 각성 카드를 선택하여 나만의 빌드를 완성하세요!')]);
     }
   }
 
@@ -3267,6 +3350,7 @@ function checkAndTriggerUnfolds(silent = false) {
   if (changed && !silent) {
     saveGame();
   }
+  return announcements;
 }
 
 function applyUnfoldedVisibility() {
@@ -3747,8 +3831,28 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// 각성 창 연출 타이밍(ms). 카드는 한 장씩 펼쳐지고, 다 펼쳐지기 전 클릭(전투 중 연타의 잔여 입력)은 받지 않습니다.
+const AWAKENING_DEAL = { first: 320, step: 140, lock: 900, rerollFirst: 40, rerollLock: 450, reducedLock: 250 };
+const AWAKENING_EXIT_MS = { normal: 650, legendary: 950, reduced: 200 };
+let awakeningModalOpen = false;
+let awakeningExiting = false;
+let awakeningInputLockUntil = 0;
+
+function prefersReducedMotion() {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function lockAwakeningInput(ms) {
+  awakeningInputLockUntil = performance.now() + (prefersReducedMotion() ? AWAKENING_DEAL.reducedLock : ms);
+}
+
+function isAwakeningInputLocked() {
+  return awakeningExiting || performance.now() < awakeningInputLockUntil;
+}
+
 function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = null) {
   if (!deckManager) {
+    releaseCombatHold();
     if (typeof onComplete === 'function') onComplete();
     return;
   }
@@ -3756,6 +3860,8 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   awakeningOnComplete = onComplete;
   isCurrentAwakeningBoss = isBossWave;
   state.isPaused = true;
+  awakeningModalOpen = true;
+  awakeningExiting = false;
 
   const modal = document.getElementById('awakening-modal-backdrop');
   const tagEl = document.getElementById('awakening-wave-tag');
@@ -3782,21 +3888,26 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   const choices = deckManager.drawChoices(getAwakeningChoiceCount(isBossWave), isBossWave, state);
   renderAwakeningChoicesUI(choices, isBossWave);
   updateRerollButtonUI();
+  lockAwakeningInput(AWAKENING_DEAL.lock);
 
   if (modal) {
-    modal.classList.remove('hidden');
+    modal.classList.remove('hidden', 'is-exiting');
+    // 다시 열 때도 펼침 연출이 처음부터 재생되도록 애니메이션을 다시 겁니다.
+    modal.classList.remove('is-dealing');
+    void modal.offsetWidth;
+    modal.classList.add('is-dealing');
     playSound('proc');
     setBgmBehindWall(true);
   }
 }
 
-function renderAwakeningChoicesUI(choices, isBossWave = false) {
+function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AWAKENING_DEAL.first) {
   const container = document.getElementById('awakening-cards-container');
   if (!container || !deckManager) return;
 
   const activeDeck = deckManager.getActiveDeck();
 
-  container.innerHTML = choices.map((card) => {
+  container.innerHTML = choices.map((card, i) => {
     const rarityClass = `rarity-${card.rarity}`;
     const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: tr('일반') };
     const currentCount = activeDeck[card.id] || 0;
@@ -3812,7 +3923,7 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
     }
 
     return `
-      <div class="awakening-card ${rarityClass}" data-card-id="${card.id}">
+      <div class="awakening-card ${rarityClass}" data-card-id="${card.id}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
         <div class="card-rarity-badge">${rarityMeta.name}</div>
         ${stackBadge}
         <div class="card-icon">${paperCardIconHTML(card)}</div>
@@ -3825,6 +3936,7 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
 
   container.querySelectorAll('.awakening-card').forEach((cardEl) => {
     cardEl.addEventListener('click', () => {
+      if (isAwakeningInputLocked()) return;
       const cardId = cardEl.getAttribute('data-card-id');
       if (cardId) selectAwakeningCard(cardId);
     });
@@ -3832,34 +3944,72 @@ function renderAwakeningChoicesUI(choices, isBossWave = false) {
 }
 
 function selectAwakeningCard(cardId) {
-  if (!deckManager) return;
+  if (!deckManager || awakeningExiting) return;
   const success = deckManager.selectCard(cardId, state);
   if (!success) return;
 
   const card = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find((c) => c.id === cardId) : null;
   playSound('fireball_impact');
-  if (card) {
-    spawnFloatingText(tr('✨ [{card}] 각성 획득!', { card: cardText(card, 'title') }), 'fct-proc', -60, { isBig: true });
-  }
-
-  if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
-  else if (cardId === 'spell_meteor') triggerUnfoldPop('skill-3');
-  else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
-  else if (cardId === 'spell_flame_patch') triggerUnfoldPop('skill-6');
-  else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();
-
+  // 카드 효과(주문 해금·덱 반영)는 고르는 순간 바로 적용하고, 눈에 보이는 공개 연출만 창이 닫힌 뒤로 미룹니다.
   updateSkillActionBarVisibility();
-  if (cardId === 'util_auto_grimoire') triggerAutoGrimoireUnfold();
-  closeAwakeningModal();
-  if (cardId === 'spell_meteor') startMeteorComboCoach();
   renderDeckStripUI();
   updateLiveHUD();
 
-  if (typeof awakeningOnComplete === 'function') {
-    const cb = awakeningOnComplete;
-    awakeningOnComplete = null;
-    cb();
+  const reveal = () => {
+    if (card) {
+      spawnFloatingText(tr('✨ [{card}] 각성 획득!', { card: cardText(card, 'title') }), 'fct-proc', -60, { isBig: true });
+    }
+    if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
+    else if (cardId === 'spell_meteor') triggerUnfoldPop('skill-3');
+    else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
+    else if (cardId === 'spell_flame_patch') triggerUnfoldPop('skill-6');
+    else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();
+    if (cardId === 'util_auto_grimoire') triggerAutoGrimoireUnfold();
+    if (card && card.rarity === 'legendary') {
+      triggerArenaShake('md');
+      const caster = getCasterCenter();
+      spawnParticles(caster.x, caster.y, 22, '#fef08a', '#ea580c', 1.5);
+    }
+  };
+  const cb = typeof awakeningOnComplete === 'function' ? awakeningOnComplete : null;
+  awakeningOnComplete = null;
+
+  const finish = () => {
+    closeAwakeningModal();
+    reveal();
+    if (cardId === 'spell_meteor') startMeteorComboCoach();
+    if (cb) cb();
+  };
+
+  if (!awakeningModalOpen) {
+    finish();
+    return;
   }
+  // 고른 카드가 빛나며 남고 나머지는 물러난 뒤 창이 닫힙니다. 그동안 전투는 멈춘 채로 둡니다.
+  holdCombat();
+  playAwakeningExit(cardId, card && card.rarity === 'legendary', () => {
+    finish();
+    holdCombat(ENTRY_BEAT_MS);
+  });
+}
+
+function playAwakeningExit(cardId, isLegendary, done) {
+  awakeningExiting = true;
+  const modal = document.getElementById('awakening-modal-backdrop');
+  const container = document.getElementById('awakening-cards-container');
+  if (container && typeof container.querySelectorAll === 'function') {
+    container.querySelectorAll('.awakening-card').forEach((el) => {
+      const chosen = el.getAttribute('data-card-id') === cardId;
+      el.classList.add(chosen ? 'is-chosen' : 'is-dismissed');
+    });
+  }
+  if (modal) {
+    modal.classList.toggle('exit-legendary', Boolean(isLegendary));
+    modal.classList.add('is-exiting');
+  }
+  if (isLegendary) playSound('proc', 1.15);
+  const ms = prefersReducedMotion() ? AWAKENING_EXIT_MS.reduced : (isLegendary ? AWAKENING_EXIT_MS.legendary : AWAKENING_EXIT_MS.normal);
+  setTimeout(done, ms);
 }
 
 // 리롤 기준 비용 = 방금 처치한 스테이지의 기본 처치 골드 (최소 10G) × 업화 단계 배율
@@ -3894,7 +4044,7 @@ function updateRerollButtonUI() {
 }
 
 function handleAwakeningReroll() {
-  if (!deckManager) return;
+  if (!deckManager || isAwakeningInputLocked()) return;
   const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost(), getAwakeningChoiceCount(isCurrentAwakeningBoss));
   if (!result.success) {
     spawnFloatingText(tr('💰 리롤에 필요한 골드가 부족합니다!'), 'fct-normal', -40);
@@ -3905,7 +4055,8 @@ function handleAwakeningReroll() {
   triggerArenaShake('sm');
   updateLiveHUD();
   updateRerollButtonUI();
-  renderAwakeningChoicesUI(result.choices, isCurrentAwakeningBoss);
+  renderAwakeningChoicesUI(result.choices, isCurrentAwakeningBoss, AWAKENING_DEAL.rerollFirst);
+  lockAwakeningInput(AWAKENING_DEAL.rerollLock);
 
   const container = document.getElementById('awakening-cards-container');
   if (container) {
@@ -3917,7 +4068,12 @@ function handleAwakeningReroll() {
 
 function closeAwakeningModal() {
   const modal = document.getElementById('awakening-modal-backdrop');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('is-dealing', 'is-exiting');
+  }
+  awakeningModalOpen = false;
+  awakeningExiting = false;
   state.isPaused = false;
   setBgmBehindWall(false);
 }
@@ -3931,7 +4087,9 @@ function initAwakeningModalEvents() {
   const skipBtn = document.getElementById('btn-skip-cards');
   if (skipBtn) {
     skipBtn.addEventListener('click', () => {
+      if (isAwakeningInputLocked()) return;
       closeAwakeningModal();
+      holdCombat(ENTRY_BEAT_MS);
       if (typeof awakeningOnComplete === 'function') {
         const cb = awakeningOnComplete;
         awakeningOnComplete = null;
@@ -4256,6 +4414,7 @@ function closeVictoryModal() {
 
 function restartSpeedrunRun() {
   closeVictoryModal();
+  cancelKillBeat();
   state.isPaused = false;
 
   // 1. 스피드런 및 스테이지 진행도 완전 초기화 (단계별 최단시간은 meta.bestTimes에 보존)
@@ -4384,6 +4543,18 @@ function gameLoop(nowMs) {
     // 단, 캔버스 파티클/VFX는 부드럽게 유지하여 시각적 생동감 보존
     try {
       updateAndDrawVfx(dt);
+    } catch (e) {}
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  if (isCombatHeld()) {
+    // 연출 호흡: 전투·쿨다운·스피드런 시계는 멈추고, 마법사 호흡과 사망 잔상·골드 비행은 계속 흐릅니다.
+    try {
+      updateBurningLoopSound();
+      updateMageMotion(dt, false);
+      updateAndDrawVfx(dt);
+      updateLiveHUD();
     } catch (e) {}
     requestAnimationFrame(gameLoop);
     return;

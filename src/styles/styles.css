@@ -1713,6 +1713,54 @@ body {
   color: #f8fafc;
 }
 
+/* 스테이지 돌파 도장: 크게 떨어져 '쾅' 찍힌 뒤 잠시 머물고 위로 사라집니다(보스는 더 크고 길게). */
+.clear-stamp {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  z-index: 40;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.clear-stamp span {
+  display: inline-block;
+  padding: 6px 18px 7px;
+  border: 3px solid #fde047;
+  border-radius: 8px;
+  background: rgba(124, 45, 18, 0.92);
+  color: #fffbeb;
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 #431407, 0 0 12px rgba(251, 191, 36, 0.7);
+  box-shadow: 0 4px 0 #2a1208, 0 10px 26px rgba(0, 0, 0, 0.6), 0 0 26px rgba(251, 146, 60, 0.45);
+  animation: clearStampSlam 1.3s both;
+}
+.clear-stamp.boss span {
+  font-size: 2.1rem;
+  padding: 8px 24px 9px;
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, rgba(153, 27, 27, 0.95), rgba(120, 53, 15, 0.95));
+  animation-duration: 1.9s;
+}
+@keyframes clearStampSlam {
+  0% { opacity: 0; transform: rotate(-4deg) scale(2.3); animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+  16% { opacity: 1; transform: rotate(-4deg) scale(0.9, 1.08); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  28% { transform: rotate(-4deg) scale(1.06, 0.95); }
+  38% { transform: rotate(-4deg) scale(1); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  80% { opacity: 1; transform: rotate(-4deg) scale(1); animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+  100% { opacity: 0; transform: rotate(-4deg) translateY(-18px) scale(0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clear-stamp span { animation: clearStampFade 1.3s linear both; }
+  .clear-stamp.boss span { animation-duration: 1.9s; }
+}
+@keyframes clearStampFade {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* ==========================================
    10. Candy Crush Style Curved Gold Coin Flight & Absorption
    ========================================== */
@@ -2836,6 +2884,86 @@ body {
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
+}
+
+/* 7-4b. 각성 창 펼침: 머리글 → 카드 한 장씩(뒤집히며 착지) → 하단 순으로 시선을 이끕니다.
+   채움 모드는 backwards만 써서, 착지 후에는 hover 변형이 그대로 살아 있게 합니다. */
+.is-dealing .awakening-wave-tag { animation: awkDrop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s backwards; }
+.is-dealing .awakening-modal-title { animation: awkDrop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) 0.14s backwards; }
+.is-dealing .awakening-modal-subtitle { animation: awkFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.22s backwards; }
+.is-dealing .awakening-card { animation: awkCardDeal 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) var(--deal-delay, 0ms) backwards; }
+.is-dealing .awakening-card.rarity-rare { animation-name: awkCardDealRare; }
+.is-dealing .awakening-card.rarity-legendary {
+  animation: awkCardDealLegend 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) var(--deal-delay, 0ms) backwards,
+    cardLegendaryPulse 2.8s calc(var(--deal-delay, 0ms) + 0.62s) infinite alternate;
+}
+.is-dealing .awakening-modal-footer { animation: awkFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.78s backwards; }
+
+@keyframes awkDrop {
+  0% { opacity: 0; transform: translateY(-14px) scale(0.92); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes awkFadeUp {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes awkCardDeal {
+  0% { opacity: 0; transform: perspective(700px) translateY(40px) rotateY(80deg) scale(0.86); }
+  60% { opacity: 1; transform: perspective(700px) translateY(-6px) rotateY(-6deg) scale(1.04); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes awkCardDealRare {
+  0% { opacity: 0; transform: perspective(700px) translateY(40px) rotateY(80deg) scale(0.86); }
+  60% { opacity: 1; transform: perspective(700px) translateY(-6px) rotateY(-6deg) scale(1.05); box-shadow: 0 0 34px rgba(56, 189, 248, 0.75); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes awkCardDealLegend {
+  0% { opacity: 0; transform: perspective(700px) translateY(48px) rotateY(100deg) scale(0.82); filter: brightness(2.2); }
+  55% { opacity: 1; transform: perspective(700px) translateY(-10px) rotateY(-8deg) scale(1.08); box-shadow: 0 0 60px rgba(251, 191, 36, 0.95); filter: brightness(1.6); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+/* 7-4c. 선택 여운: 고른 카드는 눌렸다 튀어오르며 빛나고, 나머지는 가라앉은 뒤 창이 닫힙니다. */
+.awakening-modal-backdrop.is-exiting { pointer-events: none; animation: awkBackdropOut 0.25s cubic-bezier(0.55, 0.055, 0.675, 0.19) 0.42s forwards; }
+.is-exiting .awakening-modal { animation: awkModalOut 0.25s cubic-bezier(0.55, 0.055, 0.675, 0.19) 0.4s forwards; }
+.is-exiting .awakening-card.is-chosen { z-index: 2; animation: awkChosen 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.is-exiting .awakening-card.is-dismissed { animation: awkDismiss 0.3s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
+.awakening-modal-backdrop.is-exiting.exit-legendary { animation-delay: 0.72s; }
+.exit-legendary.is-exiting .awakening-modal { animation-delay: 0.7s; }
+.exit-legendary.is-exiting .awakening-card.is-chosen { animation: awkChosenLegend 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes awkChosen {
+  0% { transform: none; }
+  22% { transform: scale(1.12, 0.88); }
+  60% { transform: translateY(-12px) scale(1.1); box-shadow: 0 0 44px rgba(251, 191, 36, 0.85); filter: brightness(1.35); }
+  100% { transform: translateY(-10px) scale(1.08); box-shadow: 0 0 36px rgba(251, 191, 36, 0.7); filter: brightness(1.25); }
+}
+@keyframes awkChosenLegend {
+  0% { transform: none; }
+  16% { transform: scale(1.15, 0.85); }
+  45% { transform: translateY(-16px) scale(1.16) rotate(-1.5deg); box-shadow: 0 0 80px rgba(251, 191, 36, 1); filter: brightness(1.8); }
+  70% { transform: translateY(-14px) scale(1.12) rotate(1deg); }
+  100% { transform: translateY(-14px) scale(1.12); box-shadow: 0 0 56px rgba(251, 191, 36, 0.85); filter: brightness(1.4); }
+}
+@keyframes awkDismiss {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(26px) scale(0.9); filter: grayscale(0.7); }
+}
+@keyframes awkModalOut {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: scale(0.96) translateY(-8px); }
+}
+@keyframes awkBackdropOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-dealing :is(.awakening-wave-tag, .awakening-modal-title, .awakening-modal-subtitle, .awakening-card, .awakening-modal-footer),
+  .is-exiting .awakening-card,
+  .is-exiting .awakening-modal { animation: none !important; }
+  .is-exiting .awakening-card.is-dismissed { opacity: 0.35; }
+  .awakening-modal-backdrop.is-exiting { animation: awkBackdropOut 0.2s linear forwards; }
 }
 
 /* 7-5. 모달 하단 버튼 및 보유 골드 정보 */
