@@ -597,9 +597,11 @@ test('Step 21: 정수(Essence) 재화 및 관련 UI(상단 알약, 마법 부여
   assert.ok(!html.includes('id="tab-btn-infusion"'), '우측 탭에 #tab-btn-infusion이 존재하지 않아야 합니다.');
   assert.ok(!html.includes('id="pane-infusion"'), '우측 패널에 #pane-infusion이 존재하지 않아야 합니다.');
 
-  // 2. target-reward가 오직 골드(G)만 표기하고 정수를 붙이지 않는지 검증
+  // 2. 스테이지·보상 배너는 제거되었습니다(진행은 가운데 진척도, 골드는 몬스터에서 재화 UI로 비행).
   assert.ok(!gameSource.includes("rewardText += ` · 🔹 ${fmt(firstEss)}`"), '스테이지 보상에 🔹 정수가 표시되지 않아야 합니다.');
-  assert.ok(gameSource.includes("document.getElementById('target-reward').textContent = `💰 ${fmt(dispGold)} G`;"), '스테이지 보상은 오직 골드(G)만 표시해야 합니다.');
+  assert.ok(!html.includes('id="arena-stage-banner"') && !html.includes('id="target-reward"'), '스테이지·보상 배너가 남아 있으면 안 됩니다.');
+  assert.ok(!gameSource.includes("getElementById('target-reward')") && !gameSource.includes("getElementById('arena-stage-banner')"), '제거된 배너를 참조하는 코드가 남아 있으면 안 됩니다.');
+  assert.ok(gameSource.includes("document.getElementById('dummy-emoji') || document.getElementById('dummy-avatar')"), '골드 코인은 몬스터에서 출발해야 합니다.');
 
   // 3. 연쇄 몰열(crit_chain_streak) 카드가 완전히 배제되었는지 검증
   assert.ok(!gameSource.includes('chainHotStreak'), 'game.js에 연쇄 몰열(chainHotStreak) 로직이 남아있지 않아야 합니다.');

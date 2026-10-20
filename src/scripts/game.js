@@ -874,17 +874,9 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
 
   const meteorRadius = 51 * scale;
 
-  // 첨부 이미지 기준: 상단 중앙 스테이지 배너(#arena-stage-banner)의 'STAGE 1-1' 바로 아래 위치에서 출현!
-  const arenaEl = document.getElementById('combat-arena');
-  const bannerEl = document.getElementById('arena-stage-banner');
-  let startX = target.x - 185 * scale + offsetX;
-  let startY = Math.max(155, target.y - 195 * scale);
-  if (arenaEl && bannerEl) {
-    const arenaRect = arenaEl.getBoundingClientRect();
-    const bannerRect = bannerEl.getBoundingClientRect();
-    startX = bannerRect.left - arenaRect.left + bannerRect.width * 0.28 + offsetX * 0.5;
-    startY = bannerRect.bottom - arenaRect.top + 36;
-  }
+  // 전장 왼쪽 위 하늘에서 출현해 몬스터에게 비스듬히 떨어집니다(전장 기준 좌표).
+  const startX = 64 + offsetX * 0.5;
+  const startY = 88;
 
   const flyAudio = playFireballSfx('meteor_fly', scale >= 0.9 ? 0.82 : 0.6);
 
@@ -1590,24 +1582,20 @@ function triggerGoldPillPulse() {
 
 function spawnGoldCoinFlight(totalGold, isBigReward = false) {
   const layer = document.getElementById('coin-fx-layer');
-  const rewardEl = document.getElementById('target-reward');
+  const sourceEl = document.getElementById('dummy-emoji') || document.getElementById('dummy-avatar');
   const goldPillEl = document.getElementById('pill-gold') || document.getElementById('ui-gold');
 
-  if (!layer || !rewardEl || !goldPillEl) {
+  if (!layer || !sourceEl || !goldPillEl) {
     state.pendingCoinGold = 0;
     return;
   }
 
-  // 출발지 배지 팝 애니메이션
-  rewardEl.classList.remove('reward-pop');
-  void rewardEl.offsetWidth;
-  rewardEl.classList.add('reward-pop');
-
-  const startRect = rewardEl.getBoundingClientRect();
+  // 쓰러진 몬스터의 몸통 한가운데에서 튀어나와 상단 골드 재화로 날아갑니다.
+  const startRect = sourceEl.getBoundingClientRect();
   const endRect = goldPillEl.getBoundingClientRect();
 
   const baseStartX = startRect.left + startRect.width * 0.5;
-  const baseStartY = startRect.top + startRect.height * 0.5;
+  const baseStartY = startRect.top + startRect.height * 0.55;
   const endX = endRect.left + endRect.width * 0.5;
   const endY = endRect.top + endRect.height * 0.5;
 
@@ -1626,18 +1614,18 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
     el.style.opacity = '0';
     layer.appendChild(el);
 
-    const startX = baseStartX + (Math.random() * 14 - 7);
-    const startY = baseStartY + (Math.random() * 8 - 4);
+    const startX = baseStartX + (Math.random() * 20 - 10);
+    const startY = baseStartY + (Math.random() * 16 - 8);
 
-    // 캔디크러시 스타일 우아한 3차 베지어 곡선(Cubic Bezier Curve) 제어점 생성
-    // 동전이 하나씩 튀어나올 때마다 살짝 아래·외곽으로 둥글게 부풀어 올랐다가 호를 그리며 상단 골드 UI로 빨려 들어감
+    // 캔디크러시 스타일 3차 베지어 곡선: 몬스터 몸에서 위·양옆으로 톡 튀어 흩어졌다가,
+    // 호를 그리며 상단 골드 UI로 빨려 들어갑니다.
     const curveSide = i % 2 === 0 ? -1 : 1;
-    const spreadFactor = 1 + (i % 3) * 0.28;
-    const cp1X = startX + curveSide * (68 * spreadFactor) + (Math.random() * 24 - 12);
-    const cp1Y = startY + 54 + (i % 3) * 20 + Math.random() * 14;
+    const spreadFactor = 1 + (i % 3) * 0.3;
+    const cp1X = startX + curveSide * (58 * spreadFactor) + (Math.random() * 24 - 12);
+    const cp1Y = startY - 70 - (i % 3) * 22 - Math.random() * 18;
 
-    const cp2X = (startX + endX) * 0.5 + curveSide * (52 * spreadFactor) + (Math.random() * 18 - 9);
-    const cp2Y = Math.min(startY, endY) - 28 - (i % 2) * 18;
+    const cp2X = (startX + endX) * 0.5 + curveSide * (40 * spreadFactor) + (Math.random() * 18 - 9);
+    const cp2Y = Math.min(startY, endY) - 24 - (i % 2) * 18;
 
     flyingCoins.push({
       el,
@@ -1649,9 +1637,11 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
       cp2Y,
       endX: endX + (Math.random() * 10 - 5),
       endY: endY + (Math.random() * 6 - 3),
-      delay: i * 0.058, // 하나씩 다다다닥 튀어나오는 시간차(58ms)
+      // 몬스터가 쓰러지는 순간을 본 뒤 하나씩 다다다닥 튀어나옵니다(개수와 상관없이 0.36초 안에 모두 출발).
+      delay: 0.08 + i * (0.36 / coinCount),
       life: 0,
-      duration: 0.58 + (i % 3) * 0.04,
+      // 몬스터 → 상단 재화까지 먼 거리라 눈으로 따라갈 수 있게 조금 길게, 처치 여운(1.2초) 안에 모두 도착합니다.
+      duration: 0.7 + (i % 3) * 0.04,
       share,
       started: false
     });
@@ -2257,7 +2247,7 @@ function onMonsterKilled() {
     if (data.isPhaseBoss) playSound('proc');
   }, 140);
 
-  // 골드는 상단 배너(#target-reward)에서 #pill-gold로 곡선 비행 흡수!
+  // 골드는 쓰러진 몬스터에서 튀어나와 상단 골드 재화(#pill-gold)로 곡선 비행 흡수!
   spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
 
   const pos = getTargetPos();
@@ -3449,18 +3439,10 @@ function updateAutoCastMagicCircle() {
 
 function updateStageUI() {
   const data = getStageData(state.currentStage);
-  const isCleared = state.currentStage <= state.highestClearedStage;
   const monsterFrame = document.getElementById('monster-frame');
   monsterFrame.classList.toggle('boss-frame', data.isPhaseBoss);
 
-  const stageBanner = document.getElementById('arena-stage-banner');
-  if (stageBanner) {
-    stageBanner.classList.toggle('boss-banner', data.isPhaseBoss);
-  }
-
-  document.getElementById('target-stage-tag').textContent = data.isPhaseBoss
-    ? `👑 BOSS [STAGE ${data.phase}-${data.stepInPhase}]`
-    : `STAGE ${data.phase}-${data.stepInPhase}`;
+  // 스테이지 진행은 가운데 진척도 UI가 보여 줍니다. 업화 배지는 스피드런 시간 옆에 둡니다.
   if (typeof updateInfernoBadge === 'function') updateInfernoBadge();
 
   // 몬스터 이미지와 그 아래 몬스터 이름 표시
@@ -3473,9 +3455,6 @@ function updateStageUI() {
   const monsterNameLabel = document.getElementById('monster-name-label');
   monsterNameLabel.textContent = data.isPhaseBoss ? `👑 ${data.name}` : data.name;
   monsterNameLabel.classList.toggle('boss-label', data.isPhaseBoss);
-
-  const dispGold = isCleared ? data.gold : data.gold + data.firstBonus;
-  document.getElementById('target-reward').textContent = `💰 ${fmt(dispGold)} G`;
 
   renderSpeedrunTimer(state.playTimeSec);
 

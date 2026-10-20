@@ -1,15 +1,13 @@
 /* 전투 UI: 종이 테두리와 그림자만 꾸미고 상태 신호의 레이어는 유지한다. */
 :root { --paper-edge: #a88a64; --paper-ink: #241b22; --paper-label: #efe1c6; }
-/* 전장 상단의 중앙은 시간만 남기고 진행·보상 정보는 좌우로 분산한다. */
+/* 전장 상단: 가운데는 진척도(스테이지 진행), 오른쪽 위는 스피드런 시간. 왼쪽 위는 덱 아이콘 줄 자리로 비워 둡니다. */
 .combat-arena .arena-top-stage-header { top: 12px; left: 16px; right: 16px; transform: none; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: start; gap: 8px 12px; }
 .arena-top-stage-header .arena-center-mission-wrap { grid-column: 2; grid-row: 1 / span 2; justify-self: center; align-items: center; display: flex; flex-direction: column; gap: 4px; pointer-events: auto; z-index: 15; }
-.arena-top-stage-header .speedrun-stat-box { justify-self: center; align-items: center; padding: 4px 10px; border: 1px solid #8b7055; border-radius: 3px; background: #241b22ed; box-shadow: 0 2px 0 #151119; }
-.arena-top-stage-header .speedrun-stat-box .dps-label { font-size: .62rem; }
-.arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 1; justify-self: start; max-width: 100%; padding: 7px 10px; gap: 8px; }
-.arena-top-stage-header .monster-stage-mini { font-size: .88rem; }
-.arena-top-stage-header .monster-reward { font-size: .8rem; padding: 3px 6px; }
-/* 보스 기믹 배지는 왼쪽 덱 아이콘 줄(.deck-strip-container, 고정 위치)과 겹치지 않도록 비어 있는 오른쪽 위에 둡니다. */
-.arena-top-stage-header .boss-gimmick-badge { grid-column: 3; grid-row: 1; justify-self: end; max-width: 100%; white-space: normal; }
+.arena-top-stage-header .speedrun-stat-box { grid-column: 3; grid-row: 1; justify-self: end; align-items: center; padding: 4px 10px; border: 1px solid #8b7055; border-radius: 3px; background: #241b22ed; box-shadow: 0 2px 0 #151119; }
+.arena-top-stage-header .speedrun-stat-box .dps-label { font-size: .62rem; display: inline-flex; align-items: center; gap: 4px; }
+.arena-top-stage-header .speedrun-stat-box .inferno-badge { font-size: .6rem; padding: 0 5px; }
+/* 보스 기믹 배지는 스피드런 시간 바로 아래(오른쪽)에 둡니다. */
+.arena-top-stage-header .boss-gimmick-badge { grid-column: 3; grid-row: 2; justify-self: end; max-width: 100%; white-space: normal; }
 
 /* 최종 보스 세계 멸망 저지 진척도 트래커 (Doom Tracker) */
 .doom-tracker { position: relative; width: 236px; padding: 5px 10px 7px 10px; background: #241b22ed; border: 1px solid #8b7055; border-radius: 4px; box-shadow: 0 2px 0 #151119; cursor: pointer; user-select: none; transition: border-color .16s ease-out, box-shadow .16s ease-out; }
@@ -49,9 +47,8 @@
 @media (max-width: 640px) {
   .combat-arena .arena-top-stage-header { left: 10px; right: 10px; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px 10px; }
   .arena-top-stage-header .arena-center-mission-wrap { grid-column: 1 / -1; grid-row: 1; flex-direction: row; justify-content: center; width: 100%; gap: 6px; }
-  .arena-top-stage-header .speedrun-stat-box { padding: 3px 8px; }
+  .arena-top-stage-header .speedrun-stat-box { grid-column: 2; grid-row: 2; padding: 3px 8px; }
   .doom-tracker { width: 180px; padding: 3px 6px; }
-  .arena-top-stage-header .arena-stage-reward-banner { grid-column: 1; grid-row: 2; gap: 5px; padding: 6px; flex-wrap: wrap; }
   .arena-top-stage-header .boss-gimmick-badge { grid-column: 1 / -1; grid-row: 3; justify-self: center; font-size: .6rem; }
 }
 .top-bar { background: #30282c; border-bottom: 2px solid #8b7055; box-shadow: 0 3px 0 #17131b; }
@@ -74,7 +71,7 @@
 .paper-ui-icon[data-paper-icon='crit'] { background-position: 50% 100%; }
 .paper-ui-icon[data-paper-icon='haste'] { background-position: 100% 100%; }
 .combat-arena .action-bar { background: #30262de8; border: 2px solid #a88a64; border-radius: 5px; box-shadow: 0 3px 0 #17131b, 0 5px 7px #0005; }
-.combat-arena .monster-name-label, .combat-arena .arena-stage-reward-banner { background: #241b22ed; border: 1px solid #8b7055; border-radius: 3px; box-shadow: 0 2px 0 #151119; }
+.combat-arena .monster-name-label { background: #241b22ed; border: 1px solid #8b7055; border-radius: 3px; box-shadow: 0 2px 0 #151119; }
 .combat-arena .monster-hp-wrap, .combat-arena .castbar-wrapper { background: #201922; border: 2px solid #b39770; border-radius: 3px; box-shadow: 0 2px 0 #17131b; }
 .combat-arena .monster-hp-wrap.boss-frame { border-color: #f3be63; box-shadow: 0 2px 0 #17131b, 0 0 12px #ef97314d; }
 .combat-arena .hp-bar-fill { background: #b84d40; }
