@@ -44,23 +44,33 @@ assert.ok(parseFloat(actor.style.height)>150,'모바일에서도 보스 실루�
 assert.equal(actor.style.bottom,'0px');
 console.log('몬스터 성장·보스 크기·화면 상한·이미지·슬라임 복원 검증 통과');
 
-// 불장판: 사진풍 원화 대신 종이 불꽃을 직접 그리며, 빛 번짐 합성 없이 호출자의 소멸 알파만 따릅니다.
-const paint={globalAlpha:.4,globalCompositeOperation:'source-over',filter:'none',fills:[],stack:[],ys:[],
- beginPath(){},closePath(){},moveTo(x,y){this.ys.push(y);},lineTo(x,y){this.ys.push(y);},ellipse(){},stroke(){},clip(){},translate(){},transform(){},
+// 불장판: 몬스터 발밑 바닥에 눕힌 붉은 균열(프랙탈 가지). 사진풍 원화를 쓰지 않고 호출자의 소멸 알파를 넘지 않습니다.
+const paint={globalAlpha:.4,globalCompositeOperation:'source-over',filter:'none',strokes:[],stack:[],pts:[],
+ beginPath(){},closePath(){},moveTo(x,y){this.pts.push([x,y]);},lineTo(x,y){this.pts.push([x,y]);},arc(){},fill(){},translate(){},scale(){},
+ createRadialGradient(){return {addColorStop(){}};},
  save(){this.stack.push([this.globalAlpha,this.globalCompositeOperation,this.filter]);},
  restore(){[this.globalAlpha,this.globalCompositeOperation,this.filter]=this.stack.pop();},
- fill(){this.fills.push({style:this.fillStyle,alpha:this.globalAlpha,blend:this.globalCompositeOperation,filter:this.filter});},
+ stroke(){this.strokes.push({style:this.strokeStyle,alpha:this.globalAlpha,width:this.lineWidth});},
  drawImage(...args){this.draws=(this.draws||[]);this.draws.push({args,alpha:this.globalAlpha});}};
 context.paint=paint;
 assert.ok(!vm.runInContext("'flame-patch' in comicAbilityImages",context),'불장판은 사진풍 원화를 불러오지 않아야 합니다');
-vm.runInContext('drawPaperFlamePatch(paint,100,200,230,0)',context);
-assert.ok(paint.fills.length>=8*4,'바닥 위에 종이 불꽃 여러 장(테두리 그림자·주황·밑단·속불)을 세워야 합니다');
-assert.ok(paint.fills.some((f)=>f.style==='#f26a1b') && paint.fills.some((f)=>f.style==='#ffd36b'),'화상 종이 불꽃과 같은 색 문법을 써야 합니다');
-assert.ok(paint.fills.every((f)=>f.alpha===.4 && f.blend==='source-over' && f.filter==='none'),'블러·화면 합성 없이 호출자의 소멸 알파만 따라야 합니다');
+const cracks=vm.runInContext('getFlamePatchCracks()',context);
+assert.ok(cracks.length>60 && cracks.some((c)=>c.gen>=2),'중심에서 갈라져 여러 세대로 가지 치는 균열이어야 합니다');
+assert.ok(cracks.every((c)=>Math.hypot(c.x2,c.y2)<=1),'균열은 바닥 원판 밖으로 나가지 않아야 합니다');
+assert.equal(JSON.stringify(vm.runInContext('buildFlamePatchCracks()',context)),JSON.stringify(cracks),'고정 시드라 프레임마다 무늬가 떨리지 않아야 합니다');
+vm.runInContext('drawFlamePatchCracks(paint,100,200,230,0,99)',context);
+const full=paint.strokes.length;
+assert.ok(full>=cracks.length*3,'바깥 열기·붉은 몸통·노란 심지 3겹으로 그려야 합니다');
+assert.ok(paint.strokes.every((s)=>s.alpha<=.4+1e-9),'호출자의 소멸 알파를 넘지 않아야 합니다');
+// 원근: 세로 폭은 가로의 0.32배(바닥에 눕힘), 앞쪽(화면 아래) 균열이 뒤쪽보다 굵습니다.
+const ys=paint.pts.map((p)=>p[1]-200), xs=paint.pts.map((p)=>p[0]-100);
+assert.ok(Math.max(...ys.map(Math.abs))<=115*.32+1e-6 && Math.max(...xs.map(Math.abs))>100,'바닥 원근대로 가로로 넓고 세로로 납작해야 합니다');
 assert.equal(paint.globalAlpha,.4);assert.equal(paint.globalCompositeOperation,'source-over');
-paint.fills.length=0;
-vm.runInContext('drawPaperFlamePatch(paint,100,200,230,0.6)',context);
-const poseA=paint.fills.length;
-assert.ok(poseA>0,'포즈가 바뀌어도 불꽃은 계속 그려져야 합니다');
+// 시전 직후에는 중심 근처만 갈라지고, 0.35초 뒤 끝까지 번집니다.
+paint.strokes.length=0;
+vm.runInContext('drawFlamePatchCracks(paint,100,200,230,0,0.05)',context);
+assert.ok(paint.strokes.length>0 && paint.strokes.length<full/2,'시전 직후에는 균열이 중심에서 번져 나가는 중이어야 합니다');
+const ember=vm.runInContext('flamePatchEmberPoint(100,200,230,0.5)',context);
+assert.ok(Math.abs(ember.y-200)<=115*.32,'불티는 바닥 균열 위에서 피어올라야 합니다');
 vm.runInContext("comicAbilityImages['fire-elemental']={complete:true,naturalWidth:1536};drawComicAbility(paint,'fire-elemental',100,200,48)",context);
 assert.equal(paint.draws[0].alpha,.4,'다른 소환수의 불투명도는 변경하지 않아야 합니다');

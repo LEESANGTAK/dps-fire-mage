@@ -121,81 +121,107 @@ function drawComicAbility(painter,key,x,y,width,height=width) {
   painter.drawImage(image,x-width/2,y-height/2,width,height);
 }
 
-/* 불장판: 화상 불꽃(.paper-flame)과 같은 '오려 붙인 종이 불꽃'을 그을린 종이 바닥 위에 세웁니다.
- * 납작한 3색 종이(주황·진홍 밑단·노랑 속불), 크림색 오림 테두리, 3포즈를 끊어 바꾸는 종이 인형식 일렁임.
- * 빛 번짐(블러·화면 합성) 없이 호출자의 소멸 알파만 곱합니다. */
-const PAPER_FLAME_SHAPE = [[.5,0],[.62,.22],[.74,.1],[.77,.38],[.92,.28],[.97,.62],[.87,.87],[.66,1],[.34,1],[.13,.87],[.03,.62],[.09,.34],[.24,.45],[.27,.16],[.4,.3]];
-const PAPER_FLAME_BAND = [[0,.7],[.3,.62],[.5,.74],[.72,.6],[1,.7],[1,1],[0,1]];
-const PAPER_FLAME_CORE = [[.5,.3],[.6,.52],[.7,.45],[.73,.72],[.63,.92],[.37,.92],[.27,.72],[.31,.49],[.42,.56]];
-const PAPER_FLAME_POSES = [[1,1,0],[.9,1.12,-.1],[1.07,.9,.09]]; // [가로, 세로, 기울기] — CSS paper-flame-flick과 같은 3포즈
-// 바닥 위 불꽃 배치(타원 가로 반지름 대비 x, 앞뒤 줄, 크기, 일렁임 위상). 가운데는 몬스터가 서 있어 양옆을 키웁니다.
-const FLAME_PATCH_TONGUES = [
-  [-.78, 0, .62, .1], [-.38, 0, .74, .55], [.12, 0, .66, .3], [.6, 0, .78, .8],
-  [-.6, 1, .92, .65], [-.12, 1, .7, .2], [.36, 1, .84, .9], [.84, 1, .64, .45]
-];
-// 그을린 종이 바닥의 오린 가장자리(고정 요철: 프레임마다 떨리지 않게)
-const FLAME_PATCH_EDGE = [1, .9, 1.04, .94, 1, .86, .98, 1.05, .92, 1, .9, 1.03, .95, .88, 1.02, .97];
+/* 불장판: 몬스터 발밑 바닥이 붉게 달아올라 갈라지는 균열(프랙탈 가지) 무늬.
+ * 위에서 내려다본 단위 원판 좌표로 균열 나무를 한 번만 만들고(고정 시드: 프레임마다 떨리지 않음),
+ * 그리는 순간 바닥 원근(세로 FLAME_PATCH_TILT배)으로 눕힙니다. 앞쪽(화면 아래)은 굵게, 뒤쪽은 가늘게.
+ * 시전 직후 중심에서 바깥으로 0.35초 동안 금이 번져 나가고, 이후 열기가 중심→바깥으로 맥동합니다. */
+const FLAME_PATCH_TILT = .32; // 자동 시전 마법진(scale(1, .28))과 같은 바닥 눕힘 비율
+const FLAME_PATCH_GROW = .35; // 균열이 끝까지 번지는 시간(초)
+let flamePatchCracks = null;
 
-function tracePaperShape(painter, points, x, y, w, h) {
-  painter.beginPath();
-  points.forEach(([px, py], i) => {
-    const sx = x + (px - .5) * w, sy = y - (1 - py) * h;
-    if (i === 0) painter.moveTo(sx, sy); else painter.lineTo(sx, sy);
-  });
-  painter.closePath();
+function buildFlamePatchCracks(seed = 7) {
+  let s = seed >>> 0 || 1;
+  const rand = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+  const segs = [];
+  const joints = []; // 이웃 가지끼리 잇는 짧은 균열(그물·셀 모양)의 후보 마디
+  // 가지 하나: 곧게 뻗다가 날카롭게 꺾이는 갈지자 균열. 일정 확률로 옆 가지를 칩니다(세대가 내려갈수록 가늘고 짧게).
+  const grow = (x, y, angle, len, width, dist, gen, trunk) => {
+    const heading = angle;
+    for (let step = 0; step < 14 && len > .03; step++) {
+      const stride = .07 + rand() * .07;
+      // 원래 방향을 기억해 크게 휘지 않고, 마디마다 좌우로 날카롭게 꺾습니다.
+      angle = heading + (rand() - .5) * 1.1 + (step % 2 ? .22 : -.22);
+      const nx = x + Math.cos(angle) * stride, ny = y + Math.sin(angle) * stride;
+      if (nx * nx + ny * ny > 1) break;
+      segs.push({ x1: x, y1: y, x2: nx, y2: ny, w: width, d: dist, gen });
+      x = nx; y = ny; dist += stride; len -= stride; width *= .88;
+      if (gen > 0 || step > 1) joints.push({ x, y, d: dist, w: width, trunk });
+      if (gen < 2 && rand() < .26) grow(x, y, heading + (rand() < .5 ? -1 : 1) * (.7 + rand() * .5), len * .6, width * .7, dist, gen + 1, trunk);
+    }
+  };
+  const trunks = 7;
+  for (let i = 0; i < trunks; i++) grow(0, 0, (i / trunks) * Math.PI * 2 + rand() * .5, .9 + rand() * .2, 1, 0, 0, i);
+  // 다른 가지의 가까운 마디를 꺾인 두 마디로 이어 갈라진 바닥의 그물 무늬를 만듭니다.
+  for (let i = 0; i < joints.length; i++) {
+    const a = joints[i];
+    if (rand() > .35) continue;
+    let best = null, bestDist = .3;
+    for (const b of joints) {
+      if (b.trunk === a.trunk) continue;
+      const dd = Math.hypot(a.x - b.x, a.y - b.y);
+      if (dd < bestDist && dd > .06) { best = b; bestDist = dd; }
+    }
+    if (!best) continue;
+    const mx = (a.x + best.x) / 2 + (rand() - .5) * bestDist * .5, my = (a.y + best.y) / 2 + (rand() - .5) * bestDist * .5;
+    const w = Math.min(a.w, best.w) * .7, d = Math.min(a.d, best.d) + .02;
+    segs.push({ x1: a.x, y1: a.y, x2: mx, y2: my, w, d, gen: 3 }, { x1: mx, y1: my, x2: best.x, y2: best.y, w, d: d + .05, gen: 3 });
+  }
+  return segs;
 }
 
-function drawPaperFlame(painter, x, groundY, height, pose) {
-  const [sx, sy, skew] = PAPER_FLAME_POSES[pose];
-  const w = height * .74 * sx, h = height * sy;
+function getFlamePatchCracks() {
+  if (!flamePatchCracks) flamePatchCracks = buildFlamePatchCracks();
+  return flamePatchCracks;
+}
+
+// 균열 위의 한 점(불티가 피어오를 자리)을 화면 좌표로 돌려줍니다.
+function flamePatchEmberPoint(x, groundY, width, r = Math.random()) {
+  const segs = getFlamePatchCracks();
+  const seg = segs[Math.floor(r * segs.length) % segs.length];
+  const rx = width / 2;
+  return { x: x + seg.x2 * rx, y: groundY + seg.y2 * rx * FLAME_PATCH_TILT };
+}
+
+function drawFlamePatchCracks(painter, x, groundY, width, time, age = 99, reduced = false) {
+  const rx = width / 2, ry = rx * FLAME_PATCH_TILT;
+  const fade = painter.globalAlpha;
+  painter.save();
+  // 1. 달아오른 바닥: 바닥에 눕힌 원형 그을음(중심은 검붉게, 가장자리는 바닥에 녹아듦)
   painter.save();
   painter.translate(x, groundY);
-  painter.transform(1, 0, skew, 1, 0, 0);
-  // 오린 종이의 크림색 테두리와 아래로 떨어지는 짧은 그림자
-  painter.fillStyle = '#0000006b';
-  tracePaperShape(painter, PAPER_FLAME_SHAPE, 1.5, 2, w, h); painter.fill();
+  painter.scale(1, FLAME_PATCH_TILT);
+  const heat = painter.createRadialGradient(0, 0, 0, 0, 0, rx);
+  heat.addColorStop(0, '#6a1006b3');
+  heat.addColorStop(.55, '#3a0a0573');
+  heat.addColorStop(1, '#2a080400');
+  painter.fillStyle = heat;
+  painter.beginPath();
+  painter.arc(0, 0, rx, 0, Math.PI * 2);
+  painter.fill();
+  painter.restore();
+  // 2. 균열: 바깥 열기(넓고 옅게) → 붉은 몸통 → 노란 심지 순서로 겹칩니다.
+  const reach = reduced ? 9 : Math.min(9, (age / FLAME_PATCH_GROW) * 1.25);
+  const unit = width / 230;
+  painter.lineCap = 'round';
   painter.lineJoin = 'round';
-  painter.lineWidth = 2.2;
-  painter.strokeStyle = '#fff0c5';
-  tracePaperShape(painter, PAPER_FLAME_SHAPE, 0, 0, w, h); painter.stroke();
-  painter.fillStyle = '#f26a1b'; painter.fill();
-  painter.save();
-  painter.clip();
-  painter.fillStyle = '#c8321b';
-  tracePaperShape(painter, PAPER_FLAME_BAND, 0, 0, w, h); painter.fill();
-  painter.restore();
-  painter.fillStyle = '#ffd36b';
-  tracePaperShape(painter, PAPER_FLAME_CORE, 0, 0, w, h); painter.fill();
-  painter.restore();
-}
-
-function drawPaperFlamePatch(painter, x, groundY, width, time, reduced = false) {
-  const rx = width * .46, ry = width * .1;
-  painter.save();
-  // 1. 그을린 종이 바닥: 가장자리를 오린 짙은 갈색 종이 + 안쪽 잉걸 종이, 크림색 오림선
-  painter.beginPath();
-  FLAME_PATCH_EDGE.forEach((k, i) => {
-    const a = (i / FLAME_PATCH_EDGE.length) * Math.PI * 2;
-    const px = x + Math.cos(a) * rx * k, py = groundY + Math.sin(a) * ry * k;
-    if (i === 0) painter.moveTo(px, py); else painter.lineTo(px, py);
-  });
-  painter.closePath();
-  painter.fillStyle = '#2a1712cc';
-  painter.fill();
-  painter.lineWidth = 1.5;
-  painter.strokeStyle = '#fff0c599';
-  painter.stroke();
-  painter.beginPath();
-  painter.ellipse(x, groundY, rx * .62, ry * .55, 0, 0, Math.PI * 2);
-  painter.fillStyle = '#9a2d14bb';
-  painter.fill();
-  // 2. 종이 불꽃: 뒷줄(작고 높게) → 앞줄 순서로 세우고, 0.5초마다 포즈를 끊어 바꿉니다.
-  const step = reduced ? 0 : Math.floor(time * 2);
-  const base = Math.min(56, width * .24);
-  for (const [ox, row, size, phase] of FLAME_PATCH_TONGUES) {
-    const pose = reduced ? 0 : (step + Math.round(phase * 3)) % 3;
-    const fy = groundY + (row === 0 ? -ry * .45 : ry * .35);
-    drawPaperFlame(painter, x + ox * rx, fy, base * size * (row === 0 ? .82 : 1), pose);
+  const passes = [[3.6, '#e0260f', .22], [1.6, '#f0461c', .95], [.55, '#ffcf5a', 1]];
+  for (const [mult, color, alpha] of passes) {
+    painter.strokeStyle = color;
+    for (const seg of getFlamePatchCracks()) {
+      if (seg.d > reach) continue;
+      const t = Math.min(1, (reach - seg.d) / .08); // 번지는 끝은 선분 일부만
+      const sx = seg.x1, sy = seg.y1;
+      const ex = sx + (seg.x2 - sx) * t, ey = sy + (seg.y2 - sy) * t;
+      const radial = Math.min(1, Math.hypot(ex, ey));
+      const near = .78 + .3 * ((ey + 1) / 2); // 화면 아래(가까운 쪽)일수록 굵게
+      const pulse = reduced ? .85 : .62 + .38 * Math.sin(time * 5 - seg.d * 7);
+      painter.globalAlpha = fade * alpha * (1 - radial * radial * .55) * (mult < 1 ? pulse : .7 + .3 * pulse);
+      painter.lineWidth = Math.max(.6, 4.2 * unit * seg.w * near * mult);
+      painter.beginPath();
+      painter.moveTo(x + sx * rx, groundY + sy * ry);
+      painter.lineTo(x + ex * rx, groundY + ey * ry);
+      painter.stroke();
+    }
   }
   painter.restore();
 }

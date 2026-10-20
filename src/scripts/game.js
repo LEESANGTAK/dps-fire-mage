@@ -83,6 +83,7 @@ const BASE_CRIT_DMG = 1.5;
 const CRIT_ROLL_SPREAD = 0.12; // 치명타 피해 흔들림 폭(±12%). 평균은 그대로라 밸런스는 유지하고 숫자만 매번 다르게 터집니다.
 const FIREBLAST_RECHARGE = 8.0; // 불꽃 작렬 1회 충전 시간(초)
 const IGNITE_DURATION = 5.0; // 화상 지속 시간(초) - 치명타 적중 시 갱신
+const FLAME_PATCH_DURATION = 7.0; // 불장판 지속 시간(초)
 const IGNITE_TICK = 0.85; // 화상 틱 간격(초)
 const IGNITE_RATIO = 0.22; // 치명타 피해 중 화상으로 전환되는 비율
 
@@ -1016,20 +1017,24 @@ function drawSummonsAndAuras(dt) {
     drawComicSummon(ctx, 12, px, py, 42);
   }
 
-  // 3. 불장판 (몬스터 이미지 뒤쪽/발밑 바닥 레이어 #ground-vfx-canvas 에 1.5배 넓어진 화염 지대 렌더링!)
+  // 3. 불장판: 몬스터 발밑 바닥(#ground-vfx-canvas, 몬스터 뒤 레이어)이 붉게 달아올라 갈라지는 균열 무늬
   if (c.flamePatchRem > 0) {
     const fx = targetCenter.x;
     const fy = getActorGroundPos('dummy-avatar').y; // 실제 접지 위치
     const fadeAlpha = Math.min(1, c.flamePatchRem / 0.6);
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const pulse = reduced ? 1 : 1 + Math.sin(c.animTime * 4) * 0.025;
+    // 몬스터 몸집에 맞춰 넓혀, 큰 보스도 발밑 양옆으로 균열이 삐져나오게 합니다.
+    const artEl = document.getElementById('dummy-emoji');
+    const artW = (artEl && artEl.offsetWidth) || 160;
+    const patchW = Math.max(220, Math.min(340, artW * 1.4));
     gCtx.save();
     gCtx.globalAlpha = fadeAlpha;
-    // 그을린 종이 바닥을 몬스터 발밑에 접지하고, 몬스터 뒤 레이어에만 표시합니다.
-    drawPaperFlamePatch(gCtx, fx, fy, 230 * pulse, c.animTime, reduced);
+    drawFlamePatchCracks(gCtx, fx, fy, patchW, c.animTime, FLAME_PATCH_DURATION - c.flamePatchRem, reduced);
     gCtx.restore();
+    // 불티는 균열 위 한 점에서 피어오릅니다.
     if (!reduced && dt > 0 && particles.length < 180 && Math.random() < Math.min(1, dt * 6)) {
-      particles.push({x:fx+(Math.random()-.5)*140,y:fy,vx:(Math.random()-.5)*18,vy:-45,
+      const p = flamePatchEmberPoint(fx, fy, patchW);
+      particles.push({x:p.x,y:p.y,vx:(Math.random()-.5)*18,vy:-45,
         radius:2,life:0,maxLife:.4,colorCore:'#fef08a',colorEdge:'#ea580c'});
     }
   }
@@ -2785,7 +2790,7 @@ function triggerSkill(skillKey, isManual = false) {
     const patchCdMult = (state.deckMechanics && state.deckMechanics.patchCooldownMult) || 1;
     c.flamePatchCdTotal = Math.max(4.5, 10 * patchCdMult * (1 - stats.cdr));
     c.flamePatchCdRem = c.flamePatchCdTotal;
-    c.flamePatchRem = 7.0;
+    c.flamePatchRem = FLAME_PATCH_DURATION;
     c.flamePatchTickTimer = 0;
 
     const target = getTargetPos();
