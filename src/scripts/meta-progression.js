@@ -29,12 +29,14 @@ const MASTERY_XP = { perStage: 1, phaseBoss: 3, finalBoss: 10, perInfernoPct: 25
 
 // 누적 경험치 기준과 해금 보상(순서대로 열림). card=각성 카드 풀에 추가, start=런 시작 시 고를 수 있는 주문서.
 // 첫 해금(4)은 5스테이지 보스에서 실패한 첫 런도 받는 경험치입니다. 두 번째 런이 첫 런과 똑같이 시작하지 않게 합니다.
+// 들불(10)은 가장 약한 전설(첫 보스 강제 선택 9:30, docs/2026-10-15-legendary-balance.md)이라, 업화 3단계로 옮긴 화염 기관총 대신
+// 두세 번째 런의 '새 장난감'으로 둡니다. 전설이 하나라도 열리면 보스 보상 전설 보장도 그때부터 켜집니다.
 const MASTERY_UNLOCKS = [
   { xp: 4, type: 'start', id: 'fireblast' },
+  { xp: 10, type: 'card', id: 'burn_wildfire' },
   { xp: 35, type: 'card', id: 'util_auto_grimoire' },
   { xp: 45, type: 'card', id: 'sum_cinder_lord' },
   { xp: 70, type: 'start', id: 'flame_patch' },
-  { xp: 100, type: 'card', id: 'burn_wildfire' },
   { xp: 140, type: 'start', id: 'meteor' },
   { xp: 190, type: 'card', id: 'crit_crimson_frenzy' },
   { xp: 250, type: 'card', id: 'util_phoenix_reborn' },

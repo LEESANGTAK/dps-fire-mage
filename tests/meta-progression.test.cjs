@@ -56,7 +56,7 @@ assert.equal(M.getNextInfernoCardUnlock(2).id, 'rapid_gatling');
 assert.equal(M.getNextInfernoCardUnlock(3), null);
 assert.equal(M.normalizeMeta({ xp: 1e9, infernoUnlocked: 1, startSpell: 'combustion' }).startSpell, null, '잠긴 마력 폭주를 시작 주문서로 불러오면 비웁니다.');
 const p = M.getMasteryProgress(40);
-assert.equal(p.level, 2);
+assert.equal(p.level, 3);
 assert.equal(p.next.xp, 45);
 assert.ok(Math.abs(p.ratio - 0.5) < 1e-9);
 assert.equal(M.getMasteryProgress(1e9).next, null);
@@ -153,7 +153,7 @@ assert.equal(fs0.grimoires.fireblast, true, '두 번째 런은 불꽃 작렬을 
 fs0.meta.startSpell = null;
 fs0.highestClearedStage = 9;
 fresh.run('failRunByEnrage()');
-assert.deepEqual(Array.from(fs0.meta.lastRun.newUnlocks, (u) => u.id), [], '10스테이지 보스 실패(4+11=15)에서는 새 해금이 없습니다(화염 기관총은 업화 3단계 해금).');
+assert.deepEqual(Array.from(fs0.meta.lastRun.newUnlocks, (u) => u.id), ['burn_wildfire'], '10스테이지 보스 실패(4+11=15)에서는 들불이 열립니다(화염 기관총은 업화 3단계 해금).');
 assert.equal(fs0.meta.startSpell, null, '시작 주문서 해금이 없으면 플레이어 선택을 유지합니다.');
 
 console.log('업화 단계 규칙 누적·숙련도 지급(실패 포함, 중복 방지)·해금 순서·세이브 정리·새 런 적용·다음 단계 해금·재사용 대기·불의 심장 시간·첫 실패 해금과 시작 주문서 자동 선택 검증 통과');
