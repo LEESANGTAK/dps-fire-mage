@@ -4808,10 +4808,11 @@ function updateLiveHUD() {
   }
   debuffRow.innerHTML = debuffHtml;
 
-  // 몸에 붙은 종이 불꽃: 화상·연소·불장판 중 걸린 개수만큼(최대 3개) 몸 가운데 발밑부터 양옆으로 번지며 타오릅니다.
+  // 몸에 붙은 종이 불꽃: 화상·연소 중 걸린 개수만큼(최대 2개) 몸 가운데 발밑부터 옆으로 번지며 타오릅니다.
+  // 불장판은 바닥 균열 무늬로만 보여 주고 몸에 불꽃을 붙이지 않습니다.
   const burnStatus = document.getElementById('burn-status');
   if (burnStatus) {
-    const burnLevel = String((c.igniteRem > 0 && c.ignitePool >= 5 ? 1 : 0) + (c.meteorBurnRem > 0 ? 1 : 0) + (c.flamePatchRem > 0 ? 1 : 0));
+    const burnLevel = String((c.igniteRem > 0 && c.ignitePool >= 5 ? 1 : 0) + (c.meteorBurnRem > 0 ? 1 : 0));
     if (burnStatus.dataset.level !== burnLevel) burnStatus.dataset.level = burnLevel;
   }
 
