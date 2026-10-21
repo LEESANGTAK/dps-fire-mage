@@ -13,6 +13,7 @@
     "export-cards": "py -3 scripts/export_cards_to_excel.py",
     "desktop": "electron .",
     "desktop:smoke": "electron . --smoke-test",
+    "icon": "py -3 scripts/store/make-icon.py",
     "dist:win": "electron-builder --win dir"
   },
   "keywords": [
@@ -30,7 +31,8 @@
     "appId": "com.takgames.dpsfiremage",
     "productName": "DPS Fire Mage",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "electron/**/*",
@@ -42,6 +44,7 @@
     ],
     "asar": true,
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "dir",

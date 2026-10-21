@@ -19,6 +19,13 @@
 - `electron/save-store.cjs`: 파일 저장소. 임시 파일에 쓴 뒤 교체(원자적 쓰기), 직전 정상본을 `.bak`으로 보존, 본 파일이 깨지면 백업에서 복구, 250ms 단위로 모아 쓰고 종료 시 남은 쓰기를 마칩니다.
 - `src/scripts/save-storage.js`: 게임이 쓰는 저장 API. 데스크톱이면 파일, 웹이면 localStorage를 씁니다. 데스크톱 첫 실행 때 같은 키의 localStorage 세이브가 있으면 파일로 옮깁니다.
 
+## 실행 파일 아이콘
+
+- `npm run icon`(`scripts/store/make-icon.py`)이 마법사 원화(`assets/art/paper-mage-poses.png` 첫 자세)로 `build/icon.ico`(16·24·32·40·48·64·128·256px)와 `build/icon.png`(512px)를 만듭니다. 크기별 확인용 미리보기는 `dist/icon-preview.png`입니다.
+- 48px 이상은 모자·노란 눈·보석 지팡이가 보이는 상반신, 32px 이하는 실루엣이 뭉개지지 않게 모자와 눈만 크게 자른 그림입니다.
+- `build.win.icon`으로 실행 파일에 들어가고, 배포 빌드의 창·작업 표시줄도 이 아이콘을 씁니다. 개발 실행(`npm run desktop`)만 `main.cjs`에서 `build/icon.png`를 창 아이콘으로 지정합니다.
+- Steam 라이브러리·바탕 화면 바로 가기 아이콘은 실행 파일과 별개입니다. Steamworks › 앱 관리 › 클라이언트 아이콘(32×32 ico)·커뮤니티 아이콘(184×184 jpg)에 따로 올립니다.
+
 ## 세이브 위치와 Steam 자동 클라우드
 
 - Windows: `%APPDATA%\DPS Fire Mage\saves\MAGE_SLAYER_STAGE_SAVE_V7.json` (+ `.bak`)
@@ -28,6 +35,5 @@
 ## 남은 출시 작업
 
 - Steamworks SDK 연동(업적·오버레이·클라우드 API): `steamworks.js` 등 네이티브 모듈 도입 시 `npm run dist:win`의 네이티브 재빌드 단계를 확인합니다.
-- 실행 파일 아이콘(`build.win.icon`, 256×256 ico) — 현재 기본 Electron 아이콘.
 - 코드 서명 인증서(미서명 시 Windows SmartScreen 경고).
 - 해상도·창 모드 옵션 UI, 스팀덱(1280×800) 실기 확인.

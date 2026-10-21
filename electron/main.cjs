@@ -52,6 +52,8 @@ function createWindow() {
     backgroundColor: '#17121a',
     title: 'DPS: Fire Mage',
     autoHideMenuBar: true,
+    // 배포 빌드는 실행 파일에 넣은 build/icon.ico를 창·작업 표시줄에 그대로 씁니다. 개발 실행(electron .)에만 지정합니다.
+    icon: app.isPackaged ? undefined : path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
