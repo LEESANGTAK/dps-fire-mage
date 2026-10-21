@@ -134,6 +134,12 @@
       "mechanicParams": {
         "type": "object",
         "description": "특수 메커니즘 세부 파라미터 객체 (예: {\"charges\": 3, \"damageBonus\": 1.5})"
+      },
+      "links": {
+        "type": "array",
+        "items": { "type": "string" },
+        "uniqueItems": true,
+        "description": "연계 카드 ID 목록. 도감의 연계 표시와 각성 카드 위 '보유 카드와 연계' 표시에 쓰입니다(게임이 양방향으로 연결)."
       }
     },
     "additionalProperties": false

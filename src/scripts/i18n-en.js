@@ -326,6 +326,25 @@ const I18N_EN = {
   '🏳️ 런 포기': '🏳️ Abandon Run',
   '⚠️ 한 번 더 누르면 포기': '⚠️ Click again to abandon',
   'STAGE {phase}-{step}에서 포기': 'Abandoned at STAGE {phase}-{step}',
-  '깬 스테이지만큼 숙련도를 얻었습니다. 새 런에서 다른 빌드를 시도해 보세요!': 'You earned mastery for the stages you cleared. Try a different build next run!'
+  '깬 스테이지만큼 숙련도를 얻었습니다. 새 런에서 다른 빌드를 시도해 보세요!': 'You earned mastery for the stages you cleared. Try a different build next run!',
+
+  // 마도서 도감·연계 표시
+  '📖 마도서 도감': '📖 Grimoire Codex',
+  '📖 도감': '📖 Codex',
+  '도감': 'Codex',
+  '닫기 (Esc)': 'Close (Esc)',
+  '모두': 'All',
+  '속사': 'Rapid',
+  '치명': 'Crit',
+  '정령': 'Spirit',
+  '화상': 'Burn',
+  '유틸': 'Utility',
+  '발견': 'Found',
+  '숙련도 {n}': 'Mastery {n}',
+  '{cond}에 해금': 'Unlocks at {cond}',
+  '아직 선택지에 나온 적 없는 카드입니다.': "You haven't been offered this card yet.",
+  '카드를 누르면 설명과 연계 카드가 보입니다.': 'Click a card to see its effect and synergies.',
+  '연계': 'Synergy',
+  '보유 카드와 연계': 'Synergy with your cards'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

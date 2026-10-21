@@ -51,6 +51,8 @@ DROPDOWN_PROMPTS = {
 def card_value(card, key):
     if key.startswith('stats.'):
         return (card.get('stats') or {}).get(key[len('stats.'):], '')
+    if key == 'links':
+        return ', '.join(card.get('links') or [])
     if key == 'mechanicParams':
         return json.dumps(card['mechanicParams'], ensure_ascii=False) if card.get('mechanicParams') else ''
     return card.get(key, '')

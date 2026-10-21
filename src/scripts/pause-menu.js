@@ -59,6 +59,7 @@ function openPauseMenu(reason = 'manual') {
   disarmAbandon();
   const abandonBtn = document.getElementById('btn-pause-abandon');
   if (abandonBtn) abandonBtn.hidden = !canAbandonRun();
+  if (typeof updateCodexButtons === 'function') updateCodexButtons();
   // 각성 카드를 고르는 중에는 타이틀로 가지 않습니다(고른 뒤 다시 Esc).
   const titleBtn = document.getElementById('btn-pause-title');
   if (titleBtn) titleBtn.hidden = typeof awakeningModalOpen !== 'undefined' && awakeningModalOpen === true;
@@ -170,6 +171,11 @@ function initPauseMenu() {
     // 최종 보스 이야기 말풍선이 열려 있으면 Esc로 그것만 닫습니다.
     if (document.querySelector('.story-open')) return;
     e.preventDefault();
+    // 도감은 가장 위에 뜨는 창이라 Esc가 먼저 도감을 닫습니다(아래 창은 그대로).
+    if (typeof isCodexOpen === 'function' && isCodexOpen()) {
+      closeCodex();
+      return;
+    }
     // 설정 화면에서는 Esc가 '뒤로'입니다(일시정지는 유지).
     if (typeof isSettingsOpen === 'function' && isSettingsOpen()) {
       closeSettings();

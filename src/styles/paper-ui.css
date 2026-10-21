@@ -1004,3 +1004,217 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
 /* 일시정지 메뉴: 런 포기 확인 상태 */
 .pause-menu-sub.pause-menu-abandon:hover { color: #fca5a5; }
 .pause-menu-sub.pause-menu-abandon.armed { color: #fff4dc; background: #8f2a22; animation: settingsArmed 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* ==========================================
+   마도서 도감 (codex.js) — 타이틀·일시정지 메뉴·각성 카드 창보다 위
+   ========================================== */
+.codex-backdrop {
+  --pp-ink: #241b22;
+  --pp-board: #2e2329;
+  --pp-sheet: #3a2c31;
+  --pp-kraft: #a88a64;
+  --pp-cream: #efe1c6;
+  --pp-cut: #fff0c5;
+  --pp-drop: #151119;
+  position: fixed;
+  inset: 0;
+  z-index: 10200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px 16px;
+  background: rgba(14, 10, 14, 0.8);
+  backdrop-filter: blur(2px);
+  animation: vmBackdropFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.codex-backdrop.hidden { display: none !important; }
+.codex-card {
+  position: relative;
+  width: min(780px, 100%);
+  max-height: calc(100vh - 44px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px 16px 14px;
+  background: radial-gradient(rgba(255, 240, 197, 0.05) 1.2px, transparent 1.7px) 0 0 / 16px 16px, var(--pp-board);
+  border: 3px solid var(--pp-ink);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 3px var(--pp-kraft), inset 0 0 0 5px var(--pp-ink), 0 7px 0 var(--pp-drop), 0 18px 40px rgba(0, 0, 0, 0.6);
+  animation: vmCardPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.codex-close { left: auto; right: 10px; }
+.codex-progress { position: absolute; top: 14px; left: 16px; font-size: 0.76rem; color: #cdbda6; font-variant-numeric: tabular-nums; }
+.codex-progress b { color: #fde68a; }
+
+/* 빌드 탭: 아이콘 + 짧은 이름. 고른 탭은 크림색 종이로 솟아오릅니다. 아래 선 색이 빌드 색입니다. */
+.codex-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
+.codex-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #cdbda6;
+  background: #2a2026;
+  border: 2px solid var(--pp-ink);
+  border-bottom-width: 4px;
+  border-radius: 2px;
+  box-shadow: 0 2px 0 var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.codex-tab:hover { color: #fff4dc; transform: translateY(-1px); }
+.codex-tab.selected { color: var(--pp-ink); background: var(--pp-cream); transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--pp-cut), 0 3px 0 var(--pp-drop); animation: settingsPick 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.codex-tab.build-rapid { border-bottom-color: #e8743b; }
+.codex-tab.build-crit { border-bottom-color: #e2b84a; }
+.codex-tab.build-summon { border-bottom-color: #57ba91; }
+.codex-tab.build-burn { border-bottom-color: #c7463a; }
+.codex-tab.build-utility { border-bottom-color: #9b8bd8; }
+
+/* 카드 격자 */
+.codex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+  padding: 8px 8px 10px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  scrollbar-color: var(--pp-kraft) var(--pp-board);
+}
+.codex-cell {
+  --rar: #8f8270;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 92px;
+  padding: 8px 6px 6px;
+  color: var(--pp-ink);
+  background: radial-gradient(rgba(36, 27, 34, 0.05) 1px, transparent 1.4px) 0 0 / 12px 12px, var(--pp-cream);
+  border: 3px solid var(--rar);
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px var(--pp-ink), 0 4px 0 2px var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.codex-cell.rarity-rare { --rar: #3d7ab8; }
+.codex-cell.rarity-legendary { --rar: #d9a03a; background: radial-gradient(rgba(36, 27, 34, 0.05) 1px, transparent 1.4px) 0 0 / 12px 12px, #f6e5bd; }
+.codex-cell:hover { transform: translateY(-3px) rotate(-1deg); }
+.codex-cell-icon { position: relative; font-size: 1.5rem; line-height: 1; }
+.codex-cell-name { font-size: 0.7rem; font-weight: 800; text-align: center; line-height: 1.2; }
+/* 미발견·잠김: 오려 낸 종이 실루엣 */
+.codex-silhouette { display: inline-block; filter: brightness(0) opacity(0.55); }
+.codex-cell.state-unseen, .codex-cell.state-locked { background: #c9b997; }
+.codex-cell.state-locked { opacity: 0.8; }
+.codex-unknown { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1rem; font-weight: 900; color: var(--pp-cream); text-shadow: 0 1px 0 var(--pp-ink); }
+.codex-lock { font-size: 0.6rem; font-weight: 800; color: #6b4a2a; }
+/* 획득한 적 있음: 오른쪽 아래 불꽃 도장 */
+.codex-stamp { position: absolute; right: 3px; bottom: 2px; font-size: 0.7rem; transform: rotate(-12deg); opacity: 0.85; }
+/* 이번 런 보유: 금색 테두리 + 겹친 횟수 */
+.codex-cell.owned { box-shadow: 0 0 0 2px var(--pp-ink), 0 0 0 5px #e2b84a, 0 4px 0 5px var(--pp-drop); }
+.codex-stack { position: absolute; top: -7px; right: -7px; padding: 0 5px; font-size: 0.66rem; font-weight: 900; color: var(--pp-ink); background: #fde68a; border: 2px solid var(--pp-ink); border-radius: 2px; }
+/* 보유 카드와 연계되는 카드: 은은한 펄스 */
+.codex-cell.linked-owned { animation: codexLinkPulse 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes codexLinkPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--pp-ink), 0 4px 0 2px var(--pp-drop); }
+  50% { box-shadow: 0 0 0 2px var(--pp-ink), 0 0 14px 4px rgba(255, 180, 80, 0.55), 0 4px 0 2px var(--pp-drop); }
+}
+/* 카드를 고르면 연계 카드만 밝게 */
+.codex-cell.selected { transform: translateY(-4px) scale(1.04); box-shadow: 0 0 0 2px var(--pp-ink), 0 0 0 5px var(--pp-cream), 0 6px 0 5px var(--pp-drop); }
+.codex-cell.link-lit { box-shadow: 0 0 0 2px var(--pp-ink), 0 0 0 5px #e8743b, 0 4px 0 5px var(--pp-drop); animation: none; }
+.codex-cell.link-dim { opacity: 0.4; }
+
+/* 설명 칸 */
+.codex-detail {
+  min-height: 86px;
+  padding: 10px 12px;
+  color: #e6d7bd;
+  background: var(--pp-sheet);
+  border: 2px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(168, 138, 100, 0.45), 0 3px 0 var(--pp-drop);
+  text-align: left;
+}
+.codex-detail-hint { margin: 0; font-size: 0.78rem; color: #8f8270; text-align: center; line-height: 64px; }
+.codex-detail-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.codex-detail-icon { font-size: 1.4rem; }
+.codex-detail-name { font-size: 0.95rem; font-weight: 900; color: #fde68a; }
+.codex-detail-rarity, .codex-detail-build { padding: 1px 7px; font-size: 0.66rem; font-weight: 800; border: 2px solid var(--pp-ink); border-radius: 2px; }
+.codex-detail-rarity { color: var(--pp-ink); background: #cdbda6; }
+.codex-detail-rarity.rarity-rare { background: #8db8e2; }
+.codex-detail-rarity.rarity-legendary { background: #f1c766; }
+.codex-detail-build { color: #e6d7bd; background: #2a2026; }
+.codex-detail-desc { margin-top: 6px; font-size: 0.8rem; line-height: 1.5; }
+.codex-detail-desc.muted { color: #a8987f; }
+.codex-detail-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.codex-links-label { font-size: 0.72rem; font-weight: 800; color: #f3d391; }
+.codex-link-chip {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: 0 2px 0 var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.codex-link-chip:hover { transform: translateY(-2px) rotate(-6deg); }
+.codex-link-chip.owned { box-shadow: 0 0 0 2px #e2b84a, 0 2px 0 2px var(--pp-drop); }
+
+/* 각성 카드 창의 📖 버튼: 카드판 오른쪽 위 모서리(리본·안내 문구와 겹치지 않는 자리) */
+.awakening-codex-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  color: var(--pp-ink);
+  background: var(--pp-cream);
+  border: 2.5px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: 0 3px 0 var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.awakening-codex-btn:hover { transform: translateY(-2px) rotate(-8deg); box-shadow: 0 5px 0 var(--pp-drop); }
+.awakening-codex-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--pp-drop); }
+
+/* 각성 카드 위 연계 표시: 덱의 연계 카드 아이콘이 종이 끈에 매달려 카드 오른쪽 위에 걸립니다. */
+.awakening-card.has-link { box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 0 16px 3px rgba(255, 180, 80, 0.45), 0 7px 0 3px var(--pp-drop); }
+.card-link-tags { position: absolute; top: -22px; right: 10px; z-index: 3; display: flex; gap: 4px; }
+.card-link-tag {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px #e2b84a, 0 3px 0 2px var(--pp-drop);
+  transform-origin: 50% -10px;
+  animation: cardLinkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--deal-delay, 0ms) + 380ms + var(--link-i, 0) * 70ms) both,
+             cardLinkSway 2.6s cubic-bezier(0.45, 0, 0.55, 1) calc(var(--deal-delay, 0ms) + 900ms) infinite;
+}
+.card-link-tag .paper-card-icon { width: 22px; height: 22px; }
+/* 매단 끈 */
+.card-link-tag::before { content: ""; position: absolute; top: -10px; left: 50%; width: 2px; height: 9px; margin-left: -1px; background: var(--pp-kraft); }
+@keyframes cardLinkPop { 0% { opacity: 0; transform: translateY(-14px) scale(0.6); } 100% { opacity: 1; transform: none; } }
+@keyframes cardLinkSway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .codex-card, .codex-tab.selected, .codex-cell.linked-owned, .card-link-tag { animation: none; }
+}

@@ -9,7 +9,7 @@
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="src/styles/styles.css?v=balance-v2-3" />
   <link rel="stylesheet" href="src/styles/art.css?v=final-boss-1" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=title-1" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=codex-1" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -326,6 +326,7 @@
   <div class="awakening-modal-backdrop hidden" id="awakening-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="awakening-modal-title">
     <div class="awakening-modal">
       <div class="awakening-modal-header">
+        <button type="button" class="awakening-codex-btn" id="btn-awakening-codex" title="도감" aria-label="도감">📖</button>
         <h2 class="awakening-modal-title" id="awakening-modal-title">🔥 마도서 각성 (Grimoire Awakening)</h2>
         <p class="awakening-modal-subtitle">고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!</p>
       </div>
@@ -361,6 +362,7 @@
       <button type="button" class="victory-btn title-btn" id="btn-title-start" hidden>▶ 시작</button>
       <button type="button" class="victory-btn title-btn" id="btn-title-continue" hidden>▶ 이어하기 <small class="title-continue-info" id="title-continue-info"></small></button>
       <button type="button" class="victory-btn title-btn" id="btn-title-new-run" hidden>⚡ 새 런</button>
+      <button type="button" class="pause-menu-sub title-btn" id="btn-title-codex" hidden>📖 도감</button>
       <button type="button" class="pause-menu-sub title-btn" id="btn-title-hall" hidden>🏆 명예의 전당</button>
     </div>
     <div class="title-new-run" id="title-new-run" hidden>
@@ -375,6 +377,18 @@
     </div>
   </div>
 
+  <!-- 마도서 도감: 타이틀·일시정지 메뉴·각성 카드 창 위에 뜹니다 (codex.js) -->
+  <div class="codex-backdrop hidden" id="codex-backdrop" role="dialog" aria-modal="true" aria-labelledby="codex-title">
+    <div class="codex-card">
+      <div class="pause-menu-ribbon" id="codex-title">📖 마도서 도감</div>
+      <button type="button" class="settings-back codex-close" id="btn-codex-close" title="닫기 (Esc)" aria-label="닫기 (Esc)">✕</button>
+      <div class="codex-progress" id="codex-progress"></div>
+      <div class="codex-tabs" id="codex-tabs" role="tablist"></div>
+      <div class="codex-grid" id="codex-grid"></div>
+      <div class="codex-detail" id="codex-detail"></div>
+    </div>
+  </div>
+
   <!-- Esc 일시정지 메뉴: 전투·시계를 모두 멈추고 모든 창 위에 뜹니다 (pause-menu.js) -->
   <div class="pause-menu-backdrop hidden" id="pause-menu-backdrop" role="dialog" aria-modal="true" aria-labelledby="pause-menu-title">
     <div class="pause-menu-card">
@@ -385,6 +399,7 @@
       </div>
       <div class="pause-menu-actions">
         <button type="button" class="victory-btn pause-menu-btn" id="btn-pause-resume">▶ 계속</button>
+        <button type="button" class="pause-menu-btn pause-menu-sub" id="btn-pause-codex" hidden>📖 도감</button>
         <button type="button" class="pause-menu-btn pause-menu-sub" id="btn-pause-settings">⚙ 설정</button>
         <button type="button" class="pause-menu-btn pause-menu-sub" id="btn-pause-title">🏠 타이틀로</button>
         <button type="button" class="pause-menu-btn pause-menu-sub pause-menu-abandon" id="btn-pause-abandon" hidden>🏳️ 런 포기</button>
@@ -486,11 +501,12 @@
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
   <script src="src/scripts/roguelike-deck.js?v=reckless-comb-1"></script>
   <script src="src/scripts/save-storage.js?v=desktop-save-1"></script>
-  <script src="src/scripts/meta-progression.js?v=meteor-coach-1"></script>
+  <script src="src/scripts/meta-progression.js?v=codex-1"></script>
   <script src="src/scripts/meta-ui.js?v=meta-1"></script>
-  <script src="src/scripts/pause-menu.js?v=title-1"></script>
+  <script src="src/scripts/pause-menu.js?v=codex-1"></script>
   <script src="src/scripts/settings-menu.js?v=title-1"></script>
-  <script src="src/scripts/title-screen.js?v=title-1"></script>
-  <script src="src/scripts/game.js?v=title-1"></script>
+  <script src="src/scripts/codex.js?v=codex-1"></script>
+  <script src="src/scripts/title-screen.js?v=codex-1"></script>
+  <script src="src/scripts/game.js?v=codex-1"></script>
 </body>
 </html>

@@ -53,7 +53,12 @@
       "desc_en": "Fire spell cast speed <b>+20%</b>.",
       "stats": {
         "haste": 20
-      }
+      },
+      "links": [
+        "rapid_split",
+        "sum_volley",
+        "util_glass_cannon"
+      ]
     },
     {
       "id": "rapid_split",
@@ -65,7 +70,13 @@
       "desc": "화염구 적중 시 <b>2개의 작은 불씨</b>로 분열되어 추가 타격합니다 (각각 40% 피해).",
       "title_en": "Splitting Fireball",
       "desc_en": "Fireball splits into <b>2 small embers</b> on hit for extra strikes (40% damage each).",
-      "mechanic": "split_fireball"
+      "mechanic": "split_fireball",
+      "links": [
+        "rapid_spark",
+        "rapid_quickdraw",
+        "rapid_gatling",
+        "crit_focus"
+      ]
     },
     {
       "id": "rapid_overload",
@@ -80,7 +91,10 @@
       "stats": {
         "spPct": -20,
         "haste": 45
-      }
+      },
+      "links": [
+        "util_glass_cannon"
+      ]
     },
     {
       "id": "rapid_quickdraw",
@@ -93,6 +107,9 @@
       "title_en": "Quickdraw",
       "desc_en": "Gain <b>4</b> charges at the start of each stage that <b>fire a Fireball instantly, with no cast time</b>.",
       "mechanic": "quickdraw_charge",
+      "links": [
+        "rapid_split"
+      ],
       "mechanicParams": {
         "charges": 4
       }
@@ -107,7 +124,11 @@
       "desc": "화염구의 기본 시전 시간이 <b>0.3초</b>로 극도로 단축되며 기관총처럼 난사됩니다.",
       "title_en": "Flame Gatling",
       "desc_en": "Fireball base cast time drops to <b>0.3s</b> — fire it like a machine gun.",
-      "mechanic": "gatling_mode"
+      "mechanic": "gatling_mode",
+      "links": [
+        "rapid_split",
+        "sum_volley"
+      ]
     },
     {
       "id": "spell_fireblast",
@@ -119,7 +140,12 @@
       "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다. 화염구 치명타 직후에 쓰면 치명타 2연속이 됩니다.",
       "title_en": "Grimoire: Fire Blast",
       "desc_en": "Learn <b>[Fire Blast], an instant spell that always crits</b> and fires even while casting. Use it right after a Fireball crit for 2 crits in a row.",
-      "spellKey": "fireblast"
+      "spellKey": "fireblast",
+      "links": [
+        "crit_heat",
+        "spell_meteor",
+        "util_auto_grimoire"
+      ]
     },
     {
       "id": "crit_focus",
@@ -133,7 +159,14 @@
       "desc_en": "Critical strike chance <b>+10%</b>.",
       "stats": {
         "crit": 10
-      }
+      },
+      "links": [
+        "rapid_split",
+        "crit_heat",
+        "crit_reckless",
+        "spell_meteor",
+        "burn_wildfire"
+      ]
     },
     {
       "id": "crit_heat",
@@ -147,7 +180,13 @@
       "desc_en": "Critical damage <b>+35%</b>.",
       "stats": {
         "critDmg": 35
-      }
+      },
+      "links": [
+        "spell_fireblast",
+        "crit_focus",
+        "spell_combustion",
+        "burn_wildfire"
+      ]
     },
     {
       "id": "crit_reckless",
@@ -163,7 +202,11 @@
         "crit": -8,
         "critDmg": 80
       },
-      "prerequisite": "crit_15_or_combustion"
+      "prerequisite": "crit_15_or_combustion",
+      "links": [
+        "crit_focus",
+        "spell_combustion"
+      ]
     },
     {
       "id": "spell_meteor",
@@ -175,7 +218,16 @@
       "desc": "거대 운석을 떨어뜨립니다. <b>치명타 2연속</b>이면 메테오가 <b>즉시·무료</b>로 떨어집니다. 불꽃 작렬은 항상 치명타입니다.",
       "title_en": "Grimoire: Meteor",
       "desc_en": "Call down a giant meteor. Land <b>2 crits in a row</b> and Meteor drops <b>instantly, for free</b>. Fire Blast always crits.",
-      "spellKey": "meteor"
+      "spellKey": "meteor",
+      "links": [
+        "spell_fireblast",
+        "crit_focus",
+        "crit_meteor_storm",
+        "crit_meteor_charge",
+        "burn_ignite",
+        "util_phoenix_reborn",
+        "util_auto_grimoire"
+      ]
     },
     {
       "id": "crit_meteor_storm",
@@ -188,7 +240,10 @@
       "title_en": "Sunstone Meteor",
       "desc_en": "Meteor cooldown <b>-50%</b> and Meteor damage <b>+60%</b>.",
       "prerequisite": "has_meteor",
-      "mechanic": "meteor_buff"
+      "mechanic": "meteor_buff",
+      "links": [
+        "spell_meteor"
+      ]
     },
     {
       "id": "crit_meteor_charge",
@@ -202,6 +257,9 @@
       "desc_en": "Gain <b>3</b> charges of <b>+150% Meteor damage</b> at the start of each stage.",
       "prerequisite": "has_meteor",
       "mechanic": "meteor_charge",
+      "links": [
+        "spell_meteor"
+      ],
       "mechanicParams": {
         "charges": 3,
         "damageBonus": 1.5
@@ -217,7 +275,14 @@
       "desc": "<b>5초간 모든 마법이 100% 치명타</b>로 적중하고 시전 속도가 빨라지는 궁극기를 습득합니다.",
       "title_en": "Grimoire: Combustion",
       "desc_en": "Learn an ultimate: for <b>5s, every spell crits 100%</b> and you cast faster.",
-      "spellKey": "combustion"
+      "spellKey": "combustion",
+      "links": [
+        "crit_heat",
+        "crit_reckless",
+        "crit_crimson_frenzy",
+        "util_phoenix_reborn",
+        "util_auto_grimoire"
+      ]
     },
     {
       "id": "crit_crimson_frenzy",
@@ -230,7 +295,10 @@
       "title_en": "Crimson Combustion",
       "desc_en": "Combustion lasts twice as long, and all damage during it is <b>amplified by 150%</b>.",
       "prerequisite": "has_combustion",
-      "mechanic": "combustion_god"
+      "mechanic": "combustion_god",
+      "links": [
+        "spell_combustion"
+      ]
     },
     {
       "id": "sum_spirit",
@@ -242,7 +310,13 @@
       "desc": "플레이어 옆에 지속 화염 공격을 퍼붓는 <b>화염 정령 1기</b>를 소환합니다 (최대 4기).",
       "title_en": "Summon Fire Spirit",
       "desc_en": "Summon <b>1 Fire Spirit</b> that pours fire beside you (up to 4).",
-      "mechanic": "extra_spirit"
+      "mechanic": "extra_spirit",
+      "links": [
+        "sum_fury",
+        "sum_volley",
+        "sum_pact",
+        "sum_cinder_lord"
+      ]
     },
     {
       "id": "sum_fury",
@@ -257,7 +331,10 @@
       "stats": {
         "spiritPct": 40
       },
-      "prerequisite": "has_summon"
+      "prerequisite": "has_summon",
+      "links": [
+        "sum_spirit"
+      ]
     },
     {
       "id": "sum_volley",
@@ -270,7 +347,12 @@
       "title_en": "Synchronized Volley",
       "desc_en": "Every time you cast Fireball, <b>all summoned spirits fire a volley at once</b>.",
       "prerequisite": "has_summon",
-      "mechanic": "synchronized_fire"
+      "mechanic": "synchronized_fire",
+      "links": [
+        "rapid_spark",
+        "rapid_gatling",
+        "sum_spirit"
+      ]
     },
     {
       "id": "sum_pact",
@@ -286,7 +368,11 @@
         "spPct": -25,
         "spiritPct": 100
       },
-      "prerequisite": "has_summon"
+      "prerequisite": "has_summon",
+      "links": [
+        "sum_spirit",
+        "sum_cinder_lord"
+      ]
     },
     {
       "id": "sum_cinder_lord",
@@ -299,7 +385,11 @@
       "title_en": "Cinder Warlord",
       "desc_en": "All your spell damage <b>+30%</b> per active summon.",
       "prerequisite": "has_summon",
-      "mechanic": "cinder_lord"
+      "mechanic": "cinder_lord",
+      "links": [
+        "sum_spirit",
+        "sum_pact"
+      ]
     },
     {
       "id": "burn_ignite",
@@ -313,7 +403,12 @@
       "desc_en": "<b>Damage over time +45%</b> (Ignite, Meteor burn, Flame Patch).",
       "stats": {
         "burnPct": 45
-      }
+      },
+      "links": [
+        "spell_meteor",
+        "spell_flame_patch",
+        "burn_wildfire"
+      ]
     },
     {
       "id": "spell_flame_patch",
@@ -325,7 +420,13 @@
       "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.",
       "title_en": "Grimoire: Flame Patch",
       "desc_en": "Create a lasting fire zone under the monster that deals <b>heavy burning damage over time</b>.",
-      "spellKey": "flame_patch"
+      "spellKey": "flame_patch",
+      "links": [
+        "burn_ignite",
+        "burn_spread",
+        "util_phoenix_reborn",
+        "util_auto_grimoire"
+      ]
     },
     {
       "id": "burn_spread",
@@ -339,6 +440,9 @@
       "desc_en": "Flame Patch cooldown <b>-30%</b> and Flame Patch damage <b>+50%</b>.",
       "prerequisite": "has_flame_patch",
       "mechanic": "patch_boost",
+      "links": [
+        "spell_flame_patch"
+      ],
       "mechanicParams": {
         "cooldownMult": 0.7,
         "damageBonus": 0.5
@@ -355,6 +459,11 @@
       "title_en": "Wildfire",
       "desc_en": "<b>Every hit leaves Ignite</b>, and Ignite from critical strikes deals <b>6x damage</b>. Leftover Ignite <b>spreads to the next enemy</b>.",
       "mechanic": "wildfire",
+      "links": [
+        "crit_focus",
+        "crit_heat",
+        "burn_ignite"
+      ],
       "mechanicParams": {
         "igniteRatioMult": 6,
         "igniteOnAllHits": true,
@@ -373,7 +482,10 @@
       "desc_en": "Spell Power <b>+15%</b>.",
       "stats": {
         "spPct": 15
-      }
+      },
+      "links": [
+        "util_executioner"
+      ]
     },
     {
       "id": "util_executioner",
@@ -386,6 +498,9 @@
       "title_en": "Executioner's Flame",
       "desc_en": "All damage to enemies at or below 40% health <b>+70%</b>.",
       "mechanic": "executioner",
+      "links": [
+        "util_power"
+      ],
       "mechanicParams": {
         "executionerMult": 0.7
       }
@@ -403,7 +518,11 @@
       "stats": {
         "spPct": 50,
         "haste": -25
-      }
+      },
+      "links": [
+        "rapid_spark",
+        "rapid_overload"
+      ]
     },
     {
       "id": "util_phoenix_reborn",
@@ -416,7 +535,12 @@
       "title_en": "Phoenix's Blessing",
       "desc_en": "A <b>Phoenix</b> fights at your side with guaranteed crits, and your crits have a <b>10% chance to reset all skill cooldowns</b>.",
       "prerequisite": "has_any_spell",
-      "mechanic": "phoenix_reset"
+      "mechanic": "phoenix_reset",
+      "links": [
+        "spell_meteor",
+        "spell_combustion",
+        "spell_flame_patch"
+      ]
     },
     {
       "id": "util_auto_grimoire",
@@ -429,7 +553,13 @@
       "title_en": "Auto-Incantation",
       "desc_en": "Every spell besides Fireball (Fire Blast, Meteor, Combustion, Flame Patch) <b>casts itself at the perfect moment</b>. Tap a slot's <b>AUTO</b> tag to toggle each spell.",
       "prerequisite": "has_any_spell",
-      "mechanic": "smart_autocast"
+      "mechanic": "smart_autocast",
+      "links": [
+        "spell_fireblast",
+        "spell_meteor",
+        "spell_combustion",
+        "spell_flame_patch"
+      ]
     }
   ];
 

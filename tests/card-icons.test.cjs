@@ -22,9 +22,9 @@ for (const id of cardIds) {
 }
 assert.equal(context.html({ id: 'unknown_card', icon: '🃏' }), '🃏', '모르는 카드는 데이터의 아이콘으로 대체합니다.');
 
-// 2. 카드 아이콘을 그리는 세 곳(각성 모달·덱 줄·덱 툴팁)이 모두 종이 아이콘을 씁니다.
+// 2. 카드 아이콘을 그리는 네 곳(각성 모달·각성 카드 연계 표시·덱 줄·덱 툴팁)이 모두 종이 아이콘을 씁니다.
 const game = read('src/scripts/game.js');
-assert.equal((game.match(/paperCardIconHTML\(/g) || []).length, 3);
+assert.equal((game.match(/paperCardIconHTML\(/g) || []).length, 4);
 assert.ok(!/\$\{(card|c)\.icon\}/.test(game), '카드 이모지를 그대로 출력하는 곳이 남아 있으면 안 됩니다.');
 
 // 3. 덱 툴팁 스탯 이름이 카드가 쓰는 모든 스탯 키를 다룹니다(밸런스 패치 v2의 정수 퍼센트 스탯).

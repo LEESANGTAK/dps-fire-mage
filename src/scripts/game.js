@@ -3862,6 +3862,8 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
 }
 
 function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AWAKENING_DEAL.first) {
+  // 도감: 선택지에 나온 카드는 '발견'으로 남깁니다(다시 뽑기로 나온 카드 포함).
+  if (Array.isArray(choices) && recordCardsSeen(state.meta, choices.map((c) => c && c.id))) saveGame();
   const container = document.getElementById('awakening-cards-container');
   if (!container || !deckManager) return;
 
@@ -3882,8 +3884,16 @@ function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AW
       else if (card.build === RoguelikeDeck.BUILD.UTILITY) buildBadgeText = tr('✨ 유틸리티');
     }
 
+    // 연계 표시: 지금 덱에 있는 카드와 이어지는 카드면, 그 카드 아이콘이 종이 끈에 매달려 카드 위에 나타납니다(최대 3개).
+    const ownedLinks = typeof getOwnedLinkIds === 'function' ? getOwnedLinkIds(card.id) : [];
+    const linkCards = ownedLinks.slice(0, 3).map((id) => RoguelikeDeck.CARD_POOL.find((c) => c.id === id)).filter(Boolean);
+    const linkTags = linkCards.length
+      ? `<div class="card-link-tags" title="${tr('보유 카드와 연계')}" aria-label="${tr('보유 카드와 연계')}">${linkCards.map((c, k) => `<span class="card-link-tag" style="--link-i:${k}" title="${cardText(c, 'title')}">${paperCardIconHTML(c)}</span>`).join('')}</div>`
+      : '';
+
     return `
-      <div class="awakening-card ${rarityClass}" data-card-id="${card.id}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
+      <div class="awakening-card ${rarityClass}${linkCards.length ? ' has-link' : ''}" data-card-id="${card.id}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
+        ${linkTags}
         <div class="card-rarity-badge">${rarityMeta.name}</div>
         ${stackBadge}
         <div class="card-icon">${paperCardIconHTML(card)}</div>
@@ -3907,6 +3917,7 @@ function selectAwakeningCard(cardId) {
   if (!deckManager || awakeningExiting) return;
   const success = deckManager.selectCard(cardId, state);
   if (!success) return;
+  recordCardPicked(state.meta, cardId); // 도감: 고른 적 있는 카드
 
   const card = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find((c) => c.id === cardId) : null;
   playSound('fireball_impact');
@@ -5234,6 +5245,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initEvents();
   if (typeof initPauseMenu === 'function') initPauseMenu();
   if (typeof initSettingsMenu === 'function') initSettingsMenu();
+  if (typeof initCodex === 'function') initCodex();
   updateBgmPlayback();
   loadStage(state.currentStage);
   updatePityCritBadgeUI();

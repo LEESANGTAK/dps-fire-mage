@@ -102,6 +102,10 @@ def sync_excel_to_json():
             if val and str(val).strip():
                 card[key] = str(val).strip()
 
+        links = cell(row_idx, 'links')
+        if links and str(links).strip():
+            card["links"] = [x.strip() for x in str(links).replace('\n', ',').split(',') if x.strip()]
+
         params = cell(row_idx, 'mechanicParams')
         if params and str(params).strip():
             try:

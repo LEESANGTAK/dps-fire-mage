@@ -152,10 +152,14 @@ function normalizeMeta(raw, legacyBestTime) {
     meteorCombo: rawTips.meteorCombo === true,
     fireblastHint: Math.max(0, Math.min(FIREBLAST_HINT_MAX, Math.floor(Number(rawTips.fireblastHint) || 0)))
   };
+  // 도감: 선택지에 한 번이라도 나온 카드(seenCards)와 고른 적 있는 카드(pickedCards). 문자열 ID만, 중복 없이.
+  const idList = (v) => (Array.isArray(v) ? v.filter((id, i, a) => typeof id === 'string' && id && a.indexOf(id) === i) : []);
   return {
     xp,
     slotOrder,
     tips,
+    seenCards: idList(meta.seenCards),
+    pickedCards: idList(meta.pickedCards),
     infernoUnlocked: unlocked,
     infernoSelected: Math.min(unlocked, clampInferno(meta.infernoSelected)),
     startSpell,
@@ -164,10 +168,29 @@ function normalizeMeta(raw, legacyBestTime) {
   };
 }
 
+// 도감 기록: 새로 추가된 ID 수를 돌려줍니다(0이면 저장할 것 없음).
+function recordCardsSeen(meta, ids) {
+  if (!meta || !Array.isArray(meta.seenCards)) return 0;
+  let added = 0;
+  for (const id of ids || []) {
+    if (typeof id === 'string' && id && !meta.seenCards.includes(id)) { meta.seenCards.push(id); added++; }
+  }
+  return added;
+}
+
+function recordCardPicked(meta, id) {
+  if (!meta || !Array.isArray(meta.pickedCards) || typeof id !== 'string' || !id) return false;
+  recordCardsSeen(meta, [id]);
+  if (meta.pickedCards.includes(id)) return false;
+  meta.pickedCards.push(id);
+  return true;
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, INFERNO_CARD_UNLOCKS, START_SPELL_CARDS, FIREBLAST_HINT_MAX,
     clampInferno, getInfernoModifiers, getRunMasteryXp, getUnlocksAt, getMasteryProgress,
-    getLockedCardIds, getInfernoCardUnlocks, getNextInfernoCardUnlock, getUnlockedStartSpells, normalizeMeta
+    getLockedCardIds, getInfernoCardUnlocks, getNextInfernoCardUnlock, getUnlockedStartSpells, normalizeMeta,
+    recordCardsSeen, recordCardPicked
   };
 }

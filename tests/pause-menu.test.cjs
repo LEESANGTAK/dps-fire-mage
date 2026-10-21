@@ -81,7 +81,13 @@ for (const id of ['pause-menu-backdrop', 'btn-pause-resume', 'btn-pause-quit', '
 assert.ok(html.indexOf('pause-menu.js') < html.indexOf('src/scripts/game.js'), 'pause-menu.js가 game.js보다 먼저 로드되어야 합니다.');
 const css = fs.readFileSync(path.join(root, 'src', 'styles', 'paper-ui.css'), 'utf8');
 const z = Number((css.match(/\.pause-menu-backdrop \{[^}]*z-index: (\d+)/) || [])[1]);
-for (const other of css.matchAll(/z-index: (\d+)/g)) assert.ok(z >= Number(other[1]), `일시정지 메뉴(z-index ${z})가 다른 창(${other[1]})보다 위에 있어야 합니다.`);
+// 도감(codex)만 일시정지 메뉴 위에 뜹니다(메뉴에서 연 도감이 메뉴를 덮음).
+const codexZ = Number((css.match(/\.codex-backdrop \{[^}]*z-index: (\d+)/) || [])[1]);
+assert.ok(codexZ > z, '일시정지 메뉴에서 연 도감은 메뉴 위에 떠야 합니다.');
+for (const other of css.matchAll(/z-index: (\d+)/g)) {
+  if (Number(other[1]) === codexZ) continue;
+  assert.ok(z >= Number(other[1]), `일시정지 메뉴(z-index ${z})가 다른 창(${other[1]})보다 위에 있어야 합니다.`);
+}
 assert.match(fs.readFileSync(path.join(root, 'electron', 'preload.cjs'), 'utf8'), /quit: \(\) => ipcRenderer\.send\('app:quit'\)/);
 assert.match(fs.readFileSync(path.join(root, 'electron', 'main.cjs'), 'utf8'), /ipcMain\.on\('app:quit'[\s\S]*?win\.close\(\)/);
 

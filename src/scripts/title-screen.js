@@ -5,6 +5,7 @@
  *   - 진행 중인 런: [▶ 이어하기](스테이지·시간). 런을 한 번이라도 마쳤다면 [⚡ 새 런](진행 중이면 한 번 더 눌러 포기 확인).
  *   - 끝났지만 결과를 아직 못 본 런: [▶ 이어하기] = 결과창(숙련도 연출)을 엽니다.
  *   - 끝난 런: [⚡ 새 런]. 업화 단계·시작 주문서를 고를 수 있으면 새 런 설정 칸을 먼저 펼칩니다.
+ *   - 각성 카드를 한 번이라도 만난 뒤: [📖 도감](codex.js).
  *   - 첫 최종 보스 토벌 이후: [🏆 명예의 전당].
  *   - 모서리: [⚙ 설정], [⏻ 게임 종료](데스크톱만).
  * 일시정지 메뉴의 [🏠 타이틀로]로 돌아올 수 있습니다(런은 저장된 채 유지). */
@@ -50,6 +51,7 @@ function renderTitleScreen() {
   show('btn-title-new-run', status === 'ended' || ((status === 'progress' || status === 'result') && hasFinishedRun));
   show('btn-title-hall', status !== 'first' && Boolean(state.unfolded && state.unfolded.hallOfFame));
   show('btn-title-quit', typeof canQuitGame === 'function' && canQuitGame());
+  if (typeof updateCodexButtons === 'function') updateCodexButtons(); // 📖 도감: 각성 카드를 만난 뒤부터
   const info = document.getElementById('title-continue-info');
   if (info) info.textContent = titleContinueInfo();
   // 가장 먼저 보이는 큰 버튼 하나만 주황 종이(주 행동)로 칠합니다.
