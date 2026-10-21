@@ -2,7 +2,11 @@
 
 실행: py -3 scripts/store/make-icon.py
 출력: build/icon.ico (16·24·32·40·48·64·128·256px, electron-builder가 실행 파일에 넣음),
-      build/icon.png (512px, 개발 실행 창 아이콘), dist/icon-preview.png (크기별 확인용)
+      build/icon.png (512px, 개발 실행 창 아이콘), dist/icon-preview.png (크기별 확인용),
+      docs/steam-store/icons/ (Steamworks › 커뮤니티 및 클라이언트 아이콘에 올리는 파일)
+        - app_icon_184x184.jpg: 앱 아이콘. 라이브러리 목록·채팅·알림의 작은 자리에 쓰이고 JPG라 투명이 없어
+          모서리 없이 꽉 찬 정사각형에 모자·눈 위주로 그립니다.
+        - shortcut_icon_256x256.png / shortcut_icon.ico: 바탕 화면 바로 가기 아이콘(ico에는 32px 포함 여러 크기).
 
 마법사 원화(assets/art/paper-mage-poses.png 첫 자세)를 종이 판 위에 올립니다.
 - 48px 이상: 모자·노란 눈·보석 지팡이까지 보이는 상반신.
@@ -61,7 +65,7 @@ def sticker(subject, outline):
     return layer
 
 
-def render(crop, fill, outline, inset_ratio, border_ratio, glow_center):
+def render(crop, fill, outline, inset_ratio, border_ratio, glow_center, radius_ratio=0.2):
     sheet = Image.open(SRC).convert('RGBA')
     left, top, size = crop
     subject = sheet.crop((left, top, left + size, top + size))
@@ -70,7 +74,7 @@ def render(crop, fill, outline, inset_ratio, border_ratio, glow_center):
     subject.putalpha(alpha)
 
     inset = int(S * inset_ratio)
-    radius = int(S * 0.2)
+    radius = int(S * radius_ratio)
     border = int(S * border_ratio)
 
     icon = Image.new('RGBA', (S, S), (0, 0, 0, 0))
@@ -82,7 +86,7 @@ def render(crop, fill, outline, inset_ratio, border_ratio, glow_center):
     rim = Image.new('RGBA', (S, S), PAPER)
     rim.putalpha(rounded_mask(S, inset, radius))
     icon.alpha_composite(rim)
-    plate_mask = rounded_mask(S, inset + border, radius - border)
+    plate_mask = rounded_mask(S, inset + border, max(0, radius - border))
     plate = radial_plate(S, glow_center, PLATE_DARK, PLATE_GLOW).convert('RGBA')
     plate.putalpha(plate_mask)
     icon.alpha_composite(plate)
@@ -116,6 +120,14 @@ def main():
     big = frames[-1]
     big.save(OUT_DIR / 'icon.ico', format='ICO', sizes=[(n, n) for n in sizes], append_images=frames[:-1])
     large.resize((512, 512), Image.LANCZOS).save(OUT_DIR / 'icon.png')
+
+    steam = ROOT / 'docs' / 'steam-store' / 'icons'
+    steam.mkdir(exist_ok=True)
+    app_icon = render(CROP_SMALL, fill=1.0, outline=12, inset_ratio=0.0, border_ratio=0.0,
+                      glow_center=(0.55, 0.6), radius_ratio=0.0)
+    app_icon.convert('RGB').resize((184, 184), Image.LANCZOS).save(steam / 'app_icon_184x184.jpg', quality=95, subsampling=0)
+    frames[-1].save(steam / 'shortcut_icon_256x256.png')
+    big.save(steam / 'shortcut_icon.ico', format='ICO', sizes=[(n, n) for n in sizes], append_images=frames[:-1])
 
     # 확인용 미리보기: 실제 크기 + 4배 확대(픽셀 그대로)
     preview = Image.new('RGBA', (1400, 560), (46, 46, 52, 255))
