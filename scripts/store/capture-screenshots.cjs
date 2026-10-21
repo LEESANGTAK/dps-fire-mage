@@ -15,7 +15,7 @@ const OUT = path.resolve(process.argv.find((a, i) => i > 1 && !a.startsWith('-')
 const WIDTH = 1920, HEIGHT = 1080, ZOOM = 1.5;
 
 // 스토어 화면에 개발용 도구(밸런스 로그 버튼)와 언어 전환 버튼은 노출하지 않습니다.
-const HIDE_DEV_UI = "['btn-export-telemetry','btn-victory-export-telemetry','btn-lang'].forEach((id) => document.getElementById(id)?.style.setProperty('display','none'));";
+const HIDE_DEV_UI = "['btn-export-telemetry','btn-victory-export-telemetry'].forEach((id) => document.getElementById(id)?.style.setProperty('display','none'));";
 
 const midRunDeck = { spell_fireblast: 1, spell_meteor: 1, spell_combustion: 1, spell_flame_patch: 1, sum_spirit: 1, crit_focus: 2, crit_heat: 1, burn_ignite: 1, util_power: 1 };
 const allSpells = { fireblast: true, meteor: true, combustion: true, flame_patch: true };

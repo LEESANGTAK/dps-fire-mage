@@ -48,6 +48,7 @@ function openPauseMenu(reason = 'manual') {
   }
   menuPaused = true;
   pauseCombatLoopSounds();
+  if (typeof closeSettings === 'function') closeSettings(); // 항상 메뉴 첫 화면부터 엽니다.
   renderPauseMenuInfo();
   const quitBtn = document.getElementById('btn-pause-quit');
   if (quitBtn) quitBtn.hidden = !canQuitGame();
@@ -114,14 +115,14 @@ function initPauseMenu() {
   // 문서 캡처 단계에서 받습니다. 메테오 안내 말풍선은 창 캡처 단계에서 Esc를 먼저 받아 전파를 멈추므로(말풍선만 닫힘) 여기까지 오지 않습니다.
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.repeat) return;
-    // 열려 있는 작은 창(최종 보스 이야기, 사운드 볼륨)은 Esc로 그것만 닫습니다.
+    // 최종 보스 이야기 말풍선이 열려 있으면 Esc로 그것만 닫습니다.
     if (document.querySelector('.story-open')) return;
-    const soundPopover = document.getElementById('sound-popover');
-    if (soundPopover && !soundPopover.classList.contains('hidden')) {
-      soundPopover.classList.add('hidden');
+    e.preventDefault();
+    // 설정 화면에서는 Esc가 '뒤로'입니다(일시정지는 유지).
+    if (typeof isSettingsOpen === 'function' && isSettingsOpen()) {
+      closeSettings();
       return;
     }
-    e.preventDefault();
     togglePauseMenu();
   }, true);
 

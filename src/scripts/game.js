@@ -577,12 +577,6 @@ function updateSoundUI() {
   const masterPct = Math.round((typeof state.masterVolume === 'number' ? state.masterVolume : 1.0) * 100);
   const bgmPct = Math.round((typeof state.bgmVolume === 'number' ? state.bgmVolume : 0.2) * 100);
   const sfxPct = Math.round((typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.1) * 100);
-  const isAllMuted = !state.soundOn || masterPct === 0 || (bgmPct === 0 && sfxPct === 0);
-
-  const soundBtn = document.getElementById('btn-sound');
-  if (soundBtn) {
-    soundBtn.textContent = isAllMuted ? tr('🔇 음소거') : tr('🔊 사운드');
-  }
 
   const muteAllBtn = document.getElementById('btn-sound-mute-all');
   if (muteAllBtn) {
@@ -4918,6 +4912,7 @@ function saveGame() {
       masterVolume: state.masterVolume,
       bgmVolume: state.bgmVolume,
       sfxVolume: state.sfxVolume,
+      motionPref: typeof getMotionPref === 'function' ? getMotionPref() : 'system',
       unfolded: state.unfolded,
       grimoires: state.grimoires,
       stats: state.stats,
@@ -4959,6 +4954,7 @@ function loadGame() {
     if (typeof data.masterVolume === 'number') state.masterVolume = Math.max(0, Math.min(1, data.masterVolume));
     if (typeof data.bgmVolume === 'number') state.bgmVolume = Math.max(0, Math.min(1, data.bgmVolume));
     if (typeof data.sfxVolume === 'number') state.sfxVolume = Math.max(0, Math.min(1, data.sfxVolume));
+    if (typeof data.motionPref === 'string' && typeof setMotionPref === 'function') setMotionPref(data.motionPref);
     if (data.unfolded) {
       for (const key of Object.keys(state.unfolded)) {
         if (typeof data.unfolded[key] === 'boolean') state.unfolded[key] = data.unfolded[key];
@@ -5062,29 +5058,11 @@ function initEvents() {
     });
   }
 
-  const soundBtn = document.getElementById('btn-sound');
-  const soundPopover = document.getElementById('sound-popover');
-  const soundMenuWrap = document.getElementById('sound-menu-wrap');
+  // 사운드 조절은 설정 화면(settings-menu.js)의 사운드 묶음에 있습니다.
   const muteAllBtn = document.getElementById('btn-sound-mute-all');
   const masterSlider = document.getElementById('slider-master-vol');
   const bgmSlider = document.getElementById('slider-bgm-vol');
   const sfxSlider = document.getElementById('slider-sfx-vol');
-
-  if (soundBtn && soundPopover) {
-    soundBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      soundPopover.classList.toggle('hidden');
-      updateSoundUI();
-    });
-  }
-
-  window.addEventListener('pointerdown', (e) => {
-    if (soundPopover && !soundPopover.classList.contains('hidden')) {
-      if (soundMenuWrap && !soundMenuWrap.contains(e.target)) {
-        soundPopover.classList.add('hidden');
-      }
-    }
-  });
 
   if (muteAllBtn) {
     muteAllBtn.addEventListener('click', () => {
@@ -5175,13 +5153,6 @@ function initEvents() {
     victoryExportBtn.addEventListener('click', () => playtestTelemetry.copyToClipboard());
   }
 
-  document.getElementById('btn-reset-save').addEventListener('click', () => {
-    if (confirm(tr('처음부터 다시 시작하시겠습니까?'))) {
-      saveStorage.remove(SAVE_KEY);
-      location.reload();
-    }
-  });
-
   // 로그라이크 마도서 각성 모달 이벤트 초기화
   initAwakeningModalEvents();
 
@@ -5232,6 +5203,7 @@ window.addEventListener('DOMContentLoaded', () => {
   resizeCanvas();
   initEvents();
   if (typeof initPauseMenu === 'function') initPauseMenu();
+  if (typeof initSettingsMenu === 'function') initSettingsMenu();
   updateBgmPlayback();
   loadStage(state.currentStage);
   updatePityCritBadgeUI();

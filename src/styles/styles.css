@@ -118,57 +118,7 @@ body {
   border-color: var(--fire-gold);
 }
 
-.btn-danger-outline {
-  color: #fca5a5;
-  border-color: #7f1d1d;
-}
-
-.btn-danger-outline:hover {
-  background: #451a1a;
-  border-color: #ef4444;
-}
-
-/* 사운드 BGM / SFX 볼륨 조절 팝오버 */
-.sound-menu-wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.sound-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 200;
-  width: 220px;
-  background: rgba(13, 18, 28, 0.97);
-  border: 1.5px solid #d69e2e;
-  border-radius: 10px;
-  padding: 11px 13px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.85), 0 0 16px rgba(251, 191, 36, 0.22);
-  backdrop-filter: blur(8px);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sound-popover.hidden {
-  display: none !important;
-}
-
-.sound-popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(214, 158, 46, 0.28);
-  padding-bottom: 6px;
-}
-
-.sound-popover-title {
-  font-size: 0.78rem;
-  font-weight: 900;
-  color: #fde047;
-}
-
+/* 사운드 볼륨 조절(설정 화면 › 사운드). 종이 화풍 덧칠은 paper-ui.css의 설정 화면 묶음 */
 .sound-mute-toggle-btn {
   background: #1e293b;
   border: 1px solid #475569;

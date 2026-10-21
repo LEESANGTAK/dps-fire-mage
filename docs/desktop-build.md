@@ -7,7 +7,7 @@
 | 명령 | 용도 |
 | --- | --- |
 | `npm run desktop` | 개발 실행 (F12 개발자 도구) |
-| `npm run desktop:smoke` | 창 없이 부팅 → 일시정지 메뉴의 게임 종료 버튼 노출 → 저장 → 파일 확인 → 새로고침 복원 → 초기화 버튼 → 외부 이동 차단을 검증하고 `SMOKE_RESULT` JSON 출력 |
+| `npm run desktop:smoke` | 창 없이 부팅 → 일시정지 메뉴의 게임 종료 버튼·설정 화면의 화면 묶음 노출 → 창 크기 변경 → 저장 → 파일 확인 → 새로고침 복원 → 초기화 버튼(두 번 눌러야 실행) → 외부 이동 차단을 검증하고 `SMOKE_RESULT` JSON 출력 |
 | `npm run dist:win` | Steam 업로드용 폴더 빌드 → `dist/win-unpacked/` (`DPS Fire Mage.exe`) |
 
 패키징된 실행 파일도 `"DPS Fire Mage.exe" --smoke-test`로 같은 검증을 할 수 있습니다. 빌드에서 `previews/`, `docs/`, `tests/`, `scripts/`, `assets/art/concepts/`는 제외됩니다.
@@ -15,7 +15,8 @@
 ## 구조
 
 - `electron/main.cjs`: 창(1280×800, 최소 960×600), F11·Alt+Enter 전체화면, 게임 밖 이동·새 창 차단, 단일 실행, 창 닫기 직전 마지막 저장.
-- `electron/preload.cjs`: 렌더러에 `window.desktopSave`(read·write·remove)와 `window.desktopApp`(배포 빌드 여부, `quit`)만 노출합니다. `quit`은 일시정지 메뉴의 [게임 종료]가 쓰며, 창 닫기와 같은 경로(마지막 저장 → 디스크 기록 → 종료)를 탑니다. `contextIsolation`·`sandbox` 사용, `nodeIntegration` 끔.
+- `electron/preload.cjs`: 렌더러에 `window.desktopSave`(read·write·remove), `window.desktopApp`(배포 빌드 여부, `quit`), `window.desktopWindow`(화면 상태 조회·전체화면·창 크기)만 노출합니다. `quit`은 일시정지 메뉴의 [게임 종료]가 쓰며, 창 닫기와 같은 경로(마지막 저장 → 디스크 기록 → 종료)를 탑니다. `contextIsolation`·`sandbox` 사용, `nodeIntegration` 끔.
+- `electron/window-settings.cjs`: 설정 화면 › 화면의 창/전체화면·창 크기(1280×800·1600×900·1920×1080, 게임 화면 기준)를 `%APPDATA%\DPS Fire Mage\window-settings.json`에 저장합니다. 다음 실행 때 이 크기로 열고, 작업 영역보다 크면 줄입니다. 기기마다 화면이 다르므로 Steam 클라우드 대상(`saves/`)에 넣지 않습니다.
 - `electron/save-store.cjs`: 파일 저장소. 임시 파일에 쓴 뒤 교체(원자적 쓰기), 직전 정상본을 `.bak`으로 보존, 본 파일이 깨지면 백업에서 복구, 250ms 단위로 모아 쓰고 종료 시 남은 쓰기를 마칩니다.
 - `src/scripts/save-storage.js`: 게임이 쓰는 저장 API. 데스크톱이면 파일, 웹이면 localStorage를 씁니다. 데스크톱 첫 실행 때 같은 키의 localStorage 세이브가 있으면 파일로 옮깁니다.
 
@@ -36,4 +37,4 @@
 
 - Steamworks SDK 연동(업적·오버레이·클라우드 API): `steamworks.js` 등 네이티브 모듈 도입 시 `npm run dist:win`의 네이티브 재빌드 단계를 확인합니다.
 - 코드 서명 인증서(미서명 시 Windows SmartScreen 경고).
-- 해상도·창 모드 옵션 UI, 스팀덱(1280×800) 실기 확인.
+- 스팀덱(1280×800) 실기 확인(창 모드·화면 옵션 UI는 설정 화면에 구현됨).

@@ -63,14 +63,6 @@ const I18N = (() => {
     location.reload();
   }
 
-  // 상단 언어 전환 버튼: 지금과 반대 언어 이름을 그 언어로 보여줍니다.
-  function bindToggle() {
-    const btn = typeof document !== 'undefined' && document.getElementById('btn-lang');
-    if (!btn) return;
-    btn.textContent = lang === 'ko' ? '🌐 English' : '🌐 한국어';
-    btn.addEventListener('click', () => setLang(lang === 'ko' ? 'en' : 'ko'));
-  }
-
   // 큰 수 표기: 한국어는 만·억 단위, 영어는 K·M·B 단위.
   function formatNumber(num) {
     if (num < 1000) return Math.round(num).toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US');
@@ -83,7 +75,7 @@ const I18N = (() => {
     return `${val.toFixed(digits)}${units[unitIdx]}`;
   }
 
-  return { lang, t: translate, applyStatic, setLang, bindToggle, formatNumber, normalize };
+  return { lang, t: translate, applyStatic, setLang, formatNumber, normalize };
 })();
 const tr = I18N.t;
 // 카드 이름·설명: 영어일 때 title_en/desc_en(엑셀 '영문' 열)을 쓰고, 비어 있으면 한글로 대체합니다.
@@ -95,6 +87,5 @@ function cardText(card, field) {
 
 if (typeof document !== 'undefined' && document.body) {
   I18N.applyStatic(document.body);
-  I18N.bindToggle();
 }
 if (typeof module !== 'undefined') module.exports = { I18N, tr, cardText };
