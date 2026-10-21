@@ -598,3 +598,123 @@
 .dc-chip-icon { font-size: .85rem; }
 @keyframes dcPop { 0% { opacity: 0; scale: .7; } 60% { opacity: 1; scale: 1.04 .97; } 100% { opacity: 1; scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .defeat-cause.dc-pop { animation: none; } }
+
+/* ==========================================
+   Esc 일시정지 메뉴 (pause-menu.js)
+   모든 창(각성 카드·결과창·툴팁) 위에 뜨고, 뒤 화면은 흐리게 가려 멈춘 장면을 분석하는 용도로 쓰기 어렵게 합니다.
+   ========================================== */
+.pause-menu-backdrop {
+  --pp-ink: #241b22;
+  --pp-board: #2e2329;
+  --pp-sheet: #3a2c31;
+  --pp-kraft: #a88a64;
+  --pp-cream: #efe1c6;
+  --pp-cut: #fff0c5;
+  --pp-drop: #151119;
+  position: fixed;
+  inset: 0;
+  z-index: 10100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(14, 10, 14, 0.78);
+  backdrop-filter: blur(3px) saturate(0.6);
+  animation: vmBackdropFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pause-menu-backdrop.hidden { display: none !important; }
+.pause-menu-backdrop.pause-closing { animation: pauseBackdropOut 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes pauseBackdropOut { 0%, 30% { opacity: 1; } 100% { opacity: 0; } }
+
+.pause-menu-card {
+  position: relative;
+  width: min(320px, 100%);
+  padding: 26px 22px 16px;
+  text-align: center;
+  background: radial-gradient(rgba(255, 240, 197, 0.05) 1.2px, transparent 1.7px) 0 0 / 16px 16px, var(--pp-board);
+  border: 3px solid var(--pp-ink);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 3px var(--pp-kraft), inset 0 0 0 5px var(--pp-ink), 0 7px 0 var(--pp-drop), 0 18px 40px rgba(0, 0, 0, 0.6);
+  animation: vmCardPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+/* 닫힐 때: 종이 한 장이 살짝 들렸다가 위로 빠집니다. */
+.pause-closing .pause-menu-card { animation: pauseCardOut 0.32s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
+@keyframes pauseCardOut {
+  0% { transform: none; opacity: 1; }
+  35% { transform: translateY(4px) scale(1.02, 0.97); opacity: 1; }
+  100% { transform: translateY(-36px) scale(0.92) rotate(-2deg); opacity: 0; }
+}
+
+/* 머리 리본: 결과창 리본과 같은 크림색 종이 띠 */
+.pause-menu-ribbon {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  padding: 5px 18px 6px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: var(--pp-ink);
+  background: var(--pp-cream);
+  border: 2.5px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px var(--pp-cut), 0 3px 0 var(--pp-drop);
+}
+
+.pause-menu-info { display: flex; justify-content: center; gap: 8px; margin: 4px 0 16px; }
+.pause-menu-chip {
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f3d391;
+  background: var(--pp-sheet);
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(168, 138, 100, 0.45), 0 2px 0 var(--pp-drop);
+}
+.pause-menu-time { font-variant-numeric: tabular-nums; color: #fff4dc; }
+
+.pause-menu-actions { display: flex; flex-direction: column; gap: 10px; }
+.pause-menu-btn { width: 100%; }
+.pause-menu-quit {
+  padding: 9px 14px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #cdbda6;
+  background: var(--pp-sheet);
+  border: 2.5px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(168, 138, 100, 0.5), 0 4px 0 var(--pp-drop);
+  cursor: pointer;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s cubic-bezier(0.16, 1, 0.3, 1), color 0.12s;
+}
+.pause-menu-quit:hover { color: #fca5a5; transform: translateY(-2px); box-shadow: inset 0 0 0 1px rgba(168, 138, 100, 0.5), 0 6px 0 var(--pp-drop); }
+.pause-menu-quit:active { transform: translateY(4px); box-shadow: inset 0 0 0 1px rgba(168, 138, 100, 0.5), 0 0 0 var(--pp-drop); }
+.pause-menu-btn:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+
+.pause-menu-hint { margin-top: 12px; font-size: 0.7rem; color: #8f8270; }
+.pause-menu-hint kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font: inherit;
+  font-weight: 800;
+  color: var(--pp-ink);
+  background: #cdb48c;
+  border: 2px solid var(--pp-ink);
+  border-radius: 2px;
+  box-shadow: 0 2px 0 var(--pp-drop);
+}
+
+/* 상단 ⏸ 버튼 */
+.btn-top.btn-pause { min-width: 34px; font-weight: 900; }
+
+/* 메뉴가 떠 있는 동안 뒤 화면의 CSS 애니메이션(숫자 비행·펄스·몬스터 호흡)도 그 자리에서 멈춥니다. */
+body.game-menu-paused > :not(.pause-menu-backdrop),
+body.game-menu-paused > :not(.pause-menu-backdrop) * { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pause-menu-card, .pause-closing .pause-menu-card { animation: none; }
+  .pause-menu-backdrop.pause-closing { animation: pauseBackdropOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+}

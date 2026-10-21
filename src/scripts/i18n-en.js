@@ -288,6 +288,13 @@ const I18N_EN = {
   '일반 웨이브 각성 카드 선택지 3장 → 2장': 'Normal wave card choices: 3 → 2',
   '10스테이지 이후 보스 광폭화 시간 -30%': 'Boss enrage timer -30% (stage 10+)',
   '불의 심장 보호막 +150%, 제한 시간 10초 → 6초, 못 깨면 회복 10% → 30%': 'Heart of Fire shield +150%, time limit 10s → 6s, heals 30% (was 10%) if not broken',
-  '모든 몬스터 체력 +10% 추가': 'All monster health +10% more'
+  '모든 몬스터 체력 +10% 추가': 'All monster health +10% more',
+
+  // 일시정지 메뉴
+  '일시정지 (Esc)': 'Pause (Esc)',
+  '⏸ 일시정지': '⏸ Paused',
+  '{stage} / {total} 스테이지': 'Stage {stage} / {total}',
+  '▶ 계속': '▶ Resume',
+  '⏻ 게임 종료': '⏻ Quit Game'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

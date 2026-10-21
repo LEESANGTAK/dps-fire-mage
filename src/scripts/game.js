@@ -2703,6 +2703,7 @@ function fireSpellProjectile(type, baseMult, isCombustingSnapshot = false) {
 
 function triggerSkill(skillKey, isManual = false) {
   if (typeof isCombatHeld === 'function' && isCombatHeld()) return false;
+  if (typeof isMenuPaused === 'function' && isMenuPaused()) return false; // Esc 일시정지 메뉴(pause-menu.js)
   const stats = getPlayerStats();
   const c = state.combat;
 
@@ -2932,6 +2933,7 @@ function armMeteorInstant(skipBeat) {
 const SPELL_QUEUE_WINDOW = 3.0; // 초. 이보다 오래 기다린 입력은 버립니다(가장 긴 시전보다 깁니다).
 
 function requestManualSkill(skillKey) {
+  if (typeof isMenuPaused === 'function' && isMenuPaused()) return false; // Esc 일시정지 메뉴(pause-menu.js)
   const c = state.combat;
   if (triggerSkill(skillKey, true)) {
     if (c.queuedSkill === skillKey) clearQueuedSkill();
@@ -4493,6 +4495,11 @@ function gameLoop(nowMs) {
   // 경과 시간은 0~0.1초로 제한합니다(첫 프레임 시각이 기준 시각보다 앞서면 음수가 되어 연출 시간이 거꾸로 흐름).
   const dt = Math.max(0, Math.min(0.1, (nowMs - lastTime) / 1000));
   lastTime = Math.max(lastTime, nowMs);
+  // Esc 일시정지 메뉴(pause-menu.js): 모달 정지보다 강하게 전부 멈춥니다. 투사체·파티클·전장 애니메이션도 마지막 장면에서 멈춥니다.
+  if (typeof isMenuPaused === 'function' && isMenuPaused()) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
   if (arenaEnvironment) {
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     arenaEnvironment.update(dt, state.isPaused || document.hidden, reduced);
@@ -5224,6 +5231,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateSkillActionBarVisibility();
   resizeCanvas();
   initEvents();
+  if (typeof initPauseMenu === 'function') initPauseMenu();
   updateBgmPlayback();
   loadStage(state.currentStage);
   updatePityCritBadgeUI();

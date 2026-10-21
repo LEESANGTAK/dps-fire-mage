@@ -38,6 +38,11 @@ ipcMain.on('save:write', (event, key, value) => {
   try { saveStore.write(key, value); } catch (e) { console.error('[main] 세이브 거부', e.message); }
 });
 ipcMain.on('app:is-packaged', (event) => { event.returnValue = app.isPackaged; });
+// 일시정지 메뉴의 [게임 종료]: 창을 닫아 'close' 처리(마지막 저장 → flush → 종료)를 그대로 탑니다.
+ipcMain.on('app:quit', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.close(); else app.quit();
+});
 ipcMain.on('save:remove', (event, key) => {
   try { saveStore.remove(key); event.returnValue = true; } catch (e) { event.returnValue = false; }
 });
@@ -115,11 +120,13 @@ async function runSmokeTest(win) {
       desktop: typeof saveStorage === 'object' && saveStorage.isDesktop,
       scriptsLoaded: typeof configureComicMonster === 'function' && typeof getPaperMonsterFrame === 'function',
       stage: state.currentStage,
-      telemetryButton: Boolean(document.getElementById('btn-export-telemetry'))
+      telemetryButton: Boolean(document.getElementById('btn-export-telemetry')),
+      quitButton: typeof desktopApp.quit === 'function' && document.getElementById('btn-pause-quit').hidden === false
     })`);
     result.steps.boot = page;
     if (!page.hasState || !page.scriptsLoaded) return fail('게임 스크립트가 로드되지 않았습니다.');
     if (!page.desktop) return fail('데스크톱 세이브 저장소가 연결되지 않았습니다.');
+    if (!page.quitButton) return fail('일시정지 메뉴의 게임 종료 버튼이 데스크톱에서 보이지 않습니다.');
     // 개발용 밸런스 로그 버튼은 배포 빌드에서만 사라져야 합니다.
     if (page.telemetryButton === app.isPackaged) return fail(`밸런스 로그 버튼 노출이 빌드 종류와 맞지 않습니다(배포=${app.isPackaged}).`);
 
