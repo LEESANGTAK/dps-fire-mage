@@ -9,7 +9,7 @@
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="src/styles/styles.css?v=balance-v2-3" />
   <link rel="stylesheet" href="src/styles/art.css?v=final-boss-1" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=settings-1" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=title-1" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -39,7 +39,6 @@
 
     <div class="top-controls">
       <button type="button" class="btn-top btn-pause" id="btn-pause" title="일시정지 (Esc)" aria-label="일시정지 (Esc)">⏸</button>
-      <button class="btn-top btn-hall-of-fame unfold-hidden" id="btn-hall-of-fame" title="최종 보스 스피드런 기록을 확인합니다">🏆 명예의 전당</button>
       <button type="button" class="btn-top" id="btn-export-telemetry" title="플레이테스트 밸런스 로그(TTK, DPS, 덱 기록)를 클립보드로 복사합니다">📋 밸런스 로그</button>
     </div>
   </header>
@@ -353,6 +352,29 @@
     </div>
   </div>
 
+  <!-- 타이틀 화면: 게임을 켜면 먼저 뜨고, 버튼은 해금될 때만 나타납니다 (title-screen.js) -->
+  <div class="title-screen hidden" id="title-screen">
+    <div class="title-shade" aria-hidden="true"></div>
+    <div class="title-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <img class="title-logo" src="assets/art/title-logo.png" alt="DPS: Fire Mage" draggable="false" />
+    <div class="title-menu" id="title-menu">
+      <button type="button" class="victory-btn title-btn" id="btn-title-start" hidden>▶ 시작</button>
+      <button type="button" class="victory-btn title-btn" id="btn-title-continue" hidden>▶ 이어하기 <small class="title-continue-info" id="title-continue-info"></small></button>
+      <button type="button" class="victory-btn title-btn" id="btn-title-new-run" hidden>⚡ 새 런</button>
+      <button type="button" class="pause-menu-sub title-btn" id="btn-title-hall" hidden>🏆 명예의 전당</button>
+    </div>
+    <div class="title-new-run" id="title-new-run" hidden>
+      <button type="button" class="settings-back" id="btn-title-new-run-back" title="뒤로" aria-label="뒤로">◀</button>
+      <div class="title-new-run-head">⚡ 새 런</div>
+      <div id="title-run-setup-slot"></div>
+      <button type="button" class="victory-btn title-primary" id="btn-title-depart">▶ 출발</button>
+    </div>
+    <div class="title-corner">
+      <button type="button" class="title-corner-btn" id="btn-title-settings" title="설정" aria-label="설정">⚙</button>
+      <button type="button" class="title-corner-btn" id="btn-title-quit" title="게임 종료" aria-label="게임 종료" hidden>⏻</button>
+    </div>
+  </div>
+
   <!-- Esc 일시정지 메뉴: 전투·시계를 모두 멈추고 모든 창 위에 뜹니다 (pause-menu.js) -->
   <div class="pause-menu-backdrop hidden" id="pause-menu-backdrop" role="dialog" aria-modal="true" aria-labelledby="pause-menu-title">
     <div class="pause-menu-card">
@@ -364,6 +386,8 @@
       <div class="pause-menu-actions">
         <button type="button" class="victory-btn pause-menu-btn" id="btn-pause-resume">▶ 계속</button>
         <button type="button" class="pause-menu-btn pause-menu-sub" id="btn-pause-settings">⚙ 설정</button>
+        <button type="button" class="pause-menu-btn pause-menu-sub" id="btn-pause-title">🏠 타이틀로</button>
+        <button type="button" class="pause-menu-btn pause-menu-sub pause-menu-abandon" id="btn-pause-abandon" hidden>🏳️ 런 포기</button>
         <button type="button" class="pause-menu-btn pause-menu-sub pause-menu-quit" id="btn-pause-quit" hidden>⏻ 게임 종료</button>
       </div>
       <div class="pause-menu-hint"><kbd>Esc</kbd></div>
@@ -464,8 +488,9 @@
   <script src="src/scripts/save-storage.js?v=desktop-save-1"></script>
   <script src="src/scripts/meta-progression.js?v=meteor-coach-1"></script>
   <script src="src/scripts/meta-ui.js?v=meta-1"></script>
-  <script src="src/scripts/pause-menu.js?v=settings-1"></script>
-  <script src="src/scripts/settings-menu.js?v=settings-1"></script>
-  <script src="src/scripts/game.js?v=settings-1"></script>
+  <script src="src/scripts/pause-menu.js?v=title-1"></script>
+  <script src="src/scripts/settings-menu.js?v=title-1"></script>
+  <script src="src/scripts/title-screen.js?v=title-1"></script>
+  <script src="src/scripts/game.js?v=title-1"></script>
 </body>
 </html>

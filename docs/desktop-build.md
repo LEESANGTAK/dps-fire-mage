@@ -7,7 +7,7 @@
 | 명령 | 용도 |
 | --- | --- |
 | `npm run desktop` | 개발 실행 (F12 개발자 도구) |
-| `npm run desktop:smoke` | 창 없이 부팅 → 일시정지 메뉴의 게임 종료 버튼·설정 화면의 화면 묶음 노출 → 창 크기 변경 → 저장 → 파일 확인 → 새로고침 복원 → 초기화 버튼(두 번 눌러야 실행) → 외부 이동 차단을 검증하고 `SMOKE_RESULT` JSON 출력 |
+| `npm run desktop:smoke` | 창 없이 부팅(타이틀 화면) → 일시정지 메뉴의 게임 종료 버튼·설정 화면의 화면 묶음 노출 → 창 크기 변경 → 저장 → 파일 확인 → 새로고침 복원 → 초기화 버튼(두 번 눌러야 실행) → 외부 이동 차단을 검증하고 `SMOKE_RESULT` JSON 출력 |
 | `npm run dist:win` | Steam 업로드용 폴더 빌드 → `dist/win-unpacked/` (`DPS Fire Mage.exe`) |
 
 패키징된 실행 파일도 `"DPS Fire Mage.exe" --smoke-test`로 같은 검증을 할 수 있습니다. 빌드에서 `previews/`, `docs/`, `tests/`, `scripts/`, `assets/art/concepts/`는 제외됩니다.

@@ -172,6 +172,7 @@ async function runSmokeTest(win) {
       scriptsLoaded: typeof configureComicMonster === 'function' && typeof getPaperMonsterFrame === 'function',
       stage: state.currentStage,
       telemetryButton: Boolean(document.getElementById('btn-export-telemetry')),
+      titleOpen: isTitleOpen(),
       quitButton: typeof desktopApp.quit === 'function' && document.getElementById('btn-pause-quit').hidden === false,
       displaySettings: (openPauseMenu('manual'), openSettings(), !document.getElementById('settings-display-group').hidden
         && document.querySelectorAll('#settings-window-size button').length === 3
@@ -180,6 +181,7 @@ async function runSmokeTest(win) {
     result.steps.boot = page;
     if (!page.hasState || !page.scriptsLoaded) return fail('게임 스크립트가 로드되지 않았습니다.');
     if (!page.desktop) return fail('데스크톱 세이브 저장소가 연결되지 않았습니다.');
+    if (!page.titleOpen) return fail('부팅하면 타이틀 화면이 떠야 합니다.');
     if (!page.quitButton) return fail('일시정지 메뉴의 게임 종료 버튼이 데스크톱에서 보이지 않습니다.');
     if (!page.displaySettings) return fail('설정 화면의 화면 모드·창 크기 묶음이 데스크톱에서 보이지 않습니다.');
     // 창 크기 변경: 1280×800 → 1600×900(작업 영역에 들어갈 때만) → 화면 크기가 실제로 바뀌는지

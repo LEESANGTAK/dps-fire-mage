@@ -3,8 +3,12 @@
  * - 모달 정지(state.isPaused: 각성 카드·결과창)와 따로 움직이는 '메뉴 정지'입니다. 메뉴를 닫아도 열려 있던 모달은 그대로 멈춰 있습니다.
  * - 메뉴가 열려 있는 동안 전투·투사체·쿨다운·시전·스피드런 시계·전장 애니메이션이 모두 멈춥니다(game.js gameLoop).
  * - [계속]을 누르면 메뉴가 닫힌 뒤 짧은 복귀 호흡(PAUSE_RESUME_BREATH_MS) 동안 계속 멈춰 있다가 재개합니다.
- * - [게임 종료]는 데스크톱 빌드에만 보입니다(마지막 저장 후 창을 닫음). */
+ * - [게임 종료]는 데스크톱 빌드에만 보입니다(마지막 저장 후 창을 닫음).
+ * - [🏠 타이틀로]는 저장 후 타이틀 화면(title-screen.js)으로, [🏳️ 런 포기]는 한 번 더 눌러야 패배 결과창으로 갑니다.
+ *   런 포기는 전투 중(각성 카드·결과창이 없을 때) 진행 중인 런에만 보입니다. */
 const PAUSE_RESUME_BREATH_MS = 600;
+const PAUSE_ABANDON_CONFIRM_MS = 3000;
+let pauseAbandonArmed = null;
 
 let menuPaused = false;
 let pauseResumeTimer = null;
@@ -52,6 +56,12 @@ function openPauseMenu(reason = 'manual') {
   renderPauseMenuInfo();
   const quitBtn = document.getElementById('btn-pause-quit');
   if (quitBtn) quitBtn.hidden = !canQuitGame();
+  disarmAbandon();
+  const abandonBtn = document.getElementById('btn-pause-abandon');
+  if (abandonBtn) abandonBtn.hidden = !canAbandonRun();
+  // 각성 카드를 고르는 중에는 타이틀로 가지 않습니다(고른 뒤 다시 Esc).
+  const titleBtn = document.getElementById('btn-pause-title');
+  if (titleBtn) titleBtn.hidden = typeof awakeningModalOpen !== 'undefined' && awakeningModalOpen === true;
   const backdrop = document.getElementById('pause-menu-backdrop');
   if (backdrop) {
     backdrop.dataset.reason = reason;
@@ -83,6 +93,43 @@ function resumeFromPauseMenu() {
   return true;
 }
 
+// 타이틀로 가거나 런을 포기할 때: 복귀 호흡 없이 바로 메뉴를 걷습니다(다음 화면이 곧바로 덮음).
+function closePauseMenuImmediately() {
+  if (pauseResumeTimer) { clearTimeout(pauseResumeTimer); pauseResumeTimer = null; }
+  disarmAbandon();
+  if (typeof closeSettings === 'function') closeSettings({ keepMenu: true });
+  menuPaused = false;
+  const backdrop = document.getElementById('pause-menu-backdrop');
+  if (backdrop) { backdrop.classList.add('hidden'); backdrop.classList.remove('pause-closing'); }
+  if (document.body) document.body.classList.remove('game-menu-paused', 'game-menu-resuming');
+}
+
+function canAbandonRun() {
+  return typeof state === 'object' && !state.isPaused && !state.runFailed && !state.runRewarded;
+}
+
+function disarmAbandon() {
+  if (pauseAbandonArmed) { clearTimeout(pauseAbandonArmed); pauseAbandonArmed = null; }
+  const btn = document.getElementById('btn-pause-abandon');
+  if (btn && btn.classList.contains('armed')) {
+    btn.classList.remove('armed');
+    btn.textContent = tr('🏳️ 런 포기');
+  }
+}
+
+function onAbandonClick() {
+  const btn = document.getElementById('btn-pause-abandon');
+  if (!btn || !canAbandonRun()) return;
+  if (!btn.classList.contains('armed')) {
+    btn.classList.add('armed');
+    btn.textContent = tr('⚠️ 한 번 더 누르면 포기');
+    pauseAbandonArmed = setTimeout(disarmAbandon, PAUSE_ABANDON_CONFIRM_MS);
+    return;
+  }
+  closePauseMenuImmediately();
+  if (typeof abandonRun === 'function') abandonRun();
+}
+
 function togglePauseMenu() {
   if (menuPaused && !pauseResumeTimer) return resumeFromPauseMenu();
   return openPauseMenu('manual');
@@ -97,6 +144,7 @@ function quitGameFromPauseMenu() {
 // 자동 정지: 이미 모달로 멈춰 있거나 런이 끝난 상태라면 메뉴를 덮지 않습니다(돌아왔을 때 보던 창이 그대로 보이게).
 function autoPauseOnFocusLoss() {
   if (!pauseWindowFocused || menuPaused) return;
+  if (typeof isTitleOpen === 'function' && isTitleOpen()) return; // 타이틀에서는 전투가 이미 멈춰 있음
   if (typeof state === 'object' && (state.isPaused || state.runFailed)) return;
   openPauseMenu('focus');
 }
@@ -111,6 +159,10 @@ function initPauseMenu() {
     quitBtn.addEventListener('click', quitGameFromPauseMenu);
   }
   if (topBtn) topBtn.addEventListener('click', () => openPauseMenu('manual'));
+  const abandonBtn = document.getElementById('btn-pause-abandon');
+  if (abandonBtn) abandonBtn.addEventListener('click', onAbandonClick);
+  const titleBtn = document.getElementById('btn-pause-title');
+  if (titleBtn) titleBtn.addEventListener('click', () => { if (typeof returnToTitle === 'function') returnToTitle(); });
 
   // 문서 캡처 단계에서 받습니다. 메테오 안내 말풍선은 창 캡처 단계에서 Esc를 먼저 받아 전파를 멈추므로(말풍선만 닫힘) 여기까지 오지 않습니다.
   document.addEventListener('keydown', (e) => {
@@ -123,6 +175,8 @@ function initPauseMenu() {
       closeSettings();
       return;
     }
+    // 타이틀 화면에서는 Esc로 일시정지 메뉴를 열지 않습니다(이미 멈춰 있음).
+    if (typeof isTitleOpen === 'function' && isTitleOpen()) return;
     togglePauseMenu();
   }, true);
 

@@ -80,14 +80,22 @@ function openSettings() {
   return true;
 }
 
-function closeSettings() {
+// 타이틀에서 연 설정은 '뒤로'가 곧 타이틀로 돌아가기입니다(일시정지 메뉴 첫 화면을 거치지 않음).
+// keepMenu: 일시정지 메뉴 쪽에서 메뉴 전체를 걷는 중이라 여기서 다시 닫지 않습니다.
+function closeSettings(opts = {}) {
   if (!settingsOpen) return false;
   settingsOpen = false;
   disarmReset();
+  const backdrop = document.getElementById('pause-menu-backdrop');
+  const fromTitle = backdrop && backdrop.dataset && backdrop.dataset.reason === 'title';
   const main = document.querySelector('#pause-menu-backdrop .pause-menu-card:not(.settings-card)');
   const card = document.getElementById('settings-card');
   if (card) card.hidden = true;
   if (main) main.hidden = false;
+  if (fromTitle && !opts.keepMenu && typeof closePauseMenuImmediately === 'function') {
+    closePauseMenuImmediately();
+    return true;
+  }
   const settingsBtn = document.getElementById('btn-pause-settings');
   if (settingsBtn && typeof settingsBtn.focus === 'function') { try { settingsBtn.focus({ preventScroll: true }); } catch (e) { /* 무시 */ } }
   return true;

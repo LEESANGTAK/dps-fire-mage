@@ -154,7 +154,6 @@ const I18N_EN = {
   '시전속도': 'Haste',
   '몬스터 토벌로 획득하며, 마도서 각성 카드 다시 뽑기(리롤)에 사용됩니다': 'Earned by defeating monsters. Spend it to redraw Grimoire cards.',
   '🏆 명예의 전당': '🏆 Hall of Fame',
-  '최종 보스 스피드런 기록을 확인합니다': 'View your final boss speedrun records',
   '📋 밸런스 로그': '📋 Balance Log',
   '플레이테스트 밸런스 로그(TTK, DPS, 덱 기록)를 클립보드로 복사합니다': 'Copy the playtest balance log (TTK, DPS, deck) to the clipboard',
   '🗑️ 초기화': '🗑️ Reset',
@@ -311,6 +310,22 @@ const I18N_EN = {
   '창 크기': 'Window size',
   '💾 데이터': '💾 Data',
   '진행 초기화': 'Reset progress',
-  '⚠️ 한 번 더 누르면 초기화': '⚠️ Click again to reset'
+  '⚠️ 한 번 더 누르면 초기화': '⚠️ Click again to reset',
+
+  // 타이틀 화면·런 포기
+  '▶ 시작': '▶ Start',
+  '▶ 이어하기': '▶ Continue',
+  '결과 보기': 'View results',
+  '⚡ 새 런': '⚡ New Run',
+  '⚠️ 진행 중인 런 포기 · 한 번 더': '⚠️ Abandon current run · click again',
+  '▶ 출발': '▶ Go',
+  '뒤로': 'Back',
+  '설정': 'Settings',
+  '게임 종료': 'Quit game',
+  '🏠 타이틀로': '🏠 Title Screen',
+  '🏳️ 런 포기': '🏳️ Abandon Run',
+  '⚠️ 한 번 더 누르면 포기': '⚠️ Click again to abandon',
+  'STAGE {phase}-{step}에서 포기': 'Abandoned at STAGE {phase}-{step}',
+  '깬 스테이지만큼 숙련도를 얻었습니다. 새 런에서 다른 빌드를 시도해 보세요!': 'You earned mastery for the stages you cleared. Try a different build next run!'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

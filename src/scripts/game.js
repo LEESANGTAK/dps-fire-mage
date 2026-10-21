@@ -110,6 +110,7 @@ const state = {
   bestSpeedrunTime: null,
   bestReachedStage: 0,
   runFailed: false,
+  runEndReason: null, // 끝난 런의 사유: 'enrage'(보스 광폭화) · 'abandon'(런 포기)
   // 클리어 후 콘텐츠: 이번 런의 업화 단계, 영구 진행(숙련도·해금·단계별 기록), 이번 런 숙련도 지급 여부
   infernoLevel: 0,
   meta: normalizeMeta(null),
@@ -2697,7 +2698,7 @@ function fireSpellProjectile(type, baseMult, isCombustingSnapshot = false) {
 
 function triggerSkill(skillKey, isManual = false) {
   if (typeof isCombatHeld === 'function' && isCombatHeld()) return false;
-  if (typeof isMenuPaused === 'function' && isMenuPaused()) return false; // Esc 일시정지 메뉴(pause-menu.js)
+  if ((typeof isMenuPaused === 'function' && isMenuPaused()) || (typeof isTitleOpen === 'function' && isTitleOpen())) return false; // 일시정지 메뉴·타이틀 화면
   const stats = getPlayerStats();
   const c = state.combat;
 
@@ -2927,7 +2928,7 @@ function armMeteorInstant(skipBeat) {
 const SPELL_QUEUE_WINDOW = 3.0; // 초. 이보다 오래 기다린 입력은 버립니다(가장 긴 시전보다 깁니다).
 
 function requestManualSkill(skillKey) {
-  if (typeof isMenuPaused === 'function' && isMenuPaused()) return false; // Esc 일시정지 메뉴(pause-menu.js)
+  if ((typeof isMenuPaused === 'function' && isMenuPaused()) || (typeof isTitleOpen === 'function' && isTitleOpen())) return false; // 일시정지 메뉴·타이틀 화면
   const c = state.combat;
   if (triggerSkill(skillKey, true)) {
     if (c.queuedSkill === skillKey) clearQueuedSkill();
@@ -3320,13 +3321,10 @@ function checkAndTriggerUnfolds(silent = false) {
     triggerUnfoldPop('pill-haste');
   }
 
-  // 2. Stage 20(최종 보스) 클리어 시: 상단 명예의 전당(스피드런 기록) 버튼 개방
+  // 2. Stage 20(최종 보스) 클리어 시: 타이틀 화면의 명예의 전당(스피드런 기록) 버튼 개방(title-screen.js가 표시)
   if (!u.hallOfFame && state.campaignCleared) {
     u.hallOfFame = true;
     changed = true;
-    if (!silent) {
-      triggerUnfoldPop('btn-hall-of-fame');
-    }
   }
 
   applyUnfoldedVisibility();
@@ -3339,10 +3337,8 @@ function applyUnfoldedVisibility() {
   const u = state.unfolded;
   const pillCrit = document.getElementById('pill-crit');
   const pillHaste = document.getElementById('pill-haste');
-  const hallBtn = document.getElementById('btn-hall-of-fame');
   if (pillCrit) pillCrit.classList.toggle('unfold-hidden', !u.combatStats);
   if (pillHaste) pillHaste.classList.toggle('unfold-hidden', !u.combatStats);
-  if (hallBtn) hallBtn.classList.toggle('unfold-hidden', !u.hallOfFame);
 }
 
 const SPELL_ACTION_CONFIG = {
@@ -4063,6 +4059,8 @@ function openVictoryModal(isFirstVictory = false) {
   if (!modal || !grid) return;
 
   // 마도서 숙련도 연출과 새 런 설정(meta-ui.js). 패배 창도 이 함수를 거쳐 같은 영역을 씁니다.
+  // 새 런 설정 칸은 타이틀 화면과 함께 쓰므로, 결과창 자리로 되돌려 붙입니다.
+  if (typeof mountRunSetup === 'function') mountRunSetup('results');
   if (typeof renderRunProgress === 'function') {
     renderRunProgress();
     renderRunSetup();
@@ -4300,6 +4298,7 @@ function renderDefeatCause(hpLeftPct) {
 function failRunByEnrage() {
   if (state.runFailed) return;
   state.runFailed = true;
+  state.runEndReason = 'enrage';
   state.isPaused = true;
   playtestTelemetry.onRunFailed(state.currentStage);
   triggerArenaShake('lg');
@@ -4309,10 +4308,25 @@ function failRunByEnrage() {
   saveGame();
 
   // 패배 순간을 1.2초간 인지할 여운을 둔 뒤 결과창 개방
-  setTimeout(() => openDefeatModal(), 1200);
+  setTimeout(() => openDefeatModal('enrage'), 1200);
 }
 
-function openDefeatModal() {
+// 일시정지 메뉴 › [🏳️ 런 포기]: 지금까지 깬 스테이지만큼 숙련도를 받고 패배 결과창으로 갑니다(광폭화 실패와 같은 보상 규칙).
+function abandonRun() {
+  if (state.runFailed || state.runRewarded || state.isPaused) return false;
+  state.runFailed = true;
+  state.runEndReason = 'abandon';
+  state.isPaused = true;
+  cancelKillBeat();
+  playtestTelemetry.onRunFailed(state.currentStage);
+  awardRunMastery(false);
+  saveGame();
+  openDefeatModal('abandon');
+  return true;
+}
+
+// reason: 'enrage'(보스 광폭화) · 'abandon'(일시정지 메뉴에서 포기)
+function openDefeatModal(reason = 'enrage') {
   openVictoryModal(false);
   const modal = document.getElementById('victory-modal');
   const grid = document.getElementById('victory-stats-grid');
@@ -4326,7 +4340,15 @@ function openDefeatModal() {
   document.getElementById('victory-modal-title').textContent = tr('{boss} 광폭화', { boss: data.name });
   document.getElementById('victory-modal-subtitle').textContent = tr('STAGE {phase}-{step} 보스를 제한 시간 안에 쓰러뜨리지 못했습니다. 새 런에서 다른 빌드를 시도해 보세요!', { phase: data.phase, step: data.stepInPhase });
   document.getElementById('btn-speedrun-retry').textContent = tr('⚡ 새 런 시작');
-  renderDefeatCause(hpLeftPct);
+  if (reason === 'abandon') {
+    document.getElementById('victory-crown-badge').textContent = tr('🏳️ 런 포기');
+    document.getElementById('victory-modal-title').textContent = tr('STAGE {phase}-{step}에서 포기', { phase: data.phase, step: data.stepInPhase });
+    document.getElementById('victory-modal-subtitle').textContent = tr('깬 스테이지만큼 숙련도를 얻었습니다. 새 런에서 다른 빌드를 시도해 보세요!');
+    const cause = document.getElementById('defeat-cause');
+    if (cause) cause.hidden = true;
+  } else {
+    renderDefeatCause(hpLeftPct);
+  }
 
   grid.innerHTML = `
     <div class="victory-stat-item">
@@ -4382,6 +4404,8 @@ function restartSpeedrunRun() {
   state.playTimeSec = 0;
   state.campaignCleared = false;
   state.runFailed = false;
+  state.runEndReason = null;
+  if (typeof closeTitleScreen === 'function') closeTitleScreen(); // 결과창·타이틀 어디서 시작해도 타이틀은 걷힙니다.
 
   // 업화 단계·해금 카드·단계별 최고 기록: 결과창에서 고른 값으로 새 런을 엽니다.
   const meta = state.meta;
@@ -4497,6 +4521,16 @@ function gameLoop(nowMs) {
   if (arenaEnvironment) {
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     arenaEnvironment.update(dt, state.isPaused || document.hidden, reduced);
+  }
+
+  if (typeof isTitleOpen === 'function' && isTitleOpen()) {
+    // 타이틀 화면: 전투·쿨다운·스피드런 시계는 멈추고, 마법사 호흡과 전장 배경만 흐릅니다.
+    try {
+      updateMageMotion(dt, false);
+      updateAndDrawVfx(dt);
+    } catch (e) {}
+    requestAnimationFrame(gameLoop);
+    return;
   }
 
   if (state.isPaused) {
@@ -4902,6 +4936,7 @@ function saveGame() {
       bestSpeedrunTime: state.bestSpeedrunTime || null,
       bestReachedStage: state.bestReachedStage || 0,
       runFailed: state.runFailed,
+      runEndReason: state.runEndReason,
       infernoLevel: state.infernoLevel,
       runRewarded: state.runRewarded,
       meta: state.meta,
@@ -4941,6 +4976,7 @@ function loadGame() {
     if (typeof data.bestSpeedrunTime === 'number') state.bestSpeedrunTime = data.bestSpeedrunTime;
     if (typeof data.bestReachedStage === 'number') state.bestReachedStage = data.bestReachedStage;
     if (typeof data.runFailed === 'boolean') state.runFailed = data.runFailed;
+    if (data.runEndReason === 'enrage' || data.runEndReason === 'abandon') state.runEndReason = data.runEndReason;
     // 영구 진행: 구형 세이브의 bestSpeedrunTime은 0단계 기록으로 옮깁니다.
     state.meta = normalizeMeta(data.meta, data.bestSpeedrunTime);
     state.infernoLevel = Math.min(clampInferno(data.infernoLevel), state.meta.infernoUnlocked);
@@ -5047,14 +5083,6 @@ function initEvents() {
     victoryCloseBtn.addEventListener('click', () => {
       playSound('item_select');
       closeVictoryModal();
-    });
-  }
-
-  const hallBtn = document.getElementById('btn-hall-of-fame');
-  if (hallBtn) {
-    hallBtn.addEventListener('click', () => {
-      playSound('item_select');
-      openVictoryModal(false);
     });
   }
 
@@ -5191,6 +5219,8 @@ function initDoomTrackerEvents() {
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
   applyFinalBossNames();
+  // 세이브가 없으면 첫 실행: 타이틀에 [시작] 하나만 보여 줍니다.
+  const hadSave = Boolean(saveStorage.read(SAVE_KEY));
   loadGame();
   const environmentCanvas = document.getElementById('arena-environment-canvas');
   const arena = document.getElementById('combat-arena');
@@ -5211,9 +5241,13 @@ window.addEventListener('DOMContentLoaded', () => {
   renderDeckStripUI();
   updateDoomProgressUI(state.currentStage);
   updateNotificationBadges();
-  if (state.runFailed) {
+  // 끝난 런의 결과창은 타이틀의 [이어하기]가 엽니다(결과를 아직 못 봤을 때).
+  if (typeof initTitleScreen === 'function') {
+    initTitleScreen(hadSave);
+    openTitleScreen();
+  } else if (state.runFailed) {
     state.isPaused = true;
-    openDefeatModal();
+    openDefeatModal(state.runEndReason || 'enrage');
   }
   requestAnimationFrame(gameLoop);
 });

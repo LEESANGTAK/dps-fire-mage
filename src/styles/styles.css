@@ -1726,17 +1726,7 @@ body {
    11. Stage 20 Hall of Fame & Speedrun Victory Modal
    ========================================== */
 
-.btn-hall-of-fame {
-  border-color: #fbbf24;
-  background: linear-gradient(135deg, rgba(180, 83, 9, 0.38) 0%, rgba(109, 40, 217, 0.38) 100%);
-  color: #fde047;
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.28);
-}
-
-.btn-hall-of-fame:hover {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.55) 0%, rgba(124, 58, 237, 0.55) 100%);
-  border-color: #fef08a;
-}
+/* 명예의 전당은 타이틀 화면의 버튼(paper-ui.css 타이틀 화면 묶음)에서 엽니다. */
 
 /* ==========================================
    모바일 & 태블릿 전용 반응형 레이아웃 (@media)
