@@ -14,7 +14,10 @@ const jsonPath = path.join(root, 'src', 'data', 'roguelike-cards.json');
 const deckPath = path.join(root, 'src', 'scripts', 'roguelike-deck.js');
 
 const cards = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-const source = fs.readFileSync(deckPath, 'utf8');
+const rawSource = fs.readFileSync(deckPath, 'utf8');
+// 줄바꿈(CRLF/LF)과 상관없이 블록을 찾고, 저장할 때는 원래 줄바꿈으로 되돌립니다.
+const crlf = rawSource.includes('\r\n');
+const source = rawSource.replace(/\r\n/g, '\n');
 const startToken = '  const DEFAULT_CARDS_RAW = ';
 const start = source.indexOf(startToken);
 const end = source.indexOf('\n  ];\n', start);
@@ -24,5 +27,5 @@ if (start < 0 || end < 0) {
 }
 const literal = JSON.stringify(cards, null, 2).split('\n').map((line, i) => (i ? `  ${line}` : line)).join('\n');
 const next = source.slice(0, start) + startToken + literal + ';\n' + source.slice(end + '\n  ];\n'.length);
-fs.writeFileSync(deckPath, next);
+fs.writeFileSync(deckPath, crlf ? next.replace(/\n/g, '\r\n') : next);
 console.log(`내장 fallback 카드 ${cards.length}종을 roguelike-cards.json과 동기화했습니다.`);

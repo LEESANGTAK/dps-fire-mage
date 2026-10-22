@@ -1297,3 +1297,34 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
   .enrage-intro, .enrage-intro.leaving, .boss-enrage-timer.intro-glow .enrage-track { animation: none; }
   .enrage-intro.leaving { opacity: 0; }
 }
+
+/* ==========================================
+   광폭화 남은 시간 보상 (캔디크러시 Sugar Crush 응용)
+   남은 타이머가 조각조각 끊겨 나가며 동전으로 날아가고, 끝에 "⏳ +골드" 꼬리표가 튀어나옵니다.
+   ========================================== */
+.boss-enrage-timer.time-bonus { color: #fde68a; }
+.boss-enrage-timer.time-bonus .enrage-fill { background: linear-gradient(90deg, #fde047, #fff7c2); transition: width 0.07s cubic-bezier(0.16, 1, 0.3, 1); }
+/* 조각이 떨어질 때마다 막대가 한 번 튀었다 돌아옴 */
+.boss-enrage-timer .enrage-track.bonus-tick { animation: timeBonusTick 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes timeBonusTick { 0% { transform: scale(1.08, 1.7); box-shadow: 0 0 10px 3px #fde047; } 100% { transform: none; box-shadow: none; } }
+.time-bonus-tag {
+  position: absolute;
+  left: calc(100% + 12px);
+  bottom: -6px;
+  padding: 3px 8px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #241b22;
+  white-space: nowrap;
+  background: #fde68a;
+  border: 2.5px solid #241b22;
+  border-radius: 3px;
+  box-shadow: 0 3px 0 #151119, 0 0 14px 3px #f59e0b88;
+  transform: rotate(-4deg);
+  animation: timeBonusTagPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  z-index: 4;
+}
+@keyframes timeBonusTagPop { 0% { opacity: 0; transform: translateX(-14px) scale(0.4) rotate(8deg); } 100% { opacity: 1; transform: rotate(-4deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .boss-enrage-timer .enrage-track.bonus-tick, .time-bonus-tag { animation: none; }
+}

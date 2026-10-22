@@ -335,11 +335,11 @@
       "rarity": "common",
       "build": "summon",
       "maxStack": 3,
-      "desc": "정령·불사조 등 <b>소환수 피해량이 +60%</b> 증가합니다.",
+      "desc": "정령·불사조 등 <b>소환수 피해량이 +30%</b> 증가합니다.",
       "title_en": "Spirit Fury",
-      "desc_en": "<b>Summon damage +60%</b> (Fire Spirits, Phoenix).",
+      "desc_en": "<b>Summon damage +30%</b> (Fire Spirits, Phoenix).",
       "stats": {
-        "spiritPct": 60
+        "spiritPct": 30
       },
       "prerequisite": "has_summon",
       "links": [
@@ -408,11 +408,11 @@
       "rarity": "common",
       "build": "burn",
       "maxStack": 3,
-      "desc": "화상·연소·불장판 등 <b>지속 피해량이 +65%</b> 증가합니다.",
+      "desc": "화상·연소·불장판 등 <b>지속 피해량이 +40%</b> 증가합니다.",
       "title_en": "Fierce Ignite",
-      "desc_en": "<b>Damage over time +65%</b> (Ignite, Meteor burn, Flame Patch).",
+      "desc_en": "<b>Damage over time +40%</b> (Ignite, Meteor burn, Flame Patch).",
       "stats": {
-        "burnPct": 65
+        "burnPct": 40
       },
       "links": [
         "spell_meteor",

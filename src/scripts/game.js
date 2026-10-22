@@ -1660,6 +1660,80 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
   }
 }
 
+// 광폭화 남은 시간 보상(캔디크러시 Sugar Crush 응용): 보스를 빨리 잡을수록 남은 시간이 골드로 바뀝니다.
+// 골드 = 보스 처치 골드 × goldMult × (남은 시간 / 제한 시간). 골드는 각성 카드 다시 뽑기에 쓰이므로, 빨리 잡으면 보스 전설을 고를 기회가 늘어납니다.
+// 최종 보스는 런이 끝나 골드를 쓸 곳이 없어 제외합니다.
+const ENRAGE_TIME_BONUS = { goldMult: 2, secPerChunk: 15, minChunks: 2, maxChunks: 6, startMs: 450, stepMs: 80 };
+
+function getEnrageTimeBonus(stageNum, remainingSec) {
+  const data = getStageData(stageNum);
+  if (!data || !data.isPhaseBoss || !data.enrage || stageNum >= FINAL_STAGE) return 0;
+  const ratio = Math.max(0, Math.min(1, (Number(remainingSec) || 0) / data.enrage));
+  return Math.round(data.gold * ENRAGE_TIME_BONUS.goldMult * ratio);
+}
+
+// 남은 타이머가 조각조각 끊겨 나가며(초가 뚝뚝 줄고) 조각마다 동전이 골드 칸으로 날아갑니다. 도착음은 한 음씩 높아집니다.
+// 골드 자체는 처치 순간 이미 지급했고, 이 연출은 보여 주기만 합니다(pendingCoinGold로 숫자가 동전 도착에 맞춰 오름).
+function spawnEnrageTimeBonus(bonus, remainingSec) {
+  const c = state.combat;
+  const timer = document.getElementById('boss-enrage-timer');
+  if (!(bonus > 0) || !timer) return;
+  const cfg = ENRAGE_TIME_BONUS;
+  const chunks = Math.max(cfg.minChunks, Math.min(cfg.maxChunks, Math.ceil(remainingSec / cfg.secPerChunk)));
+  const secPerStep = remainingSec / chunks;
+  const share = Math.floor(bonus / chunks);
+  state.pendingCoinGold = (state.pendingCoinGold || 0) + bonus;
+  c.timeBonusDraining = true;
+  timer.classList.add('time-bonus');
+  for (let i = 0; i < chunks; i++) {
+    scheduleKillBeat(() => {
+      c.bossEnrageRem = Math.max(0, remainingSec - secPerStep * (i + 1));
+      launchTimeBonusCoin(timer, i === chunks - 1 ? bonus - share * (chunks - 1) : share, 1 + i * 0.09, i);
+      if (i === chunks - 1) showTimeBonusTag(timer, bonus);
+    }, cfg.startMs + i * cfg.stepMs);
+  }
+}
+
+function launchTimeBonusCoin(timer, share, pitch, index) {
+  const layer = document.getElementById('coin-fx-layer');
+  const fill = document.getElementById('boss-enrage-fill');
+  const goldPillEl = document.getElementById('pill-gold') || document.getElementById('ui-gold');
+  if (!layer || !goldPillEl || typeof document.createElement !== 'function') {
+    state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - share);
+    return;
+  }
+  const from = (fill || timer).getBoundingClientRect();
+  const to = goldPillEl.getBoundingClientRect();
+  const startX = from.left + from.width; // 막대가 줄어드는 오른쪽 끝에서 튀어나옴
+  const startY = from.top + from.height * 0.5;
+  const endX = to.left + to.width * 0.5;
+  const endY = to.top + to.height * 0.5;
+  const el = document.createElement('div');
+  el.className = 'flying-gold-coin';
+  el.style.opacity = '0';
+  layer.appendChild(el);
+  const side = index % 2 === 0 ? -1 : 1;
+  flyingCoins.push({
+    el, startX, startY,
+    cp1X: startX + side * 34, cp1Y: startY - 60 - (index % 3) * 14,
+    cp2X: (startX + endX) * 0.5 + side * 30, cp2Y: Math.min(startY, endY) - 30,
+    endX, endY, delay: 0, life: 0, duration: 0.6, share, pitch, started: false
+  });
+  const spark = timer.querySelector('.enrage-track');
+  if (spark) {
+    spark.classList.remove('bonus-tick');
+    void spark.offsetWidth;
+    spark.classList.add('bonus-tick');
+  }
+}
+
+function showTimeBonusTag(timer, bonus) {
+  const old = timer.querySelector('.time-bonus-tag');
+  if (old) old.remove();
+  timer.insertAdjacentHTML('beforeend', `<div class="time-bonus-tag" aria-label="${tr('남은 시간 보너스')}">⏳ +${fmt(bonus)}</div>`);
+  playSound('proc', 1.3);
+}
+
 function updateFlyingCoins(dt) {
   for (let i = flyingCoins.length - 1; i >= 0; i--) {
     const c = flyingCoins[i];
@@ -1685,7 +1759,8 @@ function updateFlyingCoins(dt) {
         state.pendingCoinGold = 0;
       }
       triggerGoldPillPulse();
-      playSound('drop_coin');
+      if (c.pitch && state.soundOn) playFireballSfx('drop_coin', 0.92, c.pitch);
+      else playSound('drop_coin');
       continue;
     }
 
@@ -2171,6 +2246,13 @@ function loadStage(stageNum) {
   // 페이즈 보스 광폭화 제한 시간
   state.combat.bossEnrageRem = data.isPhaseBoss ? data.enrage : null;
   state.combat.enrageIntroChecked = false;
+  state.combat.timeBonusDraining = false;
+  const enrageTimerEl = document.getElementById('boss-enrage-timer');
+  if (enrageTimerEl) {
+    enrageTimerEl.classList.remove('time-bonus');
+    const tag = enrageTimerEl.querySelector && enrageTimerEl.querySelector('.time-bonus-tag');
+    if (tag) tag.remove();
+  }
   state.bestReachedStage = Math.max(state.bestReachedStage || 0, state.currentStage);
 
   // 최종 보스 불의 심장 보호막 상태 초기화
@@ -2232,6 +2314,14 @@ function onMonsterKilled() {
     totalGold += data.firstBonus;
   }
 
+  // 광폭화 남은 시간 보상: 지급은 지금, 연출은 처치 여운 동안(spawnEnrageTimeBonus)
+  const timeBonusRemaining = data.isPhaseBoss ? Math.max(0, state.combat.bossEnrageRem || 0) : 0;
+  const timeBonus = getEnrageTimeBonus(state.currentStage, timeBonusRemaining);
+  if (timeBonus > 0) {
+    state.gold += timeBonus;
+    addRunStat('timeBonusGold', timeBonus);
+  }
+
   state.gold += totalGold;
 
   if (isFinalBossKill) {
@@ -2263,6 +2353,7 @@ function onMonsterKilled() {
 
   // 골드는 쓰러진 몬스터에서 튀어나와 상단 골드 재화(#pill-gold)로 곡선 비행 흡수!
   spawnGoldCoinFlight(totalGold, isFirstClear || data.isPhaseBoss);
+  spawnEnrageTimeBonus(timeBonus, timeBonusRemaining);
 
   const pos = getTargetPos();
   // 재질에 맞는 사망 여운. 생물까지 유리처럼 조각내지 않습니다.
@@ -3318,7 +3409,7 @@ function maybeShowEnrageIntro() {
   if (!timer || typeof timer.insertAdjacentHTML !== 'function') return true;
   const old = timer.querySelector('.enrage-intro');
   if (old) old.remove();
-  timer.insertAdjacentHTML('beforeend', `<div class="enrage-intro" role="note"><b>${tr('⏳ 광폭화까지')}</b><span>${tr('0초가 되면 런 실패')}</span></div>`);
+  timer.insertAdjacentHTML('beforeend', `<div class="enrage-intro" role="note"><b>${tr('광폭화!')}</b><span>${tr('0초가 되면 런 실패!')}</span></div>`);
   timer.classList.add('intro-glow');
   const note = timer.querySelector('.enrage-intro');
   setTimeout(() => {
@@ -4900,7 +4991,7 @@ function updateLiveHUD() {
     if (enrageActive) {
       maybeShowEnrageIntro();
       const enrageTotal = getStageData(state.currentStage).enrage || 1;
-      enrageEl.classList.toggle('danger', c.bossEnrageRem <= 10);
+      enrageEl.classList.toggle('danger', c.bossEnrageRem <= 10 && !c.timeBonusDraining);
       document.getElementById('boss-enrage-time').textContent = `${Math.ceil(c.bossEnrageRem)}s`;
       document.getElementById('boss-enrage-fill').style.width = `${Math.max(0, Math.min(100, (c.bossEnrageRem / enrageTotal) * 100))}%`;
     }

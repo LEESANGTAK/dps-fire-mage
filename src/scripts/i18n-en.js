@@ -290,8 +290,9 @@ const I18N_EN = {
   '{stage} / {total} 스테이지': 'Stage {stage} / {total}',
   '▶ 계속': '▶ Resume',
   '⏻ 게임 종료': '⏻ Quit Game',
-  '⏳ 광폭화까지': '⏳ Enrage in',
-  '0초가 되면 런 실패': 'Run ends at 0',
+  '광폭화!': 'Enrage!',
+  '남은 시간 보너스': 'Time bonus',
+  '0초가 되면 런 실패!': 'Run ends at 0!',
   '⚙ 설정': '⚙ Settings',
 
   // 설정 화면
