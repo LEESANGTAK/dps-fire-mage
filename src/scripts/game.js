@@ -1663,7 +1663,46 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
 // 광폭화 남은 시간 보상(캔디크러시 Sugar Crush 응용): 보스를 빨리 잡을수록 남은 시간이 골드로 바뀝니다.
 // 골드 = 보스 처치 골드 × goldMult × (남은 시간 / 제한 시간). 골드는 각성 카드 다시 뽑기에 쓰이므로, 빨리 잡으면 보스 전설을 고를 기회가 늘어납니다.
 // 최종 보스는 런이 끝나 골드를 쓸 곳이 없어 제외합니다.
-const ENRAGE_TIME_BONUS = { goldMult: 2, secPerChunk: 15, minChunks: 2, maxChunks: 6, startMs: 450, stepMs: 80 };
+// 연출 순서(Sugar Crush처럼 먼저 크게 알리고, 그다음 바꿔 준다). 플레이어가 확실히 인지하도록 넉넉한 호흡으로 갑니다:
+//   0~1.9초 보스 격파 도장·처치 동전 → 숨 고르기 → bannerMs 축하 배너("대단해요! 번개 같은 처치!")
+//   → drainStartMs부터 타이머 조각이 동전으로. 첫 동전은 천천히 하나씩, 간격이 매번 줄어 마지막엔 다다다닥 몰아칩니다.
+//   → 마지막 동전이 닿을 때 "+골드" 꼬리표 → endPadMs 뒤 각성 카드 창. 보상이 없으면 평소처럼 1.9초 뒤 카드 창.
+const ENRAGE_TIME_BONUS = {
+  goldMult: 2,
+  secPerChunk: 10, minChunks: 3, maxChunks: 10, // 남은 10초마다 동전 1개(3~10개)
+  bannerMs: 2400, drainStartMs: 3600,
+  firstGapMs: 450, gapDecay: 0.62, minGapMs: 70, // 동전 출발 간격: 450 → 279 → 173 → 107 → 70 …
+  firstFlyMs: 1000, minFlyMs: 550, flyDecay: 0.7, // 첫 동전은 천천히 날고, 뒤로 갈수록 빨리 빨려 들어감
+  endPadMs: 900
+};
+
+function getTimeBonusChunks(remainingSec) {
+  const cfg = ENRAGE_TIME_BONUS;
+  return Math.max(cfg.minChunks, Math.min(cfg.maxChunks, Math.ceil((Number(remainingSec) || 0) / cfg.secPerChunk)));
+}
+
+// 동전마다 출발 시각과 비행 시간(ms, 처치 기준). 처음엔 느리게 하나씩, 점점 빠르게.
+function getTimeBonusSchedule(remainingSec) {
+  const cfg = ENRAGE_TIME_BONUS;
+  const list = [];
+  let at = cfg.drainStartMs;
+  for (let i = 0; i < getTimeBonusChunks(remainingSec); i++) {
+    const fly = Math.max(cfg.minFlyMs, Math.round(cfg.firstFlyMs * Math.pow(cfg.flyDecay, i)));
+    list.push({ at, fly });
+    at += Math.max(cfg.minGapMs, Math.round(cfg.firstGapMs * Math.pow(cfg.gapDecay, i)));
+  }
+  return list;
+}
+
+// 마지막 동전이 골드 칸에 닿는 시각(ms, 처치 기준)
+function getTimeBonusLandMs(remainingSec) {
+  return Math.max(...getTimeBonusSchedule(remainingSec).map((p) => p.at + p.fly));
+}
+
+// 보상이 있는 보스전의 처치 여운 길이(ms): 축하 연출이 끝난 뒤 카드 창을 엽니다.
+function getTimeBonusBeatMs(remainingSec) {
+  return getTimeBonusLandMs(remainingSec) + ENRAGE_TIME_BONUS.endPadMs;
+}
 
 function getEnrageTimeBonus(stageNum, remainingSec) {
   const data = getStageData(stageNum);
@@ -1673,33 +1712,55 @@ function getEnrageTimeBonus(stageNum, remainingSec) {
 }
 
 // 남은 타이머가 조각조각 끊겨 나가며(초가 뚝뚝 줄고) 조각마다 동전이 골드 칸으로 날아갑니다. 도착음은 한 음씩 높아집니다.
-// 골드 자체는 처치 순간 이미 지급했고, 이 연출은 보여 주기만 합니다(pendingCoinGold로 숫자가 동전 도착에 맞춰 오름).
+// 골드 자체는 처치 순간 이미 지급했고, 이 연출은 보여 주기만 합니다(pendingBonusGold로 숫자가 동전 도착에 맞춰 오름).
 function spawnEnrageTimeBonus(bonus, remainingSec) {
   const c = state.combat;
   const timer = document.getElementById('boss-enrage-timer');
   if (!(bonus > 0) || !timer) return;
   const cfg = ENRAGE_TIME_BONUS;
-  const chunks = Math.max(cfg.minChunks, Math.min(cfg.maxChunks, Math.ceil(remainingSec / cfg.secPerChunk)));
+  const schedule = getTimeBonusSchedule(remainingSec);
+  const chunks = schedule.length;
   const secPerStep = remainingSec / chunks;
   const share = Math.floor(bonus / chunks);
-  state.pendingCoinGold = (state.pendingCoinGold || 0) + bonus;
-  c.timeBonusDraining = true;
-  timer.classList.add('time-bonus');
-  for (let i = 0; i < chunks; i++) {
+  const landMs = getTimeBonusLandMs(remainingSec);
+  state.pendingBonusGold = (state.pendingBonusGold || 0) + bonus;
+  c.timeBonusDraining = true; // 처치 순간부터 타이머는 멈춰 보이고, 위험 점멸도 끕니다.
+  scheduleKillBeat(() => {
+    timer.classList.add('time-bonus');
+    showTimeBonusBanner(remainingSec, landMs - cfg.bannerMs + 500);
+  }, cfg.bannerMs);
+  schedule.forEach((p, i) => {
     scheduleKillBeat(() => {
       c.bossEnrageRem = Math.max(0, remainingSec - secPerStep * (i + 1));
-      launchTimeBonusCoin(timer, i === chunks - 1 ? bonus - share * (chunks - 1) : share, 1 + i * 0.09, i);
-      if (i === chunks - 1) showTimeBonusTag(timer, bonus);
-    }, cfg.startMs + i * cfg.stepMs);
-  }
+      launchTimeBonusCoin(timer, i === chunks - 1 ? bonus - share * (chunks - 1) : share, 1 + i * 0.07, i, p.fly);
+    }, p.at);
+  });
+  scheduleKillBeat(() => showTimeBonusTag(timer, bonus), landMs);
 }
 
-function launchTimeBonusCoin(timer, share, pitch, index) {
+// 축하 배너: 보스 격파 도장이 사라진 뒤 화면 가운데에 묵직하게 찍히고, 색종이가 터집니다. holdMs 뒤 위로 빠지며 사라집니다.
+function showTimeBonusBanner(remainingSec, holdMs) {
+  const arena = document.getElementById('combat-arena');
+  if (!arena || typeof arena.insertAdjacentHTML !== 'function') return;
+  const old = arena.querySelector('.time-bonus-banner');
+  if (old) old.remove();
+  arena.insertAdjacentHTML('beforeend', `<div class="time-bonus-banner" aria-live="polite"><b>${tr('대단해요! 번개 같은 처치!')}</b><span>${tr('남은 {sec}초를 선물로 드려요 🎁', { sec: Math.floor(remainingSec) })}</span></div>`);
+  const banner = arena.querySelector('.time-bonus-banner');
+  setTimeout(() => banner && banner.classList.add('leaving'), holdMs);
+  setTimeout(() => banner && banner.isConnected && banner.remove(), holdMs + 600);
+  const pos = getTargetPos();
+  spawnParticles(pos.x - 60, pos.y - 90, 26, '#fde047', '#f472b6', 1.2);
+  spawnParticles(pos.x + 60, pos.y - 90, 26, '#a7f3d0', '#fb923c', 1.2);
+  playSound('proc', 1.1);
+  triggerArenaShake('sm');
+}
+
+function launchTimeBonusCoin(timer, share, pitch, index, flyMs = 600) {
   const layer = document.getElementById('coin-fx-layer');
   const fill = document.getElementById('boss-enrage-fill');
   const goldPillEl = document.getElementById('pill-gold') || document.getElementById('ui-gold');
   if (!layer || !goldPillEl || typeof document.createElement !== 'function') {
-    state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - share);
+    state.pendingBonusGold = Math.max(0, (state.pendingBonusGold || 0) - share);
     return;
   }
   const from = (fill || timer).getBoundingClientRect();
@@ -1717,7 +1778,7 @@ function launchTimeBonusCoin(timer, share, pitch, index) {
     el, startX, startY,
     cp1X: startX + side * 34, cp1Y: startY - 60 - (index % 3) * 14,
     cp2X: (startX + endX) * 0.5 + side * 30, cp2Y: Math.min(startY, endY) - 30,
-    endX, endY, delay: 0, life: 0, duration: 0.6, share, pitch, started: false
+    endX, endY, delay: 0, life: 0, duration: flyMs / 1000, share, pitch, bonus: true, started: false
   });
   const spark = timer.querySelector('.enrage-track');
   if (spark) {
@@ -1730,8 +1791,14 @@ function launchTimeBonusCoin(timer, share, pitch, index) {
 function showTimeBonusTag(timer, bonus) {
   const old = timer.querySelector('.time-bonus-tag');
   if (old) old.remove();
-  timer.insertAdjacentHTML('beforeend', `<div class="time-bonus-tag" aria-label="${tr('남은 시간 보너스')}">⏳ +${fmt(bonus)}</div>`);
-  playSound('proc', 1.3);
+  timer.insertAdjacentHTML('beforeend', `<div class="time-bonus-tag" aria-label="${tr('남은 시간 보너스')}">⏳ +${fmt(bonus)} 🎉</div>`);
+  playSound('proc', 1.35);
+  const pill = document.getElementById('pill-gold');
+  if (pill) {
+    pill.classList.remove('time-bonus-pop');
+    void pill.offsetWidth;
+    pill.classList.add('time-bonus-pop');
+  }
 }
 
 function updateFlyingCoins(dt) {
@@ -1754,9 +1821,11 @@ function updateFlyingCoins(dt) {
       c.el.remove();
       flyingCoins.splice(i, 1);
 
-      state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - c.share);
-      if (flyingCoins.length === 0) {
-        state.pendingCoinGold = 0;
+      if (c.bonus) {
+        state.pendingBonusGold = Math.max(0, (state.pendingBonusGold || 0) - c.share);
+      } else {
+        state.pendingCoinGold = Math.max(0, (state.pendingCoinGold || 0) - c.share);
+        if (!flyingCoins.some((f) => !f.bonus)) state.pendingCoinGold = 0;
       }
       triggerGoldPillPulse();
       if (c.pitch && state.soundOn) playFireballSfx('drop_coin', 0.92, c.pitch);
@@ -2247,6 +2316,7 @@ function loadStage(stageNum) {
   state.combat.bossEnrageRem = data.isPhaseBoss ? data.enrage : null;
   state.combat.enrageIntroChecked = false;
   state.combat.timeBonusDraining = false;
+  state.pendingBonusGold = 0; // 연출이 끊겨도(새로고침·타이틀) 다음 스테이지 골드 표시가 어긋나지 않게
   const enrageTimerEl = document.getElementById('boss-enrage-timer');
   if (enrageTimerEl) {
     enrageTimerEl.classList.remove('time-bonus');
@@ -2394,7 +2464,8 @@ function onMonsterKilled() {
   }
 
   // 웨이브 클리어 ➔ 사망·골드 여운(보스는 더 길게) ➔ 마도서 각성 3지선다
-  const beatMs = data.isPhaseBoss ? KILL_BEAT_MS.boss : KILL_BEAT_MS.normal;
+  // 남은 시간 보상이 있으면 축하 연출이 끝날 때까지 카드 창을 늦춥니다.
+  const beatMs = timeBonus > 0 ? getTimeBonusBeatMs(timeBonusRemaining) : (data.isPhaseBoss ? KILL_BEAT_MS.boss : KILL_BEAT_MS.normal);
   const clearedStage = state.currentStage;
   scheduleKillBeat(() => {
     triggerAwakeningSelection(clearedStage, data.isPhaseBoss, () => {
@@ -2421,6 +2492,15 @@ function rollCritVariance() {
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false, isCombustionCast = false) {
   // 치명타 직격만 흔듭니다. 화상 같은 지속 피해 틱은 일정한 리듬을 유지합니다.
   if (isCrit && !isDotTick) rawDamage *= rollCritVariance();
+  // 로그라이크 덱: 불꽃 심판 — 지난 스테이지를 화염구 치명타로 마무리했으면, 이번 스테이지 첫 화염구 치명타가 8배(보스 4배)
+  const verdict = state.deckMechanics && state.deckMechanics.emberVerdict;
+  if (verdict && skillKey === 'fireball' && isCrit && !isDotTick && state.combat.verdictArmed && !state.monster.isDying) {
+    const verdictMult = getEmberVerdictMult();
+    rawDamage *= verdictMult;
+    state.combat.verdictArmed = false;
+    addRunStat('verdictHits', 1);
+    showEmberVerdictBurst(verdictMult);
+  }
   const isCombustingEffective = Boolean((state.combat && state.combat.combustionRem > 0) || isCombustionCast);
 
   // 3-1. 최종 보스(Stage 20) 전용 기믹 판정
@@ -2661,6 +2741,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
 
   state.monster.hp = Math.max(0, state.monster.hp - dmg);
   if (state.monster.hp <= 0 && !state.monster.isDying) {
+    if (verdict && skillKey === 'fireball' && isCrit) state.combat.verdictArmed = true;
     onMonsterKilled();
   }
 }
@@ -3417,6 +3498,30 @@ function maybeShowEnrageIntro() {
     setTimeout(() => { if (note) note.remove(); timer.classList.remove('intro-glow'); }, 380);
   }, 4000);
   return true;
+}
+
+// 불꽃 심판 배율: 보스 스테이지는 절반(광폭화 타이머가 무의미해지지 않게)
+function getEmberVerdictMult() {
+  const v = (state.deckMechanics && state.deckMechanics.emberVerdict) || { mult: 8, bossMult: 4 };
+  return getStageData(state.currentStage).isPhaseBoss ? v.bossMult : v.mult;
+}
+
+function showEmberVerdictBurst(mult) {
+  spawnFloatingText(tr('⚖️ 불꽃 심판 ×{n}!', { n: mult }), 'fct-proc', -55);
+  triggerArenaShake('lg');
+  mageGesture.hitStop = 0.1;
+  const pos = getTargetPos();
+  spawnParticles(pos.x, pos.y, 30, '#fff7d6', '#dc2626', 1.7);
+  playSound('meteor_impact', 1.15);
+}
+
+// 준비 표시: 화염구 버튼에 불씨 테두리와 이번 스테이지 배율(×8 / 보스 ×4). 상태(사실)만 보여 줍니다.
+function updateEmberVerdictBadge() {
+  const btn = document.getElementById(SPELL_ACTION_CONFIG.fireball.id);
+  if (!btn || !btn.classList) return;
+  const armed = Boolean(state.deckMechanics && state.deckMechanics.emberVerdict && state.combat.verdictArmed);
+  btn.classList.toggle('verdict-armed', armed);
+  if (armed && btn.dataset) btn.dataset.verdict = `×${getEmberVerdictMult()}`;
 }
 
 function triggerUnfoldPop(elId) {
@@ -4590,6 +4695,7 @@ function restartSpeedrunRun() {
   state.combat.gcdRemaining = 0;
   state.combat.critStreak = 0;
   state.combat.streakTimer = 0;
+  state.combat.verdictArmed = false;
   state.combat.meteorArmPending = false;
   state.combat.igniteRem = 0;
   state.combat.ignitePool = 0;
@@ -4904,7 +5010,8 @@ function updateLiveHUD() {
   const c = state.combat;
 
   // 골드 동전이 곡선 비행하여 상단 알약 UI에 하나씩 닿을 때마다 숫자가 차르륵 올라가도록 표시!
-  const pendingGold = Math.min(state.gold, Math.max(0, state.pendingCoinGold || 0));
+  // 남은 시간 보너스(pendingBonusGold)는 처치 동전과 따로 셉니다. 처치 동전이 다 닿아도 보너스 동전이 날아오기 전까지는 숫자에 넣지 않습니다.
+  const pendingGold = Math.min(state.gold, Math.max(0, state.pendingCoinGold || 0) + Math.max(0, state.pendingBonusGold || 0));
   const displayedGold = Math.max(0, Math.round(state.gold - pendingGold));
   document.getElementById('ui-gold').textContent = fmt(displayedGold);
 
@@ -4915,6 +5022,7 @@ function updateLiveHUD() {
 
   const hpPct = Math.max(0, Math.min(100, (state.monster.hp / state.monster.maxHp) * 100));
   document.getElementById('target-hp-fill').style.width = `${hpPct}%`;
+  updateEmberVerdictBadge();
   const bigHit = hpTrail ? hpTrail.setHp(hpPct) : null;
   if (bigHit) showHpBigHitChunk(bigHit);
   document.getElementById('target-hp-text').textContent = `${fmt(state.monster.hp)} / ${fmt(state.monster.maxHp)}`;

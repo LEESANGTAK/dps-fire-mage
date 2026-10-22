@@ -34,7 +34,7 @@ function comicIconHTML(token) {
 const PAPER_CARD_ICONS = {
  rapid_spark:['stats',5], rapid_split:['skills',0], rapid_overload:['stats',5,'cursed'], rapid_quickdraw:['skills',0,'charge'], rapid_gatling:['skills',0,'blaze'],
  spell_fireblast:['skills',1], crit_focus:['stats',4], crit_heat:['skills',1,'blaze'], crit_reckless:['stats',4,'cursed'],
- spell_meteor:['skills',2], crit_meteor_storm:['skills',2,'blaze'], crit_meteor_charge:['skills',2,'charge'],
+ spell_meteor:['skills',2], crit_meteor_storm:['skills',2,'blaze'], crit_meteor_charge:['skills',2,'charge'], crit_ember_verdict:['skills',0,'ruby'],
  spell_combustion:['skills',3], crit_crimson_frenzy:['skills',3,'ruby'],
  sum_spirit:['skills',5], sum_fury:['skills',5,'blaze'], sum_volley:['skills',5,'charge'], sum_pact:['skills',5,'cursed'], sum_cinder_lord:['skills',5,'crimson'],
  burn_ignite:['stats',2,'blaze'], spell_flame_patch:['skills',4], burn_spread:['skills',4,'charge'], burn_wildfire:['skills',4,'crimson'],

@@ -18,7 +18,7 @@ test('Telemetry & Card Pool 무결성 검증', async (t) => {
   });
 
   await t.test('2. 카드 풀 구성 검증 (빌드별 등급 분포, 상위호환 중복 금지)', () => {
-    assert.equal(cardsJson.length, 28, '카드 풀은 밸런스 패치 v2의 27종 + 자동 영창(전설) 28종이어야 합니다.');
+    assert.equal(cardsJson.length, 29, '카드 풀은 밸런스 패치 v2의 27종 + 자동 영창·불꽃 심판(전설) 29종이어야 합니다.');
 
     // 분류(개편안 2.1): 주문서·유틸리티는 빌드 판정 밖의 축이고, 나머지 5개가 계획하는 빌드입니다.
     const builds = new Set(cardsJson.map(c => c.build));

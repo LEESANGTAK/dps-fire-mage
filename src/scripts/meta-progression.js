@@ -38,6 +38,7 @@ const MASTERY_UNLOCKS = [
   { xp: 35, type: 'card', id: 'sum_cinder_lord' },
   { xp: 45, type: 'card', id: 'util_auto_grimoire' },
   { xp: 70, type: 'start', id: 'flame_patch' },
+  { xp: 100, type: 'card', id: 'crit_ember_verdict' },
   { xp: 140, type: 'start', id: 'meteor' },
   { xp: 190, type: 'card', id: 'crit_crimson_frenzy' },
   { xp: 250, type: 'card', id: 'util_phoenix_reborn' },

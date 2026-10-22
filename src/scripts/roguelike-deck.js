@@ -67,7 +67,8 @@
       "links": [
         "rapid_split",
         "sum_volley",
-        "util_glass_cannon"
+        "util_glass_cannon",
+        "crit_ember_verdict"
       ]
     },
     {
@@ -175,7 +176,8 @@
         "crit_heat",
         "crit_reckless",
         "spell_meteor",
-        "burn_wildfire"
+        "burn_wildfire",
+        "crit_ember_verdict"
       ]
     },
     {
@@ -195,7 +197,8 @@
         "spell_fireblast",
         "crit_focus",
         "spell_combustion",
-        "burn_wildfire"
+        "burn_wildfire",
+        "crit_ember_verdict"
       ]
     },
     {
@@ -276,6 +279,28 @@
       }
     },
     {
+      "id": "crit_ember_verdict",
+      "title": "불꽃 심판",
+      "icon": "⚖️",
+      "rarity": "legendary",
+      "build": "crit",
+      "maxStack": 1,
+      "desc": "화염구 <b>치명타로 마무리</b>하면, 다음 스테이지의 첫 화염구 치명타가 <b>8배</b>로 들어갑니다. (보스는 4배)",
+      "title_en": "Flame Verdict",
+      "desc_en": "Finish a monster with a <b>Fireball crit</b>, and your first Fireball crit on the next stage deals <b>8×</b> damage (4× on bosses).",
+      "mechanic": "ember_verdict",
+      "mechanicParams": {
+        "mult": 8,
+        "bossMult": 4
+      },
+      "links": [
+        "crit_focus",
+        "crit_heat",
+        "rapid_spark",
+        "spell_combustion"
+      ]
+    },
+    {
       "id": "spell_combustion",
       "title": "주문서: 마력 폭주",
       "icon": "🔥",
@@ -291,7 +316,8 @@
         "crit_reckless",
         "crit_crimson_frenzy",
         "util_phoenix_reborn",
-        "util_auto_grimoire"
+        "util_auto_grimoire",
+        "crit_ember_verdict"
       ]
     },
     {
@@ -661,6 +687,10 @@
             break;
           case 'cinder_lord':
             state.deckMechanics.cinderLord = true;
+            break;
+          case 'ember_verdict':
+            // 불꽃 심판: 화염구 치명타로 처치하면 다음 스테이지 첫 화염구 치명타 배율(game.js dealDamage)
+            state.deckMechanics.emberVerdict = { mult: Number(p.mult) || 8, bossMult: Number(p.bossMult) || 4 };
             break;
           case 'executioner':
             state.deckMechanics.executionerMult = (state.deckMechanics.executionerMult || 0) + (p.executionerMult || 0.7);
