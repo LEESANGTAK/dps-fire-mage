@@ -9,7 +9,7 @@
   <title>DPS: Fire Mage</title>
   <link rel="stylesheet" href="src/styles/styles.css?v=balance-v2-3" />
   <link rel="stylesheet" href="src/styles/art.css?v=final-boss-1" />
-  <link rel="stylesheet" href="src/styles/paper-ui.css?v=codex-1" />
+  <link rel="stylesheet" href="src/styles/paper-ui.css?v=revamp-e-2" />
 </head>
 <body>
   <!-- 간소화된 상단 상태바 -->
@@ -165,8 +165,11 @@
 
               <!-- 몬스터 이미지 아래쪽 고정 HP 바 (데미지 텍스트에 가려지지 않도록 하단 배치) -->
               <div class="monster-hp-wrap" id="monster-frame">
-                <div class="hp-bar-outer">
+                <div class="hp-bar-outer" id="target-hp-bar">
+                  <!-- 피해 잔상(hp-trail.js): 잃은 구간이 잠깐 남았다가 따라 줄어듭니다. 큰 한 방은 흰 조각으로 번쩍입니다. -->
+                  <div class="hp-bar-trail" id="target-hp-trail"></div>
                   <div class="hp-bar-fill" id="target-hp-fill"></div>
+                  <div class="hp-bar-chunks" id="target-hp-chunks" aria-hidden="true"></div>
                   <div class="hp-bar-text">
                     <span id="target-hp-text">50 / 50</span>
                     <span id="target-hp-pct">100%</span>
@@ -364,6 +367,8 @@
       <button type="button" class="victory-btn title-btn" id="btn-title-new-run" hidden>⚡ 새 런</button>
       <button type="button" class="pause-menu-sub title-btn" id="btn-title-codex" hidden>📖 도감</button>
       <button type="button" class="pause-menu-sub title-btn" id="btn-title-hall" hidden>🏆 명예의 전당</button>
+      <!-- 게임 종료: 데스크톱 빌드에만 보입니다(브라우저는 게임이 창을 닫을 수 없음). 메뉴 맨 아래에 둬서 실수로 누르기 어렵게 합니다. -->
+      <button type="button" class="pause-menu-sub pause-menu-quit title-btn title-quit" id="btn-title-quit" hidden>⏻ 게임 종료</button>
     </div>
     <div class="title-new-run" id="title-new-run" hidden>
       <button type="button" class="settings-back" id="btn-title-new-run-back" title="뒤로" aria-label="뒤로">◀</button>
@@ -373,7 +378,6 @@
     </div>
     <div class="title-corner">
       <button type="button" class="title-corner-btn" id="btn-title-settings" title="설정" aria-label="설정">⚙</button>
-      <button type="button" class="title-corner-btn" id="btn-title-quit" title="게임 종료" aria-label="게임 종료" hidden>⏻</button>
     </div>
   </div>
 
@@ -484,7 +488,7 @@
   </div>
 
   <script src="src/scripts/motion-pref.js?v=settings-1"></script>
-  <script src="src/scripts/i18n-en.js?v=defeat-cause-1"></script>
+  <script src="src/scripts/i18n-en.js?v=revamp-e-1"></script>
   <script src="src/scripts/i18n.js?v=i18n-1"></script>
   <script src="src/scripts/meteor-art.js?v=meteor-trail-overflow-4"></script>
   <script src="src/scripts/combat-art.js?v=fireball-flame-color-1"></script>
@@ -499,14 +503,15 @@
   <script src="src/scripts/skill-tooltips.js?v=meteor-coach-1"></script>
   <script src="src/scripts/action-bar-drag.js?v=slot-drag-1"></script>
   <script src="src/scripts/arena-environment.js?v=paper-arenas-1"></script>
-  <script src="src/scripts/roguelike-deck.js?v=reckless-comb-1"></script>
+  <script src="src/scripts/roguelike-deck.js?v=revamp-e-1"></script>
   <script src="src/scripts/save-storage.js?v=desktop-save-1"></script>
-  <script src="src/scripts/meta-progression.js?v=codex-1"></script>
+  <script src="src/scripts/meta-progression.js?v=revamp-e-1"></script>
   <script src="src/scripts/meta-ui.js?v=meta-1"></script>
   <script src="src/scripts/pause-menu.js?v=codex-1"></script>
   <script src="src/scripts/settings-menu.js?v=title-1"></script>
-  <script src="src/scripts/codex.js?v=codex-1"></script>
-  <script src="src/scripts/title-screen.js?v=codex-1"></script>
-  <script src="src/scripts/game.js?v=codex-1"></script>
+  <script src="src/scripts/codex.js?v=revamp-e-1"></script>
+  <script src="src/scripts/title-screen.js?v=revamp-e-1"></script>
+  <script src="src/scripts/hp-trail.js?v=hp-trail-2"></script>
+  <script src="src/scripts/game.js?v=revamp-e-1"></script>
 </body>
 </html>

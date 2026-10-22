@@ -29,12 +29,22 @@
 
   // 빌드 카테고리
   const BUILD = {
-    RAPID: 'rapid',       // 속사 머신건
-    CRIT: 'crit',         // 극치명타 몰열
-    SUMMON: 'summon',     // 화염 정령 군단
-    BURN: 'burn',         // 연소 지대 (지속 피해)
-    UTILITY: 'utility'    // 유틸리티 및 특수
+    SPELL: 'spell',           // 고대 주문서 (빌드가 갈라지는 축)
+    CRIT: 'crit',             // 극치명타 몰열 (열기·메테오)
+    COMBUSTION: 'combustion', // 마력 폭주 극딜 (업화 2단계에 열림)
+    RAPID: 'rapid',           // 속사 머신건
+    SUMMON: 'summon',         // 화염 정령 군단
+    BURN: 'burn',             // 화상 확산 (지속 피해)
+    UTILITY: 'utility'        // 유틸리티 및 특수
   };
+
+  // 빌드 가중 추첨(개편안 2.5): 주문서·유틸리티를 뺀 빌드 중 가장 많이 가진 빌드(카드 2장 이상)가 주력 빌드입니다.
+  // 주력 빌드 카드는 등급 가중치 ×1.8, 두 번째 빌드는 ×1.3으로 더 자주 나오고, 일반 웨이브 3장 선택지에는 주력 빌드 카드가 1장 이상 섞입니다.
+  // 나머지 칸은 지금처럼 무작위라 빌드를 갈아탈 여지가 남습니다.
+  const MAIN_BUILD_MIN_CARDS = 2;
+  const MAIN_BUILD_WEIGHT = 1.8;
+  const SECOND_BUILD_WEIGHT = 1.3;
+  const NON_PLAN_BUILDS = [BUILD.SPELL, BUILD.UTILITY];
 
   // 선행 조건 crit_15_or_combustion: 카드를 받은 뒤 남아야 하는 최소 치명타율(%)
   const CRIT_FLOOR_AFTER_CARD = 15;
@@ -47,12 +57,12 @@
       "icon": "⚡",
       "rarity": "common",
       "build": "rapid",
-      "maxStack": 5,
-      "desc": "화염 마법 시전 속도가 <b>+20%</b> 빨라집니다.",
+      "maxStack": 3,
+      "desc": "화염 마법 시전 속도가 <b>+30%</b> 빨라집니다.",
       "title_en": "Swift Flame",
-      "desc_en": "Fire spell cast speed <b>+20%</b>.",
+      "desc_en": "Fire spell cast speed <b>+30%</b>.",
       "stats": {
-        "haste": 20
+        "haste": 30
       },
       "links": [
         "rapid_split",
@@ -135,7 +145,7 @@
       "title": "주문서: 불꽃 작렬",
       "icon": "💥",
       "rarity": "common",
-      "build": "crit",
+      "build": "spell",
       "maxStack": 1,
       "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다. 화염구 치명타 직후에 쓰면 치명타 2연속이 됩니다.",
       "title_en": "Grimoire: Fire Blast",
@@ -153,12 +163,12 @@
       "icon": "🎯",
       "rarity": "common",
       "build": "crit",
-      "maxStack": 5,
-      "desc": "치명타 확률이 <b>+10%</b> 증가합니다.",
+      "maxStack": 3,
+      "desc": "치명타 확률이 <b>+15%</b> 증가합니다.",
       "title_en": "Burning Focus",
-      "desc_en": "Critical strike chance <b>+10%</b>.",
+      "desc_en": "Critical strike chance <b>+15%</b>.",
       "stats": {
-        "crit": 10
+        "crit": 15
       },
       "links": [
         "rapid_split",
@@ -174,12 +184,12 @@
       "icon": "🔥",
       "rarity": "common",
       "build": "crit",
-      "maxStack": 5,
-      "desc": "치명타 피해량이 <b>+35%</b> 증가합니다.",
+      "maxStack": 3,
+      "desc": "치명타 피해량이 <b>+50%</b> 증가합니다.",
       "title_en": "Searing Heat",
-      "desc_en": "Critical damage <b>+35%</b>.",
+      "desc_en": "Critical damage <b>+50%</b>.",
       "stats": {
-        "critDmg": 35
+        "critDmg": 50
       },
       "links": [
         "spell_fireblast",
@@ -193,7 +203,7 @@
       "title": "무모한 일격",
       "icon": "🗡️",
       "rarity": "rare",
-      "build": "crit",
+      "build": "combustion",
       "maxStack": 2,
       "desc": "치명타 피해량이 <b>+80%</b> 증가하지만, 치명타 확률이 <b>-8%</b> 감소합니다.",
       "title_en": "Reckless Strike",
@@ -213,7 +223,7 @@
       "title": "주문서: 메테오",
       "icon": "☄️",
       "rarity": "rare",
-      "build": "crit",
+      "build": "spell",
       "maxStack": 1,
       "desc": "거대 운석을 떨어뜨립니다. <b>치명타 2연속</b>이면 메테오가 <b>즉시·무료</b>로 떨어집니다. 불꽃 작렬은 항상 치명타입니다.",
       "title_en": "Grimoire: Meteor",
@@ -270,7 +280,7 @@
       "title": "주문서: 마력 폭주",
       "icon": "🔥",
       "rarity": "rare",
-      "build": "crit",
+      "build": "spell",
       "maxStack": 1,
       "desc": "<b>5초간 모든 마법이 100% 치명타</b>로 적중하고 시전 속도가 빨라지는 궁극기를 습득합니다.",
       "title_en": "Grimoire: Combustion",
@@ -289,7 +299,7 @@
       "title": "진홍의 마력 폭주",
       "icon": "👑",
       "rarity": "legendary",
-      "build": "crit",
+      "build": "combustion",
       "maxStack": 1,
       "desc": "마력 폭주 지속 시간이 2배가 되며, 폭주 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.",
       "title_en": "Crimson Combustion",
@@ -324,12 +334,12 @@
       "icon": "😤",
       "rarity": "common",
       "build": "summon",
-      "maxStack": 5,
-      "desc": "정령·불사조 등 <b>소환수 피해량이 +40%</b> 증가합니다.",
+      "maxStack": 3,
+      "desc": "정령·불사조 등 <b>소환수 피해량이 +60%</b> 증가합니다.",
       "title_en": "Spirit Fury",
-      "desc_en": "<b>Summon damage +40%</b> (Fire Spirits, Phoenix).",
+      "desc_en": "<b>Summon damage +60%</b> (Fire Spirits, Phoenix).",
       "stats": {
-        "spiritPct": 40
+        "spiritPct": 60
       },
       "prerequisite": "has_summon",
       "links": [
@@ -397,12 +407,12 @@
       "icon": "🩸",
       "rarity": "common",
       "build": "burn",
-      "maxStack": 5,
-      "desc": "화상·연소·불장판 등 <b>지속 피해량이 +45%</b> 증가합니다.",
+      "maxStack": 3,
+      "desc": "화상·연소·불장판 등 <b>지속 피해량이 +65%</b> 증가합니다.",
       "title_en": "Fierce Ignite",
-      "desc_en": "<b>Damage over time +45%</b> (Ignite, Meteor burn, Flame Patch).",
+      "desc_en": "<b>Damage over time +65%</b> (Ignite, Meteor burn, Flame Patch).",
       "stats": {
-        "burnPct": 45
+        "burnPct": 65
       },
       "links": [
         "spell_meteor",
@@ -415,7 +425,7 @@
       "title": "주문서: 불장판",
       "icon": "🌋",
       "rarity": "rare",
-      "build": "burn",
+      "build": "spell",
       "maxStack": 1,
       "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.",
       "title_en": "Grimoire: Flame Patch",
@@ -476,12 +486,12 @@
       "icon": "🔮",
       "rarity": "common",
       "build": "utility",
-      "maxStack": 5,
-      "desc": "주문력이 <b>+15%</b> 증가합니다.",
+      "maxStack": 3,
+      "desc": "주문력이 <b>+22%</b> 증가합니다.",
       "title_en": "Arcane Amplify",
-      "desc_en": "Spell Power <b>+15%</b>.",
+      "desc_en": "Spell Power <b>+22%</b>.",
       "stats": {
-        "spPct": 15
+        "spPct": 22
       },
       "links": [
         "util_executioner"
@@ -751,12 +761,56 @@
   // 런(Run) 단위 덱 관리자 객체
   function createDeckManager() {
     let activeDeck = {};       // { cardId: count }
+    let pickSeq = {};          // { cardId: 마지막으로 고른 순번 } — 주력 빌드 동률 판정(최근에 고른 빌드 우선)
+    let pickCounter = 0;
     let rerollCount = 0;       // 현재 3지선다 내 리롤 횟수
     let currentChoices = [];   // 현재 제시된 3장의 카드
 
     // 리롤 비용: 기준 비용(현재 스테이지 처치 골드) x (1 + 이번 선택에서 리롤한 횟수)
     function getRerollCost(baseCost = 10) {
       return Math.max(1, Math.round(baseCost * (1 + rerollCount)));
+    }
+
+    // 빌드별 보유 장수(겹친 횟수 포함)와 가장 최근에 고른 순번. 주문서·유틸리티는 세지 않습니다.
+    function getBuildStanding() {
+      const standing = {};
+      const keys = Object.keys(activeDeck);
+      keys.forEach((id, index) => {
+        const card = CARD_POOL.find(c => c.id === id);
+        if (!card || NON_PLAN_BUILDS.includes(card.build) || !(activeDeck[id] > 0)) return;
+        const row = standing[card.build] || (standing[card.build] = { build: card.build, count: 0, recent: -1 });
+        row.count += activeDeck[id];
+        row.recent = Math.max(row.recent, pickSeq[id] !== undefined ? pickSeq[id] : index - keys.length);
+      });
+      return Object.values(standing).sort((a, b) => b.count - a.count || b.recent - a.recent);
+    }
+
+    // 주력 빌드(2장 이상)와 두 번째 빌드. 없으면 null.
+    function getMainBuilds() {
+      const ranked = getBuildStanding();
+      const main = ranked[0] && ranked[0].count >= MAIN_BUILD_MIN_CARDS ? ranked[0].build : null;
+      const second = main && ranked[1] ? ranked[1].build : null;
+      return { main, second };
+    }
+
+    function getBuildWeightMult(build, plan) {
+      if (plan.main && build === plan.main) return MAIN_BUILD_WEIGHT;
+      if (plan.second && build === plan.second) return SECOND_BUILD_WEIGHT;
+      return 1;
+    }
+
+    // 가중치에 비례해 한 장을 뽑습니다(가중치 0 이하는 제외).
+    function pickWeighted(list, weightOf) {
+      const valid = list.filter(c => weightOf(c) > 0);
+      if (valid.length === 0) return null;
+      const total = valid.reduce((sum, c) => sum + weightOf(c), 0);
+      let rand = Math.random() * total;
+      for (const c of valid) {
+        const w = weightOf(c);
+        if (rand < w) return c;
+        rand -= w;
+      }
+      return valid[valid.length - 1];
     }
 
     // 3장의 카드 무작위 추첨
@@ -782,34 +836,26 @@
         ? { [RARITY.COMMON]: 0, [RARITY.RARE]: 85, [RARITY.LEGENDARY]: 15 }
         : { [RARITY.COMMON]: 75, [RARITY.RARE]: 21, [RARITY.LEGENDARY]: 4 };
 
+      const plan = getMainBuilds();
+      const rarityWeight = (c) => (weights[c.rarity] !== undefined ? weights[c.rarity] : 10);
+      const weightOf = (c) => rarityWeight(c) * getBuildWeightMult(c.build, plan);
       const selected = [];
       const poolCopy = [...eligible];
 
       while (selected.length < count && poolCopy.length > 0) {
-        // 가중치가 0인 카드는 후보 풀에서 제외
-        const validPool = poolCopy.filter(c => (weights[c.rarity] !== undefined ? weights[c.rarity] : 10) > 0);
-        if (validPool.length === 0) break;
-
-        const totalWeight = validPool.reduce((sum, c) => sum + weights[c.rarity], 0);
-        let rand = Math.random() * totalWeight;
-        let chosenIndexInValid = 0;
-
-        for (let i = 0; i < validPool.length; i++) {
-          const w = weights[validPool[i].rarity];
-          if (rand < w) {
-            chosenIndexInValid = i;
-            break;
-          }
-          rand -= w;
-        }
-
-        const chosenCard = validPool[chosenIndexInValid];
+        const chosenCard = pickWeighted(poolCopy, weightOf);
+        if (!chosenCard) break;
         selected.push(chosenCard);
-        
-        // 원본 poolCopy에서 제거
-        const originalIndex = poolCopy.findIndex(c => c.id === chosenCard.id);
-        if (originalIndex !== -1) {
-          poolCopy.splice(originalIndex, 1);
+        poolCopy.splice(poolCopy.indexOf(chosenCard), 1);
+      }
+
+      // 주력 빌드 1장 보장: 일반 웨이브 3장 선택지에 주력 빌드 카드가 없으면 마지막 장을 주력 빌드 카드로 바꿉니다.
+      if (!isBossWave && plan.main && count >= 3 && selected.length >= 3 && !selected.some(c => c.build === plan.main)) {
+        const mainCard = pickWeighted(poolCopy.filter(c => c.build === plan.main), weightOf);
+        if (mainCard) {
+          poolCopy.push(selected[selected.length - 1]);
+          selected[selected.length - 1] = mainCard;
+          poolCopy.splice(poolCopy.indexOf(mainCard), 1);
         }
       }
 
@@ -820,8 +866,11 @@
       const holdsLegendary = CARD_POOL.some(c => c.rarity === RARITY.LEGENDARY && c.mechanic !== 'smart_autocast' && (activeDeck[c.id] || 0) > 0);
       if (isBossWave && !holdsLegendary && selected.length > 0 && !selected.some(c => c.rarity === RARITY.LEGENDARY)) {
         const legendaryPool = poolCopy.filter(c => c.rarity === RARITY.LEGENDARY);
-        if (legendaryPool.length > 0) {
-          selected[selected.length - 1] = legendaryPool[Math.floor(Math.random() * legendaryPool.length)];
+        // 해금된 주력 빌드 전설이 있으면 그 전설을 우선 내놓습니다.
+        const mainLegendary = plan.main ? legendaryPool.filter(c => c.build === plan.main) : [];
+        const fromPool = mainLegendary.length > 0 ? mainLegendary : legendaryPool;
+        if (fromPool.length > 0) {
+          selected[selected.length - 1] = fromPool[Math.floor(Math.random() * fromPool.length)];
         }
       }
 
@@ -835,6 +884,7 @@
       if (!card) return false;
 
       activeDeck[card.id] = (activeDeck[card.id] || 0) + 1;
+      pickSeq[card.id] = ++pickCounter;
       rerollCount = 0; // 리롤 횟수 초기화
       currentChoices = [];
 
@@ -867,6 +917,8 @@
     // 덱 초기화 (회차 승천/리셋 시)
     function resetDeck(gameState) {
       activeDeck = {};
+      pickSeq = {};
+      pickCounter = 0;
       rerollCount = 0;
       currentChoices = [];
       if (gameState) {
@@ -905,7 +957,9 @@
       for (const [cardId, count] of Object.entries(savedDeck)) {
         const card = CARD_POOL.find(c => c.id === cardId);
         if (card) {
-          for (let i = 0; i < count; i++) {
+          // 겹치기 상한이 줄어든 카드(수치 카드 5 → 3)는 구형 세이브에서도 상한까지만 복원합니다.
+          const restoreCount = Math.min(Math.max(0, Math.floor(Number(count) || 0)), card.maxStack || 1);
+          for (let i = 0; i < restoreCount; i++) {
             activeDeck[card.id] = (activeDeck[card.id] || 0) + 1;
             if (typeof card.apply === 'function') {
               card.apply(gameState);
@@ -921,6 +975,7 @@
       RARITY_META,
       BUILD,
       getActiveDeck: () => ({ ...activeDeck }),
+      getMainBuilds,
       getCurrentChoices: () => [...currentChoices],
       getActiveCards,
       getRerollCost,

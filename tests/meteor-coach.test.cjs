@@ -10,9 +10,9 @@ const { createHeadlessGame } = require('../scripts/lib/headless-game.cjs');
 const FRAME = 1 / 30;
 
 // 1. 세이브 정리: 안내 기록은 기본값이 '안 봄'이고, 말풍선 횟수는 0~최대로 고정됩니다.
-assert.deepEqual(M.normalizeMeta(null).tips, { meteorCombo: false, fireblastHint: 0 });
-assert.deepEqual(M.normalizeMeta({ tips: { meteorCombo: true, fireblastHint: 99 } }).tips, { meteorCombo: true, fireblastHint: M.FIREBLAST_HINT_MAX });
-assert.deepEqual(M.normalizeMeta({ tips: { meteorCombo: 'yes', fireblastHint: -2 } }).tips, { meteorCombo: false, fireblastHint: 0 });
+assert.deepEqual(M.normalizeMeta(null).tips, { meteorCombo: false, fireblastHint: 0, enrageIntro: 0 });
+assert.deepEqual(M.normalizeMeta({ tips: { meteorCombo: true, fireblastHint: 99, enrageIntro: 99 } }).tips, { meteorCombo: true, fireblastHint: M.FIREBLAST_HINT_MAX, enrageIntro: M.ENRAGE_INTRO_MAX });
+assert.deepEqual(M.normalizeMeta({ tips: { meteorCombo: 'yes', fireblastHint: -2, enrageIntro: 'x' } }).tips, { meteorCombo: false, fireblastHint: 0, enrageIntro: 0 });
 
 // 2. 카드·툴팁 문구: 신규 유저가 모르는 '몰열' 대신 인과(치명타 2연속 → 즉시·무료)를 씁니다.
 const cards = JSON.parse(fs.readFileSync(path.join(__dirname, '../src/data/roguelike-cards.json'), 'utf8'));

@@ -5,12 +5,12 @@
     "icon": "⚡",
     "rarity": "common",
     "build": "rapid",
-    "maxStack": 5,
-    "desc": "화염 마법 시전 속도가 <b>+20%</b> 빨라집니다.",
+    "maxStack": 3,
+    "desc": "화염 마법 시전 속도가 <b>+30%</b> 빨라집니다.",
     "title_en": "Swift Flame",
-    "desc_en": "Fire spell cast speed <b>+20%</b>.",
+    "desc_en": "Fire spell cast speed <b>+30%</b>.",
     "stats": {
-      "haste": 20
+      "haste": 30
     },
     "links": [
       "rapid_split",
@@ -93,7 +93,7 @@
     "title": "주문서: 불꽃 작렬",
     "icon": "💥",
     "rarity": "common",
-    "build": "crit",
+    "build": "spell",
     "maxStack": 1,
     "desc": "시전 중에도 즉시 발사되는 <b>100% 확정 치명타 보조 마법 [불꽃 작렬]</b>을 습득합니다. 화염구 치명타 직후에 쓰면 치명타 2연속이 됩니다.",
     "title_en": "Grimoire: Fire Blast",
@@ -111,12 +111,12 @@
     "icon": "🎯",
     "rarity": "common",
     "build": "crit",
-    "maxStack": 5,
-    "desc": "치명타 확률이 <b>+10%</b> 증가합니다.",
+    "maxStack": 3,
+    "desc": "치명타 확률이 <b>+15%</b> 증가합니다.",
     "title_en": "Burning Focus",
-    "desc_en": "Critical strike chance <b>+10%</b>.",
+    "desc_en": "Critical strike chance <b>+15%</b>.",
     "stats": {
-      "crit": 10
+      "crit": 15
     },
     "links": [
       "rapid_split",
@@ -132,12 +132,12 @@
     "icon": "🔥",
     "rarity": "common",
     "build": "crit",
-    "maxStack": 5,
-    "desc": "치명타 피해량이 <b>+35%</b> 증가합니다.",
+    "maxStack": 3,
+    "desc": "치명타 피해량이 <b>+50%</b> 증가합니다.",
     "title_en": "Searing Heat",
-    "desc_en": "Critical damage <b>+35%</b>.",
+    "desc_en": "Critical damage <b>+50%</b>.",
     "stats": {
-      "critDmg": 35
+      "critDmg": 50
     },
     "links": [
       "spell_fireblast",
@@ -151,7 +151,7 @@
     "title": "무모한 일격",
     "icon": "🗡️",
     "rarity": "rare",
-    "build": "crit",
+    "build": "combustion",
     "maxStack": 2,
     "desc": "치명타 피해량이 <b>+80%</b> 증가하지만, 치명타 확률이 <b>-8%</b> 감소합니다.",
     "title_en": "Reckless Strike",
@@ -171,7 +171,7 @@
     "title": "주문서: 메테오",
     "icon": "☄️",
     "rarity": "rare",
-    "build": "crit",
+    "build": "spell",
     "maxStack": 1,
     "desc": "거대 운석을 떨어뜨립니다. <b>치명타 2연속</b>이면 메테오가 <b>즉시·무료</b>로 떨어집니다. 불꽃 작렬은 항상 치명타입니다.",
     "title_en": "Grimoire: Meteor",
@@ -228,7 +228,7 @@
     "title": "주문서: 마력 폭주",
     "icon": "🔥",
     "rarity": "rare",
-    "build": "crit",
+    "build": "spell",
     "maxStack": 1,
     "desc": "<b>5초간 모든 마법이 100% 치명타</b>로 적중하고 시전 속도가 빨라지는 궁극기를 습득합니다.",
     "title_en": "Grimoire: Combustion",
@@ -247,7 +247,7 @@
     "title": "진홍의 마력 폭주",
     "icon": "👑",
     "rarity": "legendary",
-    "build": "crit",
+    "build": "combustion",
     "maxStack": 1,
     "desc": "마력 폭주 지속 시간이 2배가 되며, 폭주 중 모든 공격 피해가 <b>150% 증폭</b>됩니다.",
     "title_en": "Crimson Combustion",
@@ -282,12 +282,12 @@
     "icon": "😤",
     "rarity": "common",
     "build": "summon",
-    "maxStack": 5,
-    "desc": "정령·불사조 등 <b>소환수 피해량이 +40%</b> 증가합니다.",
+    "maxStack": 3,
+    "desc": "정령·불사조 등 <b>소환수 피해량이 +60%</b> 증가합니다.",
     "title_en": "Spirit Fury",
-    "desc_en": "<b>Summon damage +40%</b> (Fire Spirits, Phoenix).",
+    "desc_en": "<b>Summon damage +60%</b> (Fire Spirits, Phoenix).",
     "stats": {
-      "spiritPct": 40
+      "spiritPct": 60
     },
     "prerequisite": "has_summon",
     "links": [
@@ -355,12 +355,12 @@
     "icon": "🩸",
     "rarity": "common",
     "build": "burn",
-    "maxStack": 5,
-    "desc": "화상·연소·불장판 등 <b>지속 피해량이 +45%</b> 증가합니다.",
+    "maxStack": 3,
+    "desc": "화상·연소·불장판 등 <b>지속 피해량이 +65%</b> 증가합니다.",
     "title_en": "Fierce Ignite",
-    "desc_en": "<b>Damage over time +45%</b> (Ignite, Meteor burn, Flame Patch).",
+    "desc_en": "<b>Damage over time +65%</b> (Ignite, Meteor burn, Flame Patch).",
     "stats": {
-      "burnPct": 45
+      "burnPct": 65
     },
     "links": [
       "spell_meteor",
@@ -373,7 +373,7 @@
     "title": "주문서: 불장판",
     "icon": "🌋",
     "rarity": "rare",
-    "build": "burn",
+    "build": "spell",
     "maxStack": 1,
     "desc": "몬스터 발밑에 지속적인 화염 지대를 생성하여 <b>강력한 화상 도트 피해</b>를 입힙니다.",
     "title_en": "Grimoire: Flame Patch",
@@ -434,12 +434,12 @@
     "icon": "🔮",
     "rarity": "common",
     "build": "utility",
-    "maxStack": 5,
-    "desc": "주문력이 <b>+15%</b> 증가합니다.",
+    "maxStack": 3,
+    "desc": "주문력이 <b>+22%</b> 증가합니다.",
     "title_en": "Arcane Amplify",
-    "desc_en": "Spell Power <b>+15%</b>.",
+    "desc_en": "Spell Power <b>+22%</b>.",
     "stats": {
-      "spPct": 15
+      "spPct": 22
     },
     "links": [
       "util_executioner"

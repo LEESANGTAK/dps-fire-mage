@@ -20,12 +20,23 @@ test('Telemetry & Card Pool 무결성 검증', async (t) => {
   await t.test('2. 카드 풀 구성 검증 (빌드별 등급 분포, 상위호환 중복 금지)', () => {
     assert.equal(cardsJson.length, 28, '카드 풀은 밸런스 패치 v2의 27종 + 자동 영창(전설) 28종이어야 합니다.');
 
-    // 모든 빌드는 초반에 잡을 일반 카드와 빌드를 완성할 희귀/전설 카드를 함께 가져야 합니다.
-    for (const build of ['rapid', 'crit', 'summon', 'burn']) {
+    // 분류(개편안 2.1): 주문서·유틸리티는 빌드 판정 밖의 축이고, 나머지 5개가 계획하는 빌드입니다.
+    const builds = new Set(cardsJson.map(c => c.build));
+    assert.deepEqual([...builds].sort(), ['burn', 'combustion', 'crit', 'rapid', 'spell', 'summon', 'utility']);
+    assert.ok(cardsJson.filter(c => c.spellKey).every(c => c.build === 'spell'), '주문서 카드는 모두 주문서 분류여야 합니다.');
+    // 계획 빌드는 초반에 잡을 일반 카드와 빌드를 완성할 희귀/전설 카드를 함께 가집니다.
+    // 예외(개편안 2.4): 폭주는 업화 2단계에 열리는 작은 빌드라 일반 카드가 없고, 치명 전설은 폭주로 옮겨 출시 후 새로 추가합니다.
+    const EXCEPT = { combustion: ['common'], crit: ['legendary'] };
+    for (const build of ['crit', 'combustion', 'rapid', 'summon', 'burn']) {
       const cards = cardsJson.filter(c => c.build === build);
-      assert.ok(cards.some(c => c.rarity === 'common'), `${build} 빌드에 일반 카드가 있어야 합니다.`);
-      assert.ok(cards.some(c => c.rarity === 'rare'), `${build} 빌드에 희귀 카드가 있어야 합니다.`);
-      assert.ok(cards.some(c => c.rarity === 'legendary'), `${build} 빌드에 전설 카드가 있어야 합니다.`);
+      for (const rarity of ['common', 'rare', 'legendary']) {
+        if ((EXCEPT[build] || []).includes(rarity)) continue;
+        assert.ok(cards.some(c => c.rarity === rarity), `${build} 빌드에 ${rarity} 카드가 있어야 합니다.`);
+      }
+    }
+    // 수치만 올리는 일반 카드는 3번까지 겹칩니다(겹치기로 선택지를 채우지 않도록).
+    for (const c of cardsJson.filter(c => c.stats && !c.mechanic && !c.spellKey && c.rarity === 'common')) {
+      assert.ok(c.maxStack <= 3, `${c.id}: 수치 카드 겹치기는 3번까지입니다.`);
     }
 
     // 순수 스탯 카드끼리 모든 스탯이 같거나 높은 '완전 상위호환'이 있으면 선택지가 무의미해집니다.

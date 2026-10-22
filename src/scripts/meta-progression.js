@@ -34,8 +34,9 @@ const MASTERY_XP = { perStage: 1, phaseBoss: 3, finalBoss: 10, perInfernoPct: 25
 const MASTERY_UNLOCKS = [
   { xp: 4, type: 'start', id: 'fireblast' },
   { xp: 10, type: 'card', id: 'burn_wildfire' },
-  { xp: 35, type: 'card', id: 'util_auto_grimoire' },
-  { xp: 45, type: 'card', id: 'sum_cinder_lord' },
+  // 피해를 올리는 전설(정령: 잿더미 군단장)을 편의 전설(자동 영창)보다 먼저 열어, '전설 중심으로 짜는' 경험을 앞당깁니다(개편안 2.6).
+  { xp: 35, type: 'card', id: 'sum_cinder_lord' },
+  { xp: 45, type: 'card', id: 'util_auto_grimoire' },
   { xp: 70, type: 'start', id: 'flame_patch' },
   { xp: 140, type: 'start', id: 'meteor' },
   { xp: 190, type: 'card', id: 'crit_crimson_frenzy' },
@@ -52,6 +53,8 @@ const INFERNO_CARD_UNLOCKS = [
 
 // 열기 1칸일 때 불꽃 작렬 칸에 '지금!' 말풍선을 띄우는 횟수(세이브 전체 기준)
 const FIREBLAST_HINT_MAX = 3;
+// 광폭화 타이머 안내 쪽지: 처음 이 횟수의 보스전에서만 보여 줍니다.
+const ENRAGE_INTRO_MAX = 2;
 
 // 시작 주문서 → 해당 주문서 카드 ID
 const START_SPELL_CARDS = { fireblast: 'spell_fireblast', meteor: 'spell_meteor', combustion: 'spell_combustion', flame_patch: 'spell_flame_patch' };
@@ -146,11 +149,12 @@ function normalizeMeta(raw, legacyBestTime) {
   // 액션 바 선호 배치(드래그 앤 드롭): 알려진 주문 키만, 중복 없이
   const slotKeys = ['fireball', 'fireblast', 'meteor', 'combustion', 'flame_patch'];
   const slotOrder = Array.isArray(meta.slotOrder) ? meta.slotOrder.filter((k, i, a) => slotKeys.includes(k) && a.indexOf(k) === i) : [];
-  // 한 번만 보여 주는 안내: 메테오 연계 시연(본 적 있음), 불꽃 작렬 '지금!' 말풍선(보여 준 횟수)
+  // 한 번만 보여 주는 안내: 메테오 연계 시연(본 적 있음), 불꽃 작렬 '지금!' 말풍선·광폭화 타이머 쪽지(보여 준 횟수)
   const rawTips = meta.tips && typeof meta.tips === 'object' ? meta.tips : {};
   const tips = {
     meteorCombo: rawTips.meteorCombo === true,
-    fireblastHint: Math.max(0, Math.min(FIREBLAST_HINT_MAX, Math.floor(Number(rawTips.fireblastHint) || 0)))
+    fireblastHint: Math.max(0, Math.min(FIREBLAST_HINT_MAX, Math.floor(Number(rawTips.fireblastHint) || 0))),
+    enrageIntro: Math.max(0, Math.min(ENRAGE_INTRO_MAX, Math.floor(Number(rawTips.enrageIntro) || 0)))
   };
   // 도감: 선택지에 한 번이라도 나온 카드(seenCards)와 고른 적 있는 카드(pickedCards). 문자열 ID만, 중복 없이.
   const idList = (v) => (Array.isArray(v) ? v.filter((id, i, a) => typeof id === 'string' && id && a.indexOf(id) === i) : []);
@@ -188,7 +192,7 @@ function recordCardPicked(meta, id) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, INFERNO_CARD_UNLOCKS, START_SPELL_CARDS, FIREBLAST_HINT_MAX,
+    INFERNO_MAX, INFERNO_LATE_BOSS_FROM_STAGE, INFERNO_RULES, MASTERY_XP, MASTERY_UNLOCKS, INFERNO_CARD_UNLOCKS, START_SPELL_CARDS, FIREBLAST_HINT_MAX, ENRAGE_INTRO_MAX,
     clampInferno, getInfernoModifiers, getRunMasteryXp, getUnlocksAt, getMasteryProgress,
     getLockedCardIds, getInfernoCardUnlocks, getNextInfernoCardUnlock, getUnlockedStartSpells, normalizeMeta,
     recordCardsSeen, recordCardPicked

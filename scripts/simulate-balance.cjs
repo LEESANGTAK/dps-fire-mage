@@ -192,6 +192,8 @@ function simulateRun(policyName, seed) {
     failedAt,
     totalSec: st.playTimeSec,
     deck: g.run('deckManager.getActiveDeck()'),
+    // 런 끝의 주력 빌드(주문서·유틸리티 제외, 2장 이상). 빌드 가중 추첨이 한 빌드로 쏠리는지 확인합니다.
+    mainBuild: g.run('typeof deckManager.getMainBuilds === "function" ? deckManager.getMainBuilds().main : null'),
     legendaryAt,
     dmg
   };
@@ -234,6 +236,10 @@ function report(policyName) {
     for (const [k, v] of Object.entries(r.dmg)) share[k] = (share[k] || 0) + v / total / RUNS;
   }
   console.log('피해 점유율: ' + Object.entries(share).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}%`).join(' · '));
+
+  const mains = {};
+  for (const r of runs) { const k = r.mainBuild || '없음'; mains[k] = (mains[k] || 0) + 1; }
+  console.log('런 끝 주력 빌드: ' + Object.entries(mains).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${Math.round((v / RUNS) * 100)}%`).join(' · '));
 
   const picks = {};
   for (const r of runs) for (const [id, n] of Object.entries(r.deck)) picks[id] = (picks[id] || 0) + n / RUNS;

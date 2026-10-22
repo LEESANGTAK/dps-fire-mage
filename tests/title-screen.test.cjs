@@ -107,6 +107,12 @@ assert.ok(shown('btn-title-hall'));
 const html = read('index.html');
 const top = html.slice(html.indexOf('<div class="top-controls">'), html.indexOf('</header>'));
 assert.ok(!top.includes('btn-hall-of-fame'), '명예의 전당은 상단에서 빠지고 타이틀로 옮겨야 합니다.');
+// 게임 종료는 모서리 아이콘이 아니라 타이틀 메뉴의 마지막 항목입니다(데스크톱만).
+{
+  const menu = html.slice(html.indexOf('id="title-menu"'), html.indexOf('</div>', html.indexOf('id="title-menu"')));
+  assert.ok(menu.trim().split('<button').pop().includes('id="btn-title-quit"'), '게임 종료는 타이틀 메뉴 맨 아래에 있어야 합니다.');
+  assert.ok(menu.includes('⏻ 게임 종료'), '게임 종료 버튼은 글자로 보여야 합니다.');
+}
 for (const id of ['title-screen', 'btn-title-start', 'btn-title-continue', 'btn-title-new-run', 'btn-title-hall', 'btn-title-settings', 'btn-title-quit', 'title-new-run', 'title-run-setup-slot', 'btn-title-depart', 'btn-pause-title', 'btn-pause-abandon']) {
   assert.ok(html.includes(`id="${id}"`), `${id} 요소가 필요합니다.`);
 }

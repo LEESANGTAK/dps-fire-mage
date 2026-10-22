@@ -39,13 +39,15 @@
       "build": {
         "type": "string",
         "enum": [
-          "rapid",
+          "spell",
           "crit",
+          "combustion",
+          "rapid",
           "summon",
           "burn",
           "utility"
         ],
-        "description": "카드 빌드 성향 태그 (드롭다운 목록 제공):\n- rapid: ⚡ 속사 머신건\n- crit: 🎯 극치명 누킹\n- summon: 🔥 정령 군단\n- burn: 🌋 연소 지대\n- utility: ✨ 유틸리티"
+        "description": "카드 빌드 성향 태그 (드롭다운 목록 제공):\n- spell: 📜 고대 주문서\n- crit: 🎯 극치명 누킹\n- combustion: ☀️ 폭주 극딜\n- rapid: ⚡ 속사 머신건\n- summon: 🔥 정령 군단\n- burn: ♨️ 화상 확산\n- utility: ✨ 유틸리티\n(주문서·유틸리티는 주력 빌드 판정에서 빠집니다)"
       },
       "maxStack": {
         "type": "integer",
@@ -139,7 +141,7 @@
         "type": "array",
         "items": { "type": "string" },
         "uniqueItems": true,
-        "description": "연계 카드 ID 목록. 도감의 연계 표시와 각성 카드 위 '보유 카드와 연계' 표시에 쓰입니다(게임이 양방향으로 연결)."
+        "description": "연계 카드 ID 목록. 도감에서 카드를 눌렀을 때 밝아지는 연계 카드로 쓰입니다(각성 카드 창에는 표시하지 않음, 게임이 양방향으로 연결)."
       }
     },
     "additionalProperties": false

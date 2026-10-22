@@ -6,8 +6,10 @@
  * - 연계 데이터: 카드의 links(엑셀 '연계 카드' 열). 한쪽에만 적어도 양방향으로 연결합니다(getCardLinkIds). */
 const CODEX_BUILDS = [
   { id: 'all', icon: '📖', label: tr('모두') },
-  { id: 'rapid', icon: '⚡', label: tr('속사') },
+  { id: 'spell', icon: '📜', label: tr('주문서') },
   { id: 'crit', icon: '🎯', label: tr('치명') },
+  { id: 'combustion', icon: '☀️', label: tr('폭주') },
+  { id: 'rapid', icon: '⚡', label: tr('속사') },
   { id: 'summon', icon: '🔥', label: tr('정령') },
   { id: 'burn', icon: '♨️', label: tr('화상') },
   { id: 'utility', icon: '✨', label: tr('유틸') }
@@ -42,12 +44,6 @@ function getCardLinkIds(cardId) {
 
 function codexActiveDeck() {
   return typeof deckManager !== 'undefined' && deckManager && typeof deckManager.getActiveDeck === 'function' ? deckManager.getActiveDeck() : {};
-}
-
-// 지금 덱에 있는 카드 중 cardId와 연계되는 카드
-function getOwnedLinkIds(cardId) {
-  const deck = codexActiveDeck();
-  return getCardLinkIds(cardId).filter((id) => (deck[id] || 0) > 0);
 }
 
 function isCodexAvailable() {
@@ -92,8 +88,6 @@ function renderCodexGrid() {
   const grid = document.getElementById('codex-grid');
   if (!grid) return;
   const deck = codexActiveDeck();
-  const ownedIds = Object.keys(deck).filter((id) => deck[id] > 0);
-  const ownedLinked = new Set(ownedIds.flatMap((id) => getCardLinkIds(id)));
   const selectedLinks = codexSelected ? new Set(getCardLinkIds(codexSelected)) : null;
   const cards = codexCards().filter((c) => codexTab === 'all' || c.build === codexTab);
   grid.innerHTML = cards.map((card) => {
@@ -103,7 +97,6 @@ function renderCodexGrid() {
     const cls = [
       'codex-cell', `rarity-${card.rarity}`, `state-${st}`,
       count > 0 ? 'owned' : '',
-      count === 0 && ownedLinked.has(card.id) ? 'linked-owned' : '',
       codexSelected === card.id ? 'selected' : '',
       selectedLinks && selectedLinks.has(card.id) ? 'link-lit' : '',
       selectedLinks && codexSelected !== card.id && !selectedLinks.has(card.id) ? 'link-dim' : ''

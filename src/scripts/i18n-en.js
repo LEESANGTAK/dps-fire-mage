@@ -290,6 +290,8 @@ const I18N_EN = {
   '{stage} / {total} 스테이지': 'Stage {stage} / {total}',
   '▶ 계속': '▶ Resume',
   '⏻ 게임 종료': '⏻ Quit Game',
+  '⏳ 광폭화까지': '⏳ Enrage in',
+  '0초가 되면 런 실패': 'Run ends at 0',
   '⚙ 설정': '⚙ Settings',
 
   // 설정 화면
@@ -321,7 +323,6 @@ const I18N_EN = {
   '▶ 출발': '▶ Go',
   '뒤로': 'Back',
   '설정': 'Settings',
-  '게임 종료': 'Quit game',
   '🏠 타이틀로': '🏠 Title Screen',
   '🏳️ 런 포기': '🏳️ Abandon Run',
   '⚠️ 한 번 더 누르면 포기': '⚠️ Click again to abandon',
@@ -345,6 +346,9 @@ const I18N_EN = {
   '아직 선택지에 나온 적 없는 카드입니다.': "You haven't been offered this card yet.",
   '카드를 누르면 설명과 연계 카드가 보입니다.': 'Click a card to see its effect and synergies.',
   '연계': 'Synergy',
-  '보유 카드와 연계': 'Synergy with your cards'
+  '주문서': 'Spells',
+  '폭주': 'Combust',
+  '📜 고대 주문서': '📜 Ancient Spellbook',
+  '☀️ 폭주 극딜': '☀️ Combustion Burst'
 };
 if (typeof module !== 'undefined') module.exports = { I18N_EN };

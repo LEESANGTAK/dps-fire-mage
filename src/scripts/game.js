@@ -2137,6 +2137,7 @@ function loadStage(stageNum) {
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
   state.monster.isDying = false;
+  resetHpTrailUI();
   // 사망 잔상 동안 숨겨 둔 원본 몬스터를 새 스테이지 몬스터로 다시 노출합니다.
   const dummyAvatar = document.getElementById('dummy-avatar');
   if (dummyAvatar && dummyAvatar.dataset) delete dummyAvatar.dataset.dead;
@@ -2169,6 +2170,7 @@ function loadStage(stageNum) {
 
   // 페이즈 보스 광폭화 제한 시간
   state.combat.bossEnrageRem = data.isPhaseBoss ? data.enrage : null;
+  state.combat.enrageIntroChecked = false;
   state.bestReachedStage = Math.max(state.bestReachedStage || 0, state.currentStage);
 
   // 최종 보스 불의 심장 보호막 상태 초기화
@@ -3300,6 +3302,32 @@ function maybeShowFireblastHint() {
   return true;
 }
 
+// 광폭화 타이머 안내: 처음 ENRAGE_INTRO_MAX번의 보스전에서, 타이머 왼쪽에 종이 쪽지를 잠깐 걸고 타이머를 빛냅니다.
+// 실패 조건이라는 '사실'이라 글로 알려 주되, 익숙해진 뒤에는 막대만 남깁니다.
+function maybeShowEnrageIntro() {
+  const c = state.combat;
+  if (c.enrageIntroChecked) return false;
+  if (typeof isTitleOpen === 'function' && isTitleOpen()) return false;
+  if (state.isPaused || (typeof isMenuPaused === 'function' && isMenuPaused())) return false;
+  c.enrageIntroChecked = true;
+  const tips = state.meta && state.meta.tips;
+  if (!tips || (tips.enrageIntro || 0) >= ENRAGE_INTRO_MAX) return false;
+  tips.enrageIntro = (tips.enrageIntro || 0) + 1;
+  saveGame();
+  const timer = document.getElementById('boss-enrage-timer');
+  if (!timer || typeof timer.insertAdjacentHTML !== 'function') return true;
+  const old = timer.querySelector('.enrage-intro');
+  if (old) old.remove();
+  timer.insertAdjacentHTML('beforeend', `<div class="enrage-intro" role="note"><b>${tr('⏳ 광폭화까지')}</b><span>${tr('0초가 되면 런 실패')}</span></div>`);
+  timer.classList.add('intro-glow');
+  const note = timer.querySelector('.enrage-intro');
+  setTimeout(() => {
+    if (note) note.classList.add('leaving');
+    setTimeout(() => { if (note) note.remove(); timer.classList.remove('intro-glow'); }, 380);
+  }, 4000);
+  return true;
+}
+
 function triggerUnfoldPop(elId) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -3660,14 +3688,7 @@ function showDeckTooltip(card, targetEl) {
   const stats = liveCard.stats || card.stats;
 
   const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[rarity]) || { name: rarity, color: '#94a3b8' };
-  const buildNames = {
-    rapid: tr('⚡ 속사 머신건'),
-    crit: tr('🎯 극치명 누킹'),
-    summon: tr('🔥 정령 군단'),
-    burn: tr('♨️ 화상 확산'),
-    utility: tr('✨ 유틸리티')
-  };
-  const buildLabel = buildNames[build] || build;
+  const buildLabel = getBuildLabel(build);
   const isMax = card.count >= maxStack;
   const stackLabel = isMax ? 'MAX' : tr('중첩 {n} / {max}', { n: card.count, max: maxStack });
 
@@ -3861,6 +3882,20 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   }
 }
 
+// 카드 빌드 배지 이름(각성 카드·덱 툴팁). 도감 탭(codex.js)은 짧은 이름을 따로 씁니다.
+function getBuildLabel(build) {
+  const names = {
+    spell: tr('📜 고대 주문서'),
+    crit: tr('🎯 극치명 누킹'),
+    combustion: tr('☀️ 폭주 극딜'),
+    rapid: tr('⚡ 속사 머신건'),
+    summon: tr('🔥 정령 군단'),
+    burn: tr('♨️ 화상 확산'),
+    utility: tr('✨ 유틸리티')
+  };
+  return names[build] || tr('특수');
+}
+
 function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AWAKENING_DEAL.first) {
   // 도감: 선택지에 나온 카드는 '발견'으로 남깁니다(다시 뽑기로 나온 카드 포함).
   if (Array.isArray(choices) && recordCardsSeen(state.meta, choices.map((c) => c && c.id))) saveGame();
@@ -3875,25 +3910,11 @@ function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AW
     const currentCount = activeDeck[card.id] || 0;
     const stackBadge = currentCount > 0 ? `<div class="card-stack-badge">${tr('보유: {n}/{max}', { n: currentCount, max: card.maxStack })}</div>` : '';
 
-    let buildBadgeText = tr('특수');
-    if (typeof RoguelikeDeck !== 'undefined') {
-      if (card.build === RoguelikeDeck.BUILD.RAPID) buildBadgeText = tr('⚡ 속사 머신건');
-      else if (card.build === RoguelikeDeck.BUILD.CRIT) buildBadgeText = tr('🎯 극치명 누킹');
-      else if (card.build === RoguelikeDeck.BUILD.SUMMON) buildBadgeText = tr('🔥 정령 군단');
-      else if (card.build === RoguelikeDeck.BUILD.BURN) buildBadgeText = tr('♨️ 화상 확산');
-      else if (card.build === RoguelikeDeck.BUILD.UTILITY) buildBadgeText = tr('✨ 유틸리티');
-    }
-
-    // 연계 표시: 지금 덱에 있는 카드와 이어지는 카드면, 그 카드 아이콘이 종이 끈에 매달려 카드 위에 나타납니다(최대 3개).
-    const ownedLinks = typeof getOwnedLinkIds === 'function' ? getOwnedLinkIds(card.id) : [];
-    const linkCards = ownedLinks.slice(0, 3).map((id) => RoguelikeDeck.CARD_POOL.find((c) => c.id === id)).filter(Boolean);
-    const linkTags = linkCards.length
-      ? `<div class="card-link-tags" title="${tr('보유 카드와 연계')}" aria-label="${tr('보유 카드와 연계')}">${linkCards.map((c, k) => `<span class="card-link-tag" style="--link-i:${k}" title="${cardText(c, 'title')}">${paperCardIconHTML(c)}</span>`).join('')}</div>`
-      : '';
+    const buildBadgeText = getBuildLabel(card.build);
+    // 연계·주력 빌드 표시는 일부러 두지 않습니다. 어떤 카드가 덱과 맞물리는지는 플레이어가 직접 따져 봅니다(AGENTS.md 1부 4장).
 
     return `
-      <div class="awakening-card ${rarityClass}${linkCards.length ? ' has-link' : ''}" data-card-id="${card.id}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
-        ${linkTags}
+      <div class="awakening-card ${rarityClass}" data-card-id="${card.id}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
         <div class="card-rarity-badge">${rarityMeta.name}</div>
         ${stackBadge}
         <div class="card-icon">${paperCardIconHTML(card)}</div>
@@ -4562,6 +4583,7 @@ function gameLoop(nowMs) {
       updateMageMotion(dt, false);
       updateAndDrawVfx(dt);
       updateLiveHUD();
+      updateHpTrailUI(dt); // 처치 여운 동안에도 마지막 한 방의 잔상이 줄어드는 걸 보여 줍니다.
     } catch (e) {}
     requestAnimationFrame(gameLoop);
     return;
@@ -4728,6 +4750,7 @@ function gameLoop(nowMs) {
     updateMageMotion(dt, false);
     updateAndDrawVfx(dt);
     updateLiveHUD();
+    updateHpTrailUI(dt);
   } catch (loopErr) {
     console.error('gameLoop internal error:', loopErr);
   }
@@ -4746,6 +4769,45 @@ function gameLoop(nowMs) {
 // ==========================================
 // 18. 실시간 HUD 업데이트
 // ==========================================
+// HP 바 피해 잔상(hp-trail.js). 시계는 전투가 흐르는 동안의 dt로만 갑니다(updateHpTrailUI).
+const hpTrail = typeof createHpTrail === 'function' ? createHpTrail() : null;
+const HP_CHUNK_MAX = 3; // 동시에 번쩍이는 흰 조각 상한(연속 큰 한 방에도 화면 공해 방지)
+
+// 큰 한 방이 깎은 구간을 흰 조각으로 번쩍이고, HP 바를 한 번 눌렀다 튕깁니다.
+function showHpBigHitChunk(hit) {
+  const layer = document.getElementById('target-hp-chunks');
+  if (!layer || !hit || typeof document.createElement !== 'function') return;
+  while (layer.children && layer.children.length >= HP_CHUNK_MAX && layer.firstChild) layer.removeChild(layer.firstChild);
+  const chunk = document.createElement('div');
+  chunk.className = 'hp-chunk';
+  chunk.style.left = `${hit.to}%`;
+  chunk.style.width = `${hit.from - hit.to}%`;
+  layer.appendChild(chunk);
+  setTimeout(() => { if (chunk.parentNode) chunk.parentNode.removeChild(chunk); }, 450);
+  const bar = document.getElementById('target-hp-bar');
+  if (bar && !prefersReducedMotion()) {
+    bar.classList.remove('hp-big-hit');
+    void bar.offsetWidth; // 연속 큰 한 방에도 눌림 연출을 처음부터 다시 재생
+    bar.classList.add('hp-big-hit');
+  }
+}
+
+function updateHpTrailUI(dt) {
+  if (!hpTrail) return;
+  const trail = document.getElementById('target-hp-trail');
+  if (trail) trail.style.width = `${hpTrail.update(dt)}%`;
+}
+
+// 새 몬스터: 잔상과 흰 조각을 지웁니다.
+function resetHpTrailUI() {
+  if (!hpTrail) return;
+  hpTrail.reset(100);
+  const layer = document.getElementById('target-hp-chunks');
+  if (layer) layer.innerHTML = '';
+  const trail = document.getElementById('target-hp-trail');
+  if (trail) trail.style.width = '100%';
+}
+
 function updateLiveHUD() {
   const stats = getPlayerStats();
   const c = state.combat;
@@ -4762,6 +4824,8 @@ function updateLiveHUD() {
 
   const hpPct = Math.max(0, Math.min(100, (state.monster.hp / state.monster.maxHp) * 100));
   document.getElementById('target-hp-fill').style.width = `${hpPct}%`;
+  const bigHit = hpTrail ? hpTrail.setHp(hpPct) : null;
+  if (bigHit) showHpBigHitChunk(bigHit);
   document.getElementById('target-hp-text').textContent = `${fmt(state.monster.hp)} / ${fmt(state.monster.maxHp)}`;
   document.getElementById('target-hp-pct').textContent = `${hpPct.toFixed(0)}%`;
 
@@ -4834,6 +4898,7 @@ function updateLiveHUD() {
     const enrageActive = c.bossEnrageRem !== null && c.bossEnrageRem !== undefined;
     enrageEl.classList.toggle('hidden', !enrageActive);
     if (enrageActive) {
+      maybeShowEnrageIntro();
       const enrageTotal = getStageData(state.currentStage).enrage || 1;
       enrageEl.classList.toggle('danger', c.bossEnrageRem <= 10);
       document.getElementById('boss-enrage-time').textContent = `${Math.ceil(c.bossEnrageRem)}s`;

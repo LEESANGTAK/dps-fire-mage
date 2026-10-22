@@ -71,15 +71,15 @@ const first = g.run('RoguelikeDeck.CARD_POOL[0].id');
 assert.ok(g.run(`getCardLinkIds('util_power')`).includes(first), '연계는 양방향이어야 합니다.');
 g.run('codexLinkCache = null;');
 
-// 6. 각성 카드 연계 표시: 덱에 있는 카드와 이어지는 선택지에만 아이콘이 매달립니다.
-g.run("deckManager.resetDeck(state); deckManager.selectCard('spell_meteor', state);");
-assert.equal(g.run("JSON.stringify(getOwnedLinkIds('crit_meteor_storm'))"), '["spell_meteor"]');
-assert.equal(g.run("getOwnedLinkIds('util_power').length"), 0);
+// 6. 각성 카드에는 연계·주력 빌드 표시를 두지 않습니다. 덱과 맞물리는지는 플레이어가 직접 따져 봅니다(AGENTS.md 1부 4장).
+//    메테오(연계 상대)와 속사 카드 2장(주력 빌드)을 가진 덱에서도 선택지 카드에 아무 표시가 붙지 않아야 합니다.
+g.run("deckManager.resetDeck(state); deckManager.selectCard('spell_meteor', state); deckManager.selectCard('rapid_split', state); deckManager.selectCard('rapid_quickdraw', state);");
 g.run("renderAwakeningChoicesUI(['crit_meteor_storm', 'util_power'].map((id) => RoguelikeDeck.CARD_POOL.find((c) => c.id === id)), false)");
 const rendered = String(g.run("document.getElementById('awakening-cards-container').innerHTML"));
 const cardsHtml = rendered.split('class="awakening-card ');
-assert.match(cardsHtml.find((h) => h.includes('data-card-id="crit_meteor_storm"')), /has-link[\s\S]*card-link-tag/, '메테오 보유 시 태양석 메테오에 연계 표시가 붙어야 합니다.');
-assert.ok(!/card-link-tag/.test(cardsHtml.find((h) => h.includes('data-card-id="util_power"'))), '연계 없는 카드에는 표시가 없어야 합니다.');
+assert.ok(cardsHtml.some((h) => h.includes('data-card-id="crit_meteor_storm"')), '선택지가 그려져야 합니다.');
+assert.ok(!/card-link-tag|has-link|main-build/.test(rendered), '각성 카드에 연계 아이콘·주력 빌드 띠가 붙으면 안 됩니다.');
+assert.ok(!/linked-owned/.test(read('src/scripts/codex.js')), '도감도 보유 카드의 연계 상대를 저절로 깜빡이게 하지 않습니다(카드를 눌러 직접 찾아봄).');
 
 // 7. 마크업·연결: 세 진입 버튼, 도감 창, 스크립트 순서, Esc가 도감을 먼저 닫음
 const html = read('index.html');
@@ -89,4 +89,4 @@ for (const id of ['codex-backdrop', 'codex-tabs', 'codex-grid', 'codex-detail', 
 assert.ok(html.indexOf('codex.js') < html.indexOf('src/scripts/game.js'));
 assert.match(read('src/scripts/pause-menu.js'), /isCodexOpen\(\)\) \{\s*closeCodex\(\);/);
 
-console.log('   도감 연계 데이터(양방향·엑셀·대체 데이터), 발견·획득 기록과 세이브, 카드 상태, 도감 버튼 조건, 각성 카드 연계 표시 검증 통과');
+console.log('   도감 연계 데이터(양방향·엑셀·대체 데이터), 발견·획득 기록과 세이브, 카드 상태, 도감 버튼 조건, 각성 카드 연계 표시 없음 검증 통과');

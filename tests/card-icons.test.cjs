@@ -22,9 +22,9 @@ for (const id of cardIds) {
 }
 assert.equal(context.html({ id: 'unknown_card', icon: '🃏' }), '🃏', '모르는 카드는 데이터의 아이콘으로 대체합니다.');
 
-// 2. 카드 아이콘을 그리는 네 곳(각성 모달·각성 카드 연계 표시·덱 줄·덱 툴팁)이 모두 종이 아이콘을 씁니다.
+// 2. 카드 아이콘을 그리는 세 곳(각성 모달·덱 줄·덱 툴팁)이 모두 종이 아이콘을 씁니다.
 const game = read('src/scripts/game.js');
-assert.equal((game.match(/paperCardIconHTML\(/g) || []).length, 4);
+assert.equal((game.match(/paperCardIconHTML\(/g) || []).length, 3);
 assert.ok(!/\$\{(card|c)\.icon\}/.test(game), '카드 이모지를 그대로 출력하는 곳이 남아 있으면 안 됩니다.');
 
 // 3. 덱 툴팁 스탯 이름이 카드가 쓰는 모든 스탯 키를 다룹니다(밸런스 패치 v2의 정수 퍼센트 스탯).
@@ -33,8 +33,11 @@ const labelBlock = game.slice(game.indexOf('const statLabels = {'), game.indexOf
 for (const key of statKeys) assert.ok(new RegExp(`\\b${key}:`).test(labelBlock), `덱 툴팁에 ${key} 스탯 이름이 없습니다.`);
 assert.ok(!/isRatio/.test(game), '치명 피해를 배율로 보고 100배 하던 구형 표기가 남아 있으면 안 됩니다.');
 
-// 4. 화상 빌드 카드도 빌드 이름표를 가집니다.
-assert.ok(game.includes("RoguelikeDeck.BUILD.BURN"), '각성 카드에 화상 빌드 이름표가 있어야 합니다.');
-assert.ok(game.includes("burn: tr('♨️ 화상 확산')"), '덱 툴팁에 화상 빌드 이름표가 있어야 합니다.');
+// 4. 모든 분류가 빌드 이름표를 가집니다(각성 카드·덱 툴팁이 getBuildLabel 하나를 함께 씀).
+const labelFn = game.slice(game.indexOf('function getBuildLabel('), game.indexOf('}', game.indexOf('return names[build]')));
+for (const build of new Set(JSON.parse(read('src/data/roguelike-cards.json')).map((c) => c.build))) {
+  assert.ok(labelFn.includes(`${build}: tr(`), `${build} 빌드 이름표가 있어야 합니다.`);
+}
+assert.equal((game.match(/getBuildLabel\(/g) || []).length, 3, '각성 카드와 덱 툴팁이 같은 이름표 함수를 써야 합니다(정의 1 + 사용 2).');
 
-console.log(`각성 카드 ${cardIds.length}종 종이 아이콘 지정·이모지 제거, 덱 툴팁 스탯 ${statKeys.size}종 표기, 화상 빌드 이름표 검증 통과`);
+console.log(`각성 카드 ${cardIds.length}종 종이 아이콘 지정·이모지 제거, 덱 툴팁 스탯 ${statKeys.size}종 표기, 분류별 빌드 이름표 검증 통과`);

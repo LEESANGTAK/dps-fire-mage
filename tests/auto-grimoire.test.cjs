@@ -34,12 +34,13 @@ assert.equal(g.run("isSkillAutoActive('combustion')"), false, '얻은 뒤에는 
 g.run('restartSpeedrunRun()');
 assert.equal(g.run('hasSmartAutoCast()'), false);
 
-// 4. 카드 정의·해금: 전설, 주문서가 있어야 등장, 숙련도 35에서 해금(첫 런에는 잠김).
+// 4. 카드 정의·해금: 전설, 주문서가 있어야 등장, 숙련도 45에서 해금(첫 런에는 잠김. 35는 잿더미 군단장).
 const card = g.run("RoguelikeDeck.CARD_POOL.find((c) => c.id === 'util_auto_grimoire')");
 assert.equal(card.rarity, 'legendary');
 assert.equal(card.req(st, {}), false, '주문서가 없으면 자동으로 돌릴 주문이 없어 등장하지 않습니다.');
 assert.ok(M.getLockedCardIds(0).includes('util_auto_grimoire'));
-assert.ok(!M.getLockedCardIds(35).includes('util_auto_grimoire'));
+assert.ok(M.getLockedCardIds(35).includes('util_auto_grimoire'));
+assert.ok(!M.getLockedCardIds(45).includes('util_auto_grimoire'));
 
 // 5. 자동 영창은 편의 전설이라 골라도 보스 보상 전설 보장이 이어지고, 피해 전설을 고르면 보장이 끝납니다.
 {

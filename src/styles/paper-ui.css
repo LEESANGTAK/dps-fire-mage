@@ -923,6 +923,10 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
 .title-entering .title-menu > :nth-child(2) { animation-delay: 0.53s; }
 .title-entering .title-menu > :nth-child(3) { animation-delay: 0.61s; }
 .title-entering .title-menu > :nth-child(4) { animation-delay: 0.69s; }
+.title-entering .title-menu > :nth-child(5) { animation-delay: 0.77s; }
+.title-entering .title-menu > :nth-child(6) { animation-delay: 0.85s; }
+/* 게임 종료: 다른 메뉴와 살짝 떨어뜨려 마지막 자리임을 보여 줍니다. */
+.title-menu .title-quit { margin-top: 6px; }
 @keyframes titleBtnPop { 0% { opacity: 0; transform: translateY(18px) scale(0.9); } 100% { opacity: 1; transform: none; } }
 
 /* 새 런 설정: 짙은 종이 한 장 위에 결과창과 같은 설정 칸을 붙입니다. */
@@ -938,7 +942,7 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
 .title-new-run-head { text-align: center; font-size: 1rem; font-weight: 900; color: #fde68a; text-shadow: 0 2px 0 var(--pp-ink); }
 .title-new-run .run-setup { margin: 0; }
 
-/* 모서리: 설정·종료 */
+/* 모서리: 설정 */
 .title-corner { position: absolute; right: 16px; bottom: 16px; display: flex; gap: 8px; }
 .title-corner-btn {
   width: 40px;
@@ -1066,11 +1070,6 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
 }
 .codex-tab:hover { color: #fff4dc; transform: translateY(-1px); }
 .codex-tab.selected { color: var(--pp-ink); background: var(--pp-cream); transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--pp-cut), 0 3px 0 var(--pp-drop); animation: settingsPick 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.codex-tab.build-rapid { border-bottom-color: #e8743b; }
-.codex-tab.build-crit { border-bottom-color: #e2b84a; }
-.codex-tab.build-summon { border-bottom-color: #57ba91; }
-.codex-tab.build-burn { border-bottom-color: #c7463a; }
-.codex-tab.build-utility { border-bottom-color: #9b8bd8; }
 
 /* 카드 격자 */
 .codex-grid {
@@ -1117,12 +1116,6 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
 /* 이번 런 보유: 금색 테두리 + 겹친 횟수 */
 .codex-cell.owned { box-shadow: 0 0 0 2px var(--pp-ink), 0 0 0 5px #e2b84a, 0 4px 0 5px var(--pp-drop); }
 .codex-stack { position: absolute; top: -7px; right: -7px; padding: 0 5px; font-size: 0.66rem; font-weight: 900; color: var(--pp-ink); background: #fde68a; border: 2px solid var(--pp-ink); border-radius: 2px; }
-/* 보유 카드와 연계되는 카드: 은은한 펄스 */
-.codex-cell.linked-owned { animation: codexLinkPulse 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-@keyframes codexLinkPulse {
-  0%, 100% { box-shadow: 0 0 0 2px var(--pp-ink), 0 4px 0 2px var(--pp-drop); }
-  50% { box-shadow: 0 0 0 2px var(--pp-ink), 0 0 14px 4px rgba(255, 180, 80, 0.55), 0 4px 0 2px var(--pp-drop); }
-}
 /* 카드를 고르면 연계 카드만 밝게 */
 .codex-cell.selected { transform: translateY(-4px) scale(1.04); box-shadow: 0 0 0 2px var(--pp-ink), 0 0 0 5px var(--pp-cream), 0 6px 0 5px var(--pp-drop); }
 .codex-cell.link-lit { box-shadow: 0 0 0 2px var(--pp-ink), 0 0 0 5px #e8743b, 0 4px 0 5px var(--pp-drop); animation: none; }
@@ -1191,30 +1184,116 @@ body:not(.title-open) .arena-top-stage-header { transition: opacity 0.6s cubic-b
 .awakening-codex-btn:hover { transform: translateY(-2px) rotate(-8deg); box-shadow: 0 5px 0 var(--pp-drop); }
 .awakening-codex-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--pp-drop); }
 
-/* 각성 카드 위 연계 표시: 덱의 연계 카드 아이콘이 종이 끈에 매달려 카드 오른쪽 위에 걸립니다. */
-.awakening-card.has-link { box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 0 16px 3px rgba(255, 180, 80, 0.45), 0 7px 0 3px var(--pp-drop); }
-.card-link-tags { position: absolute; top: -22px; right: 10px; z-index: 3; display: flex; gap: 4px; }
-.card-link-tag {
-  position: relative;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  font-size: 1.05rem;
-  background: var(--pp-cream);
-  border: 2px solid var(--pp-ink);
-  border-radius: 2px;
-  box-shadow: 0 0 0 2px #e2b84a, 0 3px 0 2px var(--pp-drop);
-  transform-origin: 50% -10px;
-  animation: cardLinkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--deal-delay, 0ms) + 380ms + var(--link-i, 0) * 70ms) both,
-             cardLinkSway 2.6s cubic-bezier(0.45, 0, 0.55, 1) calc(var(--deal-delay, 0ms) + 900ms) infinite;
-}
-.card-link-tag .paper-card-icon { width: 22px; height: 22px; }
-/* 매단 끈 */
-.card-link-tag::before { content: ""; position: absolute; top: -10px; left: 50%; width: 2px; height: 9px; margin-left: -1px; background: var(--pp-kraft); }
-@keyframes cardLinkPop { 0% { opacity: 0; transform: translateY(-14px) scale(0.6); } 100% { opacity: 1; transform: none; } }
-@keyframes cardLinkSway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-
 @media (prefers-reduced-motion: reduce) {
-  .codex-card, .codex-tab.selected, .codex-cell.linked-owned, .card-link-tag { animation: none; }
+  .codex-card, .codex-tab.selected { animation: none; }
+}
+
+/* ==========================================
+   빌드 색 (개편안 2.1) — 도감 탭 밑줄 색
+   ========================================== */
+.build-spell { --build-color: #c9a7e8; }
+.build-crit { --build-color: #e2b84a; }
+.build-combustion { --build-color: #e2588c; }
+.build-rapid { --build-color: #e8743b; }
+.build-summon { --build-color: #57ba91; }
+.build-burn { --build-color: #c7463a; }
+.build-utility { --build-color: #9b8bd8; }
+.codex-tab[class*='build-'] { border-bottom-color: var(--build-color, var(--pp-ink)); }
+
+/* ==========================================
+   HP 바 피해 잔상 (hp-trail.js)
+   실제 HP 칸은 바로 줄고, 잃은 구간은 밝은 종이색 잔상으로 남았다가 따라 줄어듭니다.
+   큰 한 방(메테오 등)은 깎인 구간만 흰 조각으로 번쩍이고 바가 한 번 눌렸다 튕깁니다.
+   ========================================== */
+.hp-bar-trail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: #e9b872;
+  box-shadow: inset -2px 0 0 #fff4dc99;
+}
+.hp-bar-outer .hp-bar-fill { position: relative; z-index: 1; transition: width 0.08s cubic-bezier(0.16, 1, 0.3, 1); }
+.hp-bar-chunks { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.hp-bar-outer .hp-bar-text { z-index: 3; }
+.hp-chunk {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #fffaf0;
+  box-shadow: 0 0 8px 2px #fff4dccc;
+  transform-origin: 0 50%;
+  animation: hpChunkFlash 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes hpChunkFlash {
+  0% { opacity: 1; transform: scaleY(1.45); }
+  16% { opacity: 1; transform: scaleY(1); }
+  55% { opacity: 0.85; background: #ffe2a8; }
+  100% { opacity: 0; transform: scaleY(1); background: #e9b872; }
+}
+/* 큰 한 방: 바가 아래로 눌렸다가 탄성 있게 복원 */
+.hp-bar-outer.hp-big-hit { animation: hpBarSquash 0.34s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes hpBarSquash {
+  0% { transform: scale(1.06, 0.78); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hp-bar-outer.hp-big-hit { animation: none; }
+  .hp-chunk { animation-name: hpChunkFade; }
+  @keyframes hpChunkFade { 0%, 40% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+/* ==========================================
+   광폭화 타이머 안내 쪽지 (처음 두 번의 보스전만)
+   타이머 왼쪽에 종이 쪽지가 튀어나와 타이머를 가리키고, 타이머는 그동안 빛납니다.
+   ========================================== */
+.boss-enrage-timer { position: relative; }
+/* 종이 색 변수는 전투 화면 범위에 없어 직접 씁니다(잉크 #241b22 · 크림 #efe1c6 · 그림자 #151119). */
+.enrage-intro {
+  position: absolute;
+  right: calc(100% + 14px);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  max-width: 170px;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #241b22;
+  white-space: nowrap;
+  background: #efe1c6;
+  border: 2.5px solid #241b22;
+  border-radius: 3px;
+  box-shadow: 0 3px 0 #151119;
+  transform: rotate(-2deg);
+  transform-origin: 100% 80%;
+  animation: enrageIntroPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.enrage-intro b { font-size: 0.8rem; color: #8f2a22; }
+/* 타이머를 가리키는 종이 꼬리 */
+.enrage-intro::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  bottom: 8px;
+  width: 12px;
+  height: 12px;
+  background: #efe1c6;
+  border-top: 2.5px solid #241b22;
+  border-right: 2.5px solid #241b22;
+  transform: rotate(45deg);
+}
+.enrage-intro.leaving { animation: enrageIntroLeave 0.36s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards; }
+@keyframes enrageIntroPop { 0% { opacity: 0; transform: translateX(14px) scale(0.6) rotate(4deg); } 100% { opacity: 1; transform: rotate(-2deg); } }
+@keyframes enrageIntroLeave { to { opacity: 0; transform: translateX(10px) scale(0.7) rotate(4deg); } }
+/* 안내 중 타이머 강조: 금빛 테두리가 숨 쉬듯 */
+.boss-enrage-timer.intro-glow .enrage-track { box-shadow: 0 0 0 2px #fde68a, 0 0 10px 2px #f59e0b; animation: enrageIntroGlow 0.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+@keyframes enrageIntroGlow { from { box-shadow: 0 0 0 1px #fde68a, 0 0 4px 1px #f59e0b88; } to { box-shadow: 0 0 0 2px #fde68a, 0 0 12px 3px #f59e0b; } }
+@media (prefers-reduced-motion: reduce) {
+  .enrage-intro, .enrage-intro.leaving, .boss-enrage-timer.intro-glow .enrage-track { animation: none; }
+  .enrage-intro.leaving { opacity: 0; }
 }
