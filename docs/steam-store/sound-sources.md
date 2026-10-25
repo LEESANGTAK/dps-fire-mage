@@ -9,7 +9,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | Gemini 음악 생성(Lyria) | 가능으로 판단 | Google 서비스 약관상 생성물 소유권을 주장하지 않고, 상업 이용을 막지 않습니다. 무료·유료 차이 없음. AI 생성물을 사람이 만든 것처럼 표기 금지. Steam AI 공개 필요 |
 | ElevenLabs 효과음 | 유료 플랜: 가능 / 무료 플랜: `elevenlabs.io` 표기 시 가능 | 공식 효과음 페이지 기준. 만든 당시 플랜을 확인해야 합니다 |
 | Fish Audio | 유료 플랜만 가능할 가능성이 큼 | 2차 자료 기준 무료 플랜은 개인·비상업 용도. 공식 약관 미확인 |
-| YouTube에서 녹음한 '무료 음원' | **위험** | 녹음(다운로드) 자체가 YouTube 약관에 어긋날 수 있고, 업로더가 실제 권리자인지·게임에 써도 되는 라이선스인지 알 수 없습니다. YouTube 오디오 보관함도 게임 등 YouTube 밖 사용을 공식적으로 보장하지 않습니다. **교체 권장** |
+| YouTube에서 녹음한 음원 | **사용 불가** | 녹음(다운로드) 자체가 YouTube 약관에 어긋날 수 있고, 업로더가 실제 권리자인지·게임에 써도 되는 라이선스인지 알 수 없습니다. YouTube 오디오 보관함도 게임 등 YouTube 밖 사용을 공식적으로 보장하지 않습니다. 교체합니다 |
 
 ## BGM (5곡, `assets/sounds/bgm/`)
 
@@ -25,24 +25,51 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 - 예전 BGM(Tavern Whimsy, Suno 무료 플랜)은 상업 이용이 막혀 있어 위 5곡으로 교체했습니다.
 - **증빙 보관:** Gemini 대화 기록은 활동 기록 자동 삭제 설정에 따라 사라질 수 있습니다. 대화 화면 캡처(프롬프트·생성 날짜가 보이게)와 원본 음원 파일을 `docs/` 밖 개인 보관함에 따로 보관합니다.
 
-## 효과음 (12개, `assets/sounds/sfx/`, 모두 2026-09-29~10-02 추가)
+## 효과음 (12개, `assets/sounds/sfx/`, 모두 2026-09-29~10-02 추가) — **전부 교체**
 
-파일 안 태그에서 찾은 단서와 크기를 적었습니다. **출처 칸은 개발자가 채웁니다.**
+출처는 2026-10-25에 개발자가 확인했습니다.
 
-| 파일 | 쓰이는 곳 | 단서 | 출처 | 조치 |
-| --- | --- | --- | --- | --- |
-| `fireball_fly.wav` | 화염구 비행 | 0.4초, 이름 태그만 | ? | |
-| `fireball_explosion.wav` | 화염구 적중 | 0.5초, 이름 태그만 | ? | |
-| `fireball_explosion_critical.wav` | 화염구 치명타 적중 | 0.5초, 이름 태그만 | ? | |
-| `fireball_ready.mp3` | 화염구 시전 | **4.2MB**(효과음치고 매우 김) | ? | 녹음본이면 교체 |
-| `burning.mp3` | 화상 반복음 | **2.9MB**(긴 반복 음원) | ? | 녹음본이면 교체 |
-| `item_select.wav` | 카드 선택 | 0.8초, 이름 태그만 | ? | |
-| `drop_coin.mp3` | 골드 획득 | 태그 없음 | ? | |
-| `meteor_fly.mp3` | 메테오 낙하 | 태그 없음 | ? | |
-| `meteor_explosion.mp3` | 메테오 폭발 | ffmpeg(Lavf) 변환 흔적 | ? | 녹음·변환본이면 교체 |
-| `swish.mp3` | 휘두르기 | 태그 없음 | ? | |
-| `monster_destroy.mp3` | 몬스터 처치 | 태그 없음 | ? | |
-| `Summoning the Fire Spirit.mp3` | 정령 소환 | **fish.audio 작업 태그** | Fish Audio로 추정 | 만든 당시 플랜 확인 |
+| 파일 | 쓰이는 곳 | 현재 길이 | 출처 | 조치 | 우선 |
+| --- | --- | --- | --- | --- | --- |
+| `fireball_fly.wav` | 화염구 비행 | 0.4초 | 하스스톤 마법사 영웅 능력 영상 녹음 | 교체 | **1** |
+| `fireball_explosion.wav` | 화염구 적중 | 0.5초 | 하스스톤 영상 녹음 | 교체 | **1** |
+| `fireball_explosion_critical.wav` | 화염구 치명타 적중 | 0.5초 | 하스스톤 영상 녹음 | 교체 | **1** |
+| `fireball_ready.mp3` | 화염구 시전 중 반복음 | 134초(반복) | 하스스톤 영상 녹음 | 교체 | **1** |
+| `item_select.wav` | 카드 선택 | 0.8초 | 하스스톤 영상 녹음 | 교체 | **1** |
+| `burning.mp3` | 화상 반복음 | 75초(반복) | 모름 | 교체 | 2 |
+| `drop_coin.mp3` | 골드 획득 | 1.1초 | 모름 | 교체 | 2 |
+| `meteor_fly.mp3` | 메테오 낙하 | 3.0초 | 모름 | 교체 | 2 |
+| `meteor_explosion.mp3` | 메테오 폭발 | 3.0초 | 모름(ffmpeg 변환 흔적) | 교체 | 2 |
+| `swish.mp3` | 휘두르기 | 0.3초 | 모름 | 교체 | 2 |
+| `monster_destroy.mp3` | 몬스터 처치 | 1.0초 | 모름 | 교체 | 2 |
+| `Summoning the Fire Spirit.mp3` | 정령 소환 | 1.2초 | Fish Audio 무료 플랜 | 교체 | 2 |
 
-- ElevenLabs로 만든 효과음은 만든 당시 플랜이 무료였다면 크레딧에 `elevenlabs.io`를 표기하거나, 유료 플랜에서 다시 만듭니다.
-- YouTube에서 녹음한 효과음은 권리 확인이 거의 불가능하므로 교체합니다. 대체 출처 후보는 ElevenLabs 유료 플랜 재생성, 상업 이용이 명시된 효과음 묶음(예: Kenney 오디오 팩 CC0, Sonniss GDC 무료 묶음), Freesound의 CC0 음원입니다. 쓴 묶음의 라이선스 파일은 저장소에 함께 둡니다.
+- **우선 1(하스스톤 녹음 5개):** 블리자드 저작물입니다. 블리자드 IP 명칭을 뺀 것과 같은 이유로 출시 전에 반드시 교체합니다. 게임의 핵심 손맛인 화염구 소리라 플레이어가 알아챌 가능성도 큽니다.
+- **우선 2:** 출처를 증명할 수 없거나(6개) 상업 이용이 막힌 무료 플랜(1개)입니다.
+- 웹 빌드(GitHub Pages)에도 같은 파일이 올라가 있으니, 교체 후 웹 빌드도 다시 배포합니다.
+
+## 교체 사양 (ElevenLabs 효과음)
+
+- **플랜:** 유료 플랜(Starter 이상)에서 만듭니다. 무료 플랜도 `elevenlabs.io` 표기 조건으로 상업 이용이 가능하지만, 유료 플랜은 표기가 필요 없고 증빙도 깔끔합니다. 한 달만 구독해 12개를 한 번에 만드는 것을 권합니다.
+- **기록:** 파일마다 생성 날짜·프롬프트를 아래 표의 '최종 프롬프트' 칸에 남기고, 생성 기록 화면을 캡처해 둡니다.
+- **프롬프트 주의:** "Hearthstone", "Blizzard", "World of Warcraft" 같은 이름이나 특정 게임 소리를 흉내 내는 표현을 쓰지 않습니다. 결과물이 원본과 비슷하게 들리면 다시 만듭니다.
+- **파일:** 지금과 같은 파일 이름으로 덮어쓰면 코드는 바꾸지 않아도 됩니다. 44.1kHz, 짧은 소리는 앞의 무음을 잘라 입력과 소리 사이의 지연을 없앱니다. 12개의 음량을 서로 맞춥니다(최대 -1dB 근처).
+- **화풍:** 만화풍·페이퍼크래프트. 묵직한 실사 폭발보다 짧고 경쾌하며 또렷한 소리. 화염구는 초당 여러 번 터지므로 귀가 피곤하지 않게 꼬리를 짧게 합니다.
+- **강약(AGENTS.md 2장):** 일반 적중 < 치명타 적중 < 메테오 폭발 순으로 무게를 키우고, 몬스터 처치는 종이가 터지는 재질감으로 따로 구분합니다.
+
+| 파일 | 길이 | 프롬프트 초안(영어) | 최종 프롬프트 |
+| --- | --- | --- | --- |
+| `fireball_fly.wav` | 0.3~0.5초 | short cartoon fireball whoosh flying past, crackling flame, bright and snappy, no reverb tail | |
+| `fireball_explosion.wav` | 0.4~0.6초 | small cartoon fire burst impact, soft pop with crackle, punchy and short, game hit sound | |
+| `fireball_explosion_critical.wav` | 0.5~0.8초 | heavier cartoon fire explosion, sharp crack plus bass thump and sparkle, satisfying critical hit, short tail | |
+| `fireball_ready.mp3` | 4~6초, **이음매 없는 반복** | magical fire energy charging in hand, steady crackling flame hum, seamless loop, no build-up or ending | |
+| `burning.mp3` | 6~8초, **이음매 없는 반복** | gentle steady burning fire crackle, small flames on paper, seamless loop, calm, no pops louder than the rest | |
+| `item_select.wav` | 0.5~0.8초 | magical card pick confirm, paper card flip with warm chime and tiny flame shimmer, UI sound | |
+| `drop_coin.mp3` | 0.5~1초 | a few cartoon gold coins landing and clinking, bright and cheerful, short | |
+| `meteor_fly.mp3` | 2~3초 | large flaming meteor falling from the sky, rising roaring whoosh that ends right before impact | |
+| `meteor_explosion.mp3` | 1.5~3초 | big cartoon meteor impact explosion, deep boom with rumble and scattered debris, punchy start | |
+| `swish.mp3` | 0.2~0.4초 | quick magic staff swing swish, light air whoosh | |
+| `monster_destroy.mp3` | 0.8~1.2초 | cartoon paper monster bursting apart, papery crumple and puff with a satisfying pop | |
+| `Summoning the Fire Spirit.mp3` | 1~1.5초 | summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle | |
+
+- 반복음 2개는 ElevenLabs에 반복(loop) 옵션이 있으면 켜고, 없으면 만든 뒤 앞뒤를 겹쳐 이음매를 다듬습니다. 게임에서 몇 바퀴 돌려 이음매가 들리지 않는지 확인합니다.

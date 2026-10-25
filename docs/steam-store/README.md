@@ -7,7 +7,7 @@
 | 앱·바로 가기 아이콘 | `icons/` | ✅ 실행 파일 아이콘과 같은 그림 (`npm run icon`으로 다시 만듦) |
 | 소개문 (한/영) | `store-description.md` | 초안 |
 | 콘텐츠 설문 답변 | `content-survey.md` | 초안. ⚠️ 사운드 출처 확인 후 제출 |
-| 사운드 출처·라이선스 기록 | `sound-sources.md` | BGM ✅ Gemini · 효과음 ⚠️ 출처 채우기·YouTube 녹음본 교체 |
+| 사운드 출처·라이선스 기록 | `sound-sources.md` | BGM ✅ Gemini · 효과음 ⚠️ 12개 전부 교체 필요(5개는 하스스톤 녹음) |
 
 ## 업로드 위치 (Steamworks › 앱 관리 › 스토어 페이지 편집 › 그래픽 자산)
 
