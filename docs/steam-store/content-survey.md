@@ -27,9 +27,9 @@
 공개 문구 초안(영문, 스토어 페이지에 그대로 노출됩니다):
 > Character, monster, background, and spell-effect artwork was created with the help of generative AI image tools, then selected, edited, and integrated by the developer (cleanup, compositing, and in-game animation). ⚠️[Music and sound effects were created with AI audio tools.] No AI content is generated while the game is running.
 
-⚠️ **사운드 출처 확인 필요**: `assets/sounds/`의 BGM("Tavern Whimsy")과 효과음("Summoning the Fire Spirit" 등)은 출처 기록이 없습니다.
-- AI 음악·효과음 도구로 만들었다면 위 대괄호 문장을 남깁니다. 이때 **해당 도구의 상업적 이용 권한**(유료 플랜 여부 등)을 함께 확인해야 합니다. 무료 플랜 결과물은 상업적 이용이 막힌 경우가 많습니다.
-- 에셋 스토어·라이선스 음원이라면 대괄호 문장을 지우고, 라이선스 증빙을 보관합니다.
+⚠️ **사운드 출처:** 파일별 기록은 `sound-sources.md`에 있습니다.
+- BGM 5곡은 Gemini로 만들었으므로 대괄호 문장의 음악 부분은 남깁니다.
+- 효과음은 ElevenLabs·Fish Audio로 만든 것과 YouTube에서 녹음한 것이 섞여 있습니다. YouTube 녹음본을 교체하고 남은 효과음이 모두 AI 도구 생성물이면 대괄호 문장을 그대로 둡니다. 효과음 묶음(라이선스 음원)이 섞이면 "Music and some sound effects were created with AI audio tools."처럼 고칩니다.
 
 ### 실시간 생성 콘텐츠(Live-Generated): **아니오**
 게임 실행 중 AI가 콘텐츠를 만드는 기능이 없습니다.
