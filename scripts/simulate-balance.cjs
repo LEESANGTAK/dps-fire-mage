@@ -13,6 +13,8 @@
  *          --xp N 숙련도 경험치 지정(예: --xp 4 --start fireblast = 5스테이지 보스에서 실패한 첫 런 다음의 두 번째 런)
  *        수동 판단 비교: [--hold-combustion] 마력 폭주를 보스(5·10·15·20)까지 아낌, [--no-auto-grimoire] 자동 영창을 추첨에서 빼 수동 판단을 유지
  *        전설 카드 비교: [--force-legendary 카드ID] 첫 보스 보상에서 해당 전설을 강제로 고름(같은 시드로 카드별 비교)
+ *        카드 수치 시험: [--card-params '{"crit_ember_verdict":{"mult":6,"bossMult":3}}'] 카드 mechanicParams를 덮어써서 비교(데이터 파일은 그대로)
+ *        카드 빼기: [--ban 카드ID,카드ID] 해당 카드를 추첨에서 뺌(카드 하나가 빠졌을 때와 비교)
  *        업화 규칙 시험: [--rules '[{"level":4,"bossHpPct":40}]'] 단계별 규칙 값을 덮어써서 비교
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
  *                "목표 시간에 맞는 HP = 중앙값 DPS x 목표 시간"을 제안합니다.
@@ -40,6 +42,9 @@ const NO_AUTO_GRIMOIRE = args.includes('--no-auto-grimoire');
 const FORCE_LEGENDARY = argValue('force-legendary', '');
 // 업화 규칙 시험: '[{"level":4,"bossHpPct":40}]'처럼 단계별 값을 덮어씁니다(meta-progression.js는 그대로 두고 비교할 때 사용).
 const RULE_OVERRIDES = JSON.parse(argValue('rules', '[]'));
+// 카드 수치 시험: {카드ID: {mechanicParams 일부}}를 덮어씁니다(엑셀·JSON은 그대로 두고 비교할 때 사용).
+const CARD_PARAMS = JSON.parse(argValue('card-params', '{}'));
+const BAN = argValue('ban', '').split(',').filter(Boolean);
 const FRAME = 1 / 30;
 
 // 목표 처치 시간(초): 픽 전략 greedy의 중앙값 기준, 첫 클리어 약 13분 (일반 진행·카드 선택 포함 15분 내외)
@@ -88,6 +93,12 @@ function simulateRun(policyName, seed) {
   const rand = g.context.Math.random;
   const policy = POLICIES[policyName];
   const pool = g.run('RoguelikeDeck.CARD_POOL');
+  for (const [id, params] of Object.entries(CARD_PARAMS)) {
+    const card = pool.find((c) => c.id === id);
+    if (!card) throw new Error(`--card-params: 알 수 없는 카드 ${id}`);
+    // 카드 효과는 원본 데이터의 mechanicParams 객체를 그대로 읽으므로 같은 객체를 고칩니다.
+    Object.assign(card.mechanicParams, params);
+  }
   const stages = [];
   let stageStartPlay = 0;
   let lastCleared = 0;
@@ -113,6 +124,7 @@ function simulateRun(policyName, seed) {
   }
   g.run('restartSpeedrunRun()');
   if (NO_AUTO_GRIMOIRE) st.lockedCards.push('util_auto_grimoire');
+  st.lockedCards.push(...BAN);
   const calib = [];
   let calibStage = 0;
   let calibDamageStart = 0;
@@ -195,6 +207,7 @@ function simulateRun(policyName, seed) {
     // 런 끝의 주력 빌드(주문서·유틸리티 제외, 2장 이상). 빌드 가중 추첨이 한 빌드로 쏠리는지 확인합니다.
     mainBuild: g.run('typeof deckManager.getMainBuilds === "function" ? deckManager.getMainBuilds().main : null'),
     legendaryAt,
+    verdictHits: (st.stats && st.stats.verdictHits) || 0,
     dmg
   };
 }
@@ -216,7 +229,7 @@ function report(policyName) {
   // --verbose: 런마다 시드·총 시간·돌파 스테이지·실패 위치를 출력합니다.
   if (args.includes('--verbose')) runs.forEach((r, i) => console.log(`  run seed ${BASE_SEED + i}: ${fmtSec(r.totalSec)} · 돌파 ${r.stages.length} · 실패 ${r.failedAt ?? '-'} · 스테이지별(초) ${r.stages.map((s) => Math.round(s.ttk)).join(' ')}`));
 
-  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${XP !== null ? ` · 숙련도 ${XP}` : ''}${HOLD_COMBUSTION ? ' · 마력 폭주 보스까지 보존' : ''}${NO_AUTO_GRIMOIRE ? ' · 자동 영창 제외' : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''} ===`);
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${XP !== null ? ` · 숙련도 ${XP}` : ''}${HOLD_COMBUSTION ? ' · 마력 폭주 보스까지 보존' : ''}${NO_AUTO_GRIMOIRE ? ' · 자동 영창 제외' : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''}${BAN.length ? ` · 제외 ${BAN.join(',')}` : ''}${Object.keys(CARD_PARAMS).length ? ` · 카드 수치 ${JSON.stringify(CARD_PARAMS)}` : ''} ===`);
   console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
   for (let stage = 1; stage <= 20; stage++) {
     const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);
@@ -240,6 +253,10 @@ function report(policyName) {
   const mains = {};
   for (const r of runs) { const k = r.mainBuild || '없음'; mains[k] = (mains[k] || 0) + 1; }
   console.log('런 끝 주력 빌드: ' + Object.entries(mains).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${Math.round((v / RUNS) * 100)}%`).join(' · '));
+
+  // 불꽃 심판 발동 횟수(보유한 런 기준): 막타 조건이 실제로 얼마나 자주 채워지는지 봅니다.
+  const verdictRuns = runs.filter((r) => r.deck.crit_ember_verdict);
+  if (verdictRuns.length) console.log(`불꽃 심판: 보유 ${verdictRuns.length}런 · 런당 발동 중앙 ${quantile(verdictRuns.map((r) => r.verdictHits), 0.5)}회 (p25 ${quantile(verdictRuns.map((r) => r.verdictHits), 0.25)} / p75 ${quantile(verdictRuns.map((r) => r.verdictHits), 0.75)})`);
 
   const picks = {};
   for (const r of runs) for (const [id, n] of Object.entries(r.deck)) picks[id] = (picks[id] || 0) + n / RUNS;
