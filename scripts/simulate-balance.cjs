@@ -13,7 +13,7 @@
  *          --xp N 숙련도 경험치 지정(예: --xp 4 --start fireblast = 5스테이지 보스에서 실패한 첫 런 다음의 두 번째 런)
  *        수동 판단 비교: [--hold-combustion] 마력 폭주를 보스(5·10·15·20)까지 아낌, [--no-auto-grimoire] 자동 영창을 추첨에서 빼 수동 판단을 유지
  *        전설 카드 비교: [--force-legendary 카드ID] 첫 보스 보상에서 해당 전설을 강제로 고름(같은 시드로 카드별 비교)
- *        카드 수치 시험: [--card-params '{"crit_ember_verdict":{"mult":6,"bossMult":3}}'] 카드 mechanicParams를 덮어써서 비교(데이터 파일은 그대로)
+ *        카드 수치 시험: [--card-params '{"crit_ember_verdict":{"duration":10,"critBonus":1}}'] 카드 mechanicParams를 덮어써서 비교(데이터 파일은 그대로)
  *        카드 빼기: [--ban 카드ID,카드ID] 해당 카드를 추첨에서 뺌(카드 하나가 빠졌을 때와 비교)
  *        업화 규칙 시험: [--rules '[{"level":4,"bossHpPct":40}]'] 단계별 규칙 값을 덮어써서 비교
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해

@@ -132,7 +132,9 @@
           "smart_autocast",
           "ember_verdict"
         ],
-        "description": "특수 고유 메커니즘 키 (충전형은 스테이지 시작마다 충전 보충):\n- split_fireball: 화염구 적중 시 불씨 분열\n- gatling_mode: 화염구 시전·공통 대기 0.3초\n- quickdraw_charge: (충전형) 즉시 발사 화염구 충전 {charges}\n- meteor_buff: 메테오 습득 + 재사용 대기 감소·피해 증가\n- meteor_charge: (충전형) 메테오 피해 증폭 충전 {charges, damageBonus}\n- combustion_god: 마력 폭주 습득 + 지속 2배·피해 2.5배\n- extra_spirit: 화염 정령 1기 추가 (최대 4기)\n- synchronized_fire: 화염구 발사 시 정령 협공\n- cinder_lord: 소환수 1기당 주문 피해 +30%\n- patch_boost: 불장판 강화 {cooldownMult, damageBonus}\n- wildfire: 화상 강화 {igniteRatioMult(치명타 화상 배율), igniteOnAllHits(모든 적중 화상), igniteCarryOver(남은 화상 다음 적으로 이전)}\n- executioner: 체력 40% 이하 적 피해 증가 {executionerMult}\n- phoenix_reset: 불사조 협공 + 치명타 시 쿨다운 초기화\n- smart_autocast: 화염구 외 주문도 최적의 순간에 자동 시전\n- ember_verdict: 화염구 치명타로 처치하면 다음 스테이지 첫 화염구 치명타 배율 {mult, bossMult}"
+        "description": "특수 고유 메커니즘 키 (충전형은 스테이지 시작마다 충전 보충):\n- split_fireball: 화염구 적중 시 불씨 분열\n- gatling_mode: 화염구 시전·공통 대기 0.3초\n- quickdraw_charge: (충전형) 즉시 발사 화염구 충전 {charges}\n- meteor_buff: 메테오 습득 + 재사용 대기 감소·피해 증가\n- meteor_charge: (충전형) 메테오 피해 증폭 충전 {charges, damageBonus}\n- combustion_god: 마력 폭주 습득 + 지속 2배·피해 2.5배\n- extra_spirit: 화염 정령 1기 추가 (최대 4기)\n- synchronized_fire: 화염구 발사 시 정령 협공\n- cinder_lord: 소환수 1기당 주문 피해 +30%\n- patch_boost: 불장판 강화 {cooldownMult, damageBonus}\n- wildfire: 화상 강화 {igniteRatioMult(치명타 화상 배율), igniteOnAllHits(모든 적중 화상), igniteCarryOver(남은 화상 다음 적으로 이전)}\n- executioner: 체력 40% 이하 적 피해 증가 {executionerMult}\n- phoenix_reset: 불사조 협공 + 치명타 시 쿨다운 초기화\n- smart_autocast: 화염구 외 주문도 최적의 순간에 자동 시전\n- ember_verdict: 화염구 치명타 후 window초 안에 처치하면 다음 스테이지 첫 duration초 동안 직격 치명타 피해 ×(1+critBonus) (보스 1+bossCritBonus) {window, duration, critBonus, bossCritBonus}
+
+추첨 규칙 플래그(전설): skipBossPriority(보스 보상의 주력 빌드 전설 우선 대상에서 제외), keepsGuarantee(보유해도 보스 전설 보장이 끝나지 않음)"
       },
       "mechanicParams": {
         "type": "object",

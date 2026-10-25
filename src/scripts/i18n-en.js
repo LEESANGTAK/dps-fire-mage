@@ -291,7 +291,7 @@ const I18N_EN = {
   '▶ 계속': '▶ Resume',
   '⏻ 게임 종료': '⏻ Quit Game',
   '광폭화!': 'Enrage!',
-  '⚖️ 불꽃 심판 ×{n}!': '⚖️ Flame Verdict ×{n}!',
+  '⚖️ 불꽃 심판! 치명 피해 ×{n}': '⚖️ Flame Verdict! Crit damage ×{n}',
   '남은 시간 보너스': 'Time bonus',
   '대단해요! 번개 같은 처치!': 'Amazing! Lightning-fast kill!',
   '남은 {sec}초를 선물로 드려요 🎁': 'Your {sec}s left become a gift 🎁',

@@ -233,20 +233,24 @@
     "rarity": "legendary",
     "build": "crit",
     "maxStack": 1,
-    "desc": "화염구 <b>치명타로 마무리</b>하면, 다음 스테이지의 첫 화염구 치명타가 <b>8배</b>로 들어갑니다. (보스는 4배)",
+    "desc": "화염구 치명타 후 <b>3초 안에</b> 몬스터를 처치하면, 다음 스테이지 처음 <b>20초</b> 동안 치명타 피해가 <b>3배</b>가 됩니다. (화상 제외)",
     "title_en": "Flame Verdict",
-    "desc_en": "Finish a monster with a <b>Fireball crit</b>, and your first Fireball crit on the next stage deals <b>8×</b> damage (4× on bosses).",
+    "desc_en": "Defeat a monster within <b>3s</b> of a Fireball crit, and for the first <b>20s</b> of the next stage your crits deal <b>3×</b> damage (excluding Ignite).",
     "mechanic": "ember_verdict",
-    "mechanicParams": {
-      "mult": 8,
-      "bossMult": 4
-    },
     "links": [
       "crit_focus",
       "crit_heat",
       "rapid_spark",
       "spell_combustion"
-    ]
+    ],
+    "mechanicParams": {
+      "window": 3,
+      "duration": 20,
+      "critBonus": 2,
+      "bossCritBonus": 2,
+      "skipBossPriority": true,
+      "keepsGuarantee": true
+    }
   },
   {
     "id": "spell_combustion",

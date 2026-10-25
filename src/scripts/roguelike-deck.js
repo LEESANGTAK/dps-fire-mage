@@ -285,20 +285,24 @@
       "rarity": "legendary",
       "build": "crit",
       "maxStack": 1,
-      "desc": "화염구 <b>치명타로 마무리</b>하면, 다음 스테이지의 첫 화염구 치명타가 <b>8배</b>로 들어갑니다. (보스는 4배)",
+      "desc": "화염구 치명타 후 <b>3초 안에</b> 몬스터를 처치하면, 다음 스테이지 처음 <b>20초</b> 동안 치명타 피해가 <b>3배</b>가 됩니다. (화상 제외)",
       "title_en": "Flame Verdict",
-      "desc_en": "Finish a monster with a <b>Fireball crit</b>, and your first Fireball crit on the next stage deals <b>8×</b> damage (4× on bosses).",
+      "desc_en": "Defeat a monster within <b>3s</b> of a Fireball crit, and for the first <b>20s</b> of the next stage your crits deal <b>3×</b> damage (excluding Ignite).",
       "mechanic": "ember_verdict",
-      "mechanicParams": {
-        "mult": 8,
-        "bossMult": 4
-      },
       "links": [
         "crit_focus",
         "crit_heat",
         "rapid_spark",
         "spell_combustion"
-      ]
+      ],
+      "mechanicParams": {
+        "window": 3,
+        "duration": 20,
+        "critBonus": 2,
+        "bossCritBonus": 2,
+        "skipBossPriority": true,
+        "keepsGuarantee": true
+      }
     },
     {
       "id": "spell_combustion",
@@ -689,8 +693,13 @@
             state.deckMechanics.cinderLord = true;
             break;
           case 'ember_verdict':
-            // 불꽃 심판: 화염구 치명타로 처치하면 다음 스테이지 첫 화염구 치명타 배율(game.js dealDamage)
-            state.deckMechanics.emberVerdict = { mult: Number(p.mult) || 8, bossMult: Number(p.bossMult) || 4 };
+            // 불꽃 심판: 처치 직전 window초 안에 화염구 치명타가 있었으면 준비 → 다음 스테이지 첫 duration초 치명 피해 +critBonus(보스 +bossCritBonus) (game.js loadStage·dealDamage)
+            state.deckMechanics.emberVerdict = {
+              window: Number(p.window ?? 3),
+              duration: Number(p.duration ?? 20),
+              critBonus: Number(p.critBonus ?? 2),
+              bossCritBonus: Number(p.bossCritBonus ?? 2)
+            };
             break;
           case 'executioner':
             state.deckMechanics.executionerMult = (state.deckMechanics.executionerMult || 0) + (p.executionerMult || 0.7);
@@ -893,11 +902,13 @@
       // 전설을 10스테이지까지 하나도 못 얻은 런이 얻은 런보다 5분 가까이 느려(시뮬레이션) 기록이 운에 좌우되던 문제를 줄입니다.
       // 고르는 것은 여전히 플레이어이고, 이미 전설을 가진 런·전설이 잠긴 첫 런에는 영향이 없습니다.
       // 자동 영창(smart_autocast)은 피해를 올리지 않는 편의 전설이라, 골라도 보장이 끝나지 않습니다(피해 전설을 놓치는 손해 없음).
-      const holdsLegendary = CARD_POOL.some(c => c.rarity === RARITY.LEGENDARY && c.mechanic !== 'smart_autocast' && (activeDeck[c.id] || 0) > 0);
+      // mechanicParams.keepsGuarantee: 다음 스테이지에만 힘을 주는 조건부 전설(불꽃 심판)도 같은 이유로 보장을 끝내지 않습니다.
+      const holdsLegendary = CARD_POOL.some(c => c.rarity === RARITY.LEGENDARY && c.mechanic !== 'smart_autocast' && !(c.mechanicParams && c.mechanicParams.keepsGuarantee) && (activeDeck[c.id] || 0) > 0);
       if (isBossWave && !holdsLegendary && selected.length > 0 && !selected.some(c => c.rarity === RARITY.LEGENDARY)) {
         const legendaryPool = poolCopy.filter(c => c.rarity === RARITY.LEGENDARY);
         // 해금된 주력 빌드 전설이 있으면 그 전설을 우선 내놓습니다.
-        const mainLegendary = plan.main ? legendaryPool.filter(c => c.build === plan.main) : [];
+        // mechanicParams.skipBossPriority 전설은 우선 대상에서 뺍니다(조건부 전설이 첫 전설 자리를 늘 차지해 다른 전설을 밀어내지 않게).
+        const mainLegendary = plan.main ? legendaryPool.filter(c => c.build === plan.main && !(c.mechanicParams && c.mechanicParams.skipBossPriority)) : [];
         const fromPool = mainLegendary.length > 0 ? mainLegendary : legendaryPool;
         if (fromPool.length > 0) {
           selected[selected.length - 1] = fromPool[Math.floor(Math.random() * fromPool.length)];

@@ -2302,6 +2302,16 @@ function loadStage(stageNum) {
     state.combat.igniteRem = 0;
   }
   state.combat.meteorBurnRem = 0;
+  state.combat.lastFireballCritAt = null; // 불꽃 심판 판정은 스테이지 안에서만
+  // 불꽃 심판: 준비된 채 스테이지가 시작되면 지금부터 duration초(전투 시간 기준, 연출·카드 선택 중엔 멈춤) 동안 치명 피해 증가
+  const verdictCfg = state.deckMechanics && state.deckMechanics.emberVerdict;
+  state.combat.verdictBurstUntil = 0;
+  if (verdictCfg && state.combat.verdictArmed) {
+    state.combat.verdictArmed = false;
+    state.combat.verdictBurstUntil = (state.playTimeSec || 0) + verdictCfg.duration;
+    addRunStat('verdictHits', 1);
+    showEmberVerdictBurst(getEmberVerdictMult());
+  }
   updateBurningLoopSound();
 
   // 새 적마다 주문 재사용 대기시간과 불꽃 작렬 충전을 처음부터 시작합니다.
@@ -2492,14 +2502,11 @@ function rollCritVariance() {
 function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotTick = false, isCombustionCast = false) {
   // 치명타 직격만 흔듭니다. 화상 같은 지속 피해 틱은 일정한 리듬을 유지합니다.
   if (isCrit && !isDotTick) rawDamage *= rollCritVariance();
-  // 로그라이크 덱: 불꽃 심판 — 지난 스테이지를 화염구 치명타로 마무리했으면, 이번 스테이지 첫 화염구 치명타가 8배(보스 4배)
+  // 로그라이크 덱: 불꽃 심판 — 지난 스테이지 처치 직전 화염구 치명타가 있었으면, 이번 스테이지 첫 duration초 동안
+  // 모든 직격 치명타 피해 +critBonus(보스 +bossCritBonus). 화상 같은 지속 피해는 제외합니다.
   const verdict = state.deckMechanics && state.deckMechanics.emberVerdict;
-  if (verdict && skillKey === 'fireball' && isCrit && !isDotTick && state.combat.verdictArmed && !state.monster.isDying) {
-    const verdictMult = getEmberVerdictMult();
-    rawDamage *= verdictMult;
-    state.combat.verdictArmed = false;
-    addRunStat('verdictHits', 1);
-    showEmberVerdictBurst(verdictMult);
+  if (verdict && isCrit && !isDotTick && (state.playTimeSec || 0) < (state.combat.verdictBurstUntil || 0)) {
+    rawDamage *= getEmberVerdictMult();
   }
   const isCombustingEffective = Boolean((state.combat && state.combat.combustionRem > 0) || isCombustionCast);
 
@@ -2739,9 +2746,12 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     }
   }
 
+  // 불꽃 심판: 화염구 치명타 시각을 기억해 두고, 막타가 그로부터 window초 안이면 준비합니다(막타가 화상·정령이어도).
+  if (verdict && skillKey === 'fireball' && isCrit && !isDotTick) state.combat.lastFireballCritAt = state.playTimeSec || 0;
   state.monster.hp = Math.max(0, state.monster.hp - dmg);
   if (state.monster.hp <= 0 && !state.monster.isDying) {
-    if (verdict && skillKey === 'fireball' && isCrit) state.combat.verdictArmed = true;
+    const sinceCrit = (state.playTimeSec || 0) - (state.combat.lastFireballCritAt ?? -Infinity);
+    if (verdict && sinceCrit <= verdict.window) state.combat.verdictArmed = true;
     onMonsterKilled();
   }
 }
@@ -3500,28 +3510,36 @@ function maybeShowEnrageIntro() {
   return true;
 }
 
-// 불꽃 심판 배율: 보스 스테이지는 절반(광폭화 타이머가 무의미해지지 않게)
-function getEmberVerdictMult() {
-  const v = (state.deckMechanics && state.deckMechanics.emberVerdict) || { mult: 8, bossMult: 4 };
-  return getStageData(state.currentStage).isPhaseBoss ? v.bossMult : v.mult;
+// 불꽃 심판 치명 피해 배율(1 + 보너스). stage를 주면 그 스테이지 기준(준비 표시는 다음 스테이지 배율을 보여 줌)
+function getEmberVerdictMult(stage = state.currentStage) {
+  const v = (state.deckMechanics && state.deckMechanics.emberVerdict) || {};
+  const data = getStageData(Math.min(FINAL_STAGE, stage));
+  return 1 + ((data && data.isPhaseBoss ? v.bossCritBonus : v.critBonus) || 0);
 }
 
+// 스테이지 시작 순간 발동 연출(강타급): 문구·흔들림·불씨. 피해 규칙은 연출과 무관하게 즉시 적용됩니다.
 function showEmberVerdictBurst(mult) {
-  spawnFloatingText(tr('⚖️ 불꽃 심판 ×{n}!', { n: mult }), 'fct-proc', -55);
-  triggerArenaShake('lg');
-  mageGesture.hitStop = 0.1;
+  spawnFloatingText(tr('⚖️ 불꽃 심판! 치명 피해 ×{n}', { n: mult }), 'fct-proc', -55, { isBig: true });
+  triggerArenaShake('sm');
   const pos = getTargetPos();
-  spawnParticles(pos.x, pos.y, 30, '#fff7d6', '#dc2626', 1.7);
-  playSound('meteor_impact', 1.15);
+  spawnParticles(pos.x, pos.y, 24, '#fff7d6', '#dc2626', 1.5);
+  playSound('proc', 1.1);
 }
 
-// 준비 표시: 화염구 버튼에 불씨 테두리와 이번 스테이지 배율(×8 / 보스 ×4). 상태(사실)만 보여 줍니다.
+// 화염구 버튼 표시(사실만): 준비되면 불씨 테두리 + 다음 스테이지 배율 꼬리표,
+// 발동 중에는 같은 꼬리표가 남은 시간만큼 붉게 차 있다가 줄어드는 게이지가 됩니다.
 function updateEmberVerdictBadge() {
   const btn = document.getElementById(SPELL_ACTION_CONFIG.fireball.id);
   if (!btn || !btn.classList) return;
-  const armed = Boolean(state.deckMechanics && state.deckMechanics.emberVerdict && state.combat.verdictArmed);
-  btn.classList.toggle('verdict-armed', armed);
-  if (armed && btn.dataset) btn.dataset.verdict = `×${getEmberVerdictMult()}`;
+  const v = state.deckMechanics && state.deckMechanics.emberVerdict;
+  const armed = Boolean(v && state.combat.verdictArmed);
+  const left = v ? (state.combat.verdictBurstUntil || 0) - (state.playTimeSec || 0) : 0;
+  const burning = Boolean(v && left > 0);
+  btn.classList.toggle('verdict-armed', armed || burning);
+  btn.classList.toggle('verdict-burning', burning);
+  if (!btn.dataset || !(armed || burning)) return;
+  btn.dataset.verdict = `×${getEmberVerdictMult(armed ? state.currentStage + 1 : state.currentStage)}`;
+  if (btn.style && btn.style.setProperty) btn.style.setProperty('--verdict-left', `${Math.round((burning ? left / v.duration : 1) * 100)}%`);
 }
 
 function triggerUnfoldPop(elId) {
