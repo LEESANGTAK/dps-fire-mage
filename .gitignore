@@ -29,3 +29,6 @@ dist/
 # 로컬 AI 도구 설정·플레이테스트용 브라우저 프로필
 .claude/
 .playtest-edge-live/
+
+# 개인정보가 담긴 원본 메일·영수증은 저장소 밖(D:/TakGames/_evidence/)에 보관합니다.
+*.eml
