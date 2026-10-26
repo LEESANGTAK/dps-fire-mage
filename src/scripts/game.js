@@ -285,7 +285,15 @@ function fmt(num) {
 // 효과음 파일 목록. 기존 효과음은 출처 문제로 전부 제거했고(docs/steam-store/sound-sources.md),
 // 새 효과음은 키에 경로만 넣으면 기존 호출 지점(playSound·playFireballSfx)에서 바로 재생됩니다.
 // 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · swish · monster_destroy · summon_spirit
-const FIREBALL_SFX_FILES = {};
+const FIREBALL_SFX_FILES = {
+  // VARCO Sound 유료 플랜 생성(2026-10-26)
+  meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
+  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav'
+};
+// 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
+const SFX_START_OFFSET = { meteor_explosion: 0.06 };
+// meteor_fly.wav가 가장 커지는 지점(초). 낙하가 이보다 짧으므로 이만큼 앞당겨 틀어 착탄 순간에 소리가 정점에 닿게 합니다.
+const METEOR_FLY_SFX_PEAK_SEC = 1.4;
 // 반복 재생 효과음(지속 피해 연소음, 시전 중 충전음). 비어 있으면 재생하지 않습니다.
 const BURNING_LOOP_SFX_FILE = '';
 const FIREBALL_CAST_LOOP_SFX_FILE = '';
@@ -521,6 +529,7 @@ function playFireballSfx(kind, volume = 0.65, pitchMult = 1.0) {
     if (!base) return null;
     const snd = base.cloneNode();
     snd.volume = effVol;
+    if (SFX_START_OFFSET[kind]) snd.currentTime = SFX_START_OFFSET[kind];
     if (pitchMult !== 1.0 && typeof snd.playbackRate === 'number') {
       snd.playbackRate = Math.min(2.0, Math.max(0.5, pitchMult));
     }
@@ -884,6 +893,9 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
   const startY = 88;
 
   const flyAudio = playFireballSfx('meteor_fly', scale >= 0.9 ? 0.82 : 0.6);
+  if (flyAudio) {
+    try { flyAudio.currentTime = Math.max(0, METEOR_FLY_SFX_PEAK_SEC - fallDuration); } catch (e) {}
+  }
 
   meteors.push({
     startX,
