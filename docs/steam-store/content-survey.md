@@ -29,7 +29,7 @@
 
 ⚠️ **사운드 출처:** 파일별 기록은 `sound-sources.md`에 있습니다.
 - BGM 5곡은 Gemini로 만들었으므로 대괄호 문장의 음악 부분은 남깁니다.
-- 효과음은 ElevenLabs·Fish Audio로 만든 것과 YouTube에서 녹음한 것이 섞여 있습니다. YouTube 녹음본을 교체하고 남은 효과음이 모두 AI 도구 생성물이면 대괄호 문장을 그대로 둡니다. 효과음 묶음(라이선스 음원)이 섞이면 "Music and some sound effects were created with AI audio tools."처럼 고칩니다.
+- 예전 효과음은 2026-10-26 전부 제거했고, 새 효과음은 VRCO Sound(AI 생성)로 만듭니다. 새 효과음이 모두 AI 도구 생성물이면 대괄호 문장을 그대로 둡니다. 효과음 묶음(라이선스 음원)이 섞이면 "Music and some sound effects were created with AI audio tools."처럼 고칩니다.
 
 ### 실시간 생성 콘텐츠(Live-Generated): **아니오**
 게임 실행 중 AI가 콘텐츠를 만드는 기능이 없습니다.

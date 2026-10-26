@@ -38,8 +38,8 @@ function renderPauseMenuInfo() {
 // 메뉴가 열리면 시전음·불타는 소리처럼 계속 도는 효과음을 멈춥니다(재개 후 전투 루프가 필요하면 다시 켭니다).
 function pauseCombatLoopSounds() {
   // 두 오디오는 game.js의 최상위 상수입니다(이 파일보다 늦게 실행되지만, 메뉴를 여는 시점에는 이미 있습니다).
-  try { if (!fireballCastAudio.paused) fireballCastAudio.pause(); } catch (e) { /* 오디오 미준비 */ }
-  try { if (!burningLoopAudio.paused) burningLoopAudio.pause(); } catch (e) { /* 오디오 미준비 */ }
+  try { if (fireballCastAudio && !fireballCastAudio.paused) fireballCastAudio.pause(); } catch (e) { /* 오디오 미준비 */ }
+  try { if (burningLoopAudio && !burningLoopAudio.paused) burningLoopAudio.pause(); } catch (e) { /* 오디오 미준비 */ }
 }
 
 function openPauseMenu(reason = 'manual') {

@@ -53,3 +53,16 @@ assert.ok(gameSource.includes('isBgmBehindWallActive ? 0.35 : 1.0'), '벽 뒤 �
 assert.ok(/triggerAwakeningSelection[\s\S]*?setBgmBehindWall\(true\)/.test(gameSource), '각성 창이 열릴 때 setBgmBehindWall(true)가 호출되어야 합니다.');
 assert.ok(/closeAwakeningModal[\s\S]*?setBgmBehindWall\(false\)/.test(gameSource), '각성 창이 닫힐 때 setBgmBehindWall(false)가 호출되어야 합니다.');
 console.log('   ✔ 5. 마도서 각성 창 BGM 벽 뒤(35% 부드러운 볼륨 덕킹 페이드) 공간감 효과 검증 통과');
+
+// 6. 출처 문제로 제거한 예전 효과음이 다시 들어오지 않았는지 검증(새 효과음은 다른 파일명으로 추가)
+const removedSfxFiles = [
+  'fireball_fly.wav', 'fireball_explosion.wav', 'fireball_explosion_critical.wav', 'item_select.wav',
+  'drop_coin.mp3', 'meteor_fly.mp3', 'meteor_explosion.mp3', 'swish.mp3', 'monster_destroy.mp3',
+  'Summoning the Fire Spirit.mp3', 'burning.mp3', 'fireball_ready.mp3'
+];
+removedSfxFiles.forEach((file) => {
+  assert.ok(!gameSource.includes(file), `제거한 효과음 참조가 남아 있습니다: ${file}`);
+  assert.ok(!fs.existsSync(path.join(ROOT, 'assets', 'sounds', 'sfx', file)), `제거한 효과음 파일이 남아 있습니다: ${file}`);
+});
+assert.ok(gameSource.includes('if (!burningLoopAudio) return;') && gameSource.includes('if (!fireballCastAudio) return;'), '반복 효과음 파일이 없을 때 건너뛰어야 합니다.');
+console.log('   ✔ 6. 예전 효과음 12종 제거 및 효과음 없는 상태 안전 처리 검증 통과');

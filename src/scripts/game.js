@@ -282,29 +282,25 @@ function fmt(num) {
 // ==========================================
 // 5. 사운드 매니저 (BGM / SFX 볼륨 개별 조절 & 교차 루프 재생)
 // ==========================================
-const FIREBALL_SFX_FILES = {
-  fly: 'assets/sounds/sfx/fireball_fly.wav',
-  explosion: 'assets/sounds/sfx/fireball_explosion.wav',
-  explosion_crit: 'assets/sounds/sfx/fireball_explosion_critical.wav',
-  item_select: 'assets/sounds/sfx/item_select.wav',
-  drop_coin: 'assets/sounds/sfx/drop_coin.mp3',
-  meteor_fly: 'assets/sounds/sfx/meteor_fly.mp3',
-  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.mp3',
-  swish: 'assets/sounds/sfx/swish.mp3',
-  monster_destroy: 'assets/sounds/sfx/monster_destroy.mp3',
-  summon_spirit: 'assets/sounds/sfx/Summoning the Fire Spirit.mp3'
-};
+// 효과음 파일 목록. 기존 효과음은 출처 문제로 전부 제거했고(docs/steam-store/sound-sources.md),
+// 새 효과음은 키에 경로만 넣으면 기존 호출 지점(playSound·playFireballSfx)에서 바로 재생됩니다.
+// 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · swish · monster_destroy · summon_spirit
+const FIREBALL_SFX_FILES = {};
+// 반복 재생 효과음(지속 피해 연소음, 시전 중 충전음). 비어 있으면 재생하지 않습니다.
+const BURNING_LOOP_SFX_FILE = '';
+const FIREBALL_CAST_LOOP_SFX_FILE = '';
 
 const preloadedSfx = {};
-const burningLoopAudio = new Audio('assets/sounds/sfx/burning.mp3');
-burningLoopAudio.preload = 'auto';
-burningLoopAudio.loop = true;
-burningLoopAudio.volume = 0.55;
-
-const fireballCastAudio = new Audio('assets/sounds/sfx/fireball_ready.mp3');
-fireballCastAudio.preload = 'auto';
-fireballCastAudio.loop = true;
-fireballCastAudio.volume = 0.58;
+function createLoopAudio(src, volume) {
+  if (!src) return null;
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.loop = true;
+  audio.volume = volume;
+  return audio;
+}
+const burningLoopAudio = createLoopAudio(BURNING_LOOP_SFX_FILE, 0.55);
+const fireballCastAudio = createLoopAudio(FIREBALL_CAST_LOOP_SFX_FILE, 0.58);
 
 const BGM_TRACKS = [
   { title: tr('무거운 왕관 아래에서'), src: 'assets/sounds/bgm/Beneath_the_Heavy_Crown.mp3' },
@@ -479,6 +475,7 @@ initSfxAudio();
 
 function updateBurningLoopSound() {
   const c = state.combat;
+  if (!burningLoopAudio) return;
   const effVol = getEffectiveSfxVol(0.68);
   const isDotBurning =
     effVol > 0 && !state.monster.isDying &&
@@ -499,6 +496,7 @@ function updateBurningLoopSound() {
 
 function updateCastingLoopSound() {
   const c = state.combat;
+  if (!fireballCastAudio) return;
   const effVol = getEffectiveSfxVol(0.72);
   const isCasting = effVol > 0 && Boolean(c.castingSkill) && c.castRemaining > 0;
   try {
