@@ -32,3 +32,6 @@ dist/
 
 # 개인정보가 담긴 원본 메일·영수증은 저장소 밖(D:/TakGames/_evidence/)에 보관합니다.
 *.eml
+
+# 효과음 생성 후보(scripts/generate-sfx.cjs). 고른 파일만 assets/sounds/sfx/로 옮깁니다.
+.sfx-candidates/

@@ -289,7 +289,11 @@ const FIREBALL_SFX_FILES = {
   // VARCO Sound 유료 플랜 생성(2026-10-26)
   meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
   meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav',
-  drop_coin: 'assets/sounds/sfx/drop_coin.wav'
+  drop_coin: 'assets/sounds/sfx/drop_coin.wav',
+  // ElevenLabs Sound Effects API, Starter 유료 플랜 생성(2026-10-28, scripts/generate-sfx.cjs)
+  fly: 'assets/sounds/sfx/fireball_whoosh.wav',
+  explosion: 'assets/sounds/sfx/fireball_hit.wav',
+  explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav'
 };
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
 const SFX_START_OFFSET = { meteor_explosion: 0.06 };
