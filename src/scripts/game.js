@@ -292,7 +292,13 @@ const FIREBALL_SFX_FILES = {
   drop_coin: 'assets/sounds/sfx/drop_coin.wav',
   // ElevenLabs Sound Effects API, Starter 유료 플랜 생성(2026-10-28, scripts/generate-sfx.cjs)
   fly: 'assets/sounds/sfx/fireball_whoosh.wav',
-  explosion: 'assets/sounds/sfx/fireball_hit.wav',
+  // 적중음 변형 4종(2026-10-29). 평균 음량을 첫 파일에 맞췄고, 4번은 고음이 많아 크게 들려 3dB 더 낮췄습니다.
+  explosion: [
+    'assets/sounds/sfx/fireball_hit.wav',
+    'assets/sounds/sfx/fireball_hit_2.wav',
+    'assets/sounds/sfx/fireball_hit_3.wav',
+    'assets/sounds/sfx/fireball_hit_4.wav'
+  ],
   explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
   item_select: 'assets/sounds/sfx/card_pick.wav',
   monster_destroy: 'assets/sounds/sfx/monster_burst.wav',
@@ -487,6 +493,15 @@ function updateBgmPlayback() {
 // 키에 경로 배열을 적으면 변형 소리 묶음이 됩니다. 재생할 때마다 직전과 다른 것을 무작위로 고릅니다.
 const sfxVariants = {};
 const sfxLastVariant = {};
+// 변형 고르기는 게임 난수(Math.random)를 쓰지 않습니다. 시드를 고정한 테스트·밸런스 시뮬레이션에서
+// 소리 재생이 카드 추첨 순서를 바꾸지 않게 하려는 것입니다.
+let sfxRandState = (Date.now() >>> 0) || 1;
+function sfxRandom() {
+  sfxRandState ^= sfxRandState << 13;
+  sfxRandState ^= sfxRandState >>> 17;
+  sfxRandState ^= sfxRandState << 5;
+  return (sfxRandState >>> 0) / 4294967296;
+}
 function initSfxAudio() {
   for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
     const list = (Array.isArray(src) ? src : [src]).map((path) => {
@@ -504,9 +519,9 @@ function pickSfxVariant(kind) {
   const last = sfxLastVariant[kind];
   let i;
   if (last === undefined) {
-    i = Math.floor(Math.random() * list.length);
+    i = Math.floor(sfxRandom() * list.length);
   } else {
-    i = Math.floor(Math.random() * (list.length - 1));
+    i = Math.floor(sfxRandom() * (list.length - 1));
     if (i >= last) i++;
   }
   sfxLastVariant[kind] = i;

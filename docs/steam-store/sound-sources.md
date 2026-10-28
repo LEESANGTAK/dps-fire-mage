@@ -62,6 +62,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `drop_coin.wav` | 골드 획득(동전이 골드 표시에 닿을 때마다) | 0.3초(48kHz 모노) | VARCO Sound 유료 플랜, 2026-10-26 | 앞 무음 없음. 최대 음량 -10.2dB로 다른 파일(-2dB)보다 작아, 음량을 맞출 때 정규화하고 코드의 재생 볼륨을 낮춥니다 |
 | `fireball_whoosh.wav` | 화염구 비행 | 0.41초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택. 앞 무음을 자르고 최대 -1dB로 맞춤 |
 | `fireball_hit.wav` | 화염구 적중 | 0.28초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v3` | 후보 4개 중 선택 |
+| `fireball_hit_2.wav`·`_3`·`_4` | 화염구 적중 변형(4종을 직전과 겹치지 않게 무작위 재생) | 0.18·0.32·0.48초(48kHz 모노) | ElevenLabs Starter, 2026-10-29, `eleven_text_to_sound_v3`, `fireball_hit.wav`와 같은 프롬프트 | 후보 6개 중 3개 선택. 평균 음량을 `fireball_hit.wav`(-23.1dB)에 맞췄고, `_4`는 고음이 많아 크게 들려 3dB 더 낮춤(-26.1dB) |
 | `fireball_hit_crit.wav` | 화염구 치명타 적중 | 0.67초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v3` | 후보 4개 중 선택 |
 | `card_pick.wav` | 카드 선택 | 0.50초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택 |
 | `fireball_charge_loop.wav` | 화염구 시전 중 반복음 | 5.0초(48kHz 모노), 반복 | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2`(loop 옵션) | 후보 4개 중 선택. 이음매 튐 없음, 앞뒤 100ms 음량 차 0.3dB |
