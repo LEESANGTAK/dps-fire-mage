@@ -66,6 +66,8 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `card_pick.wav` | 카드 선택 | 0.50초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택 |
 | `fireball_charge_loop.wav` | 화염구 시전 중 반복음 | 5.0초(48kHz 모노), 반복 | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2`(loop 옵션) | 후보 4개 중 선택. 이음매 튐 없음, 앞뒤 100ms 음량 차 0.3dB |
 | `burn_loop.wav` | 화상 반복음 | 7.0초(48kHz 모노), 반복 | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2`(loop 옵션) | 후보 8개 중 선택. 모델이 거의 무음 속에 '탁' 소리만 튀게 만들어, 같은 소리를 원형으로 3겹 겹치고 튀는 소리를 눌렀습니다(`generate-sfx.cjs --densify`). 평균 음량 -35dB → -17dB |
+| `monster_burst.wav` | 몬스터 처치 | 0.87초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택. 시작 직후 바로 커져 처치 순간과 맞습니다 |
+| `spirit_summon.wav` | 정령 소환 | 0.89초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택 |
 
 ## 예전 효과음 — **2026-10-26 전부 제거**
 
@@ -83,8 +85,8 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `meteor_fly.mp3` | 메테오 낙하 | 3.0초 | 모름 | 제거됨 | 2 |
 | `meteor_explosion.mp3` | 메테오 폭발 | 3.0초 | 모름(ffmpeg 변환 흔적) | 제거됨 | 2 |
 | `swish.mp3` | 휘두르기 | 0.3초 | 모름 | 제거됨 | 2 |
-| `monster_destroy.mp3` | 몬스터 처치 | 1.0초 | 모름 | 제거됨 | 2 |
-| `Summoning the Fire Spirit.mp3` | 정령 소환 | 1.2초 | Fish Audio 무료 플랜 | 제거됨 | 2 |
+| `monster_destroy.mp3` | 몬스터 처치 | 1.0초 | 모름 | 제거됨 → `monster_burst.wav`로 교체 | 2 |
+| `Summoning the Fire Spirit.mp3` | 정령 소환 | 1.2초 | Fish Audio 무료 플랜 | 제거됨 → `spirit_summon.wav`로 교체 | 2 |
 
 - **우선 1(하스스톤 녹음 5개):** 블리자드 저작물입니다. 블리자드 IP 명칭을 뺀 것과 같은 이유로 출시 전에 반드시 교체합니다. 게임의 핵심 손맛인 화염구 소리라 플레이어가 알아챌 가능성도 큽니다.
 - **우선 2:** 출처를 증명할 수 없거나(6개) 상업 이용이 막힌 무료 플랜(1개)입니다.
@@ -111,7 +113,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `meteor_fly.mp3` | 2~3초 | large flaming meteor falling from the sky, rising roaring whoosh that ends right before impact | |
 | `meteor_explosion.mp3` | 1.5~3초 | big cartoon meteor impact explosion, deep boom with rumble and scattered debris, punchy start | |
 | `swish.mp3` | 0.2~0.4초 | quick magic staff swing swish, light air whoosh | |
-| `monster_destroy.mp3` | 0.8~1.2초 | cartoon paper monster bursting apart, papery crumple and puff with a satisfying pop | |
-| `Summoning the Fire Spirit.mp3` | 1~1.5초 | summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle | |
+| `monster_destroy.mp3` | 0.8~1.2초 | cartoon paper monster bursting apart, papery crumple and puff with a satisfying pop | cartoon paper monster bursting apart, papery crumple and puff with a satisfying pop, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, 1초 → `monster_burst.wav`) |
+| `Summoning the Fire Spirit.mp3` | 1~1.5초 | summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle | summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, 1.3초 → `spirit_summon.wav`) |
 
 - 반복음 2개는 VARCO Sound에 반복(loop) 옵션이 있으면 켜고, 없으면 만든 뒤 앞뒤를 겹쳐 이음매를 다듬습니다. 게임에서 몇 바퀴 돌려 이음매가 들리지 않는지 확인합니다.

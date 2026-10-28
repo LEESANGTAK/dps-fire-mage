@@ -294,7 +294,9 @@ const FIREBALL_SFX_FILES = {
   fly: 'assets/sounds/sfx/fireball_whoosh.wav',
   explosion: 'assets/sounds/sfx/fireball_hit.wav',
   explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
-  item_select: 'assets/sounds/sfx/card_pick.wav'
+  item_select: 'assets/sounds/sfx/card_pick.wav',
+  monster_destroy: 'assets/sounds/sfx/monster_burst.wav',
+  summon_spirit: 'assets/sounds/sfx/spirit_summon.wav'
 };
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
 const SFX_START_OFFSET = { meteor_explosion: 0.06 };
