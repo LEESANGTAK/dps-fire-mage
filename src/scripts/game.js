@@ -484,12 +484,33 @@ function updateBgmPlayback() {
   } catch (e) {}
 }
 
+// 키에 경로 배열을 적으면 변형 소리 묶음이 됩니다. 재생할 때마다 직전과 다른 것을 무작위로 고릅니다.
+const sfxVariants = {};
+const sfxLastVariant = {};
 function initSfxAudio() {
   for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
-    const audio = new Audio(src);
-    audio.preload = 'auto';
-    preloadedSfx[key] = audio;
+    const list = (Array.isArray(src) ? src : [src]).map((path) => {
+      const audio = new Audio(path);
+      audio.preload = 'auto';
+      return audio;
+    });
+    sfxVariants[key] = list;
+    preloadedSfx[key] = list[0];
   }
+}
+function pickSfxVariant(kind) {
+  const list = sfxVariants[kind];
+  if (!list || list.length <= 1) return preloadedSfx[kind];
+  const last = sfxLastVariant[kind];
+  let i;
+  if (last === undefined) {
+    i = Math.floor(Math.random() * list.length);
+  } else {
+    i = Math.floor(Math.random() * (list.length - 1));
+    if (i >= last) i++;
+  }
+  sfxLastVariant[kind] = i;
+  return list[i];
 }
 initSfxAudio();
 
@@ -537,7 +558,7 @@ function playFireballSfx(kind, volume = 0.65, pitchMult = 1.0) {
   const effVol = getEffectiveSfxVol(volume);
   if (effVol <= 0) return null;
   try {
-    const base = preloadedSfx[kind];
+    const base = pickSfxVariant(kind);
     if (!base) return null;
     const snd = base.cloneNode();
     snd.volume = effVol;
@@ -565,11 +586,13 @@ function playSound(type, pitchMult = 1.0) {
   if (type === 'launch') {
     return playFireballSfx('fly', 0.8, finalPitch);
   }
+  // 적중·치명타는 2026-10-29에 두 배로 키웠습니다(일반 < 치명타 순서 유지). 기본 볼륨이 1을 넘어도
+  // 효과음 슬라이더(기본 10%)를 곱한 뒤 1로 자르므로, 슬라이더가 아주 높을 때만 둘의 차이가 줄어듭니다.
   if (type === 'hit') {
-    return playFireballSfx('explosion', 0.72, finalPitch);
+    return playFireballSfx('explosion', 1.44, finalPitch);
   }
   if (type === 'crit') {
-    return playFireballSfx('explosion_crit', 1.0, finalPitch);
+    return playFireballSfx('explosion_crit', 2.0, finalPitch);
   }
   if (type === 'item_select') {
     return playFireballSfx('item_select', 0.92);
@@ -2712,8 +2735,8 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
   } else {
     spawnFloatingText(`${fmt(dmg)}`, 'fct-normal', 0);
     if (skillKey !== 'meteor') {
-      // 반복 타격 피로도를 줄이기 위한 미세한 피치 변조 (0.97~1.03)
-      playSound('hit', 0.97 + Math.random() * 0.06);
+      // 반복 타격 피로도를 줄이기 위한 피치 변조 (0.92~1.08)
+      playSound('hit', 0.92 + Math.random() * 0.16);
     }
   }
 

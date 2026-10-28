@@ -162,6 +162,7 @@ function processSamples(samples, opts) {
   const gain = Math.pow(10, TARGET_PEAK_DB / 20) / (peakOf(out) || 1);
   out = out.map((v) => v * gain);
   stats.sec = out.length / SAMPLE_RATE;
+  stats.rmsDb = 10 * Math.log10(out.reduce((q, v) => q + v * v, 0) / (out.length || 1));
   return { samples: out, stats };
 }
 
@@ -192,7 +193,9 @@ function buildPage() {
   const dataUri = (g, m) => `data:audio/wav;base64,${fs.readFileSync(path.join(OUT_DIR, g.name, m.file)).toString('base64')}`;
   const rows = groups.map((g) => `
   <section><h2>${esc(g.name)} <small>${esc(g.use)}</small></h2>
+  ${g.metas.length > 1 && !g.metas[0].loop ? `<p><button class="mix">체크한 것 섞어 연사 ×8</button> <small>게임처럼 직전과 다른 소리를 고르고 음높이를 ±8% 바꿉니다. 평균 음량도 맞춰 재생합니다.</small></p>` : ''}
   ${g.metas.map((m) => `<div class="row">
+    ${m.loop ? '' : `<input type="checkbox" class="pick" data-src="${dataUri(g, m)}" data-rms="${m.stats.rmsDb ?? ''}">`}
     <b>${esc(m.file)}</b>
     <audio controls preload="auto" src="${dataUri(g, m)}"${m.loop ? ' loop' : ''}></audio>
     ${m.loop ? '' : `<button data-src="${dataUri(g, m)}">연사 ×6</button>`}
@@ -207,7 +210,13 @@ h2 small{font-weight:normal;color:#777}.row{padding:8px 0;border-bottom:1px soli
 .meta{color:#666;margin-left:8px}.prompt{color:#999;font-size:12px;margin-top:2px}button{margin-left:6px}</style>
 <h1>효과음 후보</h1><p>모든 후보는 최대 음량 -1dB로 맞췄습니다. "연사 ×6"은 초당 6회 연속 재생으로 귀 피로를 확인합니다.</p>
 ${rows}
-<script>document.querySelectorAll('button[data-src]').forEach(b=>b.onclick=()=>{
+<script>document.querySelectorAll('button.mix').forEach(b=>b.onclick=()=>{
+const picks=[...b.closest('section').querySelectorAll('input.pick:checked')];if(!picks.length)return;
+const ref=Math.min(...picks.map(p=>Number(p.dataset.rms)||0));let last=-1;
+for(let k=0;k<8;k++)setTimeout(()=>{let i=Math.floor(Math.random()*picks.length);if(picks.length>1&&i===last)i=(i+1)%picks.length;last=i;
+const p=picks[i],a=new Audio(p.dataset.src);a.preservesPitch=false;a.playbackRate=0.92+Math.random()*0.16;
+a.volume=0.7*Math.pow(10,(ref-(Number(p.dataset.rms)||ref))/20);a.play()},k*166)});
+document.querySelectorAll('button[data-src]').forEach(b=>b.onclick=()=>{
 if(b.dataset.pitch){const a=new Audio(b.dataset.src);a.preservesPitch=false;a.playbackRate=Number(b.dataset.pitch);a.volume=0.7;a.play();return;}
 for(let i=0;i<6;i++)setTimeout(()=>{const a=new Audio(b.dataset.src);a.volume=0.7;a.play()},i*166)})</script>`;
   const file = path.join(OUT_DIR, 'index.html');
