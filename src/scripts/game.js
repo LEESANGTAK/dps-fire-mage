@@ -293,15 +293,17 @@ const FIREBALL_SFX_FILES = {
   // ElevenLabs Sound Effects API, Starter 유료 플랜 생성(2026-10-28, scripts/generate-sfx.cjs)
   fly: 'assets/sounds/sfx/fireball_whoosh.wav',
   explosion: 'assets/sounds/sfx/fireball_hit.wav',
-  explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav'
+  explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
+  item_select: 'assets/sounds/sfx/card_pick.wav'
 };
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
 const SFX_START_OFFSET = { meteor_explosion: 0.06 };
 // meteor_fly.wav가 가장 커지는 지점(초). 낙하가 이보다 짧으므로 이만큼 앞당겨 틀어 착탄 순간에 소리가 정점에 닿게 합니다.
 const METEOR_FLY_SFX_PEAK_SEC = 1.4;
 // 반복 재생 효과음(지속 피해 연소음, 시전 중 충전음). 비어 있으면 재생하지 않습니다.
-const BURNING_LOOP_SFX_FILE = '';
-const FIREBALL_CAST_LOOP_SFX_FILE = '';
+// ElevenLabs 반복(loop) 옵션으로 생성(2026-10-28). 연소음은 같은 소리를 원형으로 3겹 겹쳐 빈 구간을 채웠습니다.
+const BURNING_LOOP_SFX_FILE = 'assets/sounds/sfx/burn_loop.wav';
+const FIREBALL_CAST_LOOP_SFX_FILE = 'assets/sounds/sfx/fireball_charge_loop.wav';
 
 const preloadedSfx = {};
 function createLoopAudio(src, volume) {

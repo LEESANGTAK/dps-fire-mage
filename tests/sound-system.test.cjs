@@ -71,5 +71,8 @@ console.log('   ✔ 6. 예전 효과음 12종 제거 및 효과음 없는 상태
 const sfxBlock = (gameSource.match(/const FIREBALL_SFX_FILES = \{([\s\S]*?)\};/) || [])[1] || '';
 const sfxPaths = [...sfxBlock.matchAll(/'(assets\/sounds\/sfx\/[^']+)'/g)].map((m) => m[1]);
 assert.ok(sfxPaths.includes('assets/sounds/sfx/meteor_fly.wav') && sfxPaths.includes('assets/sounds/sfx/meteor_explosion.wav'), '메테오 효과음 2종이 등록되어 있어야 합니다.');
-sfxPaths.forEach((p) => assert.ok(fs.existsSync(path.join(ROOT, p)), `등록한 효과음 파일이 없습니다: ${p}`));
-console.log(`   ✔ 7. 등록한 효과음 ${sfxPaths.length}종 파일 존재 검증 통과`);
+// 반복음 상수(BURNING_LOOP_SFX_FILE·FIREBALL_CAST_LOOP_SFX_FILE)에 적은 경로도 함께 검사합니다.
+const loopPaths = [...gameSource.matchAll(/const (?:BURNING_LOOP_SFX_FILE|FIREBALL_CAST_LOOP_SFX_FILE) = '([^']*)';/g)]
+  .map((m) => m[1]).filter(Boolean);
+[...sfxPaths, ...loopPaths].forEach((p) => assert.ok(fs.existsSync(path.join(ROOT, p)), `등록한 효과음 파일이 없습니다: ${p}`));
+console.log(`   ✔ 7. 등록한 효과음 ${sfxPaths.length}종·반복음 ${loopPaths.length}종 파일 존재 검증 통과`);

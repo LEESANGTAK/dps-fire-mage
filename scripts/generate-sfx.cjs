@@ -4,7 +4,8 @@
  * ElevenLabs 효과음 API로 효과음 후보를 만들고, 비교용 청취 페이지를 만듭니다.
  * - API 키는 환경 변수 ELEVENLABS_API_KEY에서 읽습니다. Windows에서 앱을 켠 뒤에 등록해
  *   현재 프로세스에 없으면 사용자 환경 변수에서 직접 읽습니다. 키는 출력하거나 파일에 쓰지 않습니다.
- * - 결과는 .sfx-candidates/<이름>/ 에 저장합니다(.gitignore 대상). 마음에 드는 후보를
+ * - 결과는 .sfx-candidates/<이름>/ 에 저장합니다(.gitignore 대상). 고르고 난 후보 폴더는 _done/ 으로 옮기면
+ *   청취 페이지에서 빠지고 생성 기록(meta.json)은 남습니다. 마음에 드는 후보를
  *   assets/sounds/sfx/ 로 옮기는 일은 사람이 듣고 고른 뒤에 합니다.
  * - Starter 플랜은 44.1kHz wav를 받을 수 없어(Pro 이상) 48kHz wav로 받습니다. 응답은 스테레오라 모노로 합칩니다.
  * - 후처리: 앞 무음 자르기(입력과 소리 사이 지연 제거), 짧은 소리는 꼬리 무음 자르기와 페이드아웃,
@@ -14,6 +15,7 @@
  * 사용법: node scripts/generate-sfx.cjs --list
  *        node scripts/generate-sfx.cjs fireball_fly fireball_explosion [--count 4] [--models v2,v3]
  *        node scripts/generate-sfx.cjs --page          (이미 만든 후보로 청취 페이지만 다시 만듦)
+ *        node scripts/generate-sfx.cjs burning --densify  (이미 만든 반복음 후보에 채우기만 적용, 크레딧 없음)
  *        [--prompt "..."] 이름 하나에 프롬프트를 덮어써서 시험, [--duration 0.6], [--dry-run]
  */
 const fs = require('fs');
@@ -45,7 +47,7 @@ const SOUNDS = {
     prompt: 'magical fire energy charging in hand, steady crackling flame hum, seamless loop, no build-up or ending'
   },
   burning: {
-    use: '화상 반복음', duration: 7, loop: true,
+    use: '화상 반복음', duration: 7, loop: true, densify: 3,
     prompt: 'gentle steady burning fire crackle, small flames on paper, seamless loop, calm, no pops louder than the rest'
   },
   item_select: {
@@ -118,11 +120,27 @@ async function requestSound({ text, duration, loop, model, apiKey }) {
   return { samples, requestId: res.headers.get('request-id') || res.headers.get('x-request-id') || null };
 }
 
+// 반복음 채우기: 모델이 불 소리를 '드문드문 튀는 소리'로 만드는 경향이 있어, 같은 소리를 시작 위치만
+// 원형으로 돌려 여러 겹 겹치고(반복 구간 안에서 돌리므로 이음매 유지) 튀는 소리를 부드럽게 누릅니다.
+function densifyLoop(samples, layers) {
+  const n = samples.length;
+  const out = new Float32Array(n);
+  for (let k = 0; k < layers; k++) {
+    const shift = Math.floor((n * k) / layers);
+    for (let i = 0; i < n; i++) out[i] += samples[(i + shift) % n];
+  }
+  const sorted = Array.from(out, Math.abs).sort((a, b) => a - b);
+  const knee = sorted[Math.floor(sorted.length * 0.99)] || 1;
+  for (let i = 0; i < n; i++) out[i] = knee * Math.tanh(out[i] / knee);
+  return out;
+}
+
 const toDb = (a) => (a > 0 ? 20 * Math.log10(a) : -Infinity);
 const peakOf = (s) => s.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
 
 // 앞 무음(-45dB 미만)을 자르되 2ms는 남겨 어택이 잘리지 않게 합니다.
-function processSamples(samples, { loop }) {
+function processSamples(samples, opts) {
+  const { loop } = opts;
   let out = samples;
   const stats = { rawSec: samples.length / SAMPLE_RATE, rawPeakDb: toDb(peakOf(samples)) };
   if (!loop) {
@@ -139,6 +157,7 @@ function processSamples(samples, { loop }) {
     const fade = Math.min(out.length, Math.round(SAMPLE_RATE * 0.02));
     for (let i = 0; i < fade; i++) out[out.length - fade + i] *= 1 - (i + 1) / fade;
   }
+  if (loop && opts.densify) out = densifyLoop(out, opts.densify);
   const gain = Math.pow(10, TARGET_PEAK_DB / 20) / (peakOf(out) || 1);
   out = out.map((v) => v * gain);
   stats.sec = out.length / SAMPLE_RATE;
@@ -160,7 +179,7 @@ function writeWav(file, samples) {
 
 function buildPage() {
   if (!fs.existsSync(OUT_DIR)) return null;
-  const groups = fs.readdirSync(OUT_DIR, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => {
+  const groups = fs.readdirSync(OUT_DIR, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith('_')).map((d) => {
     const dir = path.join(OUT_DIR, d.name);
     const metas = fs.readdirSync(dir).filter((f) => f.endsWith('.json'))
       .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')))
@@ -198,6 +217,25 @@ async function main() {
     return;
   }
   if (flag('page')) { console.log('청취 페이지:', buildPage()); return; }
+  if (flag('densify')) {
+    for (const name of names) {
+      const cfg = SOUNDS[name];
+      const dir = path.join(OUT_DIR, name);
+      for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.wav') && !x.includes('_dense'))) {
+        const raw = fs.readFileSync(path.join(dir, f));
+        const x = new Float32Array((raw.length - 44) >> 1);
+        for (let i = 0; i < x.length; i++) x[i] = raw.readInt16LE(44 + i * 2) / 32768;
+        const { samples, stats } = processSamples(x, { loop: true, densify: cfg.densify || 3 });
+        const outFile = f.replace(/\.wav$/, '_dense.wav');
+        writeWav(path.join(dir, outFile), samples);
+        const meta = JSON.parse(fs.readFileSync(path.join(dir, f.replace(/\.wav$/, '.json')), 'utf8'));
+        fs.writeFileSync(path.join(dir, outFile.replace(/\.wav$/, '.json')), JSON.stringify({ ...meta, file: outFile, densify: cfg.densify || 3, stats: { ...meta.stats, ...stats } }, null, 2));
+        console.log(`${name}/${outFile}`);
+      }
+    }
+    console.log('청취 페이지:', buildPage());
+    return;
+  }
   if (!names.length) throw new Error('만들 효과음 이름을 적어 주세요(--list로 목록 확인).');
   const unknown = names.filter((n) => !SOUNDS[n]);
   if (unknown.length) throw new Error(`모르는 이름: ${unknown.join(', ')}`);
