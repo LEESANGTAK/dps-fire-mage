@@ -54,9 +54,10 @@ const SOUNDS = {
     use: '카드 선택', duration: 0.7,
     prompt: 'magical card pick confirm, paper card flip with warm chime and tiny flame shimmer, UI sound'
   },
-  swish: {
-    use: '휘두르기', duration: 0.5,
-    prompt: 'quick magic staff swing swish, light air whoosh'
+  // 게임 키는 swish(호출은 playSound('proc'))지만 실제 용도는 휘두르기가 아니라 좋은 일이 생긴 순간의 강조음입니다.
+  proc_accent: {
+    use: '발동 강조음(시간 보너스·기록 단축·보스 도장·불사조의 가호)', duration: 0.6, pitches: [1.1, 1.25, 1.35],
+    prompt: 'short bright magical sparkle accent, quick rising shimmer with a warm bell chime, rewarding and cheerful, clean ending'
   },
   monster_destroy: {
     use: '몬스터 처치', duration: 1.0,
@@ -184,7 +185,7 @@ function buildPage() {
     const metas = fs.readdirSync(dir).filter((f) => f.endsWith('.json'))
       .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')))
       .sort((a, b) => a.file.localeCompare(b.file));
-    return { name: d.name, use: (SOUNDS[d.name] || {}).use || '', metas };
+    return { name: d.name, use: (SOUNDS[d.name] || {}).use || '', pitches: (SOUNDS[d.name] || {}).pitches || [], metas };
   });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // 소리를 페이지 안에 넣어, 파일 하나만 열어도(정적 사본 미리보기 포함) 재생되게 합니다.
@@ -195,6 +196,7 @@ function buildPage() {
     <b>${esc(m.file)}</b>
     <audio controls preload="auto" src="${dataUri(g, m)}"${m.loop ? ' loop' : ''}></audio>
     ${m.loop ? '' : `<button data-src="${dataUri(g, m)}">연사 ×6</button>`}
+    ${g.pitches.map((r) => `<button data-pitch="${r}" data-src="${dataUri(g, m)}">음높이 ${r}</button>`).join('')}
     <span class="meta">${esc(m.modelShort)} · ${m.stats.sec.toFixed(2)}초 · 원본 ${m.stats.rawPeakDb.toFixed(1)}dB${m.stats.headTrimMs ? ` · 앞 ${m.stats.headTrimMs}ms 자름` : ''}</span>
     <div class="prompt">${esc(m.prompt)}</div></div>`).join('')}
   </section>`).join('');
@@ -205,7 +207,9 @@ h2 small{font-weight:normal;color:#777}.row{padding:8px 0;border-bottom:1px soli
 .meta{color:#666;margin-left:8px}.prompt{color:#999;font-size:12px;margin-top:2px}button{margin-left:6px}</style>
 <h1>효과음 후보</h1><p>모든 후보는 최대 음량 -1dB로 맞췄습니다. "연사 ×6"은 초당 6회 연속 재생으로 귀 피로를 확인합니다.</p>
 ${rows}
-<script>document.querySelectorAll('button[data-src]').forEach(b=>b.onclick=()=>{for(let i=0;i<6;i++)setTimeout(()=>{const a=new Audio(b.dataset.src);a.volume=0.7;a.play()},i*166)})</script>`;
+<script>document.querySelectorAll('button[data-src]').forEach(b=>b.onclick=()=>{
+if(b.dataset.pitch){const a=new Audio(b.dataset.src);a.preservesPitch=false;a.playbackRate=Number(b.dataset.pitch);a.volume=0.7;a.play();return;}
+for(let i=0;i<6;i++)setTimeout(()=>{const a=new Audio(b.dataset.src);a.volume=0.7;a.play()},i*166)})</script>`;
   const file = path.join(OUT_DIR, 'index.html');
   fs.writeFileSync(file, html);
   return file;

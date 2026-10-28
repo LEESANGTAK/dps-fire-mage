@@ -68,6 +68,8 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `burn_loop.wav` | 화상 반복음 | 7.0초(48kHz 모노), 반복 | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2`(loop 옵션) | 후보 8개 중 선택. 모델이 거의 무음 속에 '탁' 소리만 튀게 만들어, 같은 소리를 원형으로 3겹 겹치고 튀는 소리를 눌렀습니다(`generate-sfx.cjs --densify`). 평균 음량 -35dB → -17dB |
 | `monster_burst.wav` | 몬스터 처치 | 0.87초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택. 시작 직후 바로 커져 처치 순간과 맞습니다 |
 | `spirit_summon.wav` | 정령 소환 | 0.89초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택 |
+| `celebrate_chime.wav` | 축하 강조음(시간 보너스·기록 단축·보스 도장·승리·전설 카드·해금, 11곳) | 0.60초(48kHz 모노) | ElevenLabs Starter, 2026-10-29, `eleven_text_to_sound_v3` | 후보 4개 중 선택. 사건마다 음높이 0.9~1.35배로 재생 |
+| `proc_chime.wav` | 발동 강조음(불사조의 가호·마력 폭주·메테오 장전·불꽃 심판·보스 보호막, 시작 버튼, 11곳) | 0.57초(48kHz 모노) | ElevenLabs Starter, 2026-10-29, `eleven_text_to_sound_v3` | 같은 프롬프트의 다른 후보. 전투 중 적중음 사이에서 축하음과 구분되게 따로 둠 |
 
 ## 예전 효과음 — **2026-10-26 전부 제거**
 
@@ -84,10 +86,11 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `drop_coin.mp3` | 골드 획득 | 1.1초 | 모름 | 제거됨 → `drop_coin.wav`로 교체 | 2 |
 | `meteor_fly.mp3` | 메테오 낙하 | 3.0초 | 모름 | 제거됨 | 2 |
 | `meteor_explosion.mp3` | 메테오 폭발 | 3.0초 | 모름(ffmpeg 변환 흔적) | 제거됨 | 2 |
-| `swish.mp3` | 휘두르기 | 0.3초 | 모름 | 제거됨 | 2 |
+| `swish.mp3` | 휘두르기 | 0.3초 | 모름 | 제거됨 → `celebrate_chime.wav`·`proc_chime.wav`로 교체(이름과 달리 실제 용도는 강조음) | 2 |
 | `monster_destroy.mp3` | 몬스터 처치 | 1.0초 | 모름 | 제거됨 → `monster_burst.wav`로 교체 | 2 |
 | `Summoning the Fire Spirit.mp3` | 정령 소환 | 1.2초 | Fish Audio 무료 플랜 | 제거됨 → `spirit_summon.wav`로 교체 | 2 |
 
+- **2026-10-29 교체 완료:** 12개 모두 새 효과음으로 바꿨습니다(VARCO 3개, ElevenLabs 10개). 휘두르기 자리는 실제 용도에 맞춰 강조음 2종으로 나눴습니다.
 - **우선 1(하스스톤 녹음 5개):** 블리자드 저작물입니다. 블리자드 IP 명칭을 뺀 것과 같은 이유로 출시 전에 반드시 교체합니다. 게임의 핵심 손맛인 화염구 소리라 플레이어가 알아챌 가능성도 큽니다.
 - **우선 2:** 출처를 증명할 수 없거나(6개) 상업 이용이 막힌 무료 플랜(1개)입니다.
 - 웹 빌드(GitHub Pages)에 예전 파일이 남아 있으니 웹 빌드도 다시 배포합니다.
@@ -112,7 +115,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `drop_coin.mp3` | 0.5~1초 | a few cartoon gold coins landing and clinking, bright and cheerful, short | |
 | `meteor_fly.mp3` | 2~3초 | large flaming meteor falling from the sky, rising roaring whoosh that ends right before impact | |
 | `meteor_explosion.mp3` | 1.5~3초 | big cartoon meteor impact explosion, deep boom with rumble and scattered debris, punchy start | |
-| `swish.mp3` | 0.2~0.4초 | quick magic staff swing swish, light air whoosh | |
+| `swish.mp3` | 0.2~0.4초 | quick magic staff swing swish, light air whoosh | 휘두르기 프롬프트는 용도와 맞지 않아 버리고 다음으로 교체: short bright magical sparkle accent, quick rising shimmer with a warm bell chime, rewarding and cheerful, clean ending, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v3, 0.6초 → `celebrate_chime.wav`·`proc_chime.wav`) |
 | `monster_destroy.mp3` | 0.8~1.2초 | cartoon paper monster bursting apart, papery crumple and puff with a satisfying pop | cartoon paper monster bursting apart, papery crumple and puff with a satisfying pop, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, 1초 → `monster_burst.wav`) |
 | `Summoning the Fire Spirit.mp3` | 1~1.5초 | summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle | summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, 1.3초 → `spirit_summon.wav`) |
 

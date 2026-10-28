@@ -284,7 +284,7 @@ function fmt(num) {
 // ==========================================
 // 효과음 파일 목록. 기존 효과음은 출처 문제로 전부 제거했고(docs/steam-store/sound-sources.md),
 // 새 효과음은 키에 경로만 넣으면 기존 호출 지점(playSound·playFireballSfx)에서 바로 재생됩니다.
-// 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · swish · monster_destroy · summon_spirit
+// 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · celebrate · proc · monster_destroy · summon_spirit
 const FIREBALL_SFX_FILES = {
   // VARCO Sound 유료 플랜 생성(2026-10-26)
   meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
@@ -296,7 +296,10 @@ const FIREBALL_SFX_FILES = {
   explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
   item_select: 'assets/sounds/sfx/card_pick.wav',
   monster_destroy: 'assets/sounds/sfx/monster_burst.wav',
-  summon_spirit: 'assets/sounds/sfx/spirit_summon.wav'
+  summon_spirit: 'assets/sounds/sfx/spirit_summon.wav',
+  // 강조음 2종: 축하(보상·기록·해금)와 발동(전투 중 상태 변화·시작 버튼)을 소리로 구분합니다.
+  celebrate: 'assets/sounds/sfx/celebrate_chime.wav',
+  proc: 'assets/sounds/sfx/proc_chime.wav'
 };
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
 const SFX_START_OFFSET = { meteor_explosion: 0.06 };
@@ -540,6 +543,8 @@ function playFireballSfx(kind, volume = 0.65, pitchMult = 1.0) {
     snd.volume = effVol;
     if (SFX_START_OFFSET[kind]) snd.currentTime = SFX_START_OFFSET[kind];
     if (pitchMult !== 1.0 && typeof snd.playbackRate === 'number') {
+      // 브라우저는 기본으로 속도만 바꾸고 음높이를 유지하므로, 꺼야 음높이가 함께 바뀝니다.
+      snd.preservesPitch = false;
       snd.playbackRate = Math.min(2.0, Math.max(0.5, pitchMult));
     }
     snd.play().catch(() => {});
@@ -578,8 +583,13 @@ function playSound(type, pitchMult = 1.0) {
   if (type === 'meteor_impact') {
     return playFireballSfx('meteor_explosion', 1.0);
   }
-  if (type === 'proc' || type === 'swish') {
-    return playFireballSfx('swish', 0.92);
+  // 축하 강조음: 시간 보너스·기록 단축·보스 도장·승리·전설 카드·해금. 사건마다 음높이를 달리합니다.
+  if (type === 'celebrate') {
+    return playFireballSfx('celebrate', 0.92, pitchMult);
+  }
+  // 발동 강조음: 전투 중 상태 변화(불사조의 가호·마력 폭주·메테오 장전·불꽃 심판·보스 보호막)와 시작 버튼.
+  if (type === 'proc') {
+    return playFireballSfx('proc', 0.92, pitchMult);
   }
   if (type === 'monster_destroy') {
     return playFireballSfx('monster_destroy', 0.96);
@@ -1770,7 +1780,7 @@ function showTimeBonusBanner(remainingSec, holdMs) {
   const pos = getTargetPos();
   spawnParticles(pos.x - 60, pos.y - 90, 26, '#fde047', '#f472b6', 1.2);
   spawnParticles(pos.x + 60, pos.y - 90, 26, '#a7f3d0', '#fb923c', 1.2);
-  playSound('proc', 1.1);
+  playSound('celebrate', 1.1);
   triggerArenaShake('sm');
 }
 
@@ -1811,7 +1821,7 @@ function showTimeBonusTag(timer, bonus) {
   const old = timer.querySelector('.time-bonus-tag');
   if (old) old.remove();
   timer.insertAdjacentHTML('beforeend', `<div class="time-bonus-tag" aria-label="${tr('남은 시간 보너스')}">⏳ +${fmt(bonus)} 🎉</div>`);
-  playSound('proc', 1.35);
+  playSound('celebrate', 1.35);
   const pill = document.getElementById('pill-gold');
   if (pill) {
     pill.classList.remove('time-bonus-pop');
@@ -2399,7 +2409,7 @@ function onMonsterKilled() {
         // 보스 토벌 신기록 경신 연출 (단축 축하 팡파르)
         spawnFloatingText(tr('⚡ 보스 기록 단축! -{diff}초 ({dur}s)', { diff: diff.toFixed(2), dur: duration.toFixed(2) }), 'fct-crit', -70, { isBig: true });
         triggerSpeedrunRecordFlash();
-        playSound('proc', 1.25);
+        playSound('celebrate', 1.25);
       }
     } else {
       if (!state.bossClearTimes) state.bossClearTimes = {};
@@ -2447,7 +2457,7 @@ function onMonsterKilled() {
   checkAndTriggerUnfolds(false);
   scheduleKillBeat(() => {
     spawnStageClearStamp(state.currentStage, data.isPhaseBoss);
-    if (data.isPhaseBoss) playSound('proc');
+    if (data.isPhaseBoss) playSound('celebrate');
   }, 140);
 
   // 골드는 쓰러진 몬스터에서 튀어나와 상단 골드 재화(#pill-gold)로 곡선 비행 흡수!
@@ -2474,7 +2484,7 @@ function onMonsterKilled() {
 
   if (isFinalBossKill) {
     // 최종 보스 대폭발 & 드라마틱 여운: 결과창 전까지 소각 잔상이 멈추지 않고 끝까지 타오르게 합니다.
-    playSound('proc');
+    playSound('celebrate');
     spawnFloatingText(
       isFirstFinalBossKill ? tr('👑 {boss} 최초 토벌!', { boss: FINAL_BOSS.title }) : tr('👑 {boss} 토벌 완료!', { boss: FINAL_BOSS.title }),
       'fct-crit',
@@ -4110,7 +4120,7 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
     modal.classList.remove('is-dealing');
     void modal.offsetWidth;
     modal.classList.add('is-dealing');
-    playSound('proc');
+    playSound('celebrate');
     setBgmBehindWall(true);
   }
 }
@@ -4230,7 +4240,7 @@ function playAwakeningExit(cardId, isLegendary, done) {
     modal.classList.toggle('exit-legendary', Boolean(isLegendary));
     modal.classList.add('is-exiting');
   }
-  if (isLegendary) playSound('proc', 1.15);
+  if (isLegendary) playSound('celebrate', 1.15);
   const ms = prefersReducedMotion() ? AWAKENING_EXIT_MS.reduced : (isLegendary ? AWAKENING_EXIT_MS.legendary : AWAKENING_EXIT_MS.normal);
   setTimeout(done, ms);
 }
@@ -4456,7 +4466,7 @@ function openVictoryModal(isFirstVictory = false) {
 
   modal.classList.remove('hidden');
   state.isPaused = true;
-  playSound('proc');
+  playSound('celebrate');
 
   const card = modal.querySelector('.victory-modal-card');
   if (card) {

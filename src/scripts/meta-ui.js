@@ -125,7 +125,7 @@ function renderRunProgress() {
       await wait(META_REVEAL.fillMs);
       for (const unlock of last.newUnlocks) {
         unlocksEl.insertAdjacentHTML('beforeend', metaUnlockChip(metaUnlockView(unlock)));
-        if (typeof playSound === 'function') playSound('proc', 1.1);
+        if (typeof playSound === 'function') playSound('celebrate', 1.1);
         await wait(META_REVEAL.unlockGap);
       }
       levelEl.textContent = `Lv.${after.level}`;
@@ -140,14 +140,14 @@ function renderRunProgress() {
     if (last.newInferno) {
       await wait(META_REVEAL.unlockGap);
       unlocksEl.insertAdjacentHTML('beforeend', metaUnlockChip({ icon: '<span class="rp-flame">🔥</span>', name: tr('업화 {n}단계', { n: last.newInferno }), kind: tr('업화 단계') }, 'rp-unlock-inferno'));
-      if (typeof playSound === 'function') playSound('proc', 0.9);
+      if (typeof playSound === 'function') playSound('celebrate', 0.9);
       // 이 업화 단계에 처음 도달해 열린 강력한 카드
       for (const unlock of getInfernoCardUnlocks(last.newInferno)) {
         await wait(META_REVEAL.unlockGap);
         const view = metaUnlockView(unlock);
         view.kind = tr('업화 {n}단계 해금 카드', { n: last.newInferno });
         unlocksEl.insertAdjacentHTML('beforeend', metaUnlockChip(view, 'rp-unlock-inferno'));
-        if (typeof playSound === 'function') playSound('proc', 1.2);
+        if (typeof playSound === 'function') playSound('celebrate', 1.2);
       }
     }
     renderRunSetup();
