@@ -288,7 +288,8 @@ function fmt(num) {
 const FIREBALL_SFX_FILES = {
   // VARCO Sound 유료 플랜 생성(2026-10-26)
   meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
-  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav'
+  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav',
+  drop_coin: 'assets/sounds/sfx/drop_coin.wav'
 };
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
 const SFX_START_OFFSET = { meteor_explosion: 0.06 };
@@ -3963,7 +3964,7 @@ function showDeckTooltip(card, targetEl) {
   if (targetEl && targetEl.getBoundingClientRect) {
     const rect = targetEl.getBoundingClientRect();
     const ttWidth = 270;
-    
+
     // 기본은 슬롯 우측에 10px 띄워서 표시
     let left = rect.right + 10;
     if (left + ttWidth > window.innerWidth - 12) {
