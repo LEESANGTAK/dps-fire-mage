@@ -1,4 +1,4 @@
-/* Esc 일시정지 메뉴: 전투·시계 정지, 수동 입력 차단, 복귀 호흡, 모달 정지와의 분리, 자동 정지 조건, 종료 버튼 노출을 검증합니다. */
+/* Esc 일시정지 메뉴: 전투·시계 정지, 수동 입력 차단, 복귀 호흡, 모달 정지와의 분리, 창 전환 시 자동 정지 없음, 종료 버튼 노출을 검증합니다. */
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const { createHeadlessGame } = require('../scripts/lib/headless-game.cjs');
 const root = path.join(__dirname, '..');
@@ -54,16 +54,12 @@ runFor(1);
 assert.equal(g.run('isMenuPaused()'), false);
 assert.equal(st.isPaused, true, '메뉴를 닫아도 열려 있던 모달의 정지는 유지되어야 합니다.');
 
-// 7. 자동 정지(포커스 잃음): 포커스를 받은 적 있는 창에서, 모달이 없을 때만 열립니다.
-g.run('pauseWindowFocused = false; autoPauseOnFocusLoss();');
-assert.equal(g.run('isMenuPaused()'), false, '포커스를 받은 적 없는 창(스모크 테스트·촬영)은 자동 정지하지 않습니다.');
-g.run('pauseWindowFocused = true; autoPauseOnFocusLoss();');
-assert.equal(g.run('isMenuPaused()'), false, '이미 모달로 멈춰 있으면 메뉴를 덮지 않습니다.');
-st.isPaused = false;
-g.run('autoPauseOnFocusLoss();');
-assert.equal(g.run('isMenuPaused()'), true, '전투 중 포커스를 잃으면 자동으로 멈춰야 합니다.');
-g.run('resumeFromPauseMenu()');
-runFor(1);
+// 7. 다른 창으로 전환해도 일시정지 메뉴를 자동으로 열지 않습니다(사용자 요청 2026-10-30, docs/design-decisions.md).
+assert.equal(g.run('typeof autoPauseOnFocusLoss'), 'undefined', '포커스 잃음 자동 정지 함수가 남아 있으면 안 됩니다.');
+{
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/scripts/pause-menu.js'), 'utf8');
+  assert.ok(!/addEventListener\('blur'|visibilitychange/.test(src), '창 포커스·숨김 이벤트로 메뉴를 열면 안 됩니다.');
+}
 
 // 8. 종료 버튼은 데스크톱 빌드(desktopApp.quit)에서만 노출되고, 저장 후 종료를 요청합니다.
 assert.equal(g.run('canQuitGame()'), false, '웹 빌드에는 종료 버튼이 없어야 합니다.');
@@ -91,4 +87,4 @@ for (const other of css.matchAll(/z-index: (\d+)/g)) {
 assert.match(fs.readFileSync(path.join(root, 'electron', 'preload.cjs'), 'utf8'), /quit: \(\) => ipcRenderer\.send\('app:quit'\)/);
 assert.match(fs.readFileSync(path.join(root, 'electron', 'main.cjs'), 'utf8'), /ipcMain\.on\('app:quit'[\s\S]*?win\.close\(\)/);
 
-console.log('   일시정지 메뉴 전투·시계 정지, 입력 차단, 복귀 호흡, 모달 정지 분리, 포커스 자동 정지 조건, 데스크톱 종료 검증 통과');
+console.log('   일시정지 메뉴 전투·시계 정지, 입력 차단, 복귀 호흡, 모달 정지 분리, 창 전환 자동 정지 없음, 데스크톱 종료 검증 통과');

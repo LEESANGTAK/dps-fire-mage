@@ -1,5 +1,6 @@
 /* Esc 일시정지 메뉴.
- * - 여는 방법: Esc, 상단 ⏸ 버튼, 창이 포커스를 잃거나 최소화될 때 자동.
+ * - 여는 방법: Esc, 상단 ⏸ 버튼. 다른 창으로 전환해도 자동으로 열지 않습니다(플레이어가 직접 멈춤).
+ *   창이 최소화·숨김이면 브라우저가 화면 갱신을 멈추고 gameLoop가 프레임 시간을 0.1초로 자르므로, 전투는 그동안 멈춰 있다가 시간을 건너뛰지 않고 이어집니다.
  * - 모달 정지(state.isPaused: 각성 카드·결과창)와 따로 움직이는 '메뉴 정지'입니다. 메뉴를 닫아도 열려 있던 모달은 그대로 멈춰 있습니다.
  * - 메뉴가 열려 있는 동안 전투·투사체·쿨다운·시전·스피드런 시계·전장 애니메이션이 모두 멈춥니다(game.js gameLoop).
  * - [계속]을 누르면 메뉴가 닫힌 뒤 짧은 복귀 호흡(PAUSE_RESUME_BREATH_MS) 동안 계속 멈춰 있다가 재개합니다.
@@ -12,7 +13,6 @@ let pauseAbandonArmed = null;
 
 let menuPaused = false;
 let pauseResumeTimer = null;
-let pauseWindowFocused = false; // 한 번이라도 포커스를 받은 창만 자동 정지합니다(숨김 창으로 도는 스모크 테스트·스토어 촬영 보호).
 
 function isMenuPaused() {
   return menuPaused;
@@ -142,14 +142,6 @@ function quitGameFromPauseMenu() {
   window.desktopApp.quit();
 }
 
-// 자동 정지: 이미 모달로 멈춰 있거나 런이 끝난 상태라면 메뉴를 덮지 않습니다(돌아왔을 때 보던 창이 그대로 보이게).
-function autoPauseOnFocusLoss() {
-  if (!pauseWindowFocused || menuPaused) return;
-  if (typeof isTitleOpen === 'function' && isTitleOpen()) return; // 타이틀에서는 전투가 이미 멈춰 있음
-  if (typeof state === 'object' && (state.isPaused || state.runFailed)) return;
-  openPauseMenu('focus');
-}
-
 function initPauseMenu() {
   const resumeBtn = document.getElementById('btn-pause-resume');
   const quitBtn = document.getElementById('btn-pause-quit');
@@ -185,12 +177,4 @@ function initPauseMenu() {
     if (typeof isTitleOpen === 'function' && isTitleOpen()) return;
     togglePauseMenu();
   }, true);
-
-  if (typeof document.hasFocus === 'function' && document.hasFocus()) pauseWindowFocused = true;
-  window.addEventListener('focus', () => { pauseWindowFocused = true; });
-  window.addEventListener('pointerdown', () => { pauseWindowFocused = true; }, true);
-  window.addEventListener('blur', autoPauseOnFocusLoss);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) autoPauseOnFocusLoss();
-  });
 }
