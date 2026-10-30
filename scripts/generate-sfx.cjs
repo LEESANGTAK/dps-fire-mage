@@ -67,6 +67,21 @@ const SOUNDS = {
     use: '정령 소환', duration: 1.3,
     prompt: 'summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle'
   },
+  // 화염구 적중 다시 만들기(2026-10-31): 기존 'soft pop' 소리는 타격감이 없다는 의견. 날카로운 첫소리 + 낮은 쿵 + 짧은 꼬리.
+  // 초당 여러 번 터지므로 꼬리를 아주 짧게 둡니다. 결이 다른 두 프롬프트로 후보를 만들어 비교합니다.
+  fireball_hit_punch: {
+    use: '화염구 적중(타격감 강화 A: 날카로운 딱 + 묵직한 쿵)', duration: 0.5,
+    prompt: 'punchy cartoon fireball impact, sharp crackling snap on the attack, solid low thump body, quick fiery burst, very short tight tail, dry'
+  },
+  fireball_hit_slam: {
+    use: '화염구 적중(타격감 강화 B: 주먹으로 치는 듯한 퍽 + 불꽃 터짐)', duration: 0.5,
+    prompt: 'heavy magic fire punch hitting a target, crisp whip crack transient with a deep punchy kick thump and a short flame burst, tight and dry, no reverb'
+  },
+  // B안 06번(v3)이 마음에 든다는 의견으로 같은 프롬프트·v3 모델로 형제 후보를 더 만듭니다(섞어 쓸 변형).
+  fireball_hit_slam_more: {
+    use: '화염구 적중(B안 06번과 같은 프롬프트·v3로 더 만든 형제 후보)', duration: 0.5,
+    prompt: 'heavy magic fire punch hitting a target, crisp whip crack transient with a deep punchy kick thump and a short flame burst, tight and dry, no reverb'
+  },
   // 1차 추가분(2026-10-31): 각성 카드 창의 종이 재질 소리와 경고·패배. 자주 나는 소리일수록 작고 짧게 만듭니다.
   card_hover: {
     use: '각성 카드 마우스오버(한 판 수십 번, 아주 작게)', duration: 0.5,

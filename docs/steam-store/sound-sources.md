@@ -61,8 +61,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `meteor_explosion.wav` | 메테오 폭발 | 5.2초(48kHz 모노) | VARCO Sound 유료 플랜, 2026-10-26 | 앞 무음 0.08초 중 0.06초를 건너뜁니다(`SFX_START_OFFSET`). 소리는 1.5초 안에 거의 끝납니다 |
 | `drop_coin.wav` | 골드 획득(동전이 골드 표시에 닿을 때마다) | 0.3초(48kHz 모노) | VARCO Sound 유료 플랜, 2026-10-26 | 앞 무음 없음. 최대 음량 -10.2dB로 다른 파일(-2dB)보다 작아, 음량을 맞출 때 정규화하고 코드의 재생 볼륨을 낮춥니다 |
 | `fireball_whoosh.wav` | 화염구 비행 | 0.41초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택. 앞 무음을 자르고 최대 -1dB로 맞춤 |
-| `fireball_hit.wav` | 화염구 적중 | 0.28초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v3` | 후보 4개 중 선택 |
-| `fireball_hit_2.wav`·`_3`·`_4` | 화염구 적중 변형(4종을 직전과 겹치지 않게 무작위 재생) | 0.18·0.32·0.48초(48kHz 모노) | ElevenLabs Starter, 2026-10-29, `eleven_text_to_sound_v3`, `fireball_hit.wav`와 같은 프롬프트 | 후보 6개 중 3개 선택. 평균 음량을 `fireball_hit.wav`(-23.1dB)에 맞췄고, `_4`는 고음이 많아 크게 들려 3dB 더 낮춤(-26.1dB) |
+| `fireball_slam_1.wav`·`_2` | 화염구 적중(2종을 직전과 겹치지 않게 무작위 재생, 음높이 ±8%) | 0.48초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v3` | `_1`은 B안 후보 6개 중 06번, `_2`는 같은 프롬프트·v3로 더 만든 8개 중 04번(사용자 체크). 평균 음량 서로 맞춤(-15.0dB). 예전 적중음 4종(`fireball_hit.wav`·`_2`·`_3`·`_4`, 2026-10-28~29)은 타격감이 없어 이 둘로 교체·삭제 |
 | `fireball_hit_crit.wav` | 화염구 치명타 적중 | 0.67초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v3` | 후보 4개 중 선택 |
 | `card_pick.wav` | 카드 선택 | 0.50초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택 |
 | `fireball_charge_loop.wav` | 화염구 시전 중 반복음 | 5.0초(48kHz 모노), 반복 | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2`(loop 옵션) | 후보 4개 중 선택. 이음매 튐 없음, 앞뒤 100ms 음량 차 0.3dB |
@@ -86,7 +85,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | 예전 파일 | 쓰이던 곳 | 길이 | 출처 | 조치 | 우선 |
 | --- | --- | --- | --- | --- | --- |
 | `fireball_fly.wav` | 화염구 비행 | 0.4초 | 하스스톤 마법사 영웅 능력 영상 녹음 | 제거됨 → `fireball_whoosh.wav`로 교체 | **1** |
-| `fireball_explosion.wav` | 화염구 적중 | 0.5초 | 하스스톤 영상 녹음 | 제거됨 → `fireball_hit.wav`로 교체 | **1** |
+| `fireball_explosion.wav` | 화염구 적중 | 0.5초 | 하스스톤 영상 녹음 | 제거됨 → `fireball_hit.wav`로 교체 | **1** (2026-10-31 `fireball_slam_1·_2`로 다시 교체) |
 | `fireball_explosion_critical.wav` | 화염구 치명타 적중 | 0.5초 | 하스스톤 영상 녹음 | 제거됨 → `fireball_hit_crit.wav`로 교체 | **1** |
 | `fireball_ready.mp3` | 화염구 시전 중 반복음 | 134초(반복) | 하스스톤 영상 녹음 | 제거됨 → `fireball_charge_loop.wav`로 교체 | **1** |
 | `item_select.wav` | 카드 선택 | 0.8초 | 하스스톤 영상 녹음 | 제거됨 → `card_pick.wav`로 교체 | **1** |
@@ -123,6 +122,7 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | --- | --- | --- | --- |
 | `fireball_fly.wav` | 0.3~0.5초 | short cartoon fireball whoosh flying past, crackling flame, bright and snappy, no reverb tail | short cartoon fireball whoosh flying past, crackling flame, bright and snappy, no reverb tail, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, 0.5초 → `fireball_whoosh.wav`) |
 | `fireball_explosion.wav` | 0.4~0.6초 | small cartoon fire burst impact, soft pop with crackle, punchy and short, game hit sound | small cartoon fire burst impact, soft pop with crackle, punchy and short, game hit sound, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v3, 0.5초 → `fireball_hit.wav`) |
+| `fireball_hit_slam` (2026-10-31) | 0.5초 요청 | 날카로운 첫소리 + 낮은 쿵 + 짧은 꼬리 | heavy magic fire punch hitting a target, crisp whip crack transient with a deep punchy kick thump and a short flame burst, tight and dry, no reverb, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v3, 0.5초 → `fireball_slam_1.wav`·`_2`. 같은 조건으로 A안 'punchy cartoon fireball impact…' 6개도 만들었으나 고르지 않음) |
 | `fireball_explosion_critical.wav` | 0.5~0.8초 | heavier cartoon fire explosion, sharp crack plus bass thump and sparkle, satisfying critical hit, short tail | heavier cartoon fire explosion, sharp crack plus bass thump and sparkle, satisfying critical hit, short tail, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v3, 0.8초 → `fireball_hit_crit.wav`) |
 | `fireball_ready.mp3` | 4~6초, **이음매 없는 반복** | magical fire energy charging in hand, steady crackling flame hum, seamless loop, no build-up or ending | magical fire energy charging in hand, steady crackling flame hum, seamless loop, no build-up or ending, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, loop, 5초 → `fireball_charge_loop.wav`) |
 | `burning.mp3` | 6~8초, **이음매 없는 반복** | gentle steady burning fire crackle, small flames on paper, seamless loop, calm, no pops louder than the rest | continuous dense soft fire crackle bed with gentle flame roar, constant even volume, steady texture, many tiny crackles, no isolated loud pops, no silence, seamless loop, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2, loop, 3겹 채우기, 7초 → `burn_loop.wav`) |
