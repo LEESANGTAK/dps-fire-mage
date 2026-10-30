@@ -575,6 +575,9 @@ function updateBurningLoopSound() {
 // 치명타 적중은 이미 충분히 크다는 의견으로 그대로 둡니다(파일 자체가 더 크고 묵직함).
 // 기본 볼륨이 1을 넘어도 효과음 슬라이더(기본 10%)를 곱한 뒤 1로 자릅니다. 슬라이더를 많이 올리면 일반 적중이 먼저 상한에 닿습니다.
 const FIREBALL_SFX_BOOST = 4;
+// 메테오는 위력에 비해 작게 들린다는 의견으로 2026-10-31에 키웠습니다. 일반 적중(1.44 × 4 = 5.76) < 메테오 폭발 순서(AGENTS.md 2장)를 지킵니다.
+// 낙하음은 화염구와 같은 4배(0.82 → 3.28, 작은 메테오 0.6 → 2.4), 폭발은 1.0 → 8.0(효과음 슬라이더 10%에서 실제 0.8).
+const METEOR_SFX_VOL = { flyBig: 0.82 * 4, flySmall: 0.6 * 4, explosion: 8.0 };
 
 function updateCastingLoopSound() {
   const c = state.combat;
@@ -641,10 +644,10 @@ function playSound(type, pitchMult = 1.0) {
     return playFireballSfx('drop_coin', 0.92);
   }
   if (type === 'meteor_fly') {
-    return playFireballSfx('meteor_fly', 0.95);
+    return playFireballSfx('meteor_fly', METEOR_SFX_VOL.flyBig);
   }
   if (type === 'meteor_impact') {
-    return playFireballSfx('meteor_explosion', 1.0);
+    return playFireballSfx('meteor_explosion', METEOR_SFX_VOL.explosion);
   }
   // 축하 강조음: 시간 보너스·기록 단축·보스 도장·승리·전설 카드·해금. 사건마다 음높이를 달리합니다.
   if (type === 'celebrate') {
@@ -982,7 +985,7 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
   const startX = 64 + offsetX * 0.5;
   const startY = 88;
 
-  const flyAudio = playFireballSfx('meteor_fly', scale >= 0.9 ? 0.82 : 0.6);
+  const flyAudio = playFireballSfx('meteor_fly', scale >= 0.9 ? METEOR_SFX_VOL.flyBig : METEOR_SFX_VOL.flySmall);
   if (flyAudio) {
     try { flyAudio.currentTime = Math.max(0, METEOR_FLY_SFX_PEAK_SEC - fallDuration); } catch (e) {}
   }
