@@ -640,8 +640,9 @@ function playSound(type, pitchMult = 1.0) {
   if (type === 'item_select') {
     return playFireballSfx('item_select', 0.92);
   }
+  // 골드 획득: 배경음·효과음 20%에서 잘 안 들린다는 의견으로 2026-10-31에 두 배(0.92 → 1.84)로 키웠습니다.
   if (type === 'drop_coin' || type === 'coin_tick') {
-    return playFireballSfx('drop_coin', 0.92);
+    return playFireballSfx('drop_coin', 1.84);
   }
   if (type === 'meteor_fly') {
     return playFireballSfx('meteor_fly', METEOR_SFX_VOL.flyBig);
