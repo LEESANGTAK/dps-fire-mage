@@ -22,7 +22,7 @@ const unknown = [...called].filter((t) => !handled.has(t));
 assert.deepEqual(unknown, [], `처리하지 않는 효과음 이름을 부르면 소리가 나지 않습니다: ${unknown.join(', ')}`);
 
 // 2. UI 소리 파일이 모두 있어야 합니다.
-for (const m of game.matchAll(/'(assets\/sounds\/sfx\/(?:card_|buy_|enrage_|run_)[a-z_0-9]+\.wav)'/g)) {
+for (const m of game.matchAll(/'(assets\/sounds\/sfx\/(?:card_|buy_|enrage_|run_|button_)[a-z_0-9]+\.wav)'/g)) {
   assert.ok(fs.existsSync(path.join(__dirname, '..', m[1])), `${m[1]} 파일이 없습니다.`);
 }
 
@@ -53,4 +53,9 @@ assert.ok(ticks[1][1] > 1.1, '마지막 3초는 음높이를 올립니다.');
 g.run('window.__played = []; lastEnrageTickSec = null; state.combat.timeBonusDraining = true; state.combat.bossEnrageRem = 5; tickEnrageWarning(state.combat); state.combat.timeBonusDraining = false;');
 assert.equal(g.run("window.__played.length"), 0, '남은 시간 보상 연출 중에는 째깍을 내지 않습니다.');
 
-console.log('   UI 효과음 이름 연결·파일 존재·호버 연타 방지·광폭화 째깍 검증 통과');
+// 5. 버튼 마우스오버: 문서 전체에서 받고, 전투 주문 버튼 줄·자동 시전 버튼은 뺍니다.
+assert.match(game, /const BUTTON_HOVER_EXCLUDE = '#action-bar, #btn-auto-cast'/, '전투 주문 버튼에서는 호버음을 내지 않습니다.');
+assert.match(game, /initButtonHoverSound\(\);/, '버튼 호버음을 초기화해야 합니다.');
+assert.ok(fs.existsSync(path.join(__dirname, '../assets/sounds/sfx/button_hover_1.wav')));
+
+console.log('   UI 효과음 이름 연결·파일 존재·호버 연타 방지·광폭화 째깍·버튼 호버 범위 검증 통과');

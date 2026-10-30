@@ -82,6 +82,15 @@ const SOUNDS = {
     use: '화염구 적중(B안 06번과 같은 프롬프트·v3로 더 만든 형제 후보)', duration: 0.5,
     prompt: 'heavy magic fire punch hitting a target, crisp whip crack transient with a deep punchy kick thump and a short flame burst, tight and dry, no reverb'
   },
+  // 메뉴 버튼 마우스오버(2026-10-31): 카드 호버 '슥'과 구분되는 더 짧고 작은 '톡'. 두 결로 만들어 비교합니다.
+  button_hover: {
+    use: '메뉴·창 버튼 마우스오버(톡, 아주 작게)', duration: 0.5,
+    prompt: 'tiny soft tap on a thick paper button, light cardboard tick, very short and subtle, no ring, no echo'
+  },
+  button_hover_flick: {
+    use: '메뉴·창 버튼 마우스오버(종이 탭을 튕기는 틱)', duration: 0.5,
+    prompt: 'quick gentle flick of a small paper tab, crisp tiny papery tick with a soft click, very short UI hover sound, no ring'
+  },
   // 1차 추가분(2026-10-31): 각성 카드 창의 종이 재질 소리와 경고·패배. 자주 나는 소리일수록 작고 짧게 만듭니다.
   card_hover: {
     use: '각성 카드 마우스오버(한 판 수십 번, 아주 작게)', duration: 0.5,

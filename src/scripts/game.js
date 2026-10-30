@@ -312,7 +312,9 @@ const FIREBALL_SFX_FILES = {
   card_shuffle: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav', 'assets/sounds/sfx/card_shuffle_3.wav'],
   buy_denied: ['assets/sounds/sfx/buy_denied_1.wav', 'assets/sounds/sfx/buy_denied_2.wav', 'assets/sounds/sfx/buy_denied_3.wav'],
   enrage_tick: ['assets/sounds/sfx/enrage_tick_1.wav', 'assets/sounds/sfx/enrage_tick_2.wav'],
-  run_defeat: ['assets/sounds/sfx/run_defeat_1.wav', 'assets/sounds/sfx/run_defeat_2.wav']
+  run_defeat: ['assets/sounds/sfx/run_defeat_1.wav', 'assets/sounds/sfx/run_defeat_2.wav'],
+  // 메뉴·창 버튼 마우스오버 '톡'(2026-10-31). 카드 호버 '슥'보다 짧고 작습니다.
+  button_hover: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav']
 };
 // 종이 재질 UI 소리의 기본 볼륨. 자주 나는 소리일수록 작게 둡니다(처치·보상 > 전투 > UI 순서, AGENTS.md 2장).
 // jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
@@ -323,7 +325,8 @@ const UI_SFX = {
   card_shuffle: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
   buy_denied: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
   enrage_tick: { volume: 0.8, jitter: 0, minGapMs: 300 },
-  run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 }
+  run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 },
+  button_hover: { volume: 0.28, jitter: 0.05, minGapMs: 60 }
 };
 const uiSfxLastAt = {};
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
@@ -4502,6 +4505,21 @@ function closeAwakeningModal() {
   setBgmBehindWall(false);
 }
 
+// 메뉴·창 버튼 마우스오버 '톡'. 문서 전체에서 한 번에 받아, 나중에 그려지는 버튼(도감 탭·새 런 설정)에도 적용됩니다.
+// 전투 중 주문 버튼 줄과 자동 시전 버튼은 마우스가 자주 지나가 소리가 끊이지 않으므로 뺍니다. 누를 수 없는 버튼과 터치도 뺍니다.
+const BUTTON_HOVER_EXCLUDE = '#action-bar, #btn-auto-cast';
+function initButtonHoverSound() {
+  if (typeof document.addEventListener !== 'function') return;
+  document.addEventListener('pointerover', (ev) => {
+    if (ev.pointerType === 'touch' || !ev.target || typeof ev.target.closest !== 'function') return;
+    const btn = ev.target.closest('button');
+    if (!btn) return;
+    if (ev.relatedTarget && typeof btn.contains === 'function' && btn.contains(ev.relatedTarget)) return; // 버튼 안에서 움직인 것은 새로 올린 게 아님
+    if (btn.disabled || btn.getAttribute('aria-disabled') === 'true' || btn.closest(BUTTON_HOVER_EXCLUDE)) return;
+    playSound('button_hover');
+  });
+}
+
 function initAwakeningModalEvents() {
   const rerollBtn = document.getElementById('btn-reroll-cards');
   if (rerollBtn) {
@@ -5713,6 +5731,7 @@ function initEvents() {
 
   // 로그라이크 마도서 각성 모달 이벤트 초기화
   initAwakeningModalEvents();
+  initButtonHoverSound();
 
   // 최종 보스 토벌 트래커 및 스토리 툴팁 이벤트 초기화
   initDoomTrackerEvents();
