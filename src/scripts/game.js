@@ -1932,7 +1932,7 @@ function updateFlyingCoins(dt) {
         if (!flyingCoins.some((f) => !f.bonus)) state.pendingCoinGold = 0;
       }
       triggerGoldPillPulse();
-      if (c.pitch && state.soundOn) playFireballSfx('drop_coin', 0.92, c.pitch);
+      if (c.pitch && state.soundOn) playFireballSfx('drop_coin', 1.84, c.pitch);
       else playSound('drop_coin');
       continue;
     }
