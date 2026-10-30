@@ -66,6 +66,35 @@ const SOUNDS = {
   summon_spirit: {
     use: '정령 소환', duration: 1.3,
     prompt: 'summoning a small fire spirit, rising magical whoosh into a warm flame ignite with sparkle'
+  },
+  // 1차 추가분(2026-10-31): 각성 카드 창의 종이 재질 소리와 경고·패배. 자주 나는 소리일수록 작고 짧게 만듭니다.
+  card_hover: {
+    use: '각성 카드 마우스오버(한 판 수십 번, 아주 작게)', duration: 0.5,
+    prompt: 'very soft quick swish of a paper card sliding across a wooden table, light airy brush, no impact, no ring'
+  },
+  card_deal: {
+    use: '각성 카드 펼침(카드 한 장 뒤집혀 놓임)', duration: 0.5,
+    prompt: 'single paper card flipped over and landing on a table, crisp light tap with a tiny flutter, very short'
+  },
+  card_stamp: {
+    use: '각성 카드 구매 도장(동전 소리와 함께)', duration: 0.5,
+    prompt: 'rubber stamp pressed firmly onto thick paper, solid dull thump with a slight papery crunch, short and satisfying'
+  },
+  card_shuffle: {
+    use: '다시 뽑기(카드 섞기)', duration: 0.8,
+    prompt: 'quick riffle of a small stack of paper cards being shuffled, fast fluttering ripple, short and clean'
+  },
+  buy_denied: {
+    use: '골드 부족으로 구매 거절', duration: 0.5,
+    prompt: 'soft muted wooden knock, dull negative UI thud, short and gentle, not harsh, no buzz'
+  },
+  enrage_tick: {
+    use: '보스 광폭화 마지막 10초 째깍(초마다)', duration: 0.5,
+    prompt: 'single dry clock tick with a faint tense ember crackle, short sharp warning tick, no echo'
+  },
+  run_defeat: {
+    use: '런 실패(광폭화)', duration: 2.0,
+    prompt: 'cartoon defeat sting, a flame fizzling out into a smoke puff with paper crumpling, soft descending tones, gentle not dramatic'
   }
 };
 const MODELS = { v2: 'eleven_text_to_sound_v2', v3: 'eleven_text_to_sound_v3' };

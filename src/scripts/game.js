@@ -285,6 +285,7 @@ function fmt(num) {
 // 효과음 파일 목록. 기존 효과음은 출처 문제로 전부 제거했고(docs/steam-store/sound-sources.md),
 // 새 효과음은 키에 경로만 넣으면 기존 호출 지점(playSound·playFireballSfx)에서 바로 재생됩니다.
 // 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · celebrate · proc · monster_destroy · summon_spirit
+//     · card_hover · card_deal · card_stamp · card_shuffle · buy_denied · enrage_tick · run_defeat
 const FIREBALL_SFX_FILES = {
   // VARCO Sound 유료 플랜 생성(2026-10-26)
   meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
@@ -305,8 +306,28 @@ const FIREBALL_SFX_FILES = {
   summon_spirit: 'assets/sounds/sfx/spirit_summon.wav',
   // 강조음 2종: 축하(보상·기록·해금)와 발동(전투 중 상태 변화·시작 버튼)을 소리로 구분합니다.
   celebrate: 'assets/sounds/sfx/celebrate_chime.wav',
-  proc: 'assets/sounds/sfx/proc_chime.wav'
+  proc: 'assets/sounds/sfx/proc_chime.wav',
+  // 1차 추가분(2026-10-31, ElevenLabs Starter). 종류마다 2~3개를 섞어 틀고, 평균 음량은 가장 작은 후보에 맞췄습니다.
+  card_hover: ['assets/sounds/sfx/card_hover_1.wav', 'assets/sounds/sfx/card_hover_2.wav'],
+  card_deal: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav', 'assets/sounds/sfx/card_deal_3.wav'],
+  card_stamp: ['assets/sounds/sfx/card_stamp_1.wav', 'assets/sounds/sfx/card_stamp_2.wav'],
+  card_shuffle: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav', 'assets/sounds/sfx/card_shuffle_3.wav'],
+  buy_denied: ['assets/sounds/sfx/buy_denied_1.wav', 'assets/sounds/sfx/buy_denied_2.wav', 'assets/sounds/sfx/buy_denied_3.wav'],
+  enrage_tick: ['assets/sounds/sfx/enrage_tick_1.wav', 'assets/sounds/sfx/enrage_tick_2.wav'],
+  run_defeat: ['assets/sounds/sfx/run_defeat_1.wav', 'assets/sounds/sfx/run_defeat_2.wav']
 };
+// 종이 재질 UI 소리의 기본 볼륨. 자주 나는 소리일수록 작게 둡니다(처치·보상 > 전투 > UI 순서, AGENTS.md 2장).
+// jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
+const UI_SFX = {
+  card_hover: { volume: 0.32, jitter: 0.05, minGapMs: 80 },
+  card_deal: { volume: 0.5, jitter: 0.05, minGapMs: 40 },
+  card_stamp: { volume: 0.85, jitter: 0.04, minGapMs: 60 },
+  card_shuffle: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
+  buy_denied: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
+  enrage_tick: { volume: 0.8, jitter: 0, minGapMs: 300 },
+  run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 }
+};
+const uiSfxLastAt = {};
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
 const SFX_START_OFFSET = { meteor_explosion: 0.06 };
 // meteor_fly.wav가 가장 커지는 지점(초). 낙하가 이보다 짧으므로 이만큼 앞당겨 틀어 착탄 순간에 소리가 정점에 닿게 합니다.
@@ -634,6 +655,14 @@ function playSound(type, pitchMult = 1.0) {
   }
   if (type === 'summon_spirit' || type === 'summon_fire_spirit') {
     return playFireballSfx('summon_spirit', 0.95);
+  }
+  const ui = UI_SFX[type];
+  if (ui) {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - (uiSfxLastAt[type] || -Infinity) < ui.minGapMs) return null;
+    uiSfxLastAt[type] = now;
+    const jitter = ui.jitter ? 1 + (sfxRandom() * 2 - 1) * ui.jitter : 1;
+    return playFireballSfx(type, ui.volume, pitchMult * jitter);
   }
   return null;
 }
@@ -4221,7 +4250,30 @@ function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AW
       const cardId = cardEl.getAttribute('data-card-id');
       if (cardId) buyAwakeningCard(cardId);
     });
+    // 마우스를 올리면 종이가 바닥에 쓸리는 '슥'. 펼침 중·산 카드·터치에서는 내지 않습니다(연타 방지는 UI_SFX.minGapMs).
+    cardEl.addEventListener('pointerenter', (ev) => {
+      if (ev.pointerType === 'touch' || isAwakeningInputLocked() || cardEl.classList.contains('is-bought')) return;
+      playSound('card_hover');
+    });
   });
+  scheduleAwakeningDealSounds(choices.length, firstDelayMs);
+}
+
+// 카드 펼침음: 카드가 뒤집혀 내려앉는 순간(펼침 애니메이션의 60% 지점)마다 '탁'. 모션 줄이기에서는 한 번만 냅니다.
+const AWAKENING_DEAL_LAND_MS = 310;
+let awakeningDealSoundTimers = [];
+function scheduleAwakeningDealSounds(count, firstDelayMs) {
+  awakeningDealSoundTimers.forEach((t) => clearTimeout(t));
+  awakeningDealSoundTimers = [];
+  if (prefersReducedMotion()) {
+    playSound('card_deal');
+    return;
+  }
+  for (let i = 0; i < count; i++) {
+    awakeningDealSoundTimers.push(setTimeout(() => {
+      if (awakeningModalOpen && !awakeningExiting) playSound('card_deal');
+    }, firstDelayMs + i * AWAKENING_DEAL.step + AWAKENING_DEAL_LAND_MS));
+  }
 }
 
 // 구매 가격 기준 = 방금 처치한 스테이지의 처치 골드(최소값·업화 배율 없음).
@@ -4259,6 +4311,7 @@ function buyAwakeningCard(cardId) {
   const cardEl = document.querySelector(`.awakening-card[data-card-id="${cardId}"]`);
   if (!result.success) {
     spawnFloatingText(`💰 ${result.reason}`, 'fct-normal', -40);
+    playSound('buy_denied');
     if (cardEl) { cardEl.classList.remove('is-denied'); void cardEl.offsetWidth; cardEl.classList.add('is-denied'); }
     return;
   }
@@ -4267,8 +4320,8 @@ function buyAwakeningCard(cardId) {
   addRunStat('cardsBought', 1);
   addRunStat('cardGoldSpent', result.cost);
 
+  playSound('card_stamp');
   playSound('drop_coin');
-  playSound('fireball_impact');
   if (cardEl) {
     cardEl.classList.add('is-bought');
     const stamp = document.createElement('div');
@@ -4416,10 +4469,11 @@ function handleAwakeningReroll() {
   const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost(), count);
   if (!result.success) {
     spawnFloatingText(tr('💰 리롤에 필요한 골드가 부족합니다!'), 'fct-normal', -40);
+    playSound('buy_denied');
     return;
   }
 
-  playSound('fireball_launch');
+  playSound('card_shuffle');
   triggerArenaShake('sm');
   updateLiveHUD();
   updateRerollButtonUI();
@@ -4700,6 +4754,21 @@ function renderDefeatCause(hpLeftPct) {
   return cause.key;
 }
 
+// 광폭화 마지막 10초: 표시 숫자가 바뀔 때마다 째깍. 마지막 3초는 음높이를 올려 다급함을 귀로도 알립니다.
+// 남은 시간을 골드로 바꾸는 연출(timeBonusDraining) 중에는 내지 않습니다.
+const ENRAGE_TICK_FROM_SEC = 10;
+let lastEnrageTickSec = null;
+function tickEnrageWarning(c) {
+  const sec = Math.ceil(c.bossEnrageRem);
+  if (c.timeBonusDraining || sec > ENRAGE_TICK_FROM_SEC || sec <= 0) {
+    if (sec > ENRAGE_TICK_FROM_SEC) lastEnrageTickSec = null;
+    return;
+  }
+  if (sec === lastEnrageTickSec) return;
+  lastEnrageTickSec = sec;
+  playSound('enrage_tick', sec <= 3 ? 1.18 : 1.0);
+}
+
 function failRunByEnrage() {
   if (state.runFailed) return;
   state.runFailed = true;
@@ -4707,7 +4776,7 @@ function failRunByEnrage() {
   state.isPaused = true;
   playtestTelemetry.onRunFailed(state.currentStage);
   triggerArenaShake('lg');
-  playSound('monster_destroy', 0.7);
+  playSound('run_defeat');
   spawnFloatingText(tr('💀 광폭화! 런 실패'), 'fct-crit', -60, { isBig: true });
   awardRunMastery(false);
   saveGame();
@@ -4975,6 +5044,7 @@ function gameLoop(nowMs) {
   // 페이즈 보스 광폭화: 제한 시간 안에 처치하지 못하면 런 실패
   if (c.bossEnrageRem !== null && c.bossEnrageRem !== undefined && !state.monster.isDying) {
     c.bossEnrageRem = Math.max(0, c.bossEnrageRem - dt);
+    tickEnrageWarning(c);
     if (c.bossEnrageRem <= 0) {
       failRunByEnrage();
       requestAnimationFrame(gameLoop);

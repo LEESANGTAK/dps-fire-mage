@@ -71,6 +71,13 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `spirit_summon.wav` | 정령 소환 | 0.89초(48kHz 모노) | ElevenLabs Starter, 2026-10-28, `eleven_text_to_sound_v2` | 후보 4개 중 선택 |
 | `celebrate_chime.wav` | 축하 강조음(시간 보너스·기록 단축·보스 도장·승리·전설 카드·해금, 11곳) | 0.60초(48kHz 모노) | ElevenLabs Starter, 2026-10-29, `eleven_text_to_sound_v3` | 후보 4개 중 선택. 사건마다 음높이 0.9~1.35배로 재생 |
 | `proc_chime.wav` | 발동 강조음(불사조의 가호·마력 폭주·메테오 장전·불꽃 심판·보스 보호막, 시작 버튼, 11곳) | 0.57초(48kHz 모노) | ElevenLabs Starter, 2026-10-29, `eleven_text_to_sound_v3` | 같은 프롬프트의 다른 후보. 전투 중 적중음 사이에서 축하음과 구분되게 따로 둠 |
+| `card_hover_1·_2.wav` | 각성 카드 마우스오버 | 0.43·0.48초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v2` 외(v2·v3) | 후보 4개 중 2개(03·04). `_2`를 -3.9dB 낮춰 평균 음량 맞춤. 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
+| `card_deal_1·_2·_3.wav` | 각성 카드 펼침(한 장 내려앉을 때마다) | 0.32·0.29·0.48초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v2` 외(v2·v3·v3) | 후보 4개 중 3개(01·02·04). 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
+| `card_stamp_1·_2.wav` | 카드 구매 도장(동전 소리와 함께) | 0.30·0.34초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v3` 외(v3·v3) | 후보 4개 중 2개(02·04). 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
+| `card_shuffle_1·_2·_3.wav` | 다시 뽑기 | 0.53·0.79·0.68초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v2` 외(v2·v3·v3) | 후보 4개 중 3개(01·02·04). `_1`·`_2`를 -6.9·-5.1dB 낮춤. 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
+| `buy_denied_1·_2·_3.wav` | 골드 부족(카드 구매·다시 뽑기) | 0.33·0.29·0.36초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v2` 외(v2·v3·v3) | 후보 4개 중 3개(01·02·04). 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
+| `enrage_tick_1·_2.wav` | 보스 광폭화 마지막 10초 째깍(마지막 3초는 음높이 1.18배) | 0.08·0.16초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v3` 외(v3·v2) | 후보 4개 중 2개(02·03). 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
+| `run_defeat_1·_2.wav` | 런 실패(광폭화) | 2.00·1.80초(48kHz 모노) | ElevenLabs Starter, 2026-10-31, `eleven_text_to_sound_v2` 외(v2·v3) | 후보 4개 중 2개(01·02). 평균 음량은 같은 종류 중 가장 작은 후보에 맞춤(키우지 않음), 종류 안에서 직전과 다른 파일을 무작위 재생 |
 
 ## 예전 효과음 — **2026-10-26 전부 제거**
 
@@ -90,6 +97,13 @@ Steam 콘텐츠 설문(AI 공개)과 출시 전 권리 확인에 쓰는 기록�
 | `swish.mp3` | 휘두르기 | 0.3초 | 모름 | 제거됨 → `celebrate_chime.wav`·`proc_chime.wav`로 교체(이름과 달리 실제 용도는 강조음) | 2 |
 | `monster_destroy.mp3` | 몬스터 처치 | 1.0초 | 모름 | 제거됨 → `monster_burst.wav`로 교체 | 2 |
 | `Summoning the Fire Spirit.mp3` | 정령 소환 | 1.2초 | Fish Audio 무료 플랜 | 제거됨 → `spirit_summon.wav`로 교체 | 2 |
+| `card_hover` (2026-10-31) | 0.5초 요청 | very soft quick swish of a paper card sliding across a wooden table, light airy brush, no impact, no ring | very soft quick swish of a paper card sliding across a wooden table, light airy brush, no impact, no ring, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
+| `card_deal` (2026-10-31) | 0.5초 요청 | single paper card flipped over and landing on a table, crisp light tap with a tiny flutter, very short | single paper card flipped over and landing on a table, crisp light tap with a tiny flutter, very short, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
+| `card_stamp` (2026-10-31) | 0.5초 요청 | rubber stamp pressed firmly onto thick paper, solid dull thump with a slight papery crunch, short and satisfying | rubber stamp pressed firmly onto thick paper, solid dull thump with a slight papery crunch, short and satisfying, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
+| `card_shuffle` (2026-10-31) | 0.8초 요청 | quick riffle of a small stack of paper cards being shuffled, fast fluttering ripple, short and clean | quick riffle of a small stack of paper cards being shuffled, fast fluttering ripple, short and clean, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
+| `buy_denied` (2026-10-31) | 0.5초 요청 | soft muted wooden knock, dull negative UI thud, short and gentle, not harsh, no buzz | soft muted wooden knock, dull negative UI thud, short and gentle, not harsh, no buzz, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
+| `enrage_tick` (2026-10-31) | 0.5초 요청 | single dry clock tick with a faint tense ember crackle, short sharp warning tick, no echo | single dry clock tick with a faint tense ember crackle, short sharp warning tick, no echo, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
+| `run_defeat` (2026-10-31) | 2초 요청 | cartoon defeat sting, a flame fizzling out into a smoke puff with paper crumpling, soft descending tones, gentle not dramatic | cartoon defeat sting, a flame fizzling out into a smoke puff with paper crumpling, soft descending tones, gentle not dramatic, cartoon paper-craft game sound effect, mono, clean, no music, no voice (v2·v3 각 2개 생성, 사용자가 청취 페이지에서 체크해 고름) |
 
 - **2026-10-29 교체 완료:** 12개 모두 새 효과음으로 바꿨습니다(VARCO 3개, ElevenLabs 10개). 휘두르기 자리는 실제 용도에 맞춰 강조음 2종으로 나눴습니다.
 - **우선 1(하스스톤 녹음 5개):** 블리자드 저작물입니다. 블리자드 IP 명칭을 뺀 것과 같은 이유로 출시 전에 반드시 교체합니다. 게임의 핵심 손맛인 화염구 소리라 플레이어가 알아챌 가능성도 큽니다.
