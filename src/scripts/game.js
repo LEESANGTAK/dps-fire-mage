@@ -571,10 +571,14 @@ function updateBurningLoopSound() {
   } catch (e) {}
 }
 
+// 화염구 소리(준비 반복음·비행·적중·치명타)는 너무 작아 들리지 않는다는 의견으로 2026-10-31에 4배로 키웠습니다.
+// 기본 볼륨이 1을 넘어도 효과음 슬라이더(기본 10%)를 곱한 뒤 1로 자릅니다. 슬라이더를 많이 올리면 치명타·적중이 먼저 상한에 닿습니다.
+const FIREBALL_SFX_BOOST = 4;
+
 function updateCastingLoopSound() {
   const c = state.combat;
   if (!fireballCastAudio) return;
-  const effVol = getEffectiveSfxVol(0.72);
+  const effVol = getEffectiveSfxVol(0.72 * FIREBALL_SFX_BOOST);
   const isCasting = effVol > 0 && Boolean(c.castingSkill) && c.castRemaining > 0;
   try {
     fireballCastAudio.volume = effVol;
@@ -620,15 +624,14 @@ function playSound(type, pitchMult = 1.0) {
   const finalPitch = combPitch * pitchMult;
 
   if (type === 'launch') {
-    return playFireballSfx('fly', 0.8, finalPitch);
+    return playFireballSfx('fly', 0.8 * FIREBALL_SFX_BOOST, finalPitch);
   }
-  // 적중·치명타는 2026-10-29에 두 배로 키웠습니다(일반 < 치명타 순서 유지). 기본 볼륨이 1을 넘어도
-  // 효과음 슬라이더(기본 10%)를 곱한 뒤 1로 자르므로, 슬라이더가 아주 높을 때만 둘의 차이가 줄어듭니다.
+  // 적중·치명타: 2026-10-29에 두 배, 2026-10-31에 다시 4배(FIREBALL_SFX_BOOST). 일반 < 치명타 순서는 유지합니다.
   if (type === 'hit') {
-    return playFireballSfx('explosion', 1.44, finalPitch);
+    return playFireballSfx('explosion', 1.44 * FIREBALL_SFX_BOOST, finalPitch);
   }
   if (type === 'crit') {
-    return playFireballSfx('explosion_crit', 2.0, finalPitch);
+    return playFireballSfx('explosion_crit', 2.0 * FIREBALL_SFX_BOOST, finalPitch);
   }
   if (type === 'item_select') {
     return playFireballSfx('item_select', 0.92);
@@ -929,7 +932,7 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   const end = getTargetPos();
 
   if (scaleMult >= 0.8) {
-    playFireballSfx('fly', 0.52);
+    playFireballSfx('fly', 0.52 * FIREBALL_SFX_BOOST);
   }
 
   // 화염구 기본 크기와 탄속 유지
