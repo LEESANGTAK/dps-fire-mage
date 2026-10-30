@@ -15,6 +15,9 @@
  *        전설 카드 비교: [--force-legendary 카드ID] 첫 보스 보상에서 해당 전설을 강제로 고름(같은 시드로 카드별 비교)
  *        카드 수치 시험: [--card-params '{"crit_ember_verdict":{"duration":10,"critBonus":1}}'] 카드 mechanicParams를 덮어써서 비교(데이터 파일은 그대로)
  *        카드 빼기: [--ban 카드ID,카드ID] 해당 카드를 추첨에서 뺌(카드 하나가 빠졌을 때와 비교)
+ *        카드 구매: [--buy max|one] max(기본) = 각성 창마다 살 수 있는 카드 중 전략 점수가 높은 카드를 골드가 되는 만큼 삼,
+ *          one = 창마다 1장까지만 삼(골드를 아끼는 플레이와 비교). 골드 흐름(처치 직후 보유 골드·런 끝 잔액·구매 장수)을 함께 출력합니다.
+ *          [--buy-rules '{"rarityMult":{"common":1.5},"stackStep":1}'] 구매 가격 규칙(PURCHASE_RULES)을 덮어써서 비교
  *        업화 규칙 시험: [--rules '[{"level":4,"bossHpPct":40}]'] 단계별 규칙 값을 덮어써서 비교
  *   --calibrate: 스테이지마다 몬스터 체력을 무한으로 두고 목표 처치 시간(TARGET_TTK) 동안의 실제 DPS를 측정해
  *                "목표 시간에 맞는 HP = 중앙값 DPS x 목표 시간"을 제안합니다.
@@ -45,6 +48,9 @@ const RULE_OVERRIDES = JSON.parse(argValue('rules', '[]'));
 // 카드 수치 시험: {카드ID: {mechanicParams 일부}}를 덮어씁니다(엑셀·JSON은 그대로 두고 비교할 때 사용).
 const CARD_PARAMS = JSON.parse(argValue('card-params', '{}'));
 const BAN = argValue('ban', '').split(',').filter(Boolean);
+const BUY = argValue('buy', 'max');
+// 구매 가격 시험: '{"rarityMult":{"common":1.5},"stackStep":1}'처럼 PURCHASE_RULES 일부를 덮어씁니다.
+const BUY_RULES = JSON.parse(argValue('buy-rules', '{}'));
 const FRAME = 1 / 30;
 
 // 목표 처치 시간(초): 픽 전략 greedy의 중앙값 기준, 첫 클리어 약 13분 (일반 진행·카드 선택 포함 15분 내외)
@@ -99,6 +105,9 @@ function simulateRun(policyName, seed) {
     // 카드 효과는 원본 데이터의 mechanicParams 객체를 그대로 읽으므로 같은 객체를 고칩니다.
     Object.assign(card.mechanicParams, params);
   }
+  const rules = g.run('RoguelikeDeck.PURCHASE_RULES');
+  if (BUY_RULES.rarityMult) Object.assign(rules.rarityMult, BUY_RULES.rarityMult);
+  if ('stackStep' in BUY_RULES) rules.stackStep = BUY_RULES.stackStep;
   const stages = [];
   let stageStartPlay = 0;
   let lastCleared = 0;
@@ -135,14 +144,25 @@ function simulateRun(policyName, seed) {
     if (st.campaignCleared && st.isPaused) break;
 
     if (st.isPaused) {
+      // 창이 닫히는 여운 중에는 시간만 흘립니다.
+      if (g.run('awakeningExiting')) { g.step(FRAME); continue; }
       const choices = g.run('deckManager.getCurrentChoices()');
       if (choices.length > 0) {
-        let pick = policy(choices, g.run('deckManager.getActiveDeck()'), pool, rand);
-        if (FORCE_LEGENDARY && Object.keys(legendaryAt).length === 0 && choices.some((c) => c.rarity === 'legendary')) {
-          pick = pool.find((c) => c.id === FORCE_LEGENDARY) || pick;
+        // 구매: 지금 골드로 살 수 있는 카드 중 전략 점수가 가장 높은 카드를 삽니다. 살 게 없거나(--buy one이면 한 장 산 뒤) 창을 마칩니다.
+        const base = g.run('getPurchaseBaseCost()');
+        const costOf = (card) => g.run(`deckManager.getPurchaseCost(${JSON.stringify({ id: card.id, rarity: card.rarity })}, ${base})`);
+        const affordable = choices.filter((card) => costOf(card) <= st.gold);
+        const boughtHere = g.run('awakeningBoughtIds.length');
+        if (affordable.length === 0 || (BUY === 'one' && boughtHere >= 1)) {
+          g.run('awakeningInputLockUntil = 0; finishAwakeningWindow(awakeningBoughtIds[awakeningBoughtIds.length - 1] || null)');
+          continue;
+        }
+        let pick = policy(affordable, g.run('deckManager.getActiveDeck()'), pool, rand);
+        if (FORCE_LEGENDARY && Object.keys(legendaryAt).length === 0 && affordable.some((c) => c.id === FORCE_LEGENDARY)) {
+          pick = affordable.find((c) => c.id === FORCE_LEGENDARY);
         }
         if (pick.rarity === 'legendary' && !(pick.id in legendaryAt)) legendaryAt[pick.id] = st.currentStage;
-        g.run(`selectAwakeningCard(${JSON.stringify(pick.id)})`);
+        g.run(`awakeningInputLockUntil = 0; buyAwakeningCard(${JSON.stringify(pick.id)})`);
       } else if (!g.run('dismissMeteorComboCoach()')) {
         g.step(FRAME);
       }
@@ -188,7 +208,8 @@ function simulateRun(policyName, seed) {
 
     if (st.highestClearedStage > lastCleared) {
       lastCleared = st.highestClearedStage;
-      stages.push({ stage: lastCleared, ttk: st.playTimeSec - stageStartPlay });
+      // gold: 처치 보상(남은 시간 보상 포함)을 받은 직후, 각성 카드를 사기 전의 보유 골드
+      stages.push({ stage: lastCleared, ttk: st.playTimeSec - stageStartPlay, gold: st.gold });
       stageStartPlay = st.playTimeSec;
     } else if (st.playTimeSec - stageStartPlay > STAGE_TIMEOUT_SEC) {
       failedAt = st.currentStage;
@@ -203,6 +224,9 @@ function simulateRun(policyName, seed) {
     calib,
     failedAt,
     totalSec: st.playTimeSec,
+    endGold: st.gold,
+    bought: (st.stats && st.stats.cardsBought) || 0,
+    boughtGold: (st.stats && st.stats.cardGoldSpent) || 0,
     deck: g.run('deckManager.getActiveDeck()'),
     // 런 끝의 주력 빌드(주문서·유틸리티 제외, 2장 이상). 빌드 가중 추첨이 한 빌드로 쏠리는지 확인합니다.
     mainBuild: g.run('typeof deckManager.getMainBuilds === "function" ? deckManager.getMainBuilds().main : null'),
@@ -229,7 +253,7 @@ function report(policyName) {
   // --verbose: 런마다 시드·총 시간·돌파 스테이지·실패 위치를 출력합니다.
   if (args.includes('--verbose')) runs.forEach((r, i) => console.log(`  run seed ${BASE_SEED + i}: ${fmtSec(r.totalSec)} · 돌파 ${r.stages.length} · 실패 ${r.failedAt ?? '-'} · 스테이지별(초) ${r.stages.map((s) => Math.round(s.ttk)).join(' ')}`));
 
-  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${XP !== null ? ` · 숙련도 ${XP}` : ''}${HOLD_COMBUSTION ? ' · 마력 폭주 보스까지 보존' : ''}${NO_AUTO_GRIMOIRE ? ' · 자동 영창 제외' : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''}${BAN.length ? ` · 제외 ${BAN.join(',')}` : ''}${Object.keys(CARD_PARAMS).length ? ` · 카드 수치 ${JSON.stringify(CARD_PARAMS)}` : ''} ===`);
+  console.log(`\n=== 전략: ${policyName} (${RUNS}회) · 업화 ${LEVEL}단계 · ${LOCKED ? '카드 잠김(첫 런)' : '전체 해금'}${START_SPELL ? ` · 시작 ${START_SPELL}` : ''}${XP !== null ? ` · 숙련도 ${XP}` : ''}${HOLD_COMBUSTION ? ' · 마력 폭주 보스까지 보존' : ''}${NO_AUTO_GRIMOIRE ? ' · 자동 영창 제외' : ''}${FORCE_LEGENDARY ? ` · 첫 전설 ${FORCE_LEGENDARY}` : ''}${RULE_OVERRIDES.length ? ` · 규칙 ${JSON.stringify(RULE_OVERRIDES)}` : ''}${BAN.length ? ` · 제외 ${BAN.join(',')}` : ''}${Object.keys(CARD_PARAMS).length ? ` · 카드 수치 ${JSON.stringify(CARD_PARAMS)}` : ''} · 카드 구매 ${BUY}${Object.keys(BUY_RULES).length ? ` ${JSON.stringify(BUY_RULES)}` : ''} ===`);
   console.log('단계 | 처치 시간 p25 / 중앙 / p75 (초) | 도달률');
   for (let stage = 1; stage <= 20; stage++) {
     const ttks = runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.ttk);
@@ -240,6 +264,9 @@ function report(policyName) {
   const cleared = runs.filter((r) => !r.failedAt);
   const totals = cleared.map((r) => r.totalSec);
   console.log(`클리어 ${cleared.length}/${RUNS}  런 시간 p25 ${fmtSec(quantile(totals, 0.25))} / 중앙 ${fmtSec(quantile(totals, 0.5))} / p75 ${fmtSec(quantile(totals, 0.75))}`);
+  // 골드 흐름: 처치 직후 보유 골드(중앙값)와 런 끝에 남은 골드. 남는 골드가 많으면 쓸 곳이 부족하다는 뜻입니다.
+  const goldAt = (stage) => quantile(runs.map((r) => r.stages.find((s) => s.stage === stage)).filter(Boolean).map((s) => s.gold), 0.5);
+  console.log(`보유 골드 중앙(처치 직후): ${[1, 5, 10, 15, 20].map((s) => `${s}단계 ${Math.round(goldAt(s) || 0).toLocaleString()}`).join(' · ')} · 런 끝 남은 골드 ${Math.round(quantile(runs.map((r) => r.endGold), 0.5)).toLocaleString()} · 카드 구매 런당 중앙 ${quantile(runs.map((r) => r.bought), 0.5)}장 (p25 ${quantile(runs.map((r) => r.bought), 0.25)} / p75 ${quantile(runs.map((r) => r.bought), 0.75)})`);
   const fails = runs.filter((r) => r.failedAt).map((r) => r.failedAt);
   if (fails.length) console.log(`실패 스테이지: ${fails.sort((a, b) => a - b).join(', ')}`);
 

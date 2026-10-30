@@ -75,6 +75,8 @@ const I18N_EN = {
   '⚡ 스피드런 새 런 시작! (Stage 1-1 · 타이머 00:00)': '⚡ New speedrun started! (Stage 1-1 · Timer 00:00)',
   '💰 리롤에 필요한 골드가 부족합니다!': '💰 Not enough gold to redraw!',
   '골드가 부족합니다.': 'Not enough gold.',
+  '구매함': 'BOUGHT',
+  '지금 제시된 카드만 살 수 있습니다.': 'You can only buy a card on offer.',
 
   // 자동·수동 시전
   '🤖 자동': '🤖 Auto',
@@ -152,7 +154,7 @@ const I18N_EN = {
   '클릭하여 계속': 'Click to continue',
   '지금!': 'Now!',
   '시전속도': 'Haste',
-  '몬스터 토벌로 획득하며, 마도서 각성 카드 다시 뽑기(리롤)에 사용됩니다': 'Earned by defeating monsters. Spend it to redraw Grimoire cards.',
+  '몬스터 토벌로 획득하며, 마도서 각성 카드 구매와 다시 뽑기(리롤)에 사용됩니다': 'Earned by defeating monsters. Spend it to buy Grimoire cards or redraw them.',
   '🏆 명예의 전당': '🏆 Hall of Fame',
   '📋 밸런스 로그': '📋 Balance Log',
   '플레이테스트 밸런스 로그(TTK, DPS, 덱 기록)를 클립보드로 복사합니다': 'Copy the playtest balance log (TTK, DPS, deck) to the clipboard',
@@ -213,10 +215,11 @@ const I18N_EN = {
   '👑 마도서 대각성 (Greater Awakening)': '👑 Greater Awakening',
   '🔥 마도서 각성 (Grimoire Awakening)': '🔥 Grimoire Awakening',
   '강력한 페이즈 보스를 물리치고 최고위 마력이 개방되었습니다! (희귀/전설 카드 확정 출현)': 'You defeated a phase boss and unlocked supreme power! (Rare/Legendary cards guaranteed)',
-  '고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!': 'Ancient flame power awakens. Choose 1 card to shape this run!',
+  '골드로 각성 카드를 사세요. 골드가 되는 만큼 여러 장 살 수 있고, 아껴 두었다가 다음에 써도 됩니다.': 'Buy Awakening cards with gold. Buy as many as you can afford, or save gold for later.',
   '보유 골드:': 'Gold:',
   '다시 뽑기 (Redraw)': 'Redraw',
-  '선택 없이 넘기기 ➔': 'Skip ➔',
+  '골드 아끼고 넘기기 ➔': 'Save gold & skip ➔',
+  '구매 마치기 ➔': 'Done buying ➔',
 
   // 결과 창
   '닫기': 'Close',

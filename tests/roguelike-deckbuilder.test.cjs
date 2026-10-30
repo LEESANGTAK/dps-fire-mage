@@ -188,7 +188,7 @@ test('Step 8: HTML 마크업 무결성 (각성 모달 및 하단 덱 트레이) 
   assert.ok(html.includes('id="ui-awakening-gold-amount"'), '보상 창 내 보유 골드 텍스트 요소가 존재해야 합니다.');
   assert.ok(html.includes('id="btn-reroll-cards"'), '다시 뽑기(Reroll) 버튼이 존재해야 합니다.');
   assert.ok(html.includes('id="ui-reroll-cost"'), '리롤 비용 표시 배지가 존재해야 합니다.');
-  assert.ok(html.includes('id="btn-skip-cards"'), '선택 없이 넘기기 버튼이 존재해야 합니다.');
+  assert.ok(html.includes('id="btn-skip-cards"'), '골드 아끼고 넘기기 버튼이 존재해야 합니다.');
 
   // 하단 덱 트레이 구조 검증
   assert.ok(html.includes('id="deck-strip-container"'), '하단 덱 트레이 컨테이너가 존재해야 합니다.');

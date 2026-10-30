@@ -1,6 +1,6 @@
 /**
  * DPS: Fire Mage - 로그라이크 덱빌딩 스피드런
- * - Stage 1 ~ 20을 몬스터 1회 처치마다 자동 진행하며, 웨이브 클리어 시 마도서 각성 카드 3지선다 선택
+ * - Stage 1 ~ 20을 몬스터 1회 처치마다 자동 진행하며, 웨이브 클리어 시 마도서 각성 카드 3장 중 골드로 구매
  * - 런 단위 성장은 각성 카드 덱이 전담하고, Stage 20 최종 보스 토벌 시간을 스피드런 기록으로 남김
  */
 
@@ -1728,7 +1728,7 @@ function spawnGoldCoinFlight(totalGold, isBigReward = false) {
 }
 
 // 광폭화 남은 시간 보상(캔디크러시 Sugar Crush 응용): 보스를 빨리 잡을수록 남은 시간이 골드로 바뀝니다.
-// 골드 = 보스 처치 골드 × goldMult × (남은 시간 / 제한 시간). 골드는 각성 카드 다시 뽑기에 쓰이므로, 빨리 잡으면 보스 전설을 고를 기회가 늘어납니다.
+// 골드 = 보스 처치 골드 × goldMult × (남은 시간 / 제한 시간). 골드는 각성 카드 구매·다시 뽑기에 쓰이므로, 빨리 잡으면 카드를 더 사거나 보스 전설을 노릴 기회가 늘어납니다.
 // 최종 보스는 런이 끝나 골드를 쓸 곳이 없어 제외합니다.
 // 연출 순서(Sugar Crush처럼 먼저 크게 알리고, 그다음 바꿔 준다). 플레이어가 확실히 인지하도록 넉넉한 호흡으로 갑니다:
 //   0~1.9초 보스 격파 도장·처치 동전 → 숨 고르기 → bannerMs 축하 배너("대단해요! 번개 같은 처치!")
@@ -2169,7 +2169,7 @@ const playtestTelemetry = {
     report += `- 총 플레이 시간: ${totalMin}분 ${totalSec}초\n`;
     report += `- 현재 스테이지: STAGE ${currentStage} (최고 돌파: STAGE ${highestStage})\n`;
     if (this.failedStage) report += `- 런 결과: STAGE ${this.failedStage} 보스 광폭화로 실패\n`;
-    report += `- 최종 보유 골드: ${Math.round(state?.gold || 0).toLocaleString()} G\n`;
+    report += `- 최종 보유 골드: ${Math.round(state?.gold || 0).toLocaleString()} G (카드 구매 ${state?.stats?.cardsBought || 0}장 · ${Math.round(state?.stats?.cardGoldSpent || 0).toLocaleString()} G 사용)\n`;
     report += `- 최종 스탯: 주문력 ${Math.round(stats.sp || 0)} | 치명타 ${Number((stats.crit || 0).toFixed(1))}% | 가속 ${Number((stats.haste || 0).toFixed(1))}%\n\n`;
 
     report += `[📊 스테이지별 실측 전투 로그 (TTK & DPS)]\n`;
@@ -4106,6 +4106,7 @@ const AWAKENING_DEAL = { first: 320, step: 140, lock: 900, rerollFirst: 40, rero
 const AWAKENING_EXIT_MS = { normal: 650, legendary: 950, reduced: 200 };
 let awakeningModalOpen = false;
 let awakeningExiting = false;
+let awakeningBoughtIds = []; // 이번 창에서 산 카드. 공개 연출(주문 슬롯 팝 등)은 창이 닫힌 뒤 한꺼번에 보여 줍니다.
 let awakeningInputLockUntil = 0;
 
 function prefersReducedMotion() {
@@ -4144,9 +4145,12 @@ function triggerAwakeningSelection(stageNum, isBossWave = false, onComplete = nu
   if (subEl) {
     subEl.textContent = isBossWave
       ? tr('강력한 페이즈 보스를 물리치고 최고위 마력이 개방되었습니다! (희귀/전설 카드 확정 출현)')
-      : tr('고대 화염의 마력이 개방되었습니다. 이번 런을 이끌 각성 카드를 1장 선택하세요!');
+      : tr('골드로 각성 카드를 사세요. 골드가 되는 만큼 여러 장 살 수 있고, 아껴 두었다가 다음에 써도 됩니다.');
   }
 
+  awakeningBoughtIds = [];
+  updateAwakeningSkipLabel();
+  if (typeof deckManager.beginWindow === 'function') deckManager.beginWindow();
   const choices = deckManager.drawChoices(getAwakeningChoiceCount(isBossWave), isBossWave, state);
   renderAwakeningChoicesUI(choices, isBossWave);
   updateRerollButtonUI();
@@ -4184,84 +4188,173 @@ function renderAwakeningChoicesUI(choices, isBossWave = false, firstDelayMs = AW
   if (!container || !deckManager) return;
 
   const activeDeck = deckManager.getActiveDeck();
+  const priceBase = getPurchaseBaseCost();
 
   container.innerHTML = choices.map((card, i) => {
     const rarityClass = `rarity-${card.rarity}`;
     const rarityMeta = (typeof RoguelikeDeck !== 'undefined' && RoguelikeDeck.RARITY_META[card.rarity]) || { name: tr('일반') };
     const currentCount = activeDeck[card.id] || 0;
     const stackBadge = currentCount > 0 ? `<div class="card-stack-badge">${tr('보유: {n}/{max}', { n: currentCount, max: card.maxStack })}</div>` : '';
+    const cost = deckManager.getPurchaseCost(card, priceBase);
+    const short = (state.gold || 0) < cost;
 
     const buildBadgeText = getBuildLabel(card.build);
     // 연계·주력 빌드 표시는 일부러 두지 않습니다. 어떤 카드가 덱과 맞물리는지는 플레이어가 직접 따져 봅니다(AGENTS.md 1부 4장).
+    // 가격표는 사실(가격·골드 부족)만 보여 줍니다. 겹쳐 가진 카드가 비싼 이유는 보유 꼬리표로 읽을 수 있습니다.
 
     return `
-      <div class="awakening-card ${rarityClass}" data-card-id="${card.id}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
+      <div class="awakening-card ${rarityClass}${short ? ' is-short' : ''}" data-card-id="${card.id}" data-cost="${cost}" style="--deal-delay:${firstDelayMs + i * AWAKENING_DEAL.step}ms">
         <div class="card-rarity-badge">${rarityMeta.name}</div>
         ${stackBadge}
         <div class="card-icon">${paperCardIconHTML(card)}</div>
         <div class="card-name">${cardText(card, 'title')}</div>
         <div class="card-build-tag">${buildBadgeText}</div>
         <div class="card-desc">${cardText(card, 'desc')}</div>
+        <div class="card-price">💰 ${fmt(cost)} G</div>
       </div>
     `;
   }).join('');
 
   container.querySelectorAll('.awakening-card').forEach((cardEl) => {
     cardEl.addEventListener('click', () => {
-      if (isAwakeningInputLocked()) return;
+      if (isAwakeningInputLocked() || cardEl.classList.contains('is-bought')) return;
       const cardId = cardEl.getAttribute('data-card-id');
-      if (cardId) selectAwakeningCard(cardId);
+      if (cardId) buyAwakeningCard(cardId);
     });
   });
 }
 
-function selectAwakeningCard(cardId) {
-  if (!deckManager || awakeningExiting) return;
-  const success = deckManager.selectCard(cardId, state);
-  if (!success) return;
-  recordCardPicked(state.meta, cardId); // 도감: 고른 적 있는 카드
+// 구매 가격 기준 = 방금 처치한 스테이지의 처치 골드(최소값·업화 배율 없음).
+// 일반 카드(×1)가 그 스테이지 수입(처치 골드 + 첫 처치 보너스)보다 늘 싸서, 업화 단계와 무관하게 스테이지마다 1장은 살 수 있습니다.
+function getPurchaseBaseCost() {
+  return Math.max(1, getStageData(state.currentStage).gold);
+}
 
-  const card = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find((c) => c.id === cardId) : null;
+// 아직 사지 않은 카드 중 지금 골드로 살 수 있는 카드가 있는지
+function hasAffordableAwakeningCard() {
+  if (!deckManager) return false;
+  const base = getPurchaseBaseCost();
+  return deckManager.getCurrentChoices().some((c) => deckManager.getPurchaseCost(c, base) <= (state.gold || 0));
+}
+
+// 골드가 바뀐 뒤 가격표의 '골드 부족' 표시만 다시 계산합니다.
+function refreshAwakeningPrices() {
+  const container = document.getElementById('awakening-cards-container');
+  if (!container || typeof container.querySelectorAll !== 'function') return;
+  container.querySelectorAll('.awakening-card:not(.is-bought)').forEach((el) => {
+    el.classList.toggle('is-short', (state.gold || 0) < Number(el.getAttribute('data-cost')));
+  });
+}
+
+// 넘기기 버튼: 아직 안 샀으면 '골드 아끼고 넘기기', 한 장이라도 샀으면 '구매 마치기'
+function updateAwakeningSkipLabel() {
+  const skipBtn = document.getElementById('btn-skip-cards');
+  if (skipBtn) skipBtn.textContent = awakeningBoughtIds.length > 0 ? tr('구매 마치기 ➔') : tr('골드 아끼고 넘기기 ➔');
+}
+
+// 카드 구매. 산 카드에는 '구매함' 도장이 찍히고, 남은 카드 중 살 수 있는 게 있으면 창을 열어 둡니다.
+function buyAwakeningCard(cardId) {
+  if (!deckManager || awakeningExiting) return;
+  const result = deckManager.buyCard(cardId, state, getPurchaseBaseCost());
+  const cardEl = document.querySelector(`.awakening-card[data-card-id="${cardId}"]`);
+  if (!result.success) {
+    spawnFloatingText(`💰 ${result.reason}`, 'fct-normal', -40);
+    if (cardEl) { cardEl.classList.remove('is-denied'); void cardEl.offsetWidth; cardEl.classList.add('is-denied'); }
+    return;
+  }
+  awakeningBoughtIds.push(cardId);
+  recordCardPicked(state.meta, cardId); // 도감: 고른 적 있는 카드
+  addRunStat('cardsBought', 1);
+  addRunStat('cardGoldSpent', result.cost);
+
+  playSound('drop_coin');
   playSound('fireball_impact');
-  // 카드 효과(주문 해금·덱 반영)는 고르는 순간 바로 적용하고, 눈에 보이는 공개 연출만 창이 닫힌 뒤로 미룹니다.
+  if (cardEl) {
+    cardEl.classList.add('is-bought');
+    const stamp = document.createElement('div');
+    stamp.className = 'card-bought-stamp';
+    stamp.textContent = tr('구매함');
+    cardEl.appendChild(stamp);
+  }
+  // 효과(주문 해금·덱 반영)는 사는 순간 적용하고, 주문 슬롯 팝 같은 공개 연출만 창이 닫힌 뒤로 미룹니다.
   updateSkillActionBarVisibility();
   renderDeckStripUI();
   updateLiveHUD();
+  updateRerollButtonUI();
+  updateAwakeningSkipLabel();
 
-  // 획득 사실은 덱 트레이·주문 슬롯 팝으로 보여 주고, 몬스터를 가리는 문구는 띄우지 않습니다.
-  const reveal = () => {
-    if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
-    else if (cardId === 'spell_meteor') triggerUnfoldPop('skill-3');
-    else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
-    else if (cardId === 'spell_flame_patch') triggerUnfoldPop('skill-6');
-    else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();
-    if (cardId === 'util_auto_grimoire') triggerAutoGrimoireUnfold();
-    if (card && card.rarity === 'legendary') {
-      triggerArenaShake('md');
-      const caster = getCasterCenter();
-      spawnParticles(caster.x, caster.y, 22, '#fef08a', '#ea580c', 1.5);
-    }
-  };
+  if (!hasAffordableAwakeningCard()) {
+    finishAwakeningWindow(cardId);
+    return;
+  }
+  // 도장 여운 동안 연타가 다른 카드를 사지 않게 잠깐 잠급니다.
+  lockAwakeningInput(AWAKENING_DEAL.rerollLock);
+}
+
+// 창이 닫힌 뒤 새로 얻은 카드를 화면에 공개합니다(주문 슬롯 팝·정령 소환·전설 불씨).
+function revealAcquiredCard(cardId) {
+  const card = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL.find((c) => c.id === cardId) : null;
+  if (cardId === 'spell_fireblast') triggerUnfoldPop('skill-2');
+  else if (cardId === 'spell_meteor') triggerUnfoldPop('skill-3');
+  else if (cardId === 'spell_combustion') triggerUnfoldPop('skill-4');
+  else if (cardId === 'spell_flame_patch') triggerUnfoldPop('skill-6');
+  else if (cardId === 'sum_spirit') triggerFireSpiritSpawn();
+  if (cardId === 'util_auto_grimoire') triggerAutoGrimoireUnfold();
+  if (card && card.rarity === 'legendary') {
+    triggerArenaShake('md');
+    const caster = getCasterCenter();
+    spawnParticles(caster.x, caster.y, 22, '#fef08a', '#ea580c', 1.5);
+  }
+}
+
+// 이번 창에서 얻은 카드를 공개합니다.
+function revealBoughtCards() {
+  const bought = awakeningBoughtIds;
+  awakeningBoughtIds = [];
+  bought.forEach(revealAcquiredCard);
+  if (bought.includes('spell_meteor')) startMeteorComboCoach();
+}
+
+// 각성 창 마무리: 마지막에 얻은 카드가 빛나며 남고 나머지는 물러난 뒤 창이 닫힙니다(넘기기·자동 닫힘 공통).
+// lastCardId가 없으면(아무것도 사지 않고 넘김) 여운 없이 바로 닫습니다.
+function finishAwakeningWindow(lastCardId = null) {
+  if (deckManager && typeof deckManager.endWindow === 'function') deckManager.endWindow();
   const cb = typeof awakeningOnComplete === 'function' ? awakeningOnComplete : null;
   awakeningOnComplete = null;
-
   const finish = () => {
     closeAwakeningModal();
-    reveal();
-    if (cardId === 'spell_meteor') startMeteorComboCoach();
+    revealBoughtCards();
     if (cb) cb();
   };
-
   if (!awakeningModalOpen) {
     finish();
     return;
   }
-  // 고른 카드가 빛나며 남고 나머지는 물러난 뒤 창이 닫힙니다. 그동안 전투는 멈춘 채로 둡니다.
+  if (!lastCardId) {
+    finish();
+    holdCombat(ENTRY_BEAT_MS); // 창이 닫힌 뒤 다음 몬스터 등장 팝이 자리 잡을 짧은 호흡
+    return;
+  }
+  const pool = (typeof RoguelikeDeck !== 'undefined') ? RoguelikeDeck.CARD_POOL : [];
+  const anyLegendary = awakeningBoughtIds.some((id) => (pool.find((c) => c.id === id) || {}).rarity === 'legendary');
+  // 여운 동안 전투는 멈춘 채로 둡니다.
   holdCombat();
-  playAwakeningExit(cardId, card && card.rarity === 'legendary', () => {
+  playAwakeningExit(lastCardId, anyLegendary, () => {
     finish();
     holdCombat(ENTRY_BEAT_MS);
   });
+}
+
+// 카드를 값 없이 얻고 창을 마칩니다(테스트·시연용). 플레이어가 각성 창에서 얻는 길은 buyAwakeningCard뿐입니다.
+function selectAwakeningCard(cardId) {
+  if (!deckManager || awakeningExiting) return;
+  if (!deckManager.selectCard(cardId, state)) return;
+  recordCardPicked(state.meta, cardId);
+  awakeningBoughtIds.push(cardId);
+  updateSkillActionBarVisibility();
+  renderDeckStripUI();
+  updateLiveHUD();
+  finishAwakeningWindow(cardId);
 }
 
 function playAwakeningExit(cardId, isLegendary, done) {
@@ -4271,7 +4364,8 @@ function playAwakeningExit(cardId, isLegendary, done) {
   if (container && typeof container.querySelectorAll === 'function') {
     container.querySelectorAll('.awakening-card').forEach((el) => {
       const chosen = el.getAttribute('data-card-id') === cardId;
-      el.classList.add(chosen ? 'is-chosen' : 'is-dismissed');
+      if (chosen) el.classList.add('is-chosen');
+      else if (!el.classList.contains('is-bought')) el.classList.add('is-dismissed'); // 먼저 산 카드는 도장 찍힌 채로 남습니다
     });
   }
   if (modal) {
@@ -4312,11 +4406,14 @@ function updateRerollButtonUI() {
   if (goldBox) {
     goldBox.classList.toggle('insufficient', !canAfford);
   }
+  refreshAwakeningPrices();
 }
 
 function handleAwakeningReroll() {
   if (!deckManager || isAwakeningInputLocked()) return;
-  const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost(), getAwakeningChoiceCount(isCurrentAwakeningBoss));
+  // 이미 산 카드는 덱으로 갔으니, 다시 뽑기는 남은 자리만큼만 새로 뽑습니다.
+  const count = Math.max(1, getAwakeningChoiceCount(isCurrentAwakeningBoss) - awakeningBoughtIds.length);
+  const result = deckManager.reroll(state, isCurrentAwakeningBoss, getRerollBaseCost(), count);
   if (!result.success) {
     spawnFloatingText(tr('💰 리롤에 필요한 골드가 부족합니다!'), 'fct-normal', -40);
     return;
@@ -4353,13 +4450,8 @@ function initAwakeningModalEvents() {
   if (skipBtn) {
     skipBtn.addEventListener('click', () => {
       if (isAwakeningInputLocked()) return;
-      closeAwakeningModal();
-      holdCombat(ENTRY_BEAT_MS);
-      if (typeof awakeningOnComplete === 'function') {
-        const cb = awakeningOnComplete;
-        awakeningOnComplete = null;
-        cb();
-      }
+      // 산 카드가 있으면 마지막 카드의 여운을 보여 주고, 없으면 골드를 아낀 채 바로 넘어갑니다.
+      finishAwakeningWindow(awakeningBoughtIds[awakeningBoughtIds.length - 1] || null);
     });
   }
 }

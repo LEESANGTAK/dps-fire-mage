@@ -2384,6 +2384,77 @@ body {
   color: #6b5a48;
 }
 
+/* 7-4a. 가격표: 카드 맨 아래 묶어 둔 크라프트 꼬리표. 카드 전체가 구매 버튼입니다.
+   가격과 골드 부족만 보여 주고, 어떤 카드를 살지 추천하는 표시는 두지 않습니다(AGENTS.md 1부 4장). */
+.card-price {
+  margin-top: 8px;
+  padding: 3px 12px 4px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--pp-ink);
+  background: #d9c6a3;
+  border: 2px solid var(--pp-ink);
+  border-radius: 3px;
+  box-shadow: 0 3px 0 var(--pp-drop);
+}
+/* 골드 부족: 카드를 흐리게, 가격을 붉게. 집어 드는 반응(hover)도 줄여 '지금은 못 산다'를 손맛으로도 알립니다. */
+.awakening-card.is-short { cursor: not-allowed; }
+.awakening-card.is-short > :not(.card-price):not(.card-rarity-badge) { opacity: 0.55; }
+.awakening-card.is-short .card-price { color: #b3261e; background: #e9dcc4; }
+.awakening-card.is-short:hover { transform: translateY(-2px) rotate(var(--tilt)); }
+.awakening-card.is-denied { animation: buyDenied 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes buyDenied {
+  0%, 100% { transform: rotate(var(--tilt)) translateX(0); }
+  25% { transform: rotate(var(--tilt)) translateX(-6px); }
+  50% { transform: rotate(var(--tilt)) translateX(6px); }
+  75% { transform: rotate(var(--tilt)) translateX(-3px); }
+}
+
+/* 산 카드: 눌렸다 펴지며(스쿼시) 붉은 '구매함' 도장이 쾅 찍히고, 이미 덱으로 갔음을 흐림으로 알립니다. */
+.awakening-card.is-bought {
+  cursor: default;
+  animation: buyCardSquash 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.awakening-card.is-bought:hover,
+.awakening-card.is-bought:active {
+  transform: rotate(var(--tilt));
+  box-shadow: 0 0 0 3px var(--pp-ink), inset 0 0 0 2px var(--pp-cut), 0 7px 0 3px var(--pp-drop);
+}
+.awakening-card.is-bought > :not(.card-bought-stamp) { opacity: 0.45; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+/* 마지막에 산 카드는 창이 닫히는 여운 동안 다시 선명하게 집어 올려집니다. */
+.is-exiting .awakening-card.is-bought.is-chosen > * { opacity: 1; }
+.card-bought-stamp {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 3;
+  padding: 4px 12px 5px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: #c0271c;
+  border: 3px solid #c0271c;
+  border-radius: 4px;
+  background: rgba(255, 250, 240, 0.82);
+  transform: translate(-50%, -50%) rotate(-12deg);
+  animation: buyStampSlam 0.34s cubic-bezier(0.55, 0.055, 0.675, 0.19) backwards;
+  pointer-events: none;
+}
+@keyframes buyStampSlam {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-20deg) scale(1.9); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(1); }
+}
+@keyframes buyCardSquash {
+  0% { transform: rotate(var(--tilt)); }
+  35% { transform: rotate(var(--tilt)) scale(1.06, 0.92); }
+  100% { transform: rotate(var(--tilt)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .awakening-card.is-bought, .card-bought-stamp, .awakening-card.is-denied { animation: none; }
+}
+
 /* 7-4b. 각성 창 펼침: 머리글 → 카드 한 장씩(뒤집히며 착지) → 하단 순으로 시선을 이끕니다.
    채움 모드는 backwards만 써서, 착지 후에는 hover 변형이 그대로 살아 있게 합니다. 착지 끝 자세는 카드마다의 기울기입니다. */
 .is-dealing .awakening-modal-title { animation: awkDrop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) 0.14s backwards; }

@@ -797,6 +797,15 @@
     loadCardsFromJSON();
   }
 
+  // 각성 카드 구매: 각성 창의 카드는 모두 골드로 삽니다. 골드가 되는 만큼 여러 장을 살 수 있고, 아껴 두었다가 다음 창에 써도 됩니다.
+  // 가격 = 방금 처치한 스테이지의 처치 골드 × 등급 배율 × (1 + 이미 가진 장수 × 겹치기 증가율).
+  // 일반 카드는 한 스테이지 수입(처치 골드 + 첫 처치 보너스)보다 늘 싸서, 아끼지 않으면 지금처럼 스테이지마다 1장은 얻습니다.
+  // '지금 일반을 살까, 모아서 희귀·전설을 살까, 다시 뽑기에 쓸까', '한 카드를 겹칠까, 넓힐까'를 저울질하게 합니다.
+  const PURCHASE_RULES = {
+    rarityMult: { common: 1.25, rare: 1.5, legendary: 2.5 },
+    stackStep: 0.5
+  };
+
   // 런(Run) 단위 덱 관리자 객체
   function createDeckManager() {
     let activeDeck = {};       // { cardId: count }
@@ -919,7 +928,7 @@
       return selected;
     }
 
-    // 카드 선택 적용
+    // 카드를 값 없이 덱에 넣습니다(시작 주문서·테스트용). 각성 창에서 플레이어가 얻는 길은 buyCard뿐입니다.
     function selectCard(cardId, gameState) {
       const card = CARD_POOL.find(c => c.id === cardId);
       if (!card) return false;
@@ -935,6 +944,30 @@
       }
 
       return true;
+    }
+
+    // 구매 가격. card는 카드 객체(id·rarity), baseCost는 방금 처치한 스테이지의 처치 골드입니다.
+    function getPurchaseCost(card, baseCost = 10) {
+      const rarity = card && card.rarity;
+      const mult = PURCHASE_RULES.rarityMult[rarity] || PURCHASE_RULES.rarityMult.common;
+      const owned = (card && activeDeck[card.id]) || 0;
+      return Math.max(1, Math.round(baseCost * mult * (1 + owned * PURCHASE_RULES.stackStep)));
+    }
+
+    // 제시된 카드 중 한 장을 골드로 사서 덱에 넣습니다. 창은 열린 채로 두고, 남은 카드도 골드가 되면 더 살 수 있습니다.
+    function buyCard(cardId, gameState, baseCost = 10) {
+      const card = currentChoices.find(c => c.id === cardId);
+      const hasTr = typeof tr === 'function';
+      if (!card) return { success: false, reason: hasTr ? tr('지금 제시된 카드만 살 수 있습니다.') : '지금 제시된 카드만 살 수 있습니다.' };
+      const cost = getPurchaseCost(card, baseCost);
+      if ((gameState.gold || 0) < cost) return { success: false, reason: hasTr ? tr('골드가 부족합니다.') : '골드가 부족합니다.' };
+
+      gameState.gold -= cost;
+      activeDeck[card.id] = (activeDeck[card.id] || 0) + 1;
+      pickSeq[card.id] = ++pickCounter;
+      currentChoices = currentChoices.filter(c => c.id !== card.id);
+      if (typeof card.apply === 'function') card.apply(gameState);
+      return { success: true, cost, card, choices: [...currentChoices] };
     }
 
     // 리롤 수행 (골드 차감 성공 시)
@@ -953,6 +986,17 @@
         newCost: getRerollCost(baseCost),
         choices: newChoices
       };
+    }
+
+    // 새 각성 창을 열 때 다시 뽑기 횟수를 비웁니다. 넘기기로 닫힌 창의 기록이 다음 창에 남지 않게 합니다.
+    function beginWindow() {
+      rerollCount = 0;
+    }
+
+    // 각성 창을 닫을 때 남은 제시 카드를 거둡니다(사지 않은 카드는 다음 창으로 넘어가지 않습니다).
+    function endWindow() {
+      rerollCount = 0;
+      currentChoices = [];
     }
 
     // 덱 초기화 (회차 승천/리셋 시)
@@ -1020,6 +1064,10 @@
       getCurrentChoices: () => [...currentChoices],
       getActiveCards,
       getRerollCost,
+      getPurchaseCost,
+      beginWindow,
+      endWindow,
+      buyCard,
       drawChoices,
       selectCard,
       reroll,
@@ -1035,6 +1083,7 @@
     BUILD,
     CARD_POOL,
     createDeckManager,
+    PURCHASE_RULES,
     buildCardFromData,
     setCardPoolFromRaw,
     loadCardsFromJSON
