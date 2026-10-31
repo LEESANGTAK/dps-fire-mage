@@ -347,7 +347,7 @@ function createLoopAudio(src, volume) {
   audio.volume = volume;
   return audio;
 }
-const burningLoopAudio = createLoopAudio(BURNING_LOOP_SFX_FILE, 0.55);
+const burningLoopAudio = createLoopAudio(BURNING_LOOP_SFX_FILE, 0.34);
 const fireballCastAudio = createLoopAudio(FIREBALL_CAST_LOOP_SFX_FILE, 0.58);
 
 const BGM_TRACKS = [
@@ -554,7 +554,7 @@ initSfxAudio();
 function updateBurningLoopSound() {
   const c = state.combat;
   if (!burningLoopAudio) return;
-  const effVol = getEffectiveSfxVol(0.68);
+  const effVol = getEffectiveSfxVol(0.34);
   const isDotBurning =
     effVol > 0 && !state.monster.isDying &&
     ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0 || c.flamePatchRem > 0);
