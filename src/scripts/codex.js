@@ -171,6 +171,7 @@ function openCodex(from = 'pause', focusCardId = null) {
   el.dataset.from = from;
   renderCodex();
   el.classList.remove('hidden');
+  if (typeof playSound === 'function') playSound('popup_open');
   const close = document.getElementById('btn-codex-close');
   if (close && typeof close.focus === 'function') { try { close.focus({ preventScroll: true }); } catch (e) { /* 무시 */ } }
   return true;

@@ -314,7 +314,9 @@ const FIREBALL_SFX_FILES = {
   enrage_tick: ['assets/sounds/sfx/enrage_tick_1.wav', 'assets/sounds/sfx/enrage_tick_2.wav'],
   run_defeat: ['assets/sounds/sfx/run_defeat_1.wav', 'assets/sounds/sfx/run_defeat_2.wav'],
   // 메뉴·창 버튼 마우스오버 '톡'(2026-10-31). 카드 호버 '슥'보다 짧고 작습니다.
-  button_hover: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav']
+  button_hover: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
+  // 팝업 창 열림 '사락'(2026-10-31): Esc 메뉴·설정·도감이 함께 씁니다.
+  popup_open: ['assets/sounds/sfx/popup_open_1.wav', 'assets/sounds/sfx/popup_open_2.wav']
 };
 // 종이 재질 UI 소리의 기본 볼륨. 자주 나는 소리일수록 작게 둡니다(처치·보상 > 전투 > UI 순서, AGENTS.md 2장).
 // jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
@@ -326,7 +328,8 @@ const UI_SFX = {
   buy_denied: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
   enrage_tick: { volume: 0.8, jitter: 0, minGapMs: 300 },
   run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 },
-  button_hover: { volume: 0.84, jitter: 0.05, minGapMs: 60 }
+  button_hover: { volume: 0.84, jitter: 0.05, minGapMs: 60 },
+  popup_open: { volume: 0.7, jitter: 0.04, minGapMs: 150 }
 };
 const uiSfxLastAt = {};
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).

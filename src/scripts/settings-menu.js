@@ -72,6 +72,7 @@ function openSettings() {
   const card = document.getElementById('settings-card');
   if (!card) return false;
   settingsOpen = true;
+  if (typeof playSound === 'function') playSound('popup_open');
   renderSettings();
   if (main) main.hidden = true;
   card.hidden = false;

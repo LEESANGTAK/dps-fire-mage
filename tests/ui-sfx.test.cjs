@@ -22,7 +22,7 @@ const unknown = [...called].filter((t) => !handled.has(t));
 assert.deepEqual(unknown, [], `처리하지 않는 효과음 이름을 부르면 소리가 나지 않습니다: ${unknown.join(', ')}`);
 
 // 2. UI 소리 파일이 모두 있어야 합니다.
-for (const m of game.matchAll(/'(assets\/sounds\/sfx\/(?:card_|buy_|enrage_|run_|button_)[a-z_0-9]+\.wav)'/g)) {
+for (const m of game.matchAll(/'(assets\/sounds\/sfx\/(?:card_|buy_|enrage_|run_|button_|popup_)[a-z_0-9]+\.wav)'/g)) {
   assert.ok(fs.existsSync(path.join(__dirname, '..', m[1])), `${m[1]} 파일이 없습니다.`);
 }
 
@@ -58,4 +58,17 @@ assert.match(game, /const BUTTON_HOVER_EXCLUDE = '#action-bar, #btn-auto-cast'/,
 assert.match(game, /initButtonHoverSound\(\);/, '버튼 호버음을 초기화해야 합니다.');
 assert.ok(fs.existsSync(path.join(__dirname, '../assets/sounds/sfx/button_hover_1.wav')));
 
-console.log('   UI 효과음 이름 연결·파일 존재·호버 연타 방지·광폭화 째깍·버튼 호버 범위 검증 통과');
+// 6. 팝업 열림음: Esc 메뉴·설정·도감을 열 때 한 번씩. 타이틀에서 설정을 열 때는 메뉴를 거쳐도 한 번만.
+const popupCount = () => g.run("window.__played.filter((x) => x[0] === 'popup_open').length");
+const resetPopup = "window.__played = []; uiSfxLastAt.popup_open = -Infinity;";
+g.run(`${resetPopup} openPauseMenu('manual');`);
+assert.equal(popupCount(), 1, 'Esc 메뉴를 열면 열림음이 한 번 납니다.');
+g.run(`${resetPopup} openSettings();`);
+assert.equal(popupCount(), 1, '설정을 열면 열림음이 한 번 납니다.');
+g.run(`closeSettings({ keepMenu: true }); closePauseMenuImmediately(); ${resetPopup} openSettingsFromTitle();`);
+assert.equal(popupCount(), 1, '타이틀에서 설정을 열면 열림음이 두 번 겹치지 않습니다.');
+g.run(`closeSettings({ keepMenu: true }); closePauseMenuImmediately(); ${resetPopup} openCodex('pause');`);
+assert.equal(popupCount(), 1, '도감을 열면 열림음이 한 번 납니다.');
+g.run('closeCodex();');
+
+console.log('   UI 효과음 이름 연결·파일 존재·호버 연타 방지·광폭화 째깍·버튼 호버 범위·팝업 열림음 검증 통과');

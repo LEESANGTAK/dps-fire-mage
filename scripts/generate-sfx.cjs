@@ -91,6 +91,15 @@ const SOUNDS = {
     use: '메뉴·창 버튼 마우스오버(종이 탭을 튕기는 틱)', duration: 0.5,
     prompt: 'quick gentle flick of a small paper tab, crisp tiny papery tick with a soft click, very short UI hover sound, no ring'
   },
+  // 팝업 창 열림(2026-10-31): Esc 메뉴·설정·도감이 함께 씁니다. 자주 여닫으므로 짧고 가볍게. 두 결로 만들어 비교합니다.
+  popup_open_unfold: {
+    use: '팝업 창 열림(A: 종이가 펼쳐지는 사락)', duration: 0.6,
+    prompt: 'quick soft paper sheet unfolding open, light crisp papery flap and rustle, gentle UI window open sound, short, no ring'
+  },
+  popup_open_land: {
+    use: '팝업 창 열림(B: 종이 판이 착 내려앉음)', duration: 0.6,
+    prompt: 'light cardboard panel sliding in and settling down, soft airy swoosh ending in a gentle papery tap, UI menu open sound, short, no echo'
+  },
   // 1차 추가분(2026-10-31): 각성 카드 창의 종이 재질 소리와 경고·패배. 자주 나는 소리일수록 작고 짧게 만듭니다.
   card_hover: {
     use: '각성 카드 마우스오버(한 판 수십 번, 아주 작게)', duration: 0.5,

@@ -52,6 +52,8 @@ function openPauseMenu(reason = 'manual') {
   }
   menuPaused = true;
   pauseCombatLoopSounds();
+  // 타이틀의 설정 버튼은 메뉴를 거쳐 설정을 바로 여므로, 열림음은 설정 쪽에서 한 번만 냅니다.
+  if (reason !== 'title' && typeof playSound === 'function') playSound('popup_open');
   if (typeof closeSettings === 'function') closeSettings(); // 항상 메뉴 첫 화면부터 엽니다.
   renderPauseMenuInfo();
   const quitBtn = document.getElementById('btn-pause-quit');
