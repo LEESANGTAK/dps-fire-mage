@@ -326,7 +326,7 @@ const UI_SFX = {
   buy_denied: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
   enrage_tick: { volume: 0.8, jitter: 0, minGapMs: 300 },
   run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 },
-  button_hover: { volume: 0.28, jitter: 0.05, minGapMs: 60 }
+  button_hover: { volume: 0.84, jitter: 0.05, minGapMs: 60 }
 };
 const uiSfxLastAt = {};
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
