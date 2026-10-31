@@ -8,8 +8,13 @@ build_mage_sheet.py
 - 생성 원화의 반투명 빛무리는 지우고, 지팡이 끝은 주황 보석 덩어리 중 가장 오른쪽 것의 중심으로 잡습니다(코도 주황이라 구분).
 - 필요: Python 3, Pillow, numpy, opencv-python.
 
-사용법: python scripts/build_mage_sheet.py [원화.png]   (기본: assets/art/source/paper-mage-atlas-raw.png)
+- 색 보정: 생성 원화는 다른 몬스터 원화보다 채도·대비가 낮고 외곽선이 없어 화풍이 달라 보입니다.
+  --sat(채도 배수) --contrast(대비 배수) --outline(외곽선 두께 px)로 맞춥니다. 기본값이 게임에 쓰는 값입니다.
+
+사용법: python scripts/build_mage_sheet.py [원화.png] [--sat 1.35] [--contrast 1.15] [--outline 3]
+        [--out 시트.png --no-js]   (후보 비교용: 다른 경로에 시트만 만들고 paper-art.js는 건드리지 않음)
 """
+import argparse
 import json
 import re
 import sys
@@ -20,8 +25,17 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'assets/art/source/paper-mage-atlas-raw.png'
-OUT = ROOT / 'assets/art/paper-mage-poses.png'
+ap = argparse.ArgumentParser()
+ap.add_argument('raw', nargs='?', default=str(ROOT / 'assets/art/source/paper-mage-atlas-raw.png'))
+ap.add_argument('--sat', type=float, default=1.0)
+ap.add_argument('--contrast', type=float, default=1.0)
+ap.add_argument('--outline', type=int, default=0)
+ap.add_argument('--out', default=str(ROOT / 'assets/art/paper-mage-poses.png'))
+ap.add_argument('--no-js', action='store_true')
+ARGS = ap.parse_args()
+RAW = Path(ARGS.raw)
+OUT = Path(ARGS.out)
+OUTLINE_RGB = (38, 24, 22)  # 몬스터 원화의 짙은 갈색 외곽선과 비슷한 색
 ART_JS = ROOT / 'src/scripts/paper-art.js'
 POSES = ['idle', 'anticipation', 'release', 'recoil']  # 좌상·우상·좌하·우하
 CELL = 627            # 게임 시트 칸 크기(기존과 같음)
@@ -39,6 +53,36 @@ def clean_alpha(rgba):
             a[labels == i] = 0
     rgba[..., 3] = a
     return rgba
+
+
+def grade(rgba):
+    """채도·대비 보정. 대비는 밝기 기준 128을 중심으로 늘리고, 채도는 HSV의 S를 곱합니다."""
+    rgb = rgba[..., :3].astype(np.float32)
+    if ARGS.contrast != 1.0:
+        rgb = (rgb - 128) * ARGS.contrast + 128
+    rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+    if ARGS.sat != 1.0:
+        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV).astype(np.float32)
+        hsv[..., 1] = np.clip(hsv[..., 1] * ARGS.sat, 0, 255)
+        rgb = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
+    rgba[..., :3] = rgb
+    return rgba
+
+
+def add_outline(img):
+    """실루엣 바깥에 짙은 외곽선을 둘러 몬스터 원화의 잉크 선과 맞춥니다(가장자리 빛무리 잔색도 덮음)."""
+    if ARGS.outline <= 0:
+        return img
+    a = np.array(img)
+    solid = (a[..., 3] > 100).astype(np.uint8)
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ARGS.outline * 2 + 1, ARGS.outline * 2 + 1))
+    ring = (cv2.dilate(solid, k) > 0) & (a[..., 3] < 255)
+    out = a.copy()
+    edge_a = a[..., 3].astype(np.float32) / 255
+    for i, c in enumerate(OUTLINE_RGB):
+        out[..., i] = np.where(ring, (a[..., i] * edge_a + c * (1 - edge_a)).astype(np.uint8), a[..., i])
+    out[..., 3] = np.where(ring, 255, a[..., 3])
+    return Image.fromarray(out)
 
 
 def measure(cell):
@@ -67,7 +111,7 @@ def main():
         cell = clean_alpha(raw[cy * half:(cy + 1) * half, cx * half:(cx + 1) * half].copy())
         (fx, fy), (tx, ty) = measure(cell)
         size = round(half * SCALE)
-        img = Image.fromarray(cell).resize((size, size), Image.LANCZOS)
+        img = add_outline(Image.fromarray(grade(cell.copy())).resize((size, size), Image.LANCZOS))
         ox = round(FOOT[0] - fx * SCALE)
         oy = round(FOOT[1] - fy * SCALE)
         layer = Image.new('RGBA', (CELL, CELL), (0, 0, 0, 0))
@@ -83,12 +127,17 @@ def main():
             'tip': [bx + round(ox + tx * SCALE), by + round(oy + ty * SCALE)],
         }
     sheet.save(OUT)
+    if ARGS.no_js:
+        print(f'시트만 저장: {OUT}')
+        return
     js = ART_JS.read_text(encoding='utf-8')
     body = ',\n'.join(
         [f'    "cell": {CELL}'] + ['    "%s": { "box": %s, "foot": %s, "tip": %s }' % (p, json.dumps(frames[p]['box']), json.dumps(frames[p]['foot']), json.dumps(frames[p]['tip'])) for p in POSES])
-    new = re.sub(r'"mage": \{.*?\n  \}', '"mage": {\n' + body + '\n  }', js, count=1, flags=re.S)
-    if new == js:
+    pattern = r'"mage": \{.*?\n  \}'
+    if not re.search(pattern, js, flags=re.S):
         raise SystemExit('paper-art.js의 mage 블록을 찾지 못했습니다.')
+    # 좌표가 그대로면 내용도 그대로입니다(오류 아님).
+    new = re.sub(pattern, lambda _: '"mage": {\n' + body + '\n  }', js, count=1, flags=re.S)
     ART_JS.write_text(new, encoding='utf-8')
     print(json.dumps(frames, ensure_ascii=False))
 
