@@ -35,3 +35,4 @@ dist/
 
 # 효과음 생성 후보(scripts/generate-sfx.cjs). 고른 파일만 assets/sounds/sfx/로 옮깁니다.
 .sfx-candidates/
+.art-candidates/

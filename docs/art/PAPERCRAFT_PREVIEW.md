@@ -21,7 +21,7 @@
 
 ## 채택 에셋과 렌더링 메타데이터
 
-- `assets/art/paper-mage-poses.png`: 붉은 마법사 2×2 포즈, 1254×1254, 투명 PNG.
+- `assets/art/paper-mage-poses.png`: 마법사 2×2 포즈, 1254×1254, 투명 PNG. **2026-11-01 교체:** 파이널판타지 흑마도사와 닮은 붉은 고깔모자 마법사를 후드 쓴 늙은 방랑 마법사로 바꿨습니다. 아래 '마법사 최초 생성' 프롬프트는 예전 그림의 기록이고, 현재 그림의 출처·좌표 계산은 `MAGE_REDESIGN.md`와 `scripts/build_mage_sheet.py`를 따릅니다.
 - `assets/art/paper-slime-poses.png`: 녹색 슬라임 2×2 포즈, 1254×1254, 투명 PNG.
 - `assets/art/paper-arena.png`: 종이 숲 폐허 무대, 1536×1024.
 - `paper-art.js`: 실제 원화의 표시 영역·발 원점·지팡이 끝 좌표. 같은 배우의 포즈마다 동일한 축척을 사용합니다.

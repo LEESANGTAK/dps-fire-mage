@@ -22,7 +22,7 @@
 ## 3. AI 생성 콘텐츠 공개 (필수)
 
 ### 사전 생성 콘텐츠(Pre-Generated): **예**
-프로젝트 문서(`docs/art/PAPER_MONSTERS.md`, `PAPER_ARENAS.md`, `ART_CONCEPT_PROMPTS.md`, `FIREBALL_ART_PROMPT.md` 등)에 이미지 생성 도구로 원화를 만든 기록과 프롬프트가 남아 있습니다.
+프로젝트 문서(`docs/art/PAPER_MONSTERS.md`, `PAPER_ARENAS.md`, `ART_CONCEPT_PROMPTS.md`, `FIREBALL_ART_PROMPT.md` 등)에 이미지 생성 도구로 원화를 만든 기록과 프롬프트가 남아 있습니다. 2026-11-01 플레이어 마법사는 OpenAI 이미지 API(`gpt-image-1.5`)로 다시 만들었습니다(`docs/art/MAGE_REDESIGN.md`, 그림마다 생성 기록 json). 공개 문구의 범위는 그대로 맞습니다.
 
 공개 문구 초안(영문, 스토어 페이지에 그대로 노출됩니다):
 > Character, monster, background, and spell-effect artwork was created with the help of generative AI image tools, then selected, edited, and integrated by the developer (cleanup, compositing, and in-game animation). ⚠️[Music and sound effects were created with AI audio tools.] No AI content is generated while the game is running.
