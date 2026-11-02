@@ -22,7 +22,7 @@ const unknown = [...called].filter((t) => !handled.has(t));
 assert.deepEqual(unknown, [], `처리하지 않는 효과음 이름을 부르면 소리가 나지 않습니다: ${unknown.join(', ')}`);
 
 // 2. UI 소리 파일이 모두 있어야 합니다.
-for (const m of game.matchAll(/'(assets\/sounds\/sfx\/(?:card_|buy_|enrage_|run_|button_|popup_)[a-z_0-9]+\.wav)'/g)) {
+for (const m of read('src/scripts/sound-mixer.js').matchAll(/'(assets\/sounds\/sfx\/(?:card_|buy_|enrage_|run_|button_|popup_)[a-z_0-9]+\.wav)'/g)) {
   assert.ok(fs.existsSync(path.join(__dirname, '..', m[1])), `${m[1]} 파일이 없습니다.`);
 }
 

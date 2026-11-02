@@ -282,56 +282,7 @@ function fmt(num) {
 // ==========================================
 // 5. 사운드 매니저 (BGM / SFX 볼륨 개별 조절 & 교차 루프 재생)
 // ==========================================
-// 효과음 파일 목록. 기존 효과음은 출처 문제로 전부 제거했고(docs/steam-store/sound-sources.md),
-// 새 효과음은 키에 경로를 넣고, 소리 이름과 크기(dB)를 src/scripts/sound-mixer.js의 믹스 표(SFX_MIX)에 적으면 playSound·playSfxCue로 재생됩니다.
-// 파일을 바꾸거나 추가하면 node scripts/measure-sfx-loudness.cjs로 음량을 다시 재세요(테스트가 확인).
-// 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · celebrate · proc · monster_destroy · summon_spirit
-//     · card_hover · card_deal · card_stamp · card_shuffle · buy_denied · enrage_tick · run_defeat
-const FIREBALL_SFX_FILES = {
-  // VARCO Sound 유료 플랜 생성(2026-10-26)
-  meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
-  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav',
-  drop_coin: 'assets/sounds/sfx/drop_coin.wav',
-  // ElevenLabs Sound Effects API, Starter 유료 플랜 생성(2026-10-28, scripts/generate-sfx.cjs)
-  fly: 'assets/sounds/sfx/fireball_whoosh.wav',
-  // 적중음(2026-10-31 교체): 예전 'soft pop' 4종이 타격감이 없어, 날카로운 첫소리 + 낮은 쿵의 2종으로 바꿨습니다(평균 음량 서로 맞춤).
-  explosion: [
-    'assets/sounds/sfx/fireball_slam_1.wav',
-    'assets/sounds/sfx/fireball_slam_2.wav'
-  ],
-  explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
-  item_select: 'assets/sounds/sfx/card_pick.wav',
-  monster_destroy: 'assets/sounds/sfx/monster_burst.wav',
-  summon_spirit: 'assets/sounds/sfx/spirit_summon.wav',
-  // 강조음 2종: 축하(보상·기록·해금)와 발동(전투 중 상태 변화·시작 버튼)을 소리로 구분합니다.
-  celebrate: 'assets/sounds/sfx/celebrate_chime.wav',
-  proc: 'assets/sounds/sfx/proc_chime.wav',
-  // 1차 추가분(2026-10-31, ElevenLabs Starter). 종류마다 2~3개를 섞어 틀고, 평균 음량은 가장 작은 후보에 맞췄습니다.
-  card_hover: ['assets/sounds/sfx/card_hover_1.wav', 'assets/sounds/sfx/card_hover_2.wav'],
-  card_deal: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav', 'assets/sounds/sfx/card_deal_3.wav'],
-  card_stamp: ['assets/sounds/sfx/card_stamp_1.wav', 'assets/sounds/sfx/card_stamp_2.wav'],
-  card_shuffle: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav', 'assets/sounds/sfx/card_shuffle_3.wav'],
-  buy_denied: ['assets/sounds/sfx/buy_denied_1.wav', 'assets/sounds/sfx/buy_denied_2.wav', 'assets/sounds/sfx/buy_denied_3.wav'],
-  enrage_tick: ['assets/sounds/sfx/enrage_tick_1.wav', 'assets/sounds/sfx/enrage_tick_2.wav'],
-  run_defeat: ['assets/sounds/sfx/run_defeat_1.wav', 'assets/sounds/sfx/run_defeat_2.wav'],
-  // 메뉴·창 버튼 마우스오버 '톡'(2026-10-31). 카드 호버 '슥'보다 짧고 작습니다.
-  button_hover: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
-  // 팝업 창 열림 '사락'(2026-10-31): Esc 메뉴·설정·도감이 함께 씁니다.
-  popup_open: ['assets/sounds/sfx/popup_open_1.wav', 'assets/sounds/sfx/popup_open_2.wav'],
-  // 배경 소품 상호작용(2026-11-02 시범). 전용 효과음을 만들기 전까지 기존 파일을 음높이만 바꿔 씁니다.
-  prop_crystal_tap: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
-  prop_crystal_break: 'assets/sounds/sfx/monster_burst.wav',
-  prop_brazier: 'assets/sounds/sfx/fireball_whoosh.wav',
-  prop_sigil: 'assets/sounds/sfx/celebrate_chime.wav',
-  prop_lantern: ['assets/sounds/sfx/card_stamp_1.wav', 'assets/sounds/sfx/card_stamp_2.wav'],
-  prop_relight: 'assets/sounds/sfx/fireball_whoosh.wav',
-  prop_cart: ['assets/sounds/sfx/fireball_slam_1.wav', 'assets/sounds/sfx/fireball_slam_2.wav'],
-  prop_cart_spill: 'assets/sounds/sfx/monster_burst.wav',
-  prop_banner: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav'],
-  prop_chime: 'assets/sounds/sfx/celebrate_chime.wav',
-  prop_peek: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
-  prop_slime: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav']
-};
+// 효과음 파일 목록·크기(믹스 표)는 src/scripts/sound-mixer.js(SFX_FILES·SFX_MIX)에 있습니다. 여기서는 재생 규칙만 둡니다.
 // UI·소품 소리의 재생 규칙. 크기는 믹스 표(SFX_MIX)에서 정합니다(자주 나는 소리일수록 작게, AGENTS.md 2장).
 // jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
 const UI_SFX = {
@@ -362,10 +313,6 @@ const UI_SFX = {
 const uiSfxLastAt = {};
 // meteor_fly.wav가 가장 커지는 지점(초). 낙하가 이보다 짧으므로 이만큼 앞당겨 틀어 착탄 순간에 소리가 정점에 닿게 합니다.
 const METEOR_FLY_SFX_PEAK_SEC = 1.4;
-// 반복 재생 효과음(지속 피해 연소음, 시전 중 충전음). 비어 있으면 재생하지 않습니다.
-// ElevenLabs 반복(loop) 옵션으로 생성(2026-10-28). 연소음은 같은 소리를 원형으로 3겹 겹쳐 빈 구간을 채웠습니다.
-const BURNING_LOOP_SFX_FILE = 'assets/sounds/sfx/burn_loop.wav';
-const FIREBALL_CAST_LOOP_SFX_FILE = 'assets/sounds/sfx/fireball_charge_loop.wav';
 
 const BGM_TRACKS = [
   { title: tr('무거운 왕관 아래에서'), src: 'assets/sounds/bgm/Beneath_the_Heavy_Crown.mp3' },
@@ -540,7 +487,7 @@ function sfxRandom() {
   return (sfxRandState >>> 0) / 4294967296;
 }
 const soundMixer = createSoundMixer({
-  files: { ...FIREBALL_SFX_FILES, burn_loop: BURNING_LOOP_SFX_FILE, cast_loop: FIREBALL_CAST_LOOP_SFX_FILE },
+  files: SFX_FILES,
   getVolume: getSfxUserVolume,
   random: sfxRandom
 });

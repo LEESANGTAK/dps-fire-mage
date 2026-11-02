@@ -15,10 +15,62 @@
  * 2026-11-03 첫 표는 바로 전까지 들리던 크기(효과음 슬라이더 10% 기준, 상한에 닿지 않던 구간)를 그대로 옮긴 값입니다.
  * 소리 하나를 바꿀 때는 표의 그 칸만 고치세요. 큰 사건일수록 크게(일반 적중 < 치명타 < 메테오 폭발)는 테스트가 지킵니다. */
 
+// 효과음 파일 목록(키 → 경로, 배열이면 번갈아 트는 변형 묶음). 예전 효과음은 출처 문제로 전부 제거했습니다(docs/steam-store/sound-sources.md).
+// 새 효과음: 파일을 넣고 여기에 키를 적은 뒤, 아래 SFX_MIX에 소리 이름·크기를 적고, node scripts/measure-sfx-loudness.cjs로 음량을 잽니다.
+const SFX_FILES = {
+  // VARCO Sound 유료 플랜 생성(2026-10-26)
+  meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
+  meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav',
+  drop_coin: 'assets/sounds/sfx/drop_coin.wav',
+  // ElevenLabs Sound Effects API, Starter 유료 플랜 생성(2026-10-28, scripts/generate-sfx.cjs)
+  fly: 'assets/sounds/sfx/fireball_whoosh.wav',
+  // 적중음(2026-10-31 교체): 예전 'soft pop' 4종이 타격감이 없어, 날카로운 첫소리 + 낮은 쿵의 2종으로 바꿨습니다(평균 음량 서로 맞춤).
+  explosion: [
+    'assets/sounds/sfx/fireball_slam_1.wav',
+    'assets/sounds/sfx/fireball_slam_2.wav'
+  ],
+  explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
+  item_select: 'assets/sounds/sfx/card_pick.wav',
+  monster_destroy: 'assets/sounds/sfx/monster_burst.wav',
+  summon_spirit: 'assets/sounds/sfx/spirit_summon.wav',
+  // 강조음 2종: 축하(보상·기록·해금)와 발동(전투 중 상태 변화·시작 버튼)을 소리로 구분합니다.
+  celebrate: 'assets/sounds/sfx/celebrate_chime.wav',
+  proc: 'assets/sounds/sfx/proc_chime.wav',
+  // 1차 추가분(2026-10-31, ElevenLabs Starter). 종류마다 2~3개를 섞어 틀고, 평균 음량은 가장 작은 후보에 맞췄습니다.
+  card_hover: ['assets/sounds/sfx/card_hover_1.wav', 'assets/sounds/sfx/card_hover_2.wav'],
+  card_deal: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav', 'assets/sounds/sfx/card_deal_3.wav'],
+  card_stamp: ['assets/sounds/sfx/card_stamp_1.wav', 'assets/sounds/sfx/card_stamp_2.wav'],
+  card_shuffle: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav', 'assets/sounds/sfx/card_shuffle_3.wav'],
+  buy_denied: ['assets/sounds/sfx/buy_denied_1.wav', 'assets/sounds/sfx/buy_denied_2.wav', 'assets/sounds/sfx/buy_denied_3.wav'],
+  enrage_tick: ['assets/sounds/sfx/enrage_tick_1.wav', 'assets/sounds/sfx/enrage_tick_2.wav'],
+  run_defeat: ['assets/sounds/sfx/run_defeat_1.wav', 'assets/sounds/sfx/run_defeat_2.wav'],
+  // 메뉴·창 버튼 마우스오버 '톡'(2026-10-31). 카드 호버 '슥'보다 짧고 작습니다.
+  button_hover: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
+  // 팝업 창 열림 '사락'(2026-10-31): Esc 메뉴·설정·도감이 함께 씁니다.
+  popup_open: ['assets/sounds/sfx/popup_open_1.wav', 'assets/sounds/sfx/popup_open_2.wav'],
+  // 배경 소품 상호작용(2026-11-02 시범). 전용 효과음을 만들기 전까지 기존 파일을 음높이만 바꿔 씁니다.
+  prop_crystal_tap: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
+  prop_crystal_break: 'assets/sounds/sfx/monster_burst.wav',
+  prop_brazier: 'assets/sounds/sfx/fireball_whoosh.wav',
+  prop_sigil: 'assets/sounds/sfx/celebrate_chime.wav',
+  prop_lantern: ['assets/sounds/sfx/card_stamp_1.wav', 'assets/sounds/sfx/card_stamp_2.wav'],
+  prop_relight: 'assets/sounds/sfx/fireball_whoosh.wav',
+  prop_cart: ['assets/sounds/sfx/fireball_slam_1.wav', 'assets/sounds/sfx/fireball_slam_2.wav'],
+  prop_cart_spill: 'assets/sounds/sfx/monster_burst.wav',
+  prop_banner: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav'],
+  prop_chime: 'assets/sounds/sfx/celebrate_chime.wav',
+  prop_peek: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
+  prop_slime: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav'],
+  // 반복음(지속 피해 연소음, 시전 중 충전음). ElevenLabs 반복(loop) 옵션으로 생성(2026-10-28).
+  // 연소음은 같은 소리를 원형으로 3겹 겹쳐 빈 구간을 채웠습니다.
+  burn_loop: 'assets/sounds/sfx/burn_loop.wav',
+  cast_loop: 'assets/sounds/sfx/fireball_charge_loop.wav'
+};
+
 // 무리별 추가 조절(dB). 0이면 표 그대로.
 const SFX_BUSES = { combat: 0, meteor: 0, reward: 0, ui: 0, alert: 0, prop: 0 };
 
-// 소리 이름 → { sound: 파일 키(FIREBALL_SFX_FILES / 반복음), bus, db, measure?: 'mean'(계속 깔리는 반복음), offset?: 앞 무음 건너뛰기(초) }
+// 소리 이름 → { sound: 파일 키(SFX_FILES), bus, db, measure?: 'mean'(계속 깔리는 반복음), offset?: 앞 무음 건너뛰기(초) }
 const SFX_MIX = {
   // 전투: 화염구
   launch: { sound: 'fly', bus: 'combat', db: 5.0 },
@@ -85,7 +137,7 @@ function sfxCueGain(cueName, filePath, { mix = SFX_MIX, buses = SFX_BUSES, loudn
  * files: 파일 키 → 경로 또는 경로 배열. getVolume(): 효과음 슬라이더 × 마스터(음소거면 0). random(): 변형 고르기용 난수.
  * AudioContextCtor·fetchFn·AudioCtor는 테스트에서 가짜를 넣을 수 있게 열어 둡니다. */
 function createSoundMixer(options = {}) {
-  const files = options.files || {};
+  const files = options.files || SFX_FILES;
   const mix = options.mix || SFX_MIX;
   const buses = options.buses || SFX_BUSES;
   const loudness = options.loudness || (typeof SFX_LOUDNESS !== 'undefined' ? SFX_LOUDNESS : {});
@@ -270,5 +322,5 @@ function createSoundMixer(options = {}) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { SFX_BUSES, SFX_MIX, SFX_REFERENCE_LUFS, SFX_LIMITER, sfxCueGain, createSoundMixer, dbToGain };
+  module.exports = { SFX_FILES, SFX_BUSES, SFX_MIX, SFX_REFERENCE_LUFS, SFX_LIMITER, sfxCueGain, createSoundMixer, dbToGain };
 }

@@ -67,14 +67,12 @@ removedSfxFiles.forEach((file) => {
 assert.ok(gameSource.includes('if (!burningLoopAudio) return;') && gameSource.includes('if (!fireballCastAudio) return;'), '반복 효과음 파일이 없을 때 건너뛰어야 합니다.');
 console.log('   ✔ 6. 예전 효과음 12종 제거 및 효과음 없는 상태 안전 처리 검증 통과');
 
-// 7. 등록한 효과음 경로가 모두 실제 파일인지 검증
-const sfxBlock = (gameSource.match(/const FIREBALL_SFX_FILES = \{([\s\S]*?)\};/) || [])[1] || '';
-const sfxPaths = [...sfxBlock.matchAll(/'(assets\/sounds\/sfx\/[^']+)'/g)].map((m) => m[1]);
+// 7. 등록한 효과음 경로가 모두 실제 파일인지 검증(목록은 src/scripts/sound-mixer.js의 SFX_FILES)
+const { SFX_FILES } = require('../src/scripts/sound-mixer.js');
+const sfxPaths = [...new Set(Object.values(SFX_FILES).flat())];
 assert.ok(sfxPaths.includes('assets/sounds/sfx/meteor_fly.wav') && sfxPaths.includes('assets/sounds/sfx/meteor_explosion.wav'), '메테오 효과음 2종이 등록되어 있어야 합니다.');
-// 반복음 상수(BURNING_LOOP_SFX_FILE·FIREBALL_CAST_LOOP_SFX_FILE)에 적은 경로도 함께 검사합니다.
-const loopPaths = [...gameSource.matchAll(/const (?:BURNING_LOOP_SFX_FILE|FIREBALL_CAST_LOOP_SFX_FILE) = '([^']*)';/g)]
-  .map((m) => m[1]).filter(Boolean);
-[...sfxPaths, ...loopPaths].forEach((p) => assert.ok(fs.existsSync(path.join(ROOT, p)), `등록한 효과음 파일이 없습니다: ${p}`));
-console.log(`   ✔ 7. 등록한 효과음 ${sfxPaths.length}종·반복음 ${loopPaths.length}종 파일 존재 검증 통과`);
+assert.ok(SFX_FILES.burn_loop && SFX_FILES.cast_loop, '반복음 2종이 등록되어 있어야 합니다.');
+sfxPaths.forEach((p) => assert.ok(fs.existsSync(path.join(ROOT, p)), `등록한 효과음 파일이 없습니다: ${p}`));
+console.log(`   ✔ 7. 등록한 효과음 ${sfxPaths.length}개 파일 존재 검증 통과`);
 
 // 8. 효과음 크기(믹스 표)·Web Audio 재생은 tests/sound-mixer.test.cjs에서 검증합니다.

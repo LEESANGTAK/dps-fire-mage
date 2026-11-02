@@ -207,7 +207,7 @@ async function runSmokeTest(win) {
     // 개발용 밸런스 로그 버튼은 배포 빌드에서만 사라져야 합니다.
     // 효과음 믹서: 파일 주소(file:)에서도 효과음을 Web Audio로 읽어야 슬라이더를 올려도 크기 순서가 유지됩니다.
     const mixer = await win.webContents.executeJavaScript(`(async () => {
-      const total = new Set(Object.values({ ...FIREBALL_SFX_FILES, burn_loop: BURNING_LOOP_SFX_FILE, cast_loop: FIREBALL_CAST_LOOP_SFX_FILE }).flat()).size;
+      const total = new Set(Object.values(SFX_FILES).flat()).size;
       for (let i = 0; i < 50 && soundMixer.loadedCount < total; i++) await new Promise((r) => setTimeout(r, 100));
       state.soundOn = true; state.sfxVolume = 0.5;
       const handle = playSfxCue('crit');

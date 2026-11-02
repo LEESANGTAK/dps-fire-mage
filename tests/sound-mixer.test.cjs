@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { measureAll, render } = require('../scripts/measure-sfx-loudness.cjs');
 const { SFX_LOUDNESS } = require('../src/scripts/sfx-loudness.js');
-const { SFX_MIX, SFX_BUSES, sfxCueGain, createSoundMixer, dbToGain } = require('../src/scripts/sound-mixer.js');
+const { SFX_FILES, SFX_MIX, SFX_BUSES, sfxCueGain, createSoundMixer, dbToGain } = require('../src/scripts/sound-mixer.js');
 const { createHeadlessGame } = require('../scripts/lib/headless-game.cjs');
 
 const root = path.join(__dirname, '..');
@@ -17,7 +17,7 @@ assert.equal(read('src/scripts/sfx-loudness.js').replace(/\r\n/g, '\n'), render(
 
 // 2. 믹스 표가 실제 파일 키를 가리키고, 코드가 부르는 소리 이름이 모두 표에 있어야 합니다.
 const g = createHeadlessGame({ seed: 3 });
-const files = g.run('({ ...FIREBALL_SFX_FILES, burn_loop: BURNING_LOOP_SFX_FILE, cast_loop: FIREBALL_CAST_LOOP_SFX_FILE })');
+const files = SFX_FILES;
 for (const [cue, c] of Object.entries(SFX_MIX)) {
   assert.ok(files[c.sound], `${cue}: 파일 키 ${c.sound}가 없습니다.`);
   assert.ok(c.bus in SFX_BUSES, `${cue}: 모르는 무리 ${c.bus}`);
@@ -61,6 +61,16 @@ near('burn_loop', P('burn_loop'), 0.34);
 // 무리 조절은 그 무리 소리 전부에 더해집니다.
 assert.ok(Math.abs(sfxCueGain('crit', P('fireball_hit_crit'), { loudness: SFX_LOUDNESS, buses: { ...SFX_BUSES, combat: 6 } })
   / sfxCueGain('crit', P('fireball_hit_crit'), { loudness: SFX_LOUDNESS }) - dbToGain(6)) < 1e-9);
+
+// 믹싱 페이지(previews/sound-mixer.html): 표의 모든 소리에 이름이 있고, 장면이 없는 소리를 부르지 않습니다.
+{
+  const page = read('previews/sound-mixer.html');
+  const labels = page.slice(page.indexOf('const CUE_LABELS = {'), page.indexOf('const LOOP_CUES'));
+  for (const cue of Object.keys(SFX_MIX)) assert.ok(new RegExp(`\\b${cue}: '`).test(labels), `믹싱 페이지에 ${cue} 이름이 없습니다.`);
+  const scenes = page.slice(page.indexOf('const SCENES = {'), page.indexOf('function playScene'));
+  for (const m of scenes.matchAll(/\[[\d.]+, '([a-z_]+)'/g)) assert.ok(SFX_MIX[m[1]], `믹싱 페이지 장면의 ${m[1]}이 표에 없습니다.`);
+  assert.ok(page.includes('../src/scripts/sound-mixer.js') && page.includes('../src/scripts/sfx-loudness.js'), '게임과 같은 믹서를 써야 합니다.');
+}
 
 // ---- 가짜 Web Audio ----
 function fakeAudioContext(log) {
