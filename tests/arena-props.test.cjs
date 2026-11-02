@@ -36,7 +36,7 @@ const flamePoints = DATA.citadelFlames.filter((f) => f.clickable).map((f) => cen
   assert.equal(props.hitArt(crystalPoint), null, '배경 전환이 끝나기 전에는 반응하지 않음');
   settle(props);
   for (let i = 1; i < ARENA_PROP_RULES.crystalHits; i++) assert.equal(props.hitArt(crystalPoint), 'crystal-hit');
-  assert.equal(props.snapshot().crystal.cracks, (ARENA_PROP_RULES.crystalHits - 1) * 2, '두드릴 때마다 금 한 줄 + 잔금 한 줄');
+  assert.equal(props.snapshot().crystal.cracks, (ARENA_PROP_RULES.crystalHits - 1) * 2, '두드릴 때마다 맞은 지점에서 금 두 갈래');
   const taps = sounds.filter(([t]) => t === 'prop_crystal_tap').map(([, p]) => p);
   assert.ok(taps.every((p, i) => i === 0 || p > taps[i - 1]));
   assert.equal(props.hitArt(crystalPoint), 'crystal-break');

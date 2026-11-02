@@ -40,14 +40,14 @@ function createArenaProps(canvas, data, options = {}) {
 
   let theme = null, stage = 0, time = 0, fade = 1, needsClear = true;
   const particles = [];
-  const crystal = { hits: 0, flash: 0, broken: false, wobble: 0, shatter: 0, regrow: 0, glint: 2.5, glintAt: null, shards: [], cracks: [] };
+  const crystal = { hits: 0, flash: 0, broken: false, wobble: 0, shatter: 0, regrow: 0, glint: 2.5, glintAt: null, shards: [], cracks: [], impacts: [] };
   const flames = data.citadelFlames.map((f) => ({ ...f, flare: 0, warm: 0, phase: rng() * 6.28 }));
   let sigil = 0, allWarmLast = false;
   let crystalLayer = null;
 
   function resetCrystal(regrow) {
     if (crystal.broken && regrow) crystal.regrow = ARENA_PROP_RULES.regrowSec;
-    crystal.hits = 0; crystal.broken = false; crystal.wobble = 0; crystal.shatter = 0; crystal.shards = []; crystal.cracks = [];
+    crystal.hits = 0; crystal.broken = false; crystal.wobble = 0; crystal.shatter = 0; crystal.shards = []; crystal.cracks = []; crystal.impacts = [];
   }
   function resetFlames() {
     flames.forEach((f) => { f.flare = 0; f.warm = 0; });
@@ -83,28 +83,37 @@ function createArenaProps(canvas, data, options = {}) {
     particles.push(p);
   }
 
-  // 결정 하나에 금 한 줄: 위쪽 임의 지점에서 아래로 3~4번 꺾입니다(원화 좌표).
-  function addCrack() {
+  // 금은 맞은 지점에서 두 갈래로 뻗어 나갑니다(깨진 유리·만화풍 얼음 레퍼런스). 원화 좌표.
+  function addCrack(p) {
     const bodies = data.mineCrystals.bodies;
-    const big = bodies.filter((b) => b[2] * b[3] > 900);
-    const b = (big.length ? big : bodies)[Math.floor(rng() * (big.length || bodies.length))];
-    let x = b[0] + b[2] * (.3 + rng() * .4), y = b[1] + b[3] * (.15 + rng() * .25);
-    const points = [[x, y]];
-    const steps = 3 + Math.floor(rng() * 2);
-    for (let i = 0; i < steps; i++) {
-      x += (rng() - .5) * b[2] * .35; y += b[3] * (.1 + rng() * .12);
-      points.push([x, y]);
+    const inside = bodies.filter((b) => inBox(p, b, 0));
+    const b = inside.length
+      ? inside.reduce((a, c) => (a[2] * a[3] < c[2] * c[3] ? a : c))
+      : bodies.reduce((a, c) => (Math.hypot(p.x - a[0] - a[2] / 2, p.y - a[1] - a[3] / 2) < Math.hypot(p.x - c[0] - c[2] / 2, p.y - c[1] - c[3] / 2) ? a : c));
+    // 결정 가장자리를 눌러도 금은 결정 안쪽에서 시작합니다.
+    const ox = Math.min(b[0] + b[2] * .8, Math.max(b[0] + b[2] * .2, p.x));
+    const oy = Math.min(b[1] + b[3] * .75, Math.max(b[1] + b[3] * .15, p.y));
+    const size = Math.min(b[2], b[3]);
+    const base = rng() * Math.PI * 2;
+    for (const turn of [0, Math.PI * (.7 + rng() * .5)]) {
+      let a = base + turn, x = ox, y = oy;
+      const points = [[x, y]];
+      const steps = 2 + Math.floor(rng() * 2);
+      for (let i = 0; i < steps; i++) {
+        a += (rng() - .5) * .9;
+        const len = size * (.12 + rng() * .1);
+        x += Math.cos(a) * len; y += Math.sin(a) * len;
+        points.push([x, y]);
+      }
+      crystal.cracks.push(points);
     }
-    // 가운데쯤에서 짧은 잔금 하나가 갈라집니다.
-    const mid = points[Math.floor(points.length / 2)];
-    const branch = [mid, [mid[0] + (rng() < .5 ? -1 : 1) * b[2] * (.12 + rng() * .1), mid[1] + b[3] * (.06 + rng() * .06)]];
-    crystal.cracks.push(points, branch);
+    crystal.impacts.push([ox, oy]);
   }
 
   function hitCrystal(p, reduced) {
     if (crystal.broken || crystal.regrow > 0) return null;
     crystal.hits += 1;
-    addCrack();
+    addCrack(p);
     if (crystal.hits >= ARENA_PROP_RULES.crystalHits) {
       crystal.broken = true;
       crystal.shatter = reduced ? 0 : ARENA_PROP_RULES.shatterSec;
@@ -251,13 +260,23 @@ function createArenaProps(canvas, data, options = {}) {
       c.drawImage(sprite, 0, 0);
       c.globalCompositeOperation = 'source-atop';
       c.lineJoin = 'round';
+      // 밝은 수정의 금은 검은 선이 아니라 하얗게 빛나는 갈라짐으로 그립니다(검은 선은 '실을 붙인' 것처럼 보였음).
+      // 시작점이 가장 굵고 끝으로 갈수록 가늘어지며, 한쪽에만 옅은 푸른 그림자를 둬 패인 느낌을 줍니다.
+      // 원화의 0.4~0.8배로 줄여 그려지므로 원화 기준 굵기입니다.
       for (const crack of crystal.cracks) {
-        c.beginPath();
-        crack.forEach(([x, y], i) => (i ? c.lineTo(x - box[0], y - box[1]) : c.moveTo(x - box[0], y - box[1])));
-        // 원화의 0.4~0.8배로 줄여 그려지므로 원화 기준으로 굵게 긋습니다.
-        c.strokeStyle = 'rgba(232,250,255,.55)'; c.lineWidth = 2; c.translate(1.8, 1.4); c.stroke(); c.translate(-1.8, -1.4);
-        c.strokeStyle = '#2b2138'; c.lineWidth = 3.8; c.stroke();
+        const last = crack.length - 1;
+        for (let i = 0; i < last; i++) {
+          const [x0, y0] = crack[i], [x1, y1] = crack[i + 1];
+          const w = 3.4 * (1 - i / (last + .5)) + .6;
+          c.beginPath(); c.moveTo(x0 - box[0] + 1.6, y0 - box[1] + 1.2); c.lineTo(x1 - box[0] + 1.6, y1 - box[1] + 1.2);
+          c.strokeStyle = 'rgba(38,70,120,.32)'; c.lineWidth = w * 1.1; c.stroke();
+          c.beginPath(); c.moveTo(x0 - box[0], y0 - box[1]); c.lineTo(x1 - box[0], y1 - box[1]);
+          c.strokeStyle = 'rgba(248,254,255,.95)'; c.lineWidth = w; c.stroke();
+        }
       }
+      // 맞은 자리: 작은 흰 점.
+      c.fillStyle = 'rgba(250,255,255,.95)';
+      for (const [ix, iy] of crystal.impacts) { c.beginPath(); c.arc(ix - box[0], iy - box[1], 2.6, 0, Math.PI * 2); c.fill(); }
       c.globalCompositeOperation = 'source-over';
       source = crystalLayer;
     }
