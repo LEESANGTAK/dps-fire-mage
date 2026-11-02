@@ -316,7 +316,12 @@ const FIREBALL_SFX_FILES = {
   // 메뉴·창 버튼 마우스오버 '톡'(2026-10-31). 카드 호버 '슥'보다 짧고 작습니다.
   button_hover: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
   // 팝업 창 열림 '사락'(2026-10-31): Esc 메뉴·설정·도감이 함께 씁니다.
-  popup_open: ['assets/sounds/sfx/popup_open_1.wav', 'assets/sounds/sfx/popup_open_2.wav']
+  popup_open: ['assets/sounds/sfx/popup_open_1.wav', 'assets/sounds/sfx/popup_open_2.wav'],
+  // 배경 소품 상호작용(2026-11-02 시범). 전용 효과음을 만들기 전까지 기존 파일을 음높이만 바꿔 씁니다.
+  prop_crystal_tap: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
+  prop_crystal_break: 'assets/sounds/sfx/monster_burst.wav',
+  prop_brazier: 'assets/sounds/sfx/fireball_whoosh.wav',
+  prop_sigil: 'assets/sounds/sfx/celebrate_chime.wav'
 };
 // 종이 재질 UI 소리의 기본 볼륨. 자주 나는 소리일수록 작게 둡니다(처치·보상 > 전투 > UI 순서, AGENTS.md 2장).
 // jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
@@ -329,7 +334,12 @@ const UI_SFX = {
   enrage_tick: { volume: 0.8, jitter: 0, minGapMs: 300 },
   run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 },
   button_hover: { volume: 0.84, jitter: 0.05, minGapMs: 60 },
-  popup_open: { volume: 2.1, jitter: 0.04, minGapMs: 150 }
+  popup_open: { volume: 2.1, jitter: 0.04, minGapMs: 150 },
+  // 배경 소품: 전투 소리를 가리지 않게 작게 둡니다. 부서짐·옥좌 점등만 한 단계 크게.
+  prop_crystal_tap: { volume: 0.9, jitter: 0.03, minGapMs: 50 },
+  prop_crystal_break: { volume: 0.7, jitter: 0, minGapMs: 300 },
+  prop_brazier: { volume: 0.5, jitter: 0.06, minGapMs: 60 },
+  prop_sigil: { volume: 0.8, jitter: 0, minGapMs: 1000 }
 };
 const uiSfxLastAt = {};
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
@@ -2388,6 +2398,7 @@ function loadStage(stageNum) {
   playtestTelemetry.onStageStart(state.currentStage);
   const data = getStageData(state.currentStage);
   if (arenaEnvironment) arenaEnvironment.setStage(state.currentStage);
+  if (arenaProps) arenaProps.setStage(state.currentStage, getArenaTheme(state.currentStage).id);
   state.monster.maxHp = data.hp;
   state.monster.hp = data.hp;
   state.monster.isDying = false;
@@ -5025,6 +5036,7 @@ function gameLoop(nowMs) {
   if (arenaEnvironment) {
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     arenaEnvironment.update(dt, state.isPaused || document.hidden, reduced);
+    if (arenaProps) arenaProps.update(dt, state.isPaused || document.hidden, reduced);
   }
 
   if (typeof isTitleOpen === 'function' && isTitleOpen()) {
@@ -5564,6 +5576,22 @@ function loadGame() {
   } catch (e) {}
 }
 
+// 배경 소품 클릭: 버튼·몬스터·마법사 같은 기존 입력 대상 위에서는 반응하지 않습니다(화염구 오발 방지).
+function initArenaProps(arena) {
+  const canvas = document.getElementById('arena-props-canvas');
+  if (!canvas || !arena || typeof createArenaProps !== 'function' || typeof ARENA_PROP_DATA === 'undefined') return;
+  arenaProps = createArenaProps(canvas, ARENA_PROP_DATA, { onSound: (type, pitch) => playSound(type, pitch) });
+  arenaProps.setStage(state.currentStage, getArenaTheme(state.currentStage).id);
+  arena.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || state.isPaused) return;
+    if (typeof isMenuPaused === 'function' && isMenuPaused()) return;
+    if (typeof isTitleOpen === 'function' && isTitleOpen()) return;
+    const t = e.target;
+    if (t !== arena && !(t instanceof HTMLCanvasElement)) return;
+    arenaProps.hit(e.clientX, e.clientY, false, prefersReducedMotion());
+  });
+}
+
 function initEvents() {
   initSkillTooltips();
   if (typeof initActionBarDrag === 'function') initActionBarDrag();
@@ -5779,6 +5807,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (environmentCanvas) {
     arenaEnvironment = createArenaEnvironment(environmentCanvas, arena);
   }
+  initArenaProps(arena);
   checkAndTriggerUnfolds(true);
   updateSoundUI();
   updateSkillActionBarVisibility();
