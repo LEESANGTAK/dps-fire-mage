@@ -321,7 +321,15 @@ const FIREBALL_SFX_FILES = {
   prop_crystal_tap: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
   prop_crystal_break: 'assets/sounds/sfx/monster_burst.wav',
   prop_brazier: 'assets/sounds/sfx/fireball_whoosh.wav',
-  prop_sigil: 'assets/sounds/sfx/celebrate_chime.wav'
+  prop_sigil: 'assets/sounds/sfx/celebrate_chime.wav',
+  prop_lantern: ['assets/sounds/sfx/card_stamp_1.wav', 'assets/sounds/sfx/card_stamp_2.wav'],
+  prop_relight: 'assets/sounds/sfx/fireball_whoosh.wav',
+  prop_cart: ['assets/sounds/sfx/fireball_slam_1.wav', 'assets/sounds/sfx/fireball_slam_2.wav'],
+  prop_cart_spill: 'assets/sounds/sfx/monster_burst.wav',
+  prop_banner: ['assets/sounds/sfx/card_shuffle_1.wav', 'assets/sounds/sfx/card_shuffle_2.wav'],
+  prop_chime: 'assets/sounds/sfx/celebrate_chime.wav',
+  prop_peek: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
+  prop_slime: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav']
 };
 // 종이 재질 UI 소리의 기본 볼륨. 자주 나는 소리일수록 작게 둡니다(처치·보상 > 전투 > UI 순서, AGENTS.md 2장).
 // jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
@@ -339,7 +347,16 @@ const UI_SFX = {
   prop_crystal_tap: { volume: 0.9, jitter: 0.03, minGapMs: 50 },
   prop_crystal_break: { volume: 0.7, jitter: 0, minGapMs: 300 },
   prop_brazier: { volume: 0.5, jitter: 0.06, minGapMs: 60 },
-  prop_sigil: { volume: 0.8, jitter: 0, minGapMs: 1000 }
+  prop_sigil: { volume: 0.8, jitter: 0, minGapMs: 1000 },
+  prop_lantern: { volume: 0.5, jitter: 0.05, minGapMs: 60 },
+  prop_relight: { volume: 0.5, jitter: 0, minGapMs: 300 },
+  prop_cart: { volume: 0.35, jitter: 0.05, minGapMs: 60 },
+  prop_cart_spill: { volume: 0.6, jitter: 0, minGapMs: 500 },
+  prop_banner: { volume: 0.6, jitter: 0.05, minGapMs: 80 },
+  // 멜로디가 되어야 하므로 음높이를 흔들지 않습니다.
+  prop_chime: { volume: 0.45, jitter: 0, minGapMs: 40 },
+  prop_peek: { volume: 0.7, jitter: 0.03, minGapMs: 60 },
+  prop_slime: { volume: 0.8, jitter: 0, minGapMs: 500 }
 };
 const uiSfxLastAt = {};
 // 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
@@ -885,6 +902,14 @@ const DEFAULT_FIREBALL_STYLE = {
   colorEdge: 'rgba(239, 68, 68, 0)',
   ringRgb: '251, 146, 60'
 };
+// 행운 불씨(배경 소품 큰 반응의 확률 보상): 다음 화염구 하나만 푸른 마법 불꽃으로 나갑니다. 피해·속도는 그대로입니다.
+const LUCKY_FIREBALL_STYLE = {
+  colorCore: '#e0f2fe',
+  colorMid: '#60a5fa',
+  colorEdge: 'rgba(129, 140, 248, 0)',
+  ringRgb: '129, 140, 248'
+};
+let luckyEmberReady = false;
 
 const rockDebris = [];
 let lastMeteorShakeTime = -Infinity;
@@ -962,6 +987,11 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   // 발사 시작점은 마법봉 끝에서 미세한 분산(최대 ±3px)만 부여하여 발 쪽으로 쳐지지 않게 하고,
   // 목표 지점에 offsetY를 주어 마법봉 끝 하나의 원점에서 적을 향해 부채꼴로 뻗어나가는 탄도를 형성합니다.
   const startSpreadY = Math.sign(offsetY) * Math.min(3, Math.abs(offsetY) * 0.15);
+  let style = DEFAULT_FIREBALL_STYLE;
+  if (luckyEmberReady && type === 'fireball' && scaleMult >= 0.8) {
+    style = LUCKY_FIREBALL_STYLE;
+    luckyEmberReady = false;
+  }
 
   launchCustomProjectile({
     type,
@@ -971,10 +1001,10 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
     targetY: end.y + offsetY,
     duration: 0.24,
     radius: baseRadius * scaleMult,
-    colorCore: DEFAULT_FIREBALL_STYLE.colorCore,
-    colorMid: DEFAULT_FIREBALL_STYLE.colorMid,
-    colorEdge: DEFAULT_FIREBALL_STYLE.colorEdge,
-    ringRgb: DEFAULT_FIREBALL_STYLE.ringRgb,
+    colorCore: style.colorCore,
+    colorMid: style.colorMid,
+    colorEdge: style.colorEdge,
+    ringRgb: style.ringRgb,
     evoTier: 1,
     orbiters: 0,
     onHit: onHitCallback
@@ -5580,7 +5610,10 @@ function loadGame() {
 function initArenaProps(arena) {
   const canvas = document.getElementById('arena-props-canvas');
   if (!canvas || !arena || typeof createArenaProps !== 'function' || typeof ARENA_PROP_DATA === 'undefined') return;
-  arenaProps = createArenaProps(canvas, ARENA_PROP_DATA, { onSound: (type, pitch) => playSound(type, pitch) });
+  arenaProps = createArenaProps(canvas, ARENA_PROP_DATA, {
+    onSound: (type, pitch) => playSound(type, pitch),
+    onLucky: () => { luckyEmberReady = true; }
+  });
   arenaProps.setStage(state.currentStage, getArenaTheme(state.currentStage).id);
   arena.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || state.isPaused) return;

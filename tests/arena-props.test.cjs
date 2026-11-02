@@ -14,7 +14,7 @@ assert.ok(DATA.mineCrystals.bodies.length >= 3);
 assert.equal(DATA.citadelFlames.filter((f) => f.clickable).length, 4);
 
 const gradient = { addColorStop() {} };
-const ctx = new Proxy({ globalAlpha: 1, createRadialGradient: () => gradient }, { get: (o, k) => (k in o ? o[k] : () => {}) });
+const ctx = new Proxy({ globalAlpha: 1, createRadialGradient: () => gradient, createLinearGradient: () => gradient }, { get: (o, k) => (k in o ? o[k] : () => {}) });
 class FakeImage { constructor() { this.complete = true; this.naturalWidth = 10; } }
 function make(seed = 1) {
   let s = seed;

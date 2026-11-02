@@ -6,6 +6,8 @@ const ARENA_THEMES = [
   {id:'citadel',name:'화염 성채'},
   {id:'void',name:'공허의 경계'}
 ];
+// 원화 위에 덮는 위아래 그늘(UI 영역 가독성). 배경 소품(arena-props.js)도 같은 그늘을 씌워야 밝기가 맞습니다.
+const ARENA_SHADE_STOPS = [[0, '#090b16a0'], [.32, '#090b1610'], [.78, '#0d0a1630'], [1, '#0d0a16b0']];
 function getArenaTheme(stage) {
   const index=Math.max(0,Math.ceil(Math.max(1,Number(stage)||1)/5)-1);
   return ARENA_THEMES[Math.min(4,index)];
@@ -39,7 +41,7 @@ function createArenaEnvironment(canvas,arena,ImageType=Image) {
     // 첫 원화가 로드되기 전에는 기존 CSS 배경이 비치도록 둡니다.
     // 원화의 넓은 중앙 공간을 유지하며 UI 영역만 어둡게 받칩니다.
     const shade=ctx.createLinearGradient(0,0,0,canvas.height);
-    shade.addColorStop(0,'#090b16a0');shade.addColorStop(.32,'#090b1610');shade.addColorStop(.78,'#0d0a1630');shade.addColorStop(1,'#0d0a16b0');
+    ARENA_SHADE_STOPS.forEach(([at,color])=>shade.addColorStop(at,color));
     ctx.fillStyle=shade;ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.restore();
   }
@@ -62,4 +64,4 @@ function createArenaEnvironment(canvas,arena,ImageType=Image) {
   return {setStage,resize,update,snapshot:()=>({theme:theme&&theme.id,fade,images:Object.keys(images).length})};
 }
 let arenaEnvironment=null;
-if(typeof module!=='undefined')module.exports={ARENA_THEMES,getArenaTheme,createArenaEnvironment};
+if(typeof module!=='undefined')module.exports={ARENA_THEMES,ARENA_SHADE_STOPS,getArenaTheme,createArenaEnvironment};

@@ -1,4 +1,4 @@
-/* 배경 소품 상호작용(시범 2종: 폐광 수정 군락, 성채 화로).
+/* 배경 소품 상호작용: 폐광 수정 군락·성채 화로(이 파일), 나머지 소품은 arena-props-extra.js.
  *
  * - 움직이는 소품은 원화에서 잘라 낸 조각(scripts/build-arena-props.py)만 씁니다. 새 소품을 따로 그려 얹지 않습니다
  *   (2026-10-04에 캔버스로 그린 소품·조명을 제거한 이력, docs/design-decisions.md).
@@ -31,7 +31,7 @@ function createArenaProps(canvas, data, options = {}) {
   function image(name) {
     if (!images[name] && ImageType) {
       const im = new ImageType();
-      im.src = `assets/art/props/${name}.png`;
+      im.src = name.includes('/') ? name : `assets/art/props/${name}.png`;
       images[name] = im;
     }
     return images[name];
@@ -44,6 +44,28 @@ function createArenaProps(canvas, data, options = {}) {
   const flames = data.citadelFlames.map((f) => ({ ...f, flare: 0, warm: 0, phase: rng() * 6.28 }));
   let sigil = 0, allWarmLast = false;
   let crystalLayer = null;
+  const onLuckyRaw = options.onLucky || (() => {});
+  const onEvent = options.onEvent || (() => {});
+  // 큰 반응 뒤 확률로 '행운 불씨'(다음 화염구 하나의 색만 바뀌는 외형 보상).
+  function lucky(name) {
+    const chance = typeof ARENA_EXTRA_RULES !== 'undefined' ? ARENA_EXTRA_RULES.luckyChance : .5;
+    if (rng() < chance) onLuckyRaw(name);
+    return name;
+  }
+  const extraFactory = options.extras || (typeof createArenaPropExtras === 'function' ? createArenaPropExtras : null);
+  const extras = extraFactory ? extraFactory({
+    ctx, data, image, ready, rng, onSound, inBox: (p, box, pad) => inBox(p, box, pad),
+    pushParticle: (q) => pushParticle(q),
+    onLucky: (name) => onLuckyRaw(name),
+    event: (name) => onEvent(name)
+  }) : [];
+  const THEME_IMAGES = {
+    mine: ['mine-crystals', 'mine-crystals-broken', 'mine-extra'],
+    citadel: ['citadel-flames'],
+    ruins: ['ruins', 'ruins-lava-mask'],
+    void: ['void', 'void-crystals'],
+    meadow: ['assets/art/paper-slime-poses.png']
+  };
 
   function resetCrystal(regrow) {
     if (crystal.broken && regrow) crystal.regrow = ARENA_PROP_RULES.regrowSec;
@@ -61,12 +83,12 @@ function createArenaProps(canvas, data, options = {}) {
     if (changedTheme) {
       theme = themeId; fade = 0; particles.length = 0;
       resetCrystal(false); resetFlames();
-      if (theme === 'mine') { image('mine-crystals'); image('mine-crystals-broken'); }
-      if (theme === 'citadel') image('citadel-flames');
+      (THEME_IMAGES[theme] || []).forEach((name) => image(name));
     } else {
       // 같은 지역의 다음 스테이지: 부서진 수정은 다시 자라고, 화로는 원래 크기로 돌아갑니다.
       resetCrystal(true); resetFlames();
     }
+    extras.forEach((x) => x.reset());
     needsClear = true;
   }
 
@@ -119,7 +141,7 @@ function createArenaProps(canvas, data, options = {}) {
       crystal.shatter = reduced ? 0 : ARENA_PROP_RULES.shatterSec;
       if (!reduced) spawnShards();
       onSound('prop_crystal_break', 1.15 + rng() * .1);
-      return 'crystal-break';
+      return lucky('crystal-break');
     }
     crystal.wobble = reduced ? 0 : ARENA_PROP_RULES.crystalWobbleSec;
     crystal.flash = .14;
@@ -170,7 +192,7 @@ function createArenaProps(canvas, data, options = {}) {
       flames.forEach((x) => { x.flare = reduced ? 0 : ARENA_PROP_RULES.flareSec; x.warm = Math.max(x.warm, ARENA_PROP_RULES.warmSec); });
       onSound('prop_sigil', .85);
       allWarmLast = true;
-      return 'citadel-sigil';
+      return lucky('citadel-sigil');
     }
     return 'brazier-flare';
   }
@@ -191,7 +213,16 @@ function createArenaProps(canvas, data, options = {}) {
       const f = flames.find((x) => x.clickable && inBox(p, [x.box[0], x.box[1], x.box[2], x.box[3] + 30]));
       if (f) result = hitFlame(f, reduced);
     }
-    if (result) needsClear = true;
+    if (!result) {
+      for (const x of extras) {
+        if (x.theme !== theme || !x.hit) continue;
+        const boxes = x.boxes || (x.box ? [x.box] : []);
+        if (!boxes.some((b) => inBox(p, b))) continue;
+        result = x.hit(p, reduced);
+        if (result) break;
+      }
+    }
+    if (result) { needsClear = true; onEvent(result); }
     return result;
   }
 
@@ -224,12 +255,15 @@ function createArenaProps(canvas, data, options = {}) {
     if (!flames.filter((x) => x.clickable).every((x) => x.warm > 0)) allWarmLast = false;
     if (!anyWarm) allWarmLast = false;
     sigil = Math.max(0, sigil - dt);
+    for (const x of extras) if (x.theme === theme && x.step) x.step(dt, reduced, time);
     for (let i = particles.length - 1; i >= 0; i--) {
       const q = particles[i];
       q.life -= dt;
       if (q.life <= 0) { particles.splice(i, 1); continue; }
-      q.vy += (q.kind === 'ember' ? -20 : 520) * dt;
-      q.x += q.vx * dt; q.y += q.vy * dt; q.rot += dt * 5;
+      q.vy += (q.kind === 'ember' ? -20 : q.grav != null ? q.grav : q.kind === 'piece' ? 900 : 520) * dt;
+      q.x += q.vx * dt; q.y += q.vy * dt; q.rot += dt * (q.kind === 'piece' ? q.vx / 40 : 5);
+      // 광석 조각은 레일 높이에서 한두 번 튀고 멈춥니다.
+      if (q.floor != null && q.y > q.floor && q.vy > 0) { q.y = q.floor; q.vy *= -.35; q.vx *= .6; }
     }
   }
 
@@ -381,7 +415,19 @@ function createArenaProps(canvas, data, options = {}) {
       ctx.save(); ctx.globalAlpha = Math.min(1, k * 1.6);
       ctx.translate(q.x * sx, q.y * sy); ctx.rotate(q.rot);
       const s = q.size * Math.min(sx, sy) * 1.4;
-      if (q.kind === 'ember') {
+      if (q.kind === 'piece') {
+        // 원화 조각을 삼각형으로 잘라 그대로 씁니다(광석 등).
+        const atlas = image(q.atlas), f = q.frame;
+        ctx.globalAlpha = Math.min(1, k * 2.5);
+        if (ready(atlas)) {
+          ctx.beginPath(); q.tri.forEach(([x, y], i) => (i ? ctx.lineTo(x * sx, y * sy) : ctx.moveTo(x * sx, y * sy))); ctx.closePath();
+          ctx.save(); ctx.clip();
+          const [bx, by, bw, bh] = f.box, [ux, uy, uw, uh] = f.src;
+          ctx.drawImage(atlas, ux, uy, uw, uh, (bx - q.ox) * sx, (by - q.oy) * sy, bw * sx, bh * sy);
+          ctx.restore();
+          ctx.strokeStyle = '#2b2138'; ctx.lineWidth = 1.2; ctx.stroke();
+        }
+      } else if (q.kind === 'ember') {
         ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = k > .5 ? '#ffd27a' : '#ff8a3d';
         ctx.beginPath(); ctx.arc(0, 0, s * .6, 0, Math.PI * 2); ctx.fill();
       } else {
@@ -398,7 +444,7 @@ function createArenaProps(canvas, data, options = {}) {
   function update(dt, paused = false, reduced = false) {
     resize();
     reducedLast = reduced;
-    const active = theme === 'mine' || theme === 'citadel';
+    const active = Boolean(theme);
     if (!active) {
       if (needsClear) { ctx.clearRect(0, 0, canvas.width, canvas.height); needsClear = false; }
       return;
@@ -409,9 +455,17 @@ function createArenaProps(canvas, data, options = {}) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const sx = canvas.width / artW, sy = canvas.height / artH;
     ctx.save(); ctx.globalAlpha = fade;
+    for (const x of extras) if (x.theme === theme && x.draw) x.draw(sx, sy, time, reduced);
     if (theme === 'mine') drawCrystal(sx, sy);
     if (theme === 'citadel') drawFlames(sx, sy);
     ctx.restore();
+    // 배경 원화와 같은 위아래 그늘을 소품 픽셀에만 씌웁니다. 빠뜨리면 화면 위쪽 소품이 주변보다 밝게 떠 보입니다.
+    const stops = typeof ARENA_SHADE_STOPS !== 'undefined' ? ARENA_SHADE_STOPS : null;
+    if (stops && ctx.createLinearGradient) {
+      const shade = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      stops.forEach(([at, color]) => shade.addColorStop(at, color));
+      ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = shade; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
+    }
     drawParticles(sx, sy);
     needsClear = false;
   }
@@ -422,9 +476,16 @@ function createArenaProps(canvas, data, options = {}) {
       theme, stage, fade,
       crystal: { hits: crystal.hits, broken: crystal.broken, cracks: crystal.cracks.length, shards: crystal.shards.length, regrow: crystal.regrow },
       flames: flames.map((f) => ({ id: f.id, warm: f.warm, flare: f.flare })),
-      sigil, particles: particles.length
+      sigil, particles: particles.length,
+      extras: Object.fromEntries(extras.filter((x) => x.snap).map((x) => [x.id, x.snap()]))
     })
   };
 }
 let arenaProps = null;
-if (typeof module !== 'undefined') module.exports = { ARENA_PROP_RULES, CITADEL_SIGIL, createArenaProps };
+// 노드 테스트: 확장 묶음을 함께 읽습니다(브라우저는 index.html에서 arena-props-extra.js를 먼저 읽음).
+if (typeof module !== 'undefined') {
+  // eslint-disable-next-line no-global-assign
+  if (typeof createArenaPropExtras === 'undefined') global.createArenaPropExtras = require('./arena-props-extra.js').createArenaPropExtras;
+  if (typeof ARENA_SHADE_STOPS === 'undefined') global.ARENA_SHADE_STOPS = require('./arena-environment.js').ARENA_SHADE_STOPS;
+  module.exports = { ARENA_PROP_RULES, CITADEL_SIGIL, createArenaProps };
+}
