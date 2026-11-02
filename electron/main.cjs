@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const { fileURLToPath } = require('node:url');
 const { createSaveStore } = require('./save-store.cjs');
 const { MIN_SIZE, fitToWorkArea, sizeOptions, createWindowSettings } = require('./window-settings.cjs');
+const { resolveSteamAppId, createSteamBridge, registerSteamIpc } = require('./steam.cjs');
 
 const APP_DIR_NAME = 'DPS Fire Mage';
 const ROOT = path.join(__dirname, '..');
@@ -39,6 +40,11 @@ ipcMain.on('save:read', (event, key) => {
 ipcMain.on('save:write', (event, key, value) => {
   try { saveStore.write(key, value); } catch (e) { console.error('[main] 세이브 거부', e.message); }
 });
+// Steam 업적: 앱 ID가 있을 때만 Steam에 붙습니다(오버레이 스위치 때문에 app ready 전에 초기화). 스모크 테스트는 Steam을 건드리지 않습니다.
+const steam = createSteamBridge({ appId: smokeTest ? null : resolveSteamAppId(process.argv, process.env) });
+steam.init();
+registerSteamIpc(ipcMain, steam);
+
 ipcMain.on('app:is-packaged', (event) => { event.returnValue = app.isPackaged; });
 // 일시정지 메뉴의 [게임 종료]: 창을 닫아 'close' 처리(마지막 저장 → flush → 종료)를 그대로 탑니다.
 ipcMain.on('app:quit', (event) => {
@@ -174,6 +180,8 @@ async function runSmokeTest(win) {
       telemetryButton: Boolean(document.getElementById('btn-export-telemetry')),
       titleOpen: isTitleOpen(),
       quitButton: typeof desktopApp.quit === 'function' && document.getElementById('btn-pause-quit').hidden === false,
+      // Steam 없이 실행해도 업적 통로가 열려 있고, 불러도 오류 없이 무시되어야 합니다.
+      steamBridge: typeof desktopSteam.unlockAchievement === 'function' && (desktopSteam.unlockAchievement('ACH_PROP_CRYSTAL'), true),
       displaySettings: (openPauseMenu('manual'), openSettings(), !document.getElementById('settings-display-group').hidden
         && document.querySelectorAll('#settings-window-size button').length === 3
         && document.querySelector('#settings-display-mode .selected')?.dataset.value === 'window')
@@ -183,6 +191,8 @@ async function runSmokeTest(win) {
     if (!page.desktop) return fail('데스크톱 세이브 저장소가 연결되지 않았습니다.');
     if (!page.titleOpen) return fail('부팅하면 타이틀 화면이 떠야 합니다.');
     if (!page.quitButton) return fail('일시정지 메뉴의 게임 종료 버튼이 데스크톱에서 보이지 않습니다.');
+    if (!page.steamBridge) return fail('Steam 업적 통로(desktopSteam)가 렌더러에 노출되지 않았습니다.');
+    if (steam.available) return fail('스모크 테스트는 Steam에 연결하지 않아야 합니다.');
     if (!page.displaySettings) return fail('설정 화면의 화면 모드·창 크기 묶음이 데스크톱에서 보이지 않습니다.');
     // 창 크기 변경: 1280×800 → 1600×900(작업 영역에 들어갈 때만) → 화면 크기가 실제로 바뀌는지
     const sized = await win.webContents.executeJavaScript(`(() => {

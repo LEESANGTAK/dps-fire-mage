@@ -1,4 +1,4 @@
-/* 렌더러(게임)에 노출하는 최소한의 데스크톱 API. Node 전체가 아니라 세이브 3종, 배포 빌드 여부, 게임 종료, 화면 모드·창 크기만 엽니다.
+/* 렌더러(게임)에 노출하는 최소한의 데스크톱 API. Node 전체가 아니라 세이브 3종, 배포 빌드 여부, 게임 종료, 화면 모드·창 크기, Steam 업적 해제만 엽니다.
  * read·remove는 동기(부팅 시 즉시 복원, 초기화 직후 새로고침 순서 보장), write는 비동기입니다. */
 const { contextBridge, ipcRenderer } = require('electron');
 
@@ -20,4 +20,9 @@ contextBridge.exposeInMainWorld('desktopWindow', {
   getState: () => ipcRenderer.sendSync('window:get-state'),
   setFullscreen: (on) => ipcRenderer.sendSync('window:set-fullscreen', on === true),
   setSize: (width, height) => ipcRenderer.sendSync('window:set-size', Number(width), Number(height))
+});
+
+// Steam 업적 해제 요청(응답 없음). Steam이 없으면 메인 프로세스가 조용히 무시합니다.
+contextBridge.exposeInMainWorld('desktopSteam', {
+  unlockAchievement: (id) => ipcRenderer.send('steam:unlock-achievement', String(id))
 });

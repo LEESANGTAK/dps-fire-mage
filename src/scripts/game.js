@@ -5606,13 +5606,19 @@ function loadGame() {
   } catch (e) {}
 }
 
+const achievementReporter = typeof createDesktopAchievementReporter === 'function'
+  ? createDesktopAchievementReporter(typeof window !== 'undefined' ? window : null)
+  : { onPropEvent: () => false };
+
 // 배경 소품 클릭: 버튼·몬스터·마법사 같은 기존 입력 대상 위에서는 반응하지 않습니다(화염구 오발 방지).
 function initArenaProps(arena) {
   const canvas = document.getElementById('arena-props-canvas');
   if (!canvas || !arena || typeof createArenaProps !== 'function' || typeof ARENA_PROP_DATA === 'undefined') return;
   arenaProps = createArenaProps(canvas, ARENA_PROP_DATA, {
     onSound: (type, pitch) => playSound(type, pitch),
-    onLucky: () => { luckyEmberReady = true; }
+    onLucky: () => { luckyEmberReady = true; },
+    // 큰 반응은 Steam 업적으로 보고합니다(데스크톱 + Steam 실행 중일 때만 실제로 해제).
+    onEvent: (name) => achievementReporter.onPropEvent(name)
   });
   arenaProps.setStage(state.currentStage, getArenaTheme(state.currentStage).id);
   arena.addEventListener('pointerdown', (e) => {
