@@ -31,7 +31,7 @@ const g = createHeadlessGame({ seed: 2 });
 const st = g.run('state');
 st.soundOn = true;
 st.sfxVolume = 0.5;
-g.run('window.__played = []; const __orig = playFireballSfx; playFireballSfx = (k, v, p) => { window.__played.push([k, p]); return null; };');
+g.run('window.__played = []; playSfxCue = (k, p) => { window.__played.push([k, p]); return null; };');
 g.run("uiSfxLastAt.card_hover = -Infinity; playSound('card_hover'); playSound('card_hover');");
 assert.equal(g.run("window.__played.filter((x) => x[0] === 'card_hover').length"), 1, '최소 간격 안의 두 번째 호버음은 내지 않습니다.');
 const p = g.run("window.__played.find((x) => x[0] === 'card_hover')[1]");

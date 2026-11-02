@@ -283,7 +283,8 @@ function fmt(num) {
 // 5. 사운드 매니저 (BGM / SFX 볼륨 개별 조절 & 교차 루프 재생)
 // ==========================================
 // 효과음 파일 목록. 기존 효과음은 출처 문제로 전부 제거했고(docs/steam-store/sound-sources.md),
-// 새 효과음은 키에 경로만 넣으면 기존 호출 지점(playSound·playFireballSfx)에서 바로 재생됩니다.
+// 새 효과음은 키에 경로를 넣고, 소리 이름과 크기(dB)를 src/scripts/sound-mixer.js의 믹스 표(SFX_MIX)에 적으면 playSound·playSfxCue로 재생됩니다.
+// 파일을 바꾸거나 추가하면 node scripts/measure-sfx-loudness.cjs로 음량을 다시 재세요(테스트가 확인).
 // 키: fly · explosion · explosion_crit · item_select · drop_coin · meteor_fly · meteor_explosion · celebrate · proc · monster_destroy · summon_spirit
 //     · card_hover · card_deal · card_stamp · card_shuffle · buy_denied · enrage_tick · run_defeat
 const FIREBALL_SFX_FILES = {
@@ -331,54 +332,40 @@ const FIREBALL_SFX_FILES = {
   prop_peek: ['assets/sounds/sfx/button_hover_1.wav', 'assets/sounds/sfx/button_hover_2.wav'],
   prop_slime: ['assets/sounds/sfx/card_deal_1.wav', 'assets/sounds/sfx/card_deal_2.wav']
 };
-// 종이 재질 UI 소리의 기본 볼륨. 자주 나는 소리일수록 작게 둡니다(처치·보상 > 전투 > UI 순서, AGENTS.md 2장).
+// UI·소품 소리의 재생 규칙. 크기는 믹스 표(SFX_MIX)에서 정합니다(자주 나는 소리일수록 작게, AGENTS.md 2장).
 // jitter: 매번 음높이를 ±이 비율만큼 흔들어 같은 소리의 반복 피로를 줄입니다. minGapMs: 같은 소리 최소 간격(연타 방지).
 const UI_SFX = {
-  card_hover: { volume: 0.32, jitter: 0.05, minGapMs: 80 },
-  card_deal: { volume: 0.5, jitter: 0.05, minGapMs: 40 },
-  card_stamp: { volume: 0.85, jitter: 0.04, minGapMs: 60 },
-  card_shuffle: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
-  buy_denied: { volume: 0.7, jitter: 0.04, minGapMs: 120 },
-  enrage_tick: { volume: 0.8, jitter: 0, minGapMs: 300 },
-  run_defeat: { volume: 1.0, jitter: 0, minGapMs: 1000 },
-  button_hover: { volume: 0.84, jitter: 0.05, minGapMs: 60 },
-  popup_open: { volume: 2.1, jitter: 0.04, minGapMs: 150 },
-  // 배경 소품: 전투 소리를 가리지 않게 작게 둡니다. 부서짐·옥좌 점등만 한 단계 크게.
-  prop_crystal_tap: { volume: 0.9, jitter: 0.03, minGapMs: 50 },
-  prop_crystal_break: { volume: 0.7, jitter: 0, minGapMs: 300 },
-  prop_brazier: { volume: 0.5, jitter: 0.06, minGapMs: 60 },
-  prop_sigil: { volume: 0.8, jitter: 0, minGapMs: 1000 },
-  prop_lantern: { volume: 0.5, jitter: 0.05, minGapMs: 60 },
-  prop_relight: { volume: 0.5, jitter: 0, minGapMs: 300 },
-  prop_cart: { volume: 0.35, jitter: 0.05, minGapMs: 60 },
-  prop_cart_spill: { volume: 0.6, jitter: 0, minGapMs: 500 },
-  prop_banner: { volume: 0.6, jitter: 0.05, minGapMs: 80 },
+  card_hover: { jitter: 0.05, minGapMs: 80 },
+  card_deal: { jitter: 0.05, minGapMs: 40 },
+  card_stamp: { jitter: 0.04, minGapMs: 60 },
+  card_shuffle: { jitter: 0.04, minGapMs: 120 },
+  buy_denied: { jitter: 0.04, minGapMs: 120 },
+  enrage_tick: { jitter: 0, minGapMs: 300 },
+  run_defeat: { jitter: 0, minGapMs: 1000 },
+  button_hover: { jitter: 0.05, minGapMs: 60 },
+  popup_open: { jitter: 0.04, minGapMs: 150 },
+  // 배경 소품
+  prop_crystal_tap: { jitter: 0.03, minGapMs: 50 },
+  prop_crystal_break: { jitter: 0, minGapMs: 300 },
+  prop_brazier: { jitter: 0.06, minGapMs: 60 },
+  prop_sigil: { jitter: 0, minGapMs: 1000 },
+  prop_lantern: { jitter: 0.05, minGapMs: 60 },
+  prop_relight: { jitter: 0, minGapMs: 300 },
+  prop_cart: { jitter: 0.05, minGapMs: 60 },
+  prop_cart_spill: { jitter: 0, minGapMs: 500 },
+  prop_banner: { jitter: 0.05, minGapMs: 80 },
   // 멜로디가 되어야 하므로 음높이를 흔들지 않습니다.
-  prop_chime: { volume: 0.45, jitter: 0, minGapMs: 40 },
-  prop_peek: { volume: 0.7, jitter: 0.03, minGapMs: 60 },
-  prop_slime: { volume: 0.8, jitter: 0, minGapMs: 500 }
+  prop_chime: { jitter: 0, minGapMs: 40 },
+  prop_peek: { jitter: 0.03, minGapMs: 60 },
+  prop_slime: { jitter: 0, minGapMs: 500 }
 };
 const uiSfxLastAt = {};
-// 파일 앞부분 무음을 건너뛰어 입력·적중과 소리 사이의 지연을 없앱니다(초).
-const SFX_START_OFFSET = { meteor_explosion: 0.06 };
 // meteor_fly.wav가 가장 커지는 지점(초). 낙하가 이보다 짧으므로 이만큼 앞당겨 틀어 착탄 순간에 소리가 정점에 닿게 합니다.
 const METEOR_FLY_SFX_PEAK_SEC = 1.4;
 // 반복 재생 효과음(지속 피해 연소음, 시전 중 충전음). 비어 있으면 재생하지 않습니다.
 // ElevenLabs 반복(loop) 옵션으로 생성(2026-10-28). 연소음은 같은 소리를 원형으로 3겹 겹쳐 빈 구간을 채웠습니다.
 const BURNING_LOOP_SFX_FILE = 'assets/sounds/sfx/burn_loop.wav';
 const FIREBALL_CAST_LOOP_SFX_FILE = 'assets/sounds/sfx/fireball_charge_loop.wav';
-
-const preloadedSfx = {};
-function createLoopAudio(src, volume) {
-  if (!src) return null;
-  const audio = new Audio(src);
-  audio.preload = 'auto';
-  audio.loop = true;
-  audio.volume = volume;
-  return audio;
-}
-const burningLoopAudio = createLoopAudio(BURNING_LOOP_SFX_FILE, 0.34);
-const fireballCastAudio = createLoopAudio(FIREBALL_CAST_LOOP_SFX_FILE, 0.58);
 
 const BGM_TRACKS = [
   { title: tr('무거운 왕관 아래에서'), src: 'assets/sounds/bgm/Beneath_the_Heavy_Crown.mp3' },
@@ -444,11 +431,11 @@ function getEffectiveBgmVol() {
   return Math.max(0, Math.min(1, master * bgm * duckingMult));
 }
 
-function getEffectiveSfxVol(baseVol = 0.75) {
+// 효과음 슬라이더 × 마스터(음소거면 0). 1에서 자르지 않습니다: 소리별 크기는 믹서가 곱하고, 넘치는 부분은 믹서의 리미터가 누릅니다.
+function getSfxUserVolume() {
   const master = getEffectiveMasterVol();
   if (master <= 0) return 0;
-  const userSfx = Math.max(0, Math.min(1, typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.1));
-  return Math.max(0, Math.min(1, baseVol * userSfx * master));
+  return master * Math.max(0, Math.min(1, typeof state.sfxVolume === 'number' ? state.sfxVolume : 0.1));
 }
 
 function initBgmAudio() {
@@ -542,9 +529,7 @@ function updateBgmPlayback() {
   } catch (e) {}
 }
 
-// 키에 경로 배열을 적으면 변형 소리 묶음이 됩니다. 재생할 때마다 직전과 다른 것을 무작위로 고릅니다.
-const sfxVariants = {};
-const sfxLastVariant = {};
+// 키에 경로 배열을 적으면 변형 소리 묶음이 됩니다. 재생할 때마다 직전과 다른 것을 무작위로 고릅니다(믹서가 처리).
 // 변형 고르기는 게임 난수(Math.random)를 쓰지 않습니다. 시드를 고정한 테스트·밸런스 시뮬레이션에서
 // 소리 재생이 카드 추첨 순서를 바꾸지 않게 하려는 것입니다.
 let sfxRandState = (Date.now() >>> 0) || 1;
@@ -554,103 +539,36 @@ function sfxRandom() {
   sfxRandState ^= sfxRandState << 5;
   return (sfxRandState >>> 0) / 4294967296;
 }
-function initSfxAudio() {
-  for (const [key, src] of Object.entries(FIREBALL_SFX_FILES)) {
-    const list = (Array.isArray(src) ? src : [src]).map((path) => {
-      const audio = new Audio(path);
-      audio.preload = 'auto';
-      return audio;
-    });
-    sfxVariants[key] = list;
-    preloadedSfx[key] = list[0];
-  }
+const soundMixer = createSoundMixer({
+  files: { ...FIREBALL_SFX_FILES, burn_loop: BURNING_LOOP_SFX_FILE, cast_loop: FIREBALL_CAST_LOOP_SFX_FILE },
+  getVolume: getSfxUserVolume,
+  random: sfxRandom
+});
+soundMixer.load();
+// 브라우저는 첫 입력 전에는 소리를 막아 둡니다(데스크톱은 처음부터 재생).
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  for (const name of ['pointerdown', 'keydown']) window.addEventListener(name, () => soundMixer.resume(), { capture: true });
 }
-function pickSfxVariant(kind) {
-  const list = sfxVariants[kind];
-  if (!list || list.length <= 1) return preloadedSfx[kind];
-  const last = sfxLastVariant[kind];
-  let i;
-  if (last === undefined) {
-    i = Math.floor(sfxRandom() * list.length);
-  } else {
-    i = Math.floor(sfxRandom() * (list.length - 1));
-    if (i >= last) i++;
-  }
-  sfxLastVariant[kind] = i;
-  return list[i];
-}
-initSfxAudio();
+// 반복 효과음: 지속 피해 연소음, 시전 중 충전음. 일시정지 메뉴가 pause()로 끕니다.
+const burningLoopAudio = soundMixer.loop('burn_loop');
+const fireballCastAudio = soundMixer.loop('cast_loop');
 
 function updateBurningLoopSound() {
   const c = state.combat;
   if (!burningLoopAudio) return;
-  const effVol = getEffectiveSfxVol(0.34);
-  const isDotBurning =
-    effVol > 0 && !state.monster.isDying &&
-    ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0 || c.flamePatchRem > 0);
-  try {
-    burningLoopAudio.volume = effVol;
-    if (isDotBurning) {
-      if (burningLoopAudio.paused) {
-        burningLoopAudio.play().catch(() => {});
-      }
-    } else {
-      if (!burningLoopAudio.paused) {
-        burningLoopAudio.pause();
-      }
-    }
-  } catch (e) {}
+  burningLoopAudio.update(!state.monster.isDying &&
+    ((c.igniteRem > 0 && c.ignitePool >= 5) || c.meteorBurnRem > 0 || c.flamePatchRem > 0));
 }
-
-// 화염구 소리(준비 반복음·비행)는 너무 작아 들리지 않는다는 의견으로 2026-10-31에 4배로 키웠습니다(일반 적중은 FIREBALL_HIT_VOL).
-// 치명타 적중은 2026-11-03에 작다는 의견으로 3배(2.0 → 6.0)로 키웠습니다. 일반 적중(2.66) < 치명타(6.0) < 메테오 폭발(8.0) 순서를 지킵니다.
-// 단, 실제 볼륨은 1이 상한이라 효과음 슬라이더 약 17% 이상에서는 치명타가 상한에 닿아 3배보다 덜 커집니다(20%: 0.4 → 1.0, 2.5배).
-// 기본 볼륨이 1을 넘어도 효과음 슬라이더(기본 10%)를 곱한 뒤 1로 자릅니다. 슬라이더를 많이 올리면 일반 적중이 먼저 상한에 닿습니다.
-const FIREBALL_SFX_BOOST = 4;
-const FIREBALL_HIT_VOL = 2.66;
-const FIREBALL_CRIT_VOL = 6.0;
-// 메테오는 위력에 비해 작게 들린다는 의견으로 2026-10-31에 키웠습니다. 일반 적중(1.44 × 4 = 5.76) < 메테오 폭발 순서(AGENTS.md 2장)를 지킵니다.
-// 낙하음은 화염구와 같은 4배(0.82 → 3.28, 작은 메테오 0.6 → 2.4), 폭발은 1.0 → 8.0(효과음 슬라이더 10%에서 실제 0.8).
-const METEOR_SFX_VOL = { flyBig: 0.82 * 4, flySmall: 0.6 * 4, explosion: 8.0 };
 
 function updateCastingLoopSound() {
   const c = state.combat;
   if (!fireballCastAudio) return;
-  const effVol = getEffectiveSfxVol(0.72 * FIREBALL_SFX_BOOST);
-  const isCasting = effVol > 0 && Boolean(c.castingSkill) && c.castRemaining > 0;
-  try {
-    fireballCastAudio.volume = effVol;
-    if (isCasting) {
-      if (fireballCastAudio.paused) {
-        fireballCastAudio.play().catch(() => {});
-      }
-    } else {
-      if (!fireballCastAudio.paused) {
-        fireballCastAudio.pause();
-      }
-    }
-  } catch (e) {}
+  fireballCastAudio.update(Boolean(c.castingSkill) && c.castRemaining > 0);
 }
 
-function playFireballSfx(kind, volume = 0.65, pitchMult = 1.0) {
-  const effVol = getEffectiveSfxVol(volume);
-  if (effVol <= 0) return null;
-  try {
-    const base = pickSfxVariant(kind);
-    if (!base) return null;
-    const snd = base.cloneNode();
-    snd.volume = effVol;
-    if (SFX_START_OFFSET[kind]) snd.currentTime = SFX_START_OFFSET[kind];
-    if (pitchMult !== 1.0 && typeof snd.playbackRate === 'number') {
-      // 브라우저는 기본으로 속도만 바꾸고 음높이를 유지하므로, 꺼야 음높이가 함께 바뀝니다.
-      snd.preservesPitch = false;
-      snd.playbackRate = Math.min(2.0, Math.max(0.5, pitchMult));
-    }
-    snd.play().catch(() => {});
-    return snd;
-  } catch (e) {
-    return null;
-  }
+// 소리 한 번 재생. 크기는 믹스 표(SFX_MIX)의 cue 칸이 정합니다. opts.offset: 시작 위치(초).
+function playSfxCue(cue, pitchMult = 1.0, opts = {}) {
+  return soundMixer.play(cue, { pitch: pitchMult, offset: opts.offset });
 }
 
 function playSound(type, pitchMult = 1.0) {
@@ -662,42 +580,39 @@ function playSound(type, pitchMult = 1.0) {
   const finalPitch = combPitch * pitchMult;
 
   if (type === 'launch') {
-    return playFireballSfx('fly', 0.8 * FIREBALL_SFX_BOOST, finalPitch);
+    return playSfxCue('launch', finalPitch);
   }
-  // 일반 적중: 예전 파일 기준 1.44 × 4 = 5.76으로 키운 크기를 사용자가 확인했고(효과음 20%), 새 파일(fireball_slam)은
-  // 평균 음량이 약 6.7dB 커서 같은 크기로 들리도록 2.66으로 보정했습니다. 치명타는 FIREBALL_CRIT_VOL(위 설명).
   if (type === 'hit') {
-    return playFireballSfx('explosion', FIREBALL_HIT_VOL, finalPitch);
+    return playSfxCue('hit', finalPitch);
   }
   if (type === 'crit') {
-    return playFireballSfx('explosion_crit', FIREBALL_CRIT_VOL, finalPitch);
+    return playSfxCue('crit', finalPitch);
   }
   if (type === 'item_select') {
-    return playFireballSfx('item_select', 0.92);
+    return playSfxCue('item_select');
   }
-  // 골드 획득: 배경음·효과음 20%에서 잘 안 들린다는 의견으로 2026-10-31에 두 배(0.92 → 1.84)로 키웠습니다.
   if (type === 'drop_coin' || type === 'coin_tick') {
-    return playFireballSfx('drop_coin', 1.84);
+    return playSfxCue('drop_coin');
   }
   if (type === 'meteor_fly') {
-    return playFireballSfx('meteor_fly', METEOR_SFX_VOL.flyBig);
+    return playSfxCue('meteor_fly');
   }
   if (type === 'meteor_impact') {
-    return playFireballSfx('meteor_explosion', METEOR_SFX_VOL.explosion);
+    return playSfxCue('meteor_explosion');
   }
   // 축하 강조음: 시간 보너스·기록 단축·보스 도장·승리·전설 카드·해금. 사건마다 음높이를 달리합니다.
   if (type === 'celebrate') {
-    return playFireballSfx('celebrate', 0.92, pitchMult);
+    return playSfxCue('celebrate', pitchMult);
   }
   // 발동 강조음: 전투 중 상태 변화(불사조의 가호·마력 폭주·메테오 장전·불꽃 심판·보스 보호막)와 시작 버튼.
   if (type === 'proc') {
-    return playFireballSfx('proc', 0.92, pitchMult);
+    return playSfxCue('proc', pitchMult);
   }
   if (type === 'monster_destroy') {
-    return playFireballSfx('monster_destroy', 0.96);
+    return playSfxCue('monster_destroy');
   }
   if (type === 'summon_spirit' || type === 'summon_fire_spirit') {
-    return playFireballSfx('summon_spirit', 0.95);
+    return playSfxCue('summon_spirit');
   }
   const ui = UI_SFX[type];
   if (ui) {
@@ -705,7 +620,7 @@ function playSound(type, pitchMult = 1.0) {
     if (now - (uiSfxLastAt[type] || -Infinity) < ui.minGapMs) return null;
     uiSfxLastAt[type] = now;
     const jitter = ui.jitter ? 1 + (sfxRandom() * 2 - 1) * ui.jitter : 1;
-    return playFireballSfx(type, ui.volume, pitchMult * jitter);
+    return playSfxCue(type, pitchMult * jitter);
   }
   return null;
 }
@@ -980,7 +895,7 @@ function launchProjectile(type, onHitCallback, offsetY = 0, scaleMult = 1.0) {
   const end = getTargetPos();
 
   if (scaleMult >= 0.8) {
-    playFireballSfx('fly', 0.52 * FIREBALL_SFX_BOOST);
+    playSfxCue('fireball_fly');
   }
 
   // 화염구 기본 크기와 탄속 유지
@@ -1034,10 +949,7 @@ function launchMeteorVfx(onImpactCallback, scale = 1.0) {
   const startX = 64 + offsetX * 0.5;
   const startY = 88;
 
-  const flyAudio = playFireballSfx('meteor_fly', scale >= 0.9 ? METEOR_SFX_VOL.flyBig : METEOR_SFX_VOL.flySmall);
-  if (flyAudio) {
-    try { flyAudio.currentTime = Math.max(0, METEOR_FLY_SFX_PEAK_SEC - fallDuration); } catch (e) {}
-  }
+  const flyAudio = playSfxCue(scale >= 0.9 ? 'meteor_fly' : 'meteor_fly_small', 1.0, { offset: Math.max(0, METEOR_FLY_SFX_PEAK_SEC - fallDuration) });
 
   meteors.push({
     startX,
@@ -1980,7 +1892,7 @@ function updateFlyingCoins(dt) {
         if (!flyingCoins.some((f) => !f.bonus)) state.pendingCoinGold = 0;
       }
       triggerGoldPillPulse();
-      if (c.pitch && state.soundOn) playFireballSfx('drop_coin', 1.84, c.pitch);
+      if (c.pitch && state.soundOn) playSfxCue('drop_coin', c.pitch);
       else playSound('drop_coin');
       continue;
     }
@@ -3152,7 +3064,7 @@ function triggerSkill(skillKey, isManual = false) {
       flat: true,
       lineWidth: 5
     });
-    playFireballSfx('explosion', 0.65);
+    playSfxCue('flame_patch_burst');
 
     // 시전 즉시 첫 불장판 도트 틱 피해 적용
     const tickDmg = getFlamePatchTickDamage(stats) * (isManual ? 1.25 : 1.0);

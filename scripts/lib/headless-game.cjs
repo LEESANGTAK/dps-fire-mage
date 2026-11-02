@@ -12,7 +12,7 @@ const vm = require('node:vm');
 const ROOT = path.join(__dirname, '..', '..');
 const SCRIPT_ORDER = [
   'motion-pref', 'i18n-en', 'i18n', 'meteor-art', 'combat-art', 'paper-art', 'mage-motion', 'comic-monster-frames', 'paper-monster-frames',
-  'comic-assets', 'monster-motion', 'skill-tooltips', 'action-bar-drag', 'arena-environment', 'arena-props-data', 'arena-props-extra', 'arena-props', 'roguelike-deck', 'save-storage', 'meta-progression', 'pause-menu', 'settings-menu', 'codex', 'title-screen', 'hp-trail', 'game'
+  'comic-assets', 'monster-motion', 'skill-tooltips', 'action-bar-drag', 'arena-environment', 'arena-props-data', 'arena-props-extra', 'arena-props', 'steam-achievements', 'roguelike-deck', 'sfx-loudness', 'sound-mixer', 'save-storage', 'meta-progression', 'pause-menu', 'settings-menu', 'codex', 'title-screen', 'hp-trail', 'game'
 ];
 
 // 어떤 속성 접근·호출·연산에도 조용히 응답하는 범용 스텁

@@ -205,6 +205,18 @@ async function runSmokeTest(win) {
     if (sized === false) return fail('설정 화면에서 창 크기를 바꿔도 적용되지 않았습니다.');
     await win.webContents.executeJavaScript("closeSettings(); resumeFromPauseMenu();");
     // 개발용 밸런스 로그 버튼은 배포 빌드에서만 사라져야 합니다.
+    // 효과음 믹서: 파일 주소(file:)에서도 효과음을 Web Audio로 읽어야 슬라이더를 올려도 크기 순서가 유지됩니다.
+    const mixer = await win.webContents.executeJavaScript(`(async () => {
+      const total = new Set(Object.values({ ...FIREBALL_SFX_FILES, burn_loop: BURNING_LOOP_SFX_FILE, cast_loop: FIREBALL_CAST_LOOP_SFX_FILE }).flat()).size;
+      for (let i = 0; i < 50 && soundMixer.loadedCount < total; i++) await new Promise((r) => setTimeout(r, 100));
+      state.soundOn = true; state.sfxVolume = 0.5;
+      const handle = playSfxCue('crit');
+      const ok = Boolean(handle) && handle.paused === false;
+      if (handle) handle.pause();
+      return { mode: soundMixer.mode, loaded: soundMixer.loadedCount, total, played: ok };
+    })()`);
+    result.steps.soundMixer = mixer;
+    if (mixer.mode !== 'webaudio' || mixer.loaded !== mixer.total || !mixer.played) return fail('효과음이 Web Audio로 로드·재생되지 않았습니다.');
     if (page.telemetryButton === app.isPackaged) return fail(`밸런스 로그 버튼 노출이 빌드 종류와 맞지 않습니다(배포=${app.isPackaged}).`);
 
     // 세이브 왕복: 골드를 바꿔 저장 → 디스크 파일 확인 → 새로고침 후 복원 확인

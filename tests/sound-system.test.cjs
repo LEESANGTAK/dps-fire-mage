@@ -77,14 +77,4 @@ const loopPaths = [...gameSource.matchAll(/const (?:BURNING_LOOP_SFX_FILE|FIREBA
 [...sfxPaths, ...loopPaths].forEach((p) => assert.ok(fs.existsSync(path.join(ROOT, p)), `등록한 효과음 파일이 없습니다: ${p}`));
 console.log(`   ✔ 7. 등록한 효과음 ${sfxPaths.length}종·반복음 ${loopPaths.length}종 파일 존재 검증 통과`);
 
-// 8. 적중음 크기 순서: 일반 적중 < 치명타(2026-11-03 3배, 2.0 → 6.0) < 메테오 폭발
-{
-  const num = (re) => Number((gameSource.match(re) || [])[1]);
-  const hit = num(/const FIREBALL_HIT_VOL = ([\d.]+);/);
-  const crit = num(/const FIREBALL_CRIT_VOL = ([\d.]+);/);
-  const meteor = num(/const METEOR_SFX_VOL = \{[^}]*explosion: ([\d.]+)/);
-  assert.equal(crit, 6.0, '치명타 적중음 기본 볼륨은 6.0이어야 합니다.');
-  assert.ok(hit < crit && crit < meteor, `적중음 크기 순서가 깨졌습니다: 일반 ${hit}, 치명타 ${crit}, 메테오 ${meteor}`);
-  assert.ok(gameSource.includes("playFireballSfx('explosion_crit', FIREBALL_CRIT_VOL"), '치명타 적중음이 FIREBALL_CRIT_VOL을 써야 합니다.');
-  console.log('   ✔ 8. 적중음 크기 순서(일반 < 치명타 < 메테오) 검증 통과');
-}
+// 8. 효과음 크기(믹스 표)·Web Audio 재생은 tests/sound-mixer.test.cjs에서 검증합니다.
