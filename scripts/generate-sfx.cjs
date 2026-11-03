@@ -128,6 +128,17 @@ const SOUNDS = {
   run_defeat: {
     use: '런 실패(광폭화)', duration: 2.0,
     prompt: 'cartoon defeat sting, a flame fizzling out into a smoke puff with paper crumpling, soft descending tones, gentle not dramatic'
+  },
+  // 2026-11-03: 붉은 치명타(몰아치는 열기 충전)를 노란 치명타와 귀로 구분하려는 전용 적중음
+  crit_heat: {
+    use: '붉은 치명타(몰아치는 열기 충전) 적중', duration: 0.6,
+    prompt: 'fiery critical hit, sharp crack followed by a hot searing flare that rises in pitch, like heat being charged up, intense and bright, short tail'
+  },
+  // 메테오 치명타 환호성: 목소리가 필요하므로 공통 문구의 'no voice'를 뺍니다.
+  meteor_cheer: {
+    use: '메테오 치명타 관중 환호', duration: 1.6,
+    style: 'cartoon game sound effect, mono, clean, no music, no words',
+    prompt: 'small excited crowd cheering and whooping right after a huge explosion, short burst of wow and hooray, playful cartoon audience reaction, fades out quickly'
   }
 };
 const MODELS = { v2: 'eleven_text_to_sound_v2', v3: 'eleven_text_to_sound_v3' };
@@ -324,7 +335,7 @@ async function main() {
     const cfg = SOUNDS[name];
     const prompt = argValue('prompt', null) || cfg.prompt;
     const duration = Number(argValue('duration', cfg.duration));
-    const text = `${prompt}, ${STYLE}`;
+    const text = `${prompt}, ${cfg.style || STYLE}`;
     const dir = path.join(OUT_DIR, name);
     fs.mkdirSync(dir, { recursive: true });
     const existing = fs.readdirSync(dir).filter((f) => f.endsWith('.wav')).length;

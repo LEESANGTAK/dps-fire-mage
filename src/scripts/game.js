@@ -1357,10 +1357,12 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   const isNormal = styleClass === 'fct-normal';
   const isGold = styleClass === 'fct-gold';
   const isBig = Boolean(extraOpts.isBig);
+  // 메테오 치명타: 가장 큰 숫자가 위에서 내리꽂혀 찌그러졌다 튀어 오르고, 1.5초 여운을 둡니다.
+  const isMeteorCrit = isCrit && Boolean(extraOpts.meteorCrit);
 
   const heatSigil = isCrit && Number.isInteger(extraOpts.heatSigil) && !prefersReducedMotion() ? extraOpts.heatSigil : null;
   const el = document.createElement('div');
-  el.className = `fct-item ${styleClass}${isCrit ? ' crit-flash' : ''}${isCrit && isBig ? ' fct-big-crit' : ''}${heatSigil !== null ? ' fct-heat' : ''}`;
+  el.className = `fct-item ${styleClass}${isCrit ? ' crit-flash' : ''}${isCrit && isBig ? ' fct-big-crit' : ''}${heatSigil !== null ? ' fct-heat' : ''}${isMeteorCrit ? ' fct-meteor-crit' : ''}`;
   el.textContent = text;
 
   let x = pos.x;
@@ -1371,7 +1373,16 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
   let maxLife = 0.95;
   let holdTime = 0;
 
-  if (isCrit) {
+  if (isMeteorCrit) {
+    // 몬스터 바로 위 가운데에 박히고, 아주 천천히 떠오릅니다(다른 숫자처럼 날아가지 않음).
+    x = pos.x;
+    y = pos.y - 46 + offsetY;
+    vx = 0;
+    vy = -14;
+    gravity = 0;
+    maxLife = 1.5;
+    holdTime = 0;
+  } else if (isCrit) {
     // 크리티컬 데미지: 가장 낮은 속도(-240)와 가장 높은 속도(-960)가 정확히 4배 차이가 나도록 설정하고,
     // 연속 치명타 시 텍스트가 절대 한곳에 겹치지 않도록 5단계 교차 속도 대역(저속 ➔ 고속 ➔ 중저속 ➔ 최고속 ➔ 중속) 순환!
     if (Math.random() < 0.88) {
@@ -1461,6 +1472,8 @@ function spawnFloatingText(text, styleClass, offsetY = 0, extraOpts = {}) {
     el,
     type: isCrit ? 'crit' : isDot ? 'dot' : isNormal ? 'normal' : isGold ? 'gold' : 'proc',
     isBig,
+    isMeteorCrit,
+    reducedMotion: isMeteorCrit && prefersReducedMotion(),
     x,
     y,
     vx,
@@ -1489,8 +1502,12 @@ function applyFloatingTextTransform(f) {
   const prog = Math.min(1, t / f.maxLife);
   let scale = 1.0;
   let rotDeg = 0;
+  let squashX = 1, squashY = 1;
 
-  if (f.type === 'crit') {
+  if (f.isMeteorCrit) {
+    const m = meteorCritNumberMotion(t, f.reducedMotion);
+    scale = m.scale; rotDeg = m.rot; squashX = m.sx; squashY = m.sy;
+  } else if (f.type === 'crit') {
     // 강화된 크리티컬 스케일 펀치:
     // 1) 폭발적 팽창 (0~55ms: 0.15배 ➔ 최대 2.9~3.35배)
     // 2) 최대 크기 체공 (55~105ms: 눈에 확실히 각인되는 임팩트 홀드)
@@ -1568,6 +1585,10 @@ function applyFloatingTextTransform(f) {
     // 문양에 닿기 직전(마지막 15%)에만 살짝 사라져, 흡수 순간 불씨와 자연스럽게 이어집니다.
     const raw = (f.life - HEAT_ABSORB.fly) / (HEAT_ABSORB.end - HEAT_ABSORB.fly);
     opacity = raw > 0.85 ? Math.max(0, 1 - (raw - 0.85) / 0.15) : 1;
+  } else if (f.isMeteorCrit) {
+    // 내리꽂히는 동안 진해지고, 마지막 0.35초에 사라집니다.
+    opacity = f.life < 0.06 && !f.reducedMotion ? 0.35 + 0.65 * (f.life / 0.06) : 1;
+    if (f.life > f.maxLife - 0.35) opacity = Math.max(0, (f.maxLife - f.life) / 0.35);
   } else if (f.type === 'crit') {
     // 크리티컬은 위로 쭉 올라가면서 후반부(68%~100%)에 자연스럽게 페이드 아웃
     if (prog > 0.68) {
@@ -1582,7 +1603,36 @@ function applyFloatingTextTransform(f) {
 
   f.el.style.opacity = opacity.toFixed(3);
   const rotStr = rotDeg !== 0 ? ` rotate(${rotDeg.toFixed(1)}deg)` : '';
-  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})${rotStr}`;
+  const squashStr = squashX !== 1 || squashY !== 1 ? ` scale(${squashX.toFixed(3)}, ${squashY.toFixed(3)})` : '';
+  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})${rotStr}${squashStr}`;
+}
+
+/* 메테오 치명타 숫자의 크기 변화(시간 t초). 안착 크기는 1.5배(글자 3.7rem 기준 약 89px, 노란 치명타의 약 2배).
+ *   0~0.13초  화면 앞에서 안착 크기의 3배로 나타나 묵직하게 떨어짐(가속 낙하)
+ *   0.13~0.21 착지 찌그러짐 scale(1.18, 0.82)
+ *   0.21~0.55 탄성 복원(감쇠 진동)
+ *   이후      여운: 아주 천천히 6% 부풀며 떠오름
+ * 모션 줄이기: 낙하·찌그러짐 없이 바로 안착 크기. */
+const METEOR_CRIT_SETTLE = 1.5;
+function meteorCritNumberMotion(t, reduced) {
+  const S = METEOR_CRIT_SETTLE;
+  if (reduced) return { scale: S, rot: 0, sx: 1, sy: 1 };
+  if (t < 0.13) {
+    const p = t / 0.13;
+    const fall = p * p * p; // 묵직한 낙하(가속)
+    return { scale: S * (3 - 2 * fall), rot: -6 * (1 - fall), sx: 1, sy: 1 };
+  }
+  if (t < 0.21) {
+    const p = (t - 0.13) / 0.08;
+    const k = Math.sin(p * Math.PI * 0.5);
+    return { scale: S, rot: 0, sx: 1 + 0.18 * k, sy: 1 - 0.18 * k };
+  }
+  if (t < 0.55) {
+    const p = (t - 0.21) / 0.34;
+    const wobble = Math.cos(p * Math.PI * 2.5) * Math.pow(1 - p, 2);
+    return { scale: S * (1 + 0.06 * Math.sin(p * Math.PI)), rot: 2 * wobble, sx: 1 + 0.18 * wobble, sy: 1 - 0.18 * wobble };
+  }
+  return { scale: S * (1 + 0.06 * Math.min(1, (t - 0.55) / 0.95)), rot: 0, sx: 1, sy: 1 };
 }
 
 // ==========================================
@@ -2009,7 +2059,7 @@ function updateFloatingTexts(dt) {
     }
 
     // 크리티컬 첫 임팩트 순간 화이트핫 플래시 해제 (최대 스케일 체공 시점까지 유지)
-    if (f.flashed && f.life >= 0.105) {
+    if (f.flashed && f.life >= (f.isMeteorCrit ? 0.21 : 0.105)) {
       f.flashed = false;
       f.el.classList.remove('crit-flash');
     }
@@ -2682,7 +2732,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     // 몰아치는 열기를 채우는 치명타(0→1, 1→2)는 붉은 숫자로 띄운 뒤 해당 열기 문양으로 빨려 들어갑니다.
     // 열기 판정 자체는 아래에서 즉시 갱신하고, 문양의 점등만 숫자가 도착할 때까지 미룹니다(연출 전용).
     const heatSigil = canTriggerStreak && state.grimoires.meteor && state.combat.critStreak < 2 ? state.combat.critStreak : null;
-    heatTextItem = spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8, { isBig: isBigSkill, heatSigil });
+    heatTextItem = spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8, { isBig: isBigSkill, heatSigil, meteorCrit: skillKey === 'meteor' });
     if (!isDotTick && skillKey !== 'meteor') {
       // 연속 치명타(몰아치는 열기) 콤보 피치 빌드업:
       // 1타 크리: 1.0 (예열) ➔ 2타 크리: 1.15 (몰열 완성 쾌감)

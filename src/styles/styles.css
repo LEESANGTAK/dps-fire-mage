@@ -997,6 +997,55 @@ body {
   color: #ffe135;
 }
 
+/* 메테오 치명타: 가장 큰 숫자. 움직임(내리꽂힘·찌그러짐·여운)은 game.js의 meteorCritNumberMotion.
+   착지 순간 뒤에서 불꽃 고리가 한 번 퍼집니다. 맨 위에 그려 다른 숫자에 가리지 않습니다. */
+.fct-crit.fct-meteor-crit {
+  font-size: 3.7rem;
+  color: #ffb020;
+  letter-spacing: -1px;
+  text-shadow:
+    -3px -3px 0 #000,
+     3px -3px 0 #000,
+    -3px  3px 0 #000,
+     3px  3px 0 #000,
+     0px -3px 0 #000,
+     0px  5px 0 #000,
+     0px  0px 22px rgba(255, 90, 0, 1),
+     0px  0px 44px rgba(255, 40, 0, 0.75),
+     0px  8px 14px rgba(0, 0, 0, 0.95);
+  z-index: 40;
+}
+
+.fct-crit.fct-meteor-crit.crit-flash {
+  color: #fffbea;
+}
+
+.fct-meteor-crit::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 170, 40, 0.9);
+  box-shadow: 0 0 24px rgba(255, 90, 0, 0.9), inset 0 0 18px rgba(255, 200, 80, 0.7);
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+  animation: meteorCritRing 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.13s;
+}
+
+@keyframes meteorCritRing {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 1px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fct-meteor-crit::before { animation: none; }
+}
+
 /* 도트(DoT) 지속 피해: 와우 특유의 선명한 오렌지색 숫자 */
 .fct-dot {
   font-size: 1.14rem;
