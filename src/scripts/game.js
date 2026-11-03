@@ -1521,10 +1521,11 @@ function applyFloatingTextTransform(f) {
   let scale = 1.0;
   let rotDeg = 0;
   let squashX = 1, squashY = 1;
+  let offsetY = 0;
 
   if (f.isMeteorCrit) {
     const m = meteorCritNumberMotion(t, f.reducedMotion);
-    scale = m.scale; rotDeg = m.rot; squashX = m.sx; squashY = m.sy;
+    scale = m.scale; rotDeg = m.rot; squashX = m.sx; squashY = m.sy; offsetY = m.dy;
   } else if (f.type === 'crit') {
     // 강화된 크리티컬 스케일 펀치:
     // 1) 폭발적 팽창 (0~55ms: 0.15배 ➔ 최대 2.9~3.35배)
@@ -1622,35 +1623,45 @@ function applyFloatingTextTransform(f) {
   f.el.style.opacity = opacity.toFixed(3);
   const rotStr = rotDeg !== 0 ? ` rotate(${rotDeg.toFixed(1)}deg)` : '';
   const squashStr = squashX !== 1 || squashY !== 1 ? ` scale(${squashX.toFixed(3)}, ${squashY.toFixed(3)})` : '';
-  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${f.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})${rotStr}${squashStr}`;
+  f.el.style.transform = `translate3d(${f.x.toFixed(2)}px, ${(f.y + offsetY).toFixed(2)}px, 0) translate(-50%, -50%) scale(${scale.toFixed(3)})${rotStr}${squashStr}`;
 }
 
-/* 메테오 치명타 숫자의 크기 변화(시간 t초). 안착 크기는 1.5배(글자 3.7rem 기준 약 89px, 노란 치명타의 약 2배).
+/* 메테오 치명타 숫자의 움직임(시간 t초). 안착 크기는 1.5배(글자 3.7rem 기준 약 89px, 노란 치명타의 약 2배).
  *   0~0.13초  화면 앞에서 안착 크기의 3배로 나타나 묵직하게 떨어짐(가속 낙하)
- *   0.13~0.21 착지 찌그러짐 scale(1.18, 0.82)
- *   0.21~0.55 탄성 복원(감쇠 진동)
- *   이후      여운: 아주 천천히 6% 부풀며 떠오름
- * 모션 줄이기: 낙하·찌그러짐 없이 바로 안착 크기. */
+ *   0.13~0.19 착지 찌그러짐 scale(1.2, 0.8): 솟구치기 전 웅크림
+ *   0.19~0.40 위로 '팍' 솟구침(95px, 10% 지나쳤다 돌아옴), 오르는 동안 세로로 늘어남
+ *   0.40~0.62 정점에서 탄성 복원(감쇠 진동)
+ *   이후      여운: 아주 천천히 6% 부풀며 떠오름(drift는 spawn의 vy)
+ * dy는 기준 위치에서 더할 세로 이동(px, 위가 음수). 모션 줄이기: 낙하·도약 없이 바로 정점 위치·안착 크기. */
 const METEOR_CRIT_SETTLE = 1.5;
+const METEOR_CRIT_RISE = 95;
 function meteorCritNumberMotion(t, reduced) {
   const S = METEOR_CRIT_SETTLE;
-  if (reduced) return { scale: S, rot: 0, sx: 1, sy: 1 };
+  const H = METEOR_CRIT_RISE;
+  if (reduced) return { scale: S, rot: 0, sx: 1, sy: 1, dy: -H };
   if (t < 0.13) {
     const p = t / 0.13;
     const fall = p * p * p; // 묵직한 낙하(가속)
-    return { scale: S * (3 - 2 * fall), rot: -6 * (1 - fall), sx: 1, sy: 1 };
+    return { scale: S * (3 - 2 * fall), rot: -6 * (1 - fall), sx: 1, sy: 1, dy: 0 };
   }
-  if (t < 0.21) {
-    const p = (t - 0.13) / 0.08;
-    const k = Math.sin(p * Math.PI * 0.5);
-    return { scale: S, rot: 0, sx: 1 + 0.18 * k, sy: 1 - 0.18 * k };
+  if (t < 0.19) {
+    const k = Math.sin(((t - 0.13) / 0.06) * Math.PI * 0.5);
+    return { scale: S, rot: 0, sx: 1 + 0.2 * k, sy: 1 - 0.2 * k, dy: 0 };
   }
-  if (t < 0.55) {
-    const p = (t - 0.21) / 0.34;
-    const wobble = Math.cos(p * Math.PI * 2.5) * Math.pow(1 - p, 2);
-    return { scale: S * (1 + 0.06 * Math.sin(p * Math.PI)), rot: 2 * wobble, sx: 1 + 0.18 * wobble, sy: 1 - 0.18 * wobble };
+  if (t < 0.4) {
+    const p = (t - 0.19) / 0.21;
+    // 오버슈트 감속(easeOutBack): 빠르게 튀어 올라 정점을 10% 지나쳤다가 돌아옴
+    const c = 1.70158;
+    const rise = 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2);
+    const stretch = 0.16 * Math.pow(1 - p, 1.5); // 출발 순간 가장 길쭉, 정점에서 원래대로
+    return { scale: S, rot: 0, sx: 1 - stretch, sy: 1 + stretch, dy: -H * rise };
   }
-  return { scale: S * (1 + 0.06 * Math.min(1, (t - 0.55) / 0.95)), rot: 0, sx: 1, sy: 1 };
+  if (t < 0.62) {
+    const p = (t - 0.4) / 0.22;
+    const wobble = Math.cos(p * Math.PI * 2) * Math.pow(1 - p, 2) * 0.5;
+    return { scale: S * (1 + 0.05 * Math.sin(p * Math.PI)), rot: 2 * wobble, sx: 1 + 0.12 * wobble, sy: 1 - 0.12 * wobble, dy: -H };
+  }
+  return { scale: S * (1 + 0.06 * Math.min(1, (t - 0.62) / 0.88)), rot: 0, sx: 1, sy: 1, dy: -H };
 }
 
 // ==========================================
