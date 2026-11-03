@@ -305,12 +305,16 @@ body {
 }
 
 /* Monster HP Bar Only (Positioned Directly Below Monster Image) */
-/* 충전형 카드의 스테이지 충전 배지 (스킬 버튼 좌하단, 스킬 이름 바로 위) */
+/* 충전형 카드의 스테이지 충전 배지: 스킬 버튼 위 가장자리에 걸친 탭.
+   버튼 안쪽에 두면 가운데 쿨타임 숫자를 가려서(메테오 + 잠열 충전), 위쪽 바깥으로 반쯤 뺐습니다.
+   위치: 단축키(왼쪽 위 안)·AUTO 표시(위 안)·알림 배지(오른쪽 위 바깥)와 겹치지 않는 위쪽 가운데. */
 .skill-stage-charge {
   position: absolute;
-  bottom: 17px;
-  left: 2px;
-  z-index: 4;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 7;
   padding: 1px 5px;
   border-radius: 9px;
   border: 1px solid #67e8f9;
@@ -328,8 +332,8 @@ body {
 }
 
 @keyframes chargePop {
-  from { transform: scale(0.6); }
-  to { transform: scale(1); }
+  from { transform: translateX(-50%) scale(0.6); }
+  to { transform: translateX(-50%) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
