@@ -544,6 +544,9 @@ function playSound(type, pitchMult = 1.0) {
   if (type === 'drop_coin' || type === 'coin_tick') {
     return playSfxCue('drop_coin');
   }
+  if (type === 'meteor_cheer') {
+    return playSfxCue('meteor_cheer'); // 목소리라 연소 중 음높이 변조를 걸지 않습니다.
+  }
   if (type === 'meteor_fly') {
     return playSfxCue('meteor_fly');
   }
@@ -780,6 +783,18 @@ let luckyEmberReady = false;
 
 const rockDebris = [];
 let lastMeteorShakeTime = -Infinity;
+
+// 메테오 치명타 관중 환호: 숫자가 착지한 직후(0.15초 뒤) 관중이 반응하듯 냅니다.
+// 연소 중에는 메테오가 항상 치명타라 환호가 잦아질 수 있어, 4초 안에는 다시 내지 않습니다(숫자 연출은 매번).
+const METEOR_CHEER = { delay: 0.15, minGap: 4 };
+let lastMeteorCheerAt = -Infinity;
+function playMeteorCheer() {
+  const now = state.playTimeSec || 0;
+  if (now >= lastMeteorCheerAt && now - lastMeteorCheerAt < METEOR_CHEER.minGap) return false;
+  lastMeteorCheerAt = now;
+  setTimeout(() => playSound('meteor_cheer'), METEOR_CHEER.delay * 1000);
+  return true;
+}
 
 function spawnMeteorRockDebris(x, y, scale = 1.0) {
   const count = Math.min(Math.max(8, Math.round(12 * scale)), Math.max(0, 48 - rockDebris.length));
@@ -2736,6 +2751,7 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
     // 열기 판정 자체는 아래에서 즉시 갱신하고, 문양의 점등만 숫자가 도착할 때까지 미룹니다(연출 전용).
     const heatSigil = canTriggerStreak && state.grimoires.meteor && state.combat.critStreak < 2 ? state.combat.critStreak : null;
     heatTextItem = spawnFloatingText(`${fmt(dmg)}`, 'fct-crit', -8, { isBig: isBigSkill, heatSigil, meteorCrit: skillKey === 'meteor' });
+    if (skillKey === 'meteor') playMeteorCheer();
     if (!isDotTick && skillKey !== 'meteor') {
       // 연속 치명타(몰아치는 열기) 콤보 피치 빌드업:
       // 1타 크리: 1.0 (예열) ➔ 2타 크리: 1.15 (몰열 완성 쾌감)

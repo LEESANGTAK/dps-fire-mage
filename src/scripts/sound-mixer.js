@@ -23,6 +23,8 @@ const SFX_FILES = {
   // VARCO Sound 유료 플랜 생성(2026-10-26)
   meteor_fly: 'assets/sounds/sfx/meteor_fly.wav',
   meteor_explosion: 'assets/sounds/sfx/meteor_explosion.wav',
+  // 메테오 치명타 관중 환호(2026-11-04, ElevenLabs Starter). 남성 위주로, 하나둘 따라 붙었다가 흩어지며 잦아드는 2종을 번갈아 씁니다.
+  meteor_cheer: ['assets/sounds/sfx/meteor_cheer_1.wav', 'assets/sounds/sfx/meteor_cheer_2.wav'],
   drop_coin: 'assets/sounds/sfx/drop_coin.wav',
   // ElevenLabs Sound Effects API, Starter 유료 플랜 생성(2026-10-28, scripts/generate-sfx.cjs)
   fly: 'assets/sounds/sfx/fireball_whoosh.wav',
@@ -89,6 +91,8 @@ const SFX_MIX = {
   meteor_fly: { sound: 'meteor_fly', bus: 'meteor', db: 6.0 },
   meteor_fly_small: { sound: 'meteor_fly', bus: 'meteor', db: 3.5 },
   meteor_explosion: { sound: 'meteor_explosion', bus: 'meteor', db: 13.5, offset: 0.06 },
+  // 환호는 폭발 바로 뒤에 겹치므로 폭발보다 10dB 작게(배경음 대비 약 +8dB).
+  meteor_cheer: { sound: 'meteor_cheer', bus: 'meteor', db: 3.5 },
   // 보상·강조
   item_select: { sound: 'item_select', bus: 'reward', db: -10.0 },
   drop_coin: { sound: 'drop_coin', bus: 'reward', db: -7.0 },

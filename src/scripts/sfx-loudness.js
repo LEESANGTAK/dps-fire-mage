@@ -28,6 +28,8 @@ const SFX_LOUDNESS = {
   'assets/sounds/sfx/fireball_slam_1.wav': { short: -13.4, mean: -18.2, peak: -1.7 },
   'assets/sounds/sfx/fireball_slam_2.wav': { short: -15.2, mean: -20.8, peak: -1 },
   'assets/sounds/sfx/fireball_whoosh.wav': { short: -10.8, mean: -14.9, peak: -1 },
+  'assets/sounds/sfx/meteor_cheer_1.wav': { short: -7.6, mean: -14.7, peak: -1 },
+  'assets/sounds/sfx/meteor_cheer_2.wav': { short: -8, mean: -13.8, peak: -1 },
   'assets/sounds/sfx/meteor_explosion.wav': { short: -8, mean: -18.6, peak: -2 },
   'assets/sounds/sfx/meteor_fly.wav': { short: -8, mean: -16.1, peak: -2 },
   'assets/sounds/sfx/monster_burst.wav': { short: -16, mean: -21.7, peak: -1 },

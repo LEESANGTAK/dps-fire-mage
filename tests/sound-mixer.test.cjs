@@ -45,6 +45,10 @@ const overBgm = (cue) => SFX_MIX[cue].db + 4.7 + (['card_hover', 'card_deal', 'c
 // 자주 나는 소리는 배경음 아래, 발사·비행은 적중보다 작게
 for (const cue of ['card_hover', 'button_hover', 'prop_crystal_tap', 'prop_lantern', 'burn_loop']) assert.ok(overBgm(cue) < 0, `${cue}가 배경음보다 큽니다.`);
 assert.ok(SFX_MIX.launch.db < SFX_MIX.hit.db && SFX_MIX.fireball_fly.db < SFX_MIX.hit.db, '발사·비행음이 적중음보다 큽니다.');
+// 붉은 치명타음은 노란 치명타와 같은 크기(소리 결로만 구분), 환호는 폭발 뒤에 겹치므로 폭발보다 작게
+assert.equal(SFX_MIX.crit_heat.db, SFX_MIX.crit.db);
+assert.ok(SFX_MIX.meteor_cheer.db < SFX_MIX.meteor_explosion.db, '환호가 메테오 폭발보다 큽니다.');
+assert.ok(/METEOR_CHEER = \{ delay: [\d.]+, minGap: [1-9]/.test(game), '메테오 환호 최소 간격이 없습니다.');
 // 배경음에 묻히지 않게: 결정·피드백 소리는 배경음보다 5dB 넘게 작지 않음
 for (const cue of ['card_stamp', 'buy_denied', 'monster_destroy', 'proc', 'run_defeat', 'enrage_tick', 'button_hover']) {
   assert.ok(overBgm(cue) >= -9, `${cue}가 배경음에 묻힙니다(${overBgm(cue).toFixed(1)}dB).`);
