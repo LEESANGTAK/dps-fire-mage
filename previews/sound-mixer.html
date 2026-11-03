@@ -76,7 +76,7 @@
 <script>
 const BUS_LABELS = { combat: '전투(화염구)', meteor: '메테오', reward: '보상·강조', ui: '카드·메뉴 UI', alert: '알림', prop: '배경 소품' };
 const CUE_LABELS = {
-  launch: '화염구 발사(수동)', fireball_fly: '화염구 비행', hit: '일반 적중', crit: '치명타 적중', flame_patch_burst: '불장판 펑',
+  launch: '화염구 발사(수동)', fireball_fly: '화염구 비행', hit: '일반 적중', crit: '치명타 적중', crit_heat: '붉은 치명타(열기 충전)', flame_patch_burst: '불장판 펑',
   cast_loop: '시전 충전(반복)', burn_loop: '지속 연소(반복)',
   meteor_fly: '메테오 낙하', meteor_fly_small: '작은 메테오 낙하', meteor_explosion: '메테오 폭발',
   item_select: '선택 딸깍', drop_coin: '골드 획득', celebrate: '축하 차임', proc: '발동 차임', monster_destroy: '몬스터 처치', summon_spirit: '정령 소환',
@@ -142,8 +142,8 @@ function playCue(cue, opts = {}) {
 
 // 장면: 게임에서 실제로 겹치는 순서·간격을 흉내 냅니다(초).
 const SCENES = {
-  combat: [[0, 'cast_loop'], [0.1, 'fireball_fly'], [0.35, 'hit'], [0.55, 'fireball_fly'], [0.8, 'hit'], [1.0, 'fireball_fly'], [1.25, 'crit', 1.0],
-    [1.45, 'fireball_fly'], [1.7, 'crit', 1.15], [1.9, 'burn_loop'], [2.0, 'fireball_fly'], [2.25, 'hit'], [2.6, 'flame_patch_burst']],
+  combat: [[0, 'cast_loop'], [0.1, 'fireball_fly'], [0.35, 'hit'], [0.55, 'fireball_fly'], [0.8, 'hit'], [1.0, 'fireball_fly'], [1.25, 'crit_heat', 1.0],
+    [1.45, 'fireball_fly'], [1.7, 'crit_heat', 1.15], [1.9, 'burn_loop'], [2.0, 'fireball_fly'], [2.25, 'hit'], [2.6, 'flame_patch_burst']],
   meteor: [[0, 'meteor_fly', 1, 0.4], [1.0, 'meteor_explosion'], [1.2, 'hit'], [1.5, 'crit'], [2.3, 'meteor_fly_small', 1, 0.6], [3.1, 'meteor_explosion', 1.06]],
   reward: [[0, 'crit'], [0.25, 'monster_destroy'], [0.6, 'drop_coin', 1.0], [0.75, 'drop_coin', 1.12], [0.9, 'drop_coin', 1.25], [1.4, 'celebrate'], [2.2, 'proc'], [2.9, 'summon_spirit']],
   ui: [[0, 'button_hover'], [0.3, 'popup_open'], [0.9, 'card_shuffle'], [1.3, 'card_deal'], [1.45, 'card_deal'], [1.6, 'card_deal'], [2.0, 'card_hover'], [2.3, 'card_hover'], [2.7, 'card_stamp'], [3.1, 'item_select'], [3.5, 'buy_denied'], [4.0, 'enrage_tick'], [5.0, 'enrage_tick', 1.2]],

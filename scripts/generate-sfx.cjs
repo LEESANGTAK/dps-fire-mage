@@ -129,16 +129,23 @@ const SOUNDS = {
     use: '런 실패(광폭화)', duration: 2.0,
     prompt: 'cartoon defeat sting, a flame fizzling out into a smoke puff with paper crumpling, soft descending tones, gentle not dramatic'
   },
-  // 2026-11-03: 붉은 치명타(몰아치는 열기 충전)를 노란 치명타와 귀로 구분하려는 전용 적중음
-  crit_heat: {
-    use: '붉은 치명타(몰아치는 열기 충전) 적중', duration: 0.6,
-    prompt: 'fiery critical hit, sharp crack followed by a hot searing flare that rises in pitch, like heat being charged up, intense and bright, short tail'
+  // 2026-11-03: 붉은 치명타(몰아치는 열기 충전)를 노란 치명타와 귀로 구분하려는 전용 적중음.
+  // 1차(타격 + 음높이가 오르는 불꽃)는 채택 안 됨. 2차는 두 방향(A 점화, B 치익)으로 만듭니다.
+  crit_heat_ignite: {
+    use: '붉은 치명타 A: 낮게 훅 붙는 점화(가스 불이 확 붙는 느낌)', duration: 0.6,
+    prompt: 'punchy critical fire hit with a deep whoomph of flames igniting all at once, low and heavy ignition burst with crackling embers, short tail'
+  },
+  crit_heat_sizzle: {
+    use: '붉은 치명타 B: 뜨거운 쇠에 물이 닿은 치익', duration: 0.6,
+    prompt: 'sharp critical hit impact followed by an intense hot sizzle hiss like red hot iron quenched in water, searing and bright, short tail'
   },
   // 메테오 치명타 환호성: 목소리가 필요하므로 공통 문구의 'no voice'를 뺍니다.
+  // 1차(남녀 섞인 관중)는 여성 목소리가 두드러졌고, 2차(남성 위주 1.6초)는 모두 동시에 외치고 동시에 끊겨 어색했습니다.
+  // 3차: 몇 명이 먼저 반응하고 하나둘 따라 붙어 커졌다가, 외침·박수가 흩어지며 잦아들도록 길이를 3초로 늘립니다.
   meteor_cheer: {
-    use: '메테오 치명타 관중 환호', duration: 1.6,
+    use: '메테오 치명타 관중 환호(남성 위주, 퍼지고 잦아듦)', duration: 3.0,
     style: 'cartoon game sound effect, mono, clean, no music, no words',
-    prompt: 'small excited crowd cheering and whooping right after a huge explosion, short burst of wow and hooray, playful cartoon audience reaction, fades out quickly'
+    prompt: 'tavern crowd of mostly men reacting to a massive hit: a few voices gasp ooooh first, more voices join one by one and swell into a big cheer, then scattered individual whoops, laughs and a few claps trail off at different times, natural staggered ending, no female voices'
   }
 };
 const MODELS = { v2: 'eleven_text_to_sound_v2', v3: 'eleven_text_to_sound_v3' };

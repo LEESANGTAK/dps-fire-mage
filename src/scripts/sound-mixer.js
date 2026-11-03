@@ -32,6 +32,8 @@ const SFX_FILES = {
     'assets/sounds/sfx/fireball_slam_2.wav'
   ],
   explosion_crit: 'assets/sounds/sfx/fireball_hit_crit.wav',
+  // 붉은 치명타(몰아치는 열기 충전) 전용 '훅' 점화음(2026-11-04, ElevenLabs Starter). 노란 치명타와 귀로 구분합니다.
+  explosion_crit_heat: 'assets/sounds/sfx/crit_heat.wav',
   item_select: 'assets/sounds/sfx/card_pick.wav',
   monster_destroy: 'assets/sounds/sfx/monster_burst.wav',
   summon_spirit: 'assets/sounds/sfx/spirit_summon.wav',
@@ -79,6 +81,7 @@ const SFX_MIX = {
   fireball_fly: { sound: 'fly', bus: 'combat', db: -3.0 },
   hit: { sound: 'explosion', bus: 'combat', db: 0 },
   crit: { sound: 'explosion_crit', bus: 'combat', db: 9.0 },
+  crit_heat: { sound: 'explosion_crit_heat', bus: 'combat', db: 9.0 },
   flame_patch_burst: { sound: 'explosion', bus: 'combat', db: -12.0 },
   cast_loop: { sound: 'cast_loop', bus: 'combat', db: -9.0, measure: 'mean' },
   burn_loop: { sound: 'burn_loop', bus: 'combat', db: -17.5, measure: 'mean' },

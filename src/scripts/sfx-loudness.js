@@ -19,6 +19,7 @@ const SFX_LOUDNESS = {
   'assets/sounds/sfx/card_stamp_1.wav': { short: -21.4, mean: -25.3, peak: -1.7 },
   'assets/sounds/sfx/card_stamp_2.wav': { short: -19.3, mean: -23.4, peak: -1 },
   'assets/sounds/sfx/celebrate_chime.wav': { short: -6.8, mean: -12.4, peak: -1 },
+  'assets/sounds/sfx/crit_heat.wav': { short: -9, mean: -16.2, peak: -1 },
   'assets/sounds/sfx/drop_coin.wav': { short: -19.7, mean: -22.8, peak: -10.2 },
   'assets/sounds/sfx/enrage_tick_1.wav': { short: -19.4, mean: -19.4, peak: -1 },
   'assets/sounds/sfx/enrage_tick_2.wav': { short: -17.3, mean: -19.5, peak: -2.6 },

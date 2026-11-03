@@ -535,6 +535,9 @@ function playSound(type, pitchMult = 1.0) {
   if (type === 'crit') {
     return playSfxCue('crit', finalPitch);
   }
+  if (type === 'crit_heat') {
+    return playSfxCue('crit_heat', finalPitch);
+  }
   if (type === 'item_select') {
     return playSfxCue('item_select');
   }
@@ -2737,7 +2740,9 @@ function dealDamage(skillKey, rawDamage, isCrit, canTriggerStreak = true, isDotT
       // 연속 치명타(몰아치는 열기) 콤보 피치 빌드업:
       // 1타 크리: 1.0 (예열) ➔ 2타 크리: 1.15 (몰열 완성 쾌감)
       const streakPitch = (state.combat && state.combat.critStreak >= 1) ? 1.15 : 1.0;
-      playSound('crit', streakPitch);
+      // 붉은 숫자(몰아치는 열기를 채우는 치명타)는 전용 점화음으로 귀로도 구분합니다.
+      // 모션 줄이기로 숫자가 노랗게 나와도 열기는 차므로, 소리는 열기 판정(heatSigil)을 따릅니다.
+      playSound(heatSigil !== null ? 'crit_heat' : 'crit', streakPitch);
     }
     if (isCombustingEffective) {
       spawnParticles(targetPos.x, targetPos.y, 12, '#fef08a', '#ea580c', 1.6);
