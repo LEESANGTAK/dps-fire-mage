@@ -12,7 +12,9 @@
  *      마지막 단의 리미터가 여러 소리가 겹쳐 찢어지는 것을 막습니다.
  *   Web Audio를 못 쓰거나 파일을 못 읽으면 예전처럼 HTML 오디오로 재생합니다(이때는 1에서 잘림).
  *
- * 2026-11-03 첫 표는 바로 전까지 들리던 크기(효과음 슬라이더 10% 기준, 상한에 닿지 않던 구간)를 그대로 옮긴 값입니다.
+ * 2026-11-03 2차 표: 배경음을 기준으로 다시 맞췄습니다(docs/design-decisions.md '배경음 기준 믹스').
+ *   기본 설정(BGM 20%, 효과음 10%)에서 배경음은 약 -30.5 LUFS(scripts/measure-bgm-loudness.cjs), 일반 적중(0dB)은 그보다 약 4.7dB 큽니다.
+ *   카드 창 소리는 창이 열리면 배경음이 -9dB로 줄어드는 것을 감안한 값입니다.
  * 소리 하나를 바꿀 때는 표의 그 칸만 고치세요. 큰 사건일수록 크게(일반 적중 < 치명타 < 메테오 폭발)는 테스트가 지킵니다. */
 
 // 효과음 파일 목록(키 → 경로, 배열이면 번갈아 트는 변형 묶음). 예전 효과음은 출처 문제로 전부 제거했습니다(docs/steam-store/sound-sources.md).
@@ -73,48 +75,48 @@ const SFX_BUSES = { combat: 0, meteor: 0, reward: 0, ui: 0, alert: 0, prop: 0 };
 // 소리 이름 → { sound: 파일 키(SFX_FILES), bus, db, measure?: 'mean'(계속 깔리는 반복음), offset?: 앞 무음 건너뛰기(초) }
 const SFX_MIX = {
   // 전투: 화염구
-  launch: { sound: 'fly', bus: 'combat', db: 5.0 },
-  fireball_fly: { sound: 'fly', bus: 'combat', db: 1.5 },
+  launch: { sound: 'fly', bus: 'combat', db: -1.0 },
+  fireball_fly: { sound: 'fly', bus: 'combat', db: -3.0 },
   hit: { sound: 'explosion', bus: 'combat', db: 0 },
-  crit: { sound: 'explosion_crit', bus: 'combat', db: 10.5 },
+  crit: { sound: 'explosion_crit', bus: 'combat', db: 9.0 },
   flame_patch_burst: { sound: 'explosion', bus: 'combat', db: -12.0 },
-  cast_loop: { sound: 'cast_loop', bus: 'combat', db: -6.5, measure: 'mean' },
+  cast_loop: { sound: 'cast_loop', bus: 'combat', db: -9.0, measure: 'mean' },
   burn_loop: { sound: 'burn_loop', bus: 'combat', db: -17.5, measure: 'mean' },
   // 메테오
-  meteor_fly: { sound: 'meteor_fly', bus: 'meteor', db: 8.0 },
-  meteor_fly_small: { sound: 'meteor_fly', bus: 'meteor', db: 5.5 },
-  meteor_explosion: { sound: 'meteor_explosion', bus: 'meteor', db: 16.0, offset: 0.06 },
+  meteor_fly: { sound: 'meteor_fly', bus: 'meteor', db: 6.0 },
+  meteor_fly_small: { sound: 'meteor_fly', bus: 'meteor', db: 3.5 },
+  meteor_explosion: { sound: 'meteor_explosion', bus: 'meteor', db: 13.5, offset: 0.06 },
   // 보상·강조
-  item_select: { sound: 'item_select', bus: 'reward', db: -15.0 },
-  drop_coin: { sound: 'drop_coin', bus: 'reward', db: -8.5 },
-  celebrate: { sound: 'celebrate', bus: 'reward', db: -1.5 },
-  proc: { sound: 'proc', bus: 'reward', db: -6.0 },
-  monster_destroy: { sound: 'monster_destroy', bus: 'reward', db: -10.5 },
-  summon_spirit: { sound: 'summon_spirit', bus: 'reward', db: -6.0 },
+  item_select: { sound: 'item_select', bus: 'reward', db: -10.0 },
+  drop_coin: { sound: 'drop_coin', bus: 'reward', db: -7.0 },
+  celebrate: { sound: 'celebrate', bus: 'reward', db: 1.0 },
+  proc: { sound: 'proc', bus: 'reward', db: -4.0 },
+  monster_destroy: { sound: 'monster_destroy', bus: 'reward', db: -5.0 },
+  summon_spirit: { sound: 'summon_spirit', bus: 'reward', db: -4.0 },
   // 종이 재질 UI: 자주 나는 소리일수록 작게
-  card_hover: { sound: 'card_hover', bus: 'ui', db: -19.5 },
-  card_deal: { sound: 'card_deal', bus: 'ui', db: -18.0 },
-  card_stamp: { sound: 'card_stamp', bus: 'ui', db: -16.0 },
-  card_shuffle: { sound: 'card_shuffle', bus: 'ui', db: -18.5 },
-  buy_denied: { sound: 'buy_denied', bus: 'ui', db: -18.0 },
-  button_hover: { sound: 'button_hover', bus: 'ui', db: -17.5 },
-  popup_open: { sound: 'popup_open', bus: 'ui', db: -4.5 },
+  card_hover: { sound: 'card_hover', bus: 'ui', db: -18.0 },
+  card_deal: { sound: 'card_deal', bus: 'ui', db: -16.0 },
+  card_stamp: { sound: 'card_stamp', bus: 'ui', db: -12.0 },
+  card_shuffle: { sound: 'card_shuffle', bus: 'ui', db: -16.0 },
+  buy_denied: { sound: 'buy_denied', bus: 'ui', db: -15.0 },
+  button_hover: { sound: 'button_hover', bus: 'ui', db: -13.0 },
+  popup_open: { sound: 'popup_open', bus: 'ui', db: -6.0 },
   // 알림
-  enrage_tick: { sound: 'enrage_tick', bus: 'alert', db: -14.5 },
-  run_defeat: { sound: 'run_defeat', bus: 'alert', db: -8.5 },
+  enrage_tick: { sound: 'enrage_tick', bus: 'alert', db: -9.0 },
+  run_defeat: { sound: 'run_defeat', bus: 'alert', db: -3.0 },
   // 배경 소품: 전투 소리를 가리지 않게 작게. 부서짐·옥좌 점등·멜로디만 한 단계 크게.
-  prop_crystal_tap: { sound: 'prop_crystal_tap', bus: 'prop', db: -17.0 },
-  prop_crystal_break: { sound: 'prop_crystal_break', bus: 'prop', db: -13.5 },
-  prop_brazier: { sound: 'prop_brazier', bus: 'prop', db: -11.0 },
+  prop_crystal_tap: { sound: 'prop_crystal_tap', bus: 'prop', db: -13.0 },
+  prop_crystal_break: { sound: 'prop_crystal_break', bus: 'prop', db: -9.0 },
+  prop_brazier: { sound: 'prop_brazier', bus: 'prop', db: -10.0 },
   prop_sigil: { sound: 'prop_sigil', bus: 'prop', db: -3.0 },
-  prop_lantern: { sound: 'prop_lantern', bus: 'prop', db: -20.5 },
-  prop_relight: { sound: 'prop_relight', bus: 'prop', db: -11.0 },
-  prop_cart: { sound: 'prop_cart', bus: 'prop', db: -17.5 },
-  prop_cart_spill: { sound: 'prop_cart_spill', bus: 'prop', db: -14.5 },
-  prop_banner: { sound: 'prop_banner', bus: 'prop', db: -19.5 },
-  prop_chime: { sound: 'prop_chime', bus: 'prop', db: -8.0 },
-  prop_peek: { sound: 'prop_peek', bus: 'prop', db: -19.0 },
-  prop_slime: { sound: 'prop_slime', bus: 'prop', db: -14.0 }
+  prop_lantern: { sound: 'prop_lantern', bus: 'prop', db: -14.0 },
+  prop_relight: { sound: 'prop_relight', bus: 'prop', db: -10.0 },
+  prop_cart: { sound: 'prop_cart', bus: 'prop', db: -12.0 },
+  prop_cart_spill: { sound: 'prop_cart_spill', bus: 'prop', db: -9.0 },
+  prop_banner: { sound: 'prop_banner', bus: 'prop', db: -14.0 },
+  prop_chime: { sound: 'prop_chime', bus: 'prop', db: -7.0 },
+  prop_peek: { sound: 'prop_peek', bus: 'prop', db: -14.0 },
+  prop_slime: { sound: 'prop_slime', bus: 'prop', db: -12.0 }
 };
 
 // 0dB(일반 적중)가 효과음 슬라이더 100%에서 갖는 음량(LUFS). 슬라이더·저장값의 의미를 예전과 같게 두려고 정한 값입니다.

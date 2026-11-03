@@ -38,20 +38,19 @@ assert.equal(SFX_MIX.hit.db, 0, '일반 적중이 0dB 기준');
 assert.ok(SFX_MIX.hit.db < SFX_MIX.crit.db && SFX_MIX.crit.db < SFX_MIX.meteor_explosion.db);
 assert.ok(SFX_MIX.card_hover.db < SFX_MIX.hit.db && SFX_MIX.button_hover.db < SFX_MIX.hit.db);
 
-// 4. 첫 표는 바로 전까지 들리던 크기를 보존합니다(한 파일짜리 소리는 예전 배율과 거의 같아야 함, ±0.5dB).
+// 4. 배경음 기준 믹스(docs/design-decisions.md '배경음 기준 믹스'): 기본 설정에서 일반 적중은 배경음보다 약 4.7dB 큽니다.
+//    카드 창 소리는 창이 열리면 배경음이 9dB 줄어드는 것을 감안합니다.
 const P = (n) => `assets/sounds/sfx/${n}.wav`;
-const near = (cue, file, old) => {
-  const diffDb = 20 * Math.log10(sfxCueGain(cue, file, { loudness: SFX_LOUDNESS }) / old);
-  assert.ok(Math.abs(diffDb) <= 0.5, `${cue}: 예전 크기와 ${diffDb.toFixed(2)}dB 다름`);
-};
-near('crit', P('fireball_hit_crit'), 6.0);
-near('meteor_explosion', P('meteor_explosion'), 8.0);
-near('meteor_fly', P('meteor_fly'), 3.28);
-near('launch', P('fireball_whoosh'), 3.2);
-near('drop_coin', P('drop_coin'), 1.84);
-near('item_select', P('card_pick'), 0.92);
-near('cast_loop', P('fireball_charge_loop'), 2.88);
-near('burn_loop', P('burn_loop'), 0.34);
+const overBgm = (cue) => SFX_MIX[cue].db + 4.7 + (['card_hover', 'card_deal', 'card_stamp', 'card_shuffle', 'buy_denied'].includes(cue) ? 9.1 : 0);
+// 자주 나는 소리는 배경음 아래, 발사·비행은 적중보다 작게
+for (const cue of ['card_hover', 'button_hover', 'prop_crystal_tap', 'prop_lantern', 'burn_loop']) assert.ok(overBgm(cue) < 0, `${cue}가 배경음보다 큽니다.`);
+assert.ok(SFX_MIX.launch.db < SFX_MIX.hit.db && SFX_MIX.fireball_fly.db < SFX_MIX.hit.db, '발사·비행음이 적중음보다 큽니다.');
+// 배경음에 묻히지 않게: 결정·피드백 소리는 배경음보다 5dB 넘게 작지 않음
+for (const cue of ['card_stamp', 'buy_denied', 'monster_destroy', 'proc', 'run_defeat', 'enrage_tick', 'button_hover']) {
+  assert.ok(overBgm(cue) >= -9, `${cue}가 배경음에 묻힙니다(${overBgm(cue).toFixed(1)}dB).`);
+}
+// 큰 사건도 배경음을 20dB 넘게 덮지 않음
+for (const cue of Object.keys(SFX_MIX)) assert.ok(overBgm(cue) <= 20, `${cue}가 배경음보다 지나치게 큽니다.`);
 // 변형 묶음은 서로 같은 크기로 맞춰집니다(원래 큰 파일은 작게, 작은 파일은 크게).
 {
   const [a, b] = [P('fireball_slam_1'), P('fireball_slam_2')];
@@ -207,5 +206,5 @@ const testFiles = { explosion: [P('fireball_slam_1'), P('fireball_slam_2')], exp
     assert.equal(g.run("playSfxCue('crit')"), null);
     assert.equal(g.run('soundMixer.mode'), 'element', '헤드리스에는 Web Audio가 없어 대체 경로');
   }
-  console.log('   효과음 믹서: 측정값 최신·표 범위·크기 순서·예전 크기 보존·Web Audio 증폭·대체 경로·반복음 검증 통과');
+  console.log('   효과음 믹서: 측정값 최신·표 범위·크기 순서·배경음 기준 크기·Web Audio 증폭·대체 경로·반복음 검증 통과');
 })().catch((e) => { console.error(e); process.exit(1); });
